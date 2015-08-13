@@ -127,7 +127,13 @@ static bool sodr_vtl_drive_check_header(struct so_database_connection * db) {
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
 	char * file;
-	asprintf(&file, "%s/file_0", sodr_vtl_media_dir);
+	int size = asprintf(&file, "%s/file_0", sodr_vtl_media_dir);
+	if (size < 0) {
+		sodr_vtl_drive.status = so_drive_status_error;
+		db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
+
+		return false;
+	}
 
 	char * header = so_file_read_all_from(file);
 	free(file);
@@ -174,7 +180,9 @@ static bool sodr_vtl_drive_erase_file(const char * path) {
 
 static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connection * db) {
 	char * files;
-	asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
+	int size = asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
+	if (size < 0)
+		return 1;
 
 	sodr_vtl_drive.status = so_drive_status_erasing;
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
@@ -265,7 +273,9 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 	}
 
 	char * files;
-	asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
+	int size = asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
+	if (size < 0)
+		return 1;
 
 	sodr_vtl_drive.status = so_drive_status_writing;
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
@@ -328,7 +338,9 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 	}
 
 	char * file;
-	asprintf(&file, "%s/file_0", sodr_vtl_media_dir);
+	size = asprintf(&file, "%s/file_0", sodr_vtl_media_dir);
+	if (size < 0)
+		return 1;
 
 	sodr_time_start();
 	int fd = open(file, O_CREAT | O_WRONLY, 0640);
@@ -368,7 +380,9 @@ struct so_drive * sodr_vtl_drive_get_device() {
 
 static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db) {
 	char * filename;
-	asprintf(&filename, "%s/file_%d", sodr_vtl_media_dir, file_position);
+	int size = asprintf(&filename, "%s/file_%d", sodr_vtl_media_dir, file_position);
+	if (size < 0)
+		return NULL;
 
 	int fd = open(filename, O_RDONLY);
 
@@ -390,7 +404,9 @@ static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position
 
 static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db) {
 	char * files;
-	asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
+	int size = asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
+	if (size < 0)
+		return NULL;
 
 	glob_t gl;
 	int ret = glob(files, 0, NULL, &gl);
@@ -408,7 +424,9 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_databas
 	globfree(&gl);
 	free(files);
 
-	asprintf(&files, "%s/file_%d", sodr_vtl_media_dir, nb_files);
+	size = asprintf(&files, "%s/file_%d", sodr_vtl_media_dir, nb_files);
+	if (size < 0)
+		return NULL;
 
 	struct so_stream_writer * writer = sodr_vtl_drive_writer_get_raw_writer(files, nb_files);
 	if (writer != NULL) {
@@ -455,8 +473,12 @@ static int sodr_vtl_drive_init(struct so_value * config, struct so_database_conn
 	if (access(root_dir, R_OK | W_OK | X_OK) != 0)
 		return 1;
 
-	asprintf(&sodr_vtl_media_dir, "%s/media", root_dir);
+	int size = asprintf(&sodr_vtl_media_dir, "%s/media", root_dir);
+	if (size < 0)
+		return 1;
+
 	free(root_dir);
+
 
 	sodr_vtl_media_format = malloc(sizeof(struct so_media_format));
 	bzero(sodr_vtl_media_format, sizeof(struct so_media_format));
@@ -486,7 +508,9 @@ static int sodr_vtl_drive_reset(struct so_database_connection * db) {
 		sodr_vtl_drive.is_empty = false;
 
 		char * media_uuid = 0;
-		asprintf(&media_uuid, "%s/serial_number", sodr_vtl_media_dir);
+		int size = asprintf(&media_uuid, "%s/serial_number", sodr_vtl_media_dir);
+		if (size < 0)
+			return 1;
 
 		char * uuid = so_file_read_all_from(media_uuid);
 		free(media_uuid);
