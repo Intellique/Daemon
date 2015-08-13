@@ -140,9 +140,14 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 			if (!dr->is_empty) {
 				char * volume_name = strdup(dr->slot->media->name);
 
+				long long diff = (now.tv_sec - last_check.tv_sec) / 60;
+
 				so_log_write(so_log_level_notice,
-					dngettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %d minute", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minutes", 30),
-					sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, 30);
+					dngettext("storiqone-changer-scsi",
+						"[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minute",
+						"[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minutes",
+						diff),
+					sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, diff);
 
 				int failed = sochgr_scsi_changer_unload(dr, db_connection);
 				if (failed == 0)
@@ -189,6 +194,13 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 	for (i = 0; i < gl.gl_pathc && !found; i++) {
 		char link[256];
 		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
+		if (length < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-changer-scsi", "Failed while reading link of file '%s' because %m"),
+				gl.gl_pathv[i]);
+			continue;
+		}
+
 		link[length] = '\0';
 
 		char * ptr = strrchr(link, '/') + 1;
@@ -197,14 +209,13 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 
 		char * path = NULL;
 		int size = asprintf(&path, "%s/generic", gl.gl_pathv[i]);
-
 		if (size < 0)
 			continue;
 
 		length = readlink(path, link, 256);
 		if (length < 0) {
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-changer-scsi", "Failed to read link of file '%s' because %m"),
+				dgettext("storiqone-changer-scsi", "Failed while reading link of file '%s' because %m"),
 				path);
 			continue;
 		}
@@ -215,7 +226,6 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		char * device;
 		ptr = strrchr(link, '/');
 		size = asprintf(&device, "/dev%s", ptr);
-
 		if (size < 0)
 			continue;
 
@@ -247,11 +257,14 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 					continue;
 
 				char * data = so_file_read_all_from(path);
+				if (data == NULL)
+					continue;
+
 				cp = strchr(data, '\n');
 				if (cp != NULL)
 					*cp = '\0';
 
-				char * wwn;
+				char * wwn = NULL;
 				size = asprintf(&wwn, "sas:%s", data);
 				if (size < 0) {
 					free(data);
@@ -297,7 +310,11 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 			struct so_value * dr = so_value_iterator_get_value(iter, true);
 
 			char * vendor = NULL, * model = NULL, * serial_number = NULL;
-			so_value_unpack(dr, "{ssssss}", "vendor", &vendor, "model", &model, "serial number", &serial_number);
+			so_value_unpack(dr, "{ssssss}",
+				"vendor", &vendor,
+				"model", &model,
+				"serial number", &serial_number
+			);
 
 			char dev[35];
 			memset(dev, ' ', 34);
@@ -353,8 +370,8 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 	int failed = dr->ops->update_status(dr);
 	if (failed != 0) {
 		so_log_write(so_log_level_critical,
-			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%td %s %s"),
-			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
+			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%u %s %s"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index, dr->vendor, dr->model);
 
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 		sochgr_scsi_changer_nb_worker--;
@@ -400,8 +417,8 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		failed = dr->ops->reset(dr);
 		if (failed != 0) {
 			so_log_write(so_log_level_critical,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to reset drive #%td %s %s"),
-				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
+				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to reset drive #%u %s %s"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index, dr->vendor, dr->model);
 
 			pthread_mutex_lock(&sochgr_scsi_changer_lock);
 			sochgr_scsi_changer_nb_worker--;
@@ -419,8 +436,8 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		failed = dr->ops->update_status(dr);
 		if (failed != 0) {
 			so_log_write(so_log_level_critical,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%td %s %s"),
-				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
+				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%u %s %s"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index, dr->vendor, dr->model);
 
 			pthread_mutex_lock(&sochgr_scsi_changer_lock);
 			sochgr_scsi_changer_nb_worker--;
@@ -441,7 +458,6 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 
 		failed = sochgr_scsi_changer_unload(dr, NULL);
-
 		if (failed == 0)
 			so_log_write(so_log_level_notice,
 				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = OK"),
@@ -474,8 +490,7 @@ static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive
 		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	int failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from, to->slot);
-
-	if (failed) {
+	if (failed != 0) {
 		sochgr_scsi_changer_wait();
 
 		struct so_slot tmp_from = *from;
@@ -506,8 +521,13 @@ static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive
 		sto->src_slot = from;
 	}
 
-	if (reset_drive)
-		to->ops->reset(to);
+	if (reset_drive) {
+		failed = to->ops->reset(to);
+		if (failed != 0)
+			so_log_write(so_log_level_critical,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to reset drive #%u %s %s"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, to->index, to->vendor, to->model);
+	}
 
 	sochgr_scsi_changer.status = so_changer_status_idle;
 	if (db_connection != NULL)
@@ -665,8 +685,8 @@ static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database
 	int failed = from->ops->update_status(from);
 	if (failed != 0) {
 		so_log_write(so_log_level_critical,
-			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%td %s %s"),
-			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, from - sochgr_scsi_changer.drives, from->vendor, from->model);
+			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%u %s %s"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, from->index, from->vendor, from->model);
 
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 		sochgr_scsi_changer_nb_worker--;

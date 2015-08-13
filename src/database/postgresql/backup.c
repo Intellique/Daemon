@@ -31,7 +31,7 @@
 #include <stdbool.h>
 // free, mkstemp
 #include <stdlib.h>
-// asprintf, dprintf
+// dprintf
 #include <stdio.h>
 // memcpy, strcpy
 #include <string.h>

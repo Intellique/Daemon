@@ -1216,7 +1216,14 @@ static void sochgr_scsi_changer_scsi_update_status2(int fd, struct so_changer * 
 						slot->drive = dr;
 
 						struct so_value * vslot = NULL;
-						so_value_unpack(drive, "{sssssssssbso}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enable, "slot", &vslot);
+						so_value_unpack(drive, "{sssssssssbso}",
+							"model", &dr->model,
+							"vendor", &dr->vendor,
+							"firmware revision", &dr->revision,
+							"serial number", &dr->serial_number,
+							"enable", &dr->enable,
+							"slot", &vslot
+						);
 
 						if (vslot != NULL) {
 							if (slot->volume_name != NULL)
