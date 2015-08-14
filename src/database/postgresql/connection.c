@@ -279,7 +279,9 @@ static int so_database_postgresql_cancel_checkpoint(struct so_database_connectio
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 	char * query = NULL;
-	asprintf(&query, "ROLLBACK TO %s", checkpoint);
+	int size = asprintf(&query, "ROLLBACK TO %s", checkpoint);
+	if (size < 0)
+		return -2;
 
 	PGresult * result = PQexec(self->connect, query);
 	ExecStatusType status = PQresultStatus(result);
@@ -288,7 +290,9 @@ static int so_database_postgresql_cancel_checkpoint(struct so_database_connectio
 		so_database_postgresql_get_error(result, NULL);
 
 	if (status != PGRES_COMMAND_OK)
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while rolling back a savepoint => %s"), PQerrorMessage(self->connect));
+		so_log_write2(so_log_level_error, so_log_type_plugin_db,
+			dgettext("libstoriqone-database-postgresql", "PSQL: error while rolling back a savepoint => %s"),
+			PQerrorMessage(self->connect));
 
 	PQclear(result);
 	free(query);
@@ -336,7 +340,9 @@ static int so_database_postgresql_create_checkpoint(struct so_database_connectio
 	}
 
 	char * query = NULL;
-	asprintf(&query, "SAVEPOINT %s", checkpoint);
+	int size = asprintf(&query, "SAVEPOINT %s", checkpoint);
+	if (size < 0)
+		return -2;
 
 	PGresult * result = PQexec(self->connect, query);
 	ExecStatusType status = PQresultStatus(result);
@@ -345,7 +351,9 @@ static int so_database_postgresql_create_checkpoint(struct so_database_connectio
 		so_database_postgresql_get_error(result, NULL);
 
 	if (status != PGRES_COMMAND_OK)
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while creating a savepoint => %s"), PQerrorMessage(self->connect));
+		so_log_write2(so_log_level_error, so_log_type_plugin_db,
+			dgettext("libstoriqone-database-postgresql", "PSQL: error while creating a savepoint => %s"),
+			PQerrorMessage(self->connect));
 
 	PQclear(result);
 	free(query);
@@ -721,7 +729,9 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 	}
 
 	char * density_code;
-	asprintf(&density_code, "%d", media_format->density_code);
+	int size = asprintf(&density_code, "%d", media_format->density_code);
+	if (size < 0)
+		return NULL;
 
 	const char * param[] = { density_code, so_media_format_mode_to_string(media_format->mode, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -926,7 +936,9 @@ static struct so_media_format * so_database_postgresql_get_media_format(struct s
 	so_database_postgresql_prepare(self, query, "SELECT id, name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, densitycode, supportpartition, supportmam FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
 
 	char * c_density_code = NULL;
-	asprintf(&c_density_code, "%d", density_code);
+	int size = asprintf(&c_density_code, "%d", density_code);
+	if (size < 0)
+		return NULL;
 
 	const char * param[] = { c_density_code, so_media_format_mode_to_string(mode, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -1608,7 +1620,9 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			so_database_postgresql_prepare(self, query, "SELECT id FROM driveformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
 
 			char * densitycode = NULL;
-			asprintf(&densitycode, "%u", drive->density_code);
+			int size = asprintf(&densitycode, "%u", drive->density_code);
+			if (size < 0)
+				goto error_asprintf;
 
 			const char * param[] = { densitycode, so_media_format_mode_to_string(drive->mode, false), };
 			PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -1713,6 +1727,15 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 		so_database_postgresql_finish_transaction(connect);
 
 	return 0;
+
+error_asprintf:
+	free(driveformat_id);
+	free(drive_id);
+
+	if (transStatus == PQTRANS_IDLE)
+		so_database_postgresql_cancel_transaction(connect);
+
+	return -2;
 }
 
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method) {
@@ -1846,7 +1869,11 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 				so_database_postgresql_prepare(self, query, "SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2");
 
 				char * densitycode = NULL;
-				asprintf(&densitycode, "%hhu", media->media_format->density_code);
+				int size = asprintf(&densitycode, "%hhu", media->media_format->density_code);
+				if (size < 0) {
+					failed = -2;
+					goto error_asprintf;
+				}
 
 				const char * param[] = { densitycode, so_media_format_mode_to_string(media->media_format->mode, false) };
 				PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -1879,17 +1906,71 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			so_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
-		asprintf(&load, "%ld", media->load_count);
-		asprintf(&read, "%ld", media->read_count);
-		asprintf(&write, "%ld", media->write_count);
-		asprintf(&nbfiles, "%u", media->nb_volumes);
-		asprintf(&blocksize, "%zd", media->block_size);
-		asprintf(&freeblock, "%zd", media->free_block);
-		asprintf(&totalblock, "%zd", media->total_block);
-		asprintf(&totalblockread, "%zd", media->nb_total_read);
-		asprintf(&totalblockwrite, "%zd", media->nb_total_write);
-		asprintf(&totalreaderror, "%u", media->nb_read_errors);
-		asprintf(&totalwriteerror, "%u", media->nb_write_errors);
+		int size = asprintf(&load, "%ld", media->load_count);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&read, "%ld", media->read_count);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&write, "%ld", media->write_count);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&nbfiles, "%u", media->nb_volumes);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&blocksize, "%zd", media->block_size);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&freeblock, "%zd", media->free_block);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalblock, "%zd", media->total_block);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalblockread, "%zd", media->nb_total_read);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalblockwrite, "%zd", media->nb_total_write);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalreaderror, "%u", media->nb_read_errors);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalwriteerror, "%u", media->nb_write_errors);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
 
 		const char * param[] = {
 			*media->uuid ? media->uuid : NULL, media->label, media->medium_serial_number, media->name, so_media_status_to_string(media->status, false),
@@ -1934,17 +2015,72 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			so_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
-		asprintf(&load, "%ld", media->load_count);
-		asprintf(&read, "%ld", media->read_count);
-		asprintf(&write, "%ld", media->write_count);
-		asprintf(&nbfiles, "%u", media->nb_volumes);
-		asprintf(&blocksize, "%zd", media->block_size);
-		asprintf(&freeblock, "%zd", media->free_block);
-		asprintf(&totalblock, "%zd", media->total_block);
-		asprintf(&totalblockread, "%zd", media->nb_total_read);
-		asprintf(&totalblockwrite, "%zd", media->nb_total_write);
-		asprintf(&totalreaderror, "%u", media->nb_read_errors);
-		asprintf(&totalwriteerror, "%u", media->nb_write_errors);
+		int size = asprintf(&load, "%ld", media->load_count);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&read, "%ld", media->read_count);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&write, "%ld", media->write_count);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&nbfiles, "%u", media->nb_volumes);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&blocksize, "%zd", media->block_size);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&freeblock, "%zd", media->free_block);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalblock, "%zd", media->total_block);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalblockread, "%zd", media->nb_total_read);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalblockwrite, "%zd", media->nb_total_write);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalreaderror, "%u", media->nb_read_errors);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
+		size = asprintf(&totalwriteerror, "%u", media->nb_write_errors);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
+
 
 		const char * param2[] = {
 			*media->uuid ? media->uuid : NULL, media->name, so_media_status_to_string(media->status, false),
@@ -1979,6 +2115,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		return status == PGRES_FATAL_ERROR;
 	}
 
+error_asprintf:
 	free(media_id);
 	free(archiveformat_id);
 	free(mediaformat_id);
@@ -2088,7 +2225,11 @@ static int so_database_postgresql_sync_slots(struct so_database_connection * con
 		so_database_postgresql_prepare(self, query, "SELECT enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
 
 		char * sindex;
-		asprintf(&sindex, "%u", slot->index);
+		int size = asprintf(&sindex, "%u", slot->index);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
 
 		const char * param[] = { changer_id, sindex };
 
@@ -2109,7 +2250,11 @@ static int so_database_postgresql_sync_slots(struct so_database_connection * con
 		so_database_postgresql_prepare(self, query, "INSERT INTO changerslot(changer, index, drive, media, isieport) VALUES ($1, $2, $3, $4, $5)");
 
 		char * sindex;
-		asprintf(&sindex, "%u", slot->index);
+		int size = asprintf(&sindex, "%u", slot->index);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
 
 		const char * param[] = { changer_id, sindex, drive_id, media_id, so_database_postgresql_bool_to_string(slot->is_ie_port) };
 
@@ -2126,7 +2271,11 @@ static int so_database_postgresql_sync_slots(struct so_database_connection * con
 		so_database_postgresql_prepare(self, query, "UPDATE changerslot SET media = $1, enable = $2 WHERE changer = $3 AND index = $4");
 
 		char * sindex;
-		asprintf(&sindex, "%u", slot->index);
+		int size = asprintf(&sindex, "%u", slot->index);
+		if (size < 0) {
+			failed = -2;
+			goto error_asprintf;
+		}
 
 		const char * param[] = { media_id, slot->enable ? "true" : "false", changer_id, sindex };
 
@@ -2140,6 +2289,7 @@ static int so_database_postgresql_sync_slots(struct so_database_connection * con
 		free(sindex);
 	}
 
+error_asprintf:
 	free(changer_id);
 	free(drive_id);
 	free(media_id);
@@ -2302,7 +2452,11 @@ static int so_database_postgresql_start_job(struct so_database_connection * conn
 	so_database_postgresql_prepare(self, query, "INSERT INTO jobrun(job, numrun) VALUES ($1, $2) RETURNING id");
 
 	char * numrun = NULL;
-	asprintf(&numrun, "%ld", job->num_runs);
+	int size = asprintf(&numrun, "%ld", job->num_runs);
+	if (size < 0) {
+		free(job_id);
+		return -2;
+	}
 
 	const char * param[] = { job_id, numrun };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -2353,7 +2507,11 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 
 	char * done = so_database_postgresql_set_float(job->done);
 	char * exitcode = NULL;
-	asprintf(&exitcode, "%d", job->exit_code);
+	int size = asprintf(&exitcode, "%d", job->exit_code);
+	if (size < 0) {
+		free(done);
+		return -2;
+	}
 
 	const char * param_jobrun[] = { so_job_status_to_string(job->status, false), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
 	result = PQexecPrepared(self->connect, query, 5, param_jobrun, NULL, NULL, 0);
@@ -2416,7 +2574,9 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 	so_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, repetition = $2, update = NOW() WHERE id = $3");
 
 	char * repetition = NULL;
-	asprintf(&repetition, "%ld", job->repetition);
+	int size = asprintf(&repetition, "%ld", job->repetition);
+	if (size < 0)
+		return -2;
 
 	const char * param2[] = { so_job_status_to_string(job->status, false), repetition, job_id };
 	result = PQexecPrepared(self->connect, query, 3, param2, NULL, NULL, 0);
@@ -2557,8 +2717,10 @@ static char * so_database_postgresql_get_script(struct so_database_connection * 
 	const char * query = "select_script_with_sequence_and_pool";
 	so_database_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss INNER JOIN script s ON ss.script = s.id INNER JOIN pool p ON ss.pool = p.id AND p.uuid = $4::UUID WHERE scripttype = $3::scripttype AND ss.jobtype IN (SELECT id FROM jobtype WHERE name = $1) ORDER BY sequence LIMIT 1 OFFSET $2");
 
-	char * seq;
-	asprintf(&seq, "%u", sequence);
+	char * seq = NULL;
+	int size = asprintf(&seq, "%u", sequence);
+	if (size < 0)
+		return NULL;
 
 	const char * param[] = { job_type, seq, so_script_type_to_string(type, false), pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
@@ -3426,12 +3588,38 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 	char * perm = NULL, * ownerid = NULL, * groupid = NULL, create_time[32] = "", modify_time[32] = "", * size = NULL;
 	char * selected_path_id = so_database_postgresql_find_selected_path(connect, file->selected_path);
 
-	asprintf(&ownerid, "%d", file->ownerid);
-	asprintf(&groupid, "%d", file->groupid);
-	asprintf(&perm, "%d", file->perm);
+	int str_size = asprintf(&ownerid, "%d", file->ownerid);
+	if (str_size < 0) {
+		free(selected_path_id);
+		return -2;
+	}
+
+	str_size = asprintf(&groupid, "%d", file->groupid);
+	if (str_size < 0) {
+		free(ownerid);
+		free(selected_path_id);
+		return -2;
+	}
+
+	str_size = asprintf(&perm, "%d", file->perm);
+	if (str_size < 0) {
+		free(groupid);
+		free(ownerid);
+		free(selected_path_id);
+		return -2;
+	}
+
+	str_size = asprintf(&size, "%zd", file->size);
+	if (str_size < 0) {
+		free(perm);
+		free(groupid);
+		free(ownerid);
+		free(selected_path_id);
+		return -2;
+	}
+
 	so_time_convert(&file->create_time, "%F %T", create_time, 32);
 	so_time_convert(&file->modify_time, "%F %T", modify_time, 32);
-	asprintf(&size, "%zd", file->size);
 
 	const char * param[] = { file->path, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size, selected_path_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
@@ -3562,12 +3750,23 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		struct so_value * db_job = so_value_hashtable_get(volume->job->db_data, key, false, false);
 
 		char * sequence = NULL, * size = NULL, starttime[32] = "", endtime[32] = "", * media_id = NULL, * media_position = NULL, * job_run = NULL;
-		asprintf(&sequence, "%u", volume->sequence);
-		asprintf(&size, "%zd", volume->size);
+		int str_size = asprintf(&sequence, "%u", volume->sequence);
+		str_size = asprintf(&size, "%zd", volume->size);
+		if (str_size < 0) {
+			free(volume_id);
+			return -2;
+		}
+
+		str_size = asprintf(&media_position, "%u", volume->media_position);
+		if (str_size < 0) {
+			free(volume_id);
+			free(size);
+			return -2;
+		}
+
 		so_time_convert(&volume->start_time, "%F %T", starttime, 32);
 		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
 		so_value_unpack(db_media, "{ss}", "id", &media_id);
-		asprintf(&media_position, "%u", volume->media_position);
 		so_value_unpack(db_job, "{ss}", "jobrun id", &job_run);
 
 		const char * query = "insert_archive_volume";
@@ -3637,7 +3836,12 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 			}
 
 			char * block_number = NULL, archive_time[32] = "";
-			asprintf(&block_number, "%zd", ptr_file->position);
+			int size = asprintf(&block_number, "%zd", ptr_file->position);
+			if (size < 0) {
+				free(volume_id);
+				return -2;
+			}
+
 			so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
 
 			const char * paramA[] = { volume_id, file_id, block_number, archive_time };
@@ -3747,8 +3951,18 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
 
 	char * backup_id = NULL, * nbmedia, * nbarchives;
-	asprintf(&nbmedia, "%ld", backup->nb_medias);
-	asprintf(&nbarchives, "%ld", backup->nb_archives);
+	int size = asprintf(&nbmedia, "%ld", backup->nb_medias);
+	if (size < 0) {
+		free(jobrun_id);
+		return -2;
+	}
+
+	size = asprintf(&nbarchives, "%ld", backup->nb_archives);
+	if (size < 0) {
+		free(jobrun_id);
+		free(nbmedia);
+		return -2;
+	}
 
 	const char * param[] = { nbmedia, nbarchives, jobrun_id };
 	result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -3785,10 +3999,26 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 		so_value_free(key);
 
 		char * seq, * size, * media_id, * media_position;
-		asprintf(&seq, "%u", i);
-		asprintf(&size, "%zd", bv->size);
+		int str_size = asprintf(&seq, "%u", i);
+		if (str_size < 0) {
+			free(seq);
+			return -2;
+		}
+
+		str_size = asprintf(&size, "%zd", bv->size);
+		if (str_size < 0) {
+			free(seq);
+			return -2;
+		}
+
+		str_size = asprintf(&media_position, "%u", bv->position);
+		if (str_size < 0) {
+			free(seq);
+			free(size);
+			return -2;
+		}
+
 		so_value_unpack(media_db, "{ss}", "id", &media_id);
-		asprintf(&media_position, "%u", bv->position);
 
 		const char * param[] = { seq, size, media_id, media_position, backup_id };
 		result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);

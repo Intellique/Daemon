@@ -367,13 +367,16 @@ char * so_database_postgresql_set_float(double fl) {
 	locale_t c_locale = newlocale(LC_ALL, "C", NULL);
 	locale_t current_locale = uselocale(c_locale);
 
-	char * str_float;
-	asprintf(&str_float, "%lf", fl);
+	char * str_float = NULL;
+	int size = asprintf(&str_float, "%lf", fl);
 
 	freelocale(c_locale);
 	uselocale(current_locale);
 
-	return str_float;
+	if (size >= 0)
+		return str_float;
+	else
+		return NULL;
 }
 
 
