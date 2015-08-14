@@ -137,9 +137,13 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 
 		unsigned int i;
 		if (nb_drives < sochgr_vtl_changer.nb_drives) {
+			int nb_drive_removed = sochgr_vtl_changer.nb_drives - nb_drives;
 			so_log_write(so_log_level_warning,
-				dngettext("storiqone-changer-vtl", "[%s | %s]: will remove %u drive", "[%s | %s]: will remove %u drives", sochgr_vtl_changer.nb_drives - nb_drives),
-				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, sochgr_vtl_changer.nb_drives - nb_drives);
+				dngettext("storiqone-changer-vtl",
+					"[%s | %s]: will remove %u drive",
+					"[%s | %s]: will remove %u drives",
+					nb_drive_removed),
+				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, nb_drive_removed);
 
 			for (i = nb_drives; i < sochgr_vtl_changer.nb_drives; i++) {
 				struct so_drive * dr = sochgr_vtl_changer.drives + i;
@@ -185,9 +189,13 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 		}
 
 		if (nb_slots < sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives) {
+			int nb_slots_removed = sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives - nb_slots;
 			so_log_write(so_log_level_warning,
-				dngettext("storiqone-changer-vtl", "[%s | %s]: will remove %u slot", "[%s | %s]: will remove %u slots", sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives - nb_slots),
-				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives - nb_slots);
+				dngettext("storiqone-changer-vtl",
+					"[%s | %s]: will remove %u slot",
+					"[%s | %s]: will remove %u slots",
+					nb_slots_removed),
+				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, nb_slots_removed);
 
 			for (i = nb_drives + nb_slots; i < sochgr_vtl_changer.nb_slots; i++) {
 				struct so_slot * sl = sochgr_vtl_changer.slots + i;
@@ -210,9 +218,13 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 		}
 
 		if (nb_slots > sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives) {
+			int nb_new_slots = nb_slots - sochgr_vtl_changer.nb_slots + sochgr_vtl_changer.nb_drives;
 			so_log_write(so_log_level_warning,
-				dngettext("storiqone-changer-vtl", "[%s | %s]: will add %u slot", "[%s | %s]: will add %u slots", nb_slots - sochgr_vtl_changer.nb_slots + sochgr_vtl_changer.nb_drives),
-				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, nb_slots - sochgr_vtl_changer.nb_slots + sochgr_vtl_changer.nb_drives);
+				dngettext("storiqone-changer-vtl",
+					"[%s | %s]: will add %u slot",
+					"[%s | %s]: will add %u slots",
+					nb_new_slots),
+				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, nb_new_slots);
 
 			void * addr = realloc(sochgr_vtl_changer.slots, (sochgr_vtl_changer.nb_drives + nb_slots) * sizeof(struct so_slot));
 			if (addr != NULL) {
@@ -243,9 +255,13 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 		}
 
 		if (nb_drives > sochgr_vtl_changer.nb_drives) {
+			int nb_new_drives = nb_drives - sochgr_vtl_changer.nb_drives;
 			so_log_write(so_log_level_warning,
-				dngettext("storiqone-changer-vtl", "[%s | %s]: will add %u drive", "[%s | %s]: will add %u drives", nb_drives - sochgr_vtl_changer.nb_drives),
-				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, nb_drives - sochgr_vtl_changer.nb_drives);
+				dngettext("storiqone-changer-vtl",
+					"[%s | %s]: will add %u drive",
+					"[%s | %s]: will add %u drives",
+					nb_new_drives),
+				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, nb_new_drives);
 
 			void * addr = realloc(sochgr_vtl_drives, nb_drives * sizeof(struct sochgr_vtl_drive));
 			if (addr != NULL)

@@ -88,12 +88,12 @@ static int sochgr_standalone_changer_check(unsigned int nb_clients __attribute__
 	if (!dr->enable || !dr->ops->is_free(dr))
 		return 0;
 
-	dr->ops->reset(dr);
+	int failed = dr->ops->reset(dr);
 
 	sochgr_standalone_changer.status = dr->is_empty ? so_changer_status_offline : so_changer_status_idle;
 	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
 
-	return 0;
+	return failed;
 }
 
 struct so_changer * sochgr_standalone_changer_get_device() {
@@ -161,6 +161,6 @@ static int sochgr_standalone_changer_shut_down(struct so_database_connection * d
 }
 
 static int sochgr_standalone_changer_unload(struct so_drive * from __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
-	return 0;
+	return 1;
 }
 

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-17 09:13+0200\n"
+        "POT-Creation-Date: 2015-08-14 10:47+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -87,7 +87,7 @@ msgstr  "Erreur : pas assez d’espace disponible dans le pool « %s »"
 msgid   "Selected copy mode: direct"
 msgstr  "Selection du mode de copie : direct"
 
-#: src/job/copy-archive/direct_copy.c:102 src/job/copy-archive/indirect_copy.c:210
+#: src/job/copy-archive/direct_copy.c:102
 #, c-format
 msgid   "Error while writing file header '%s' to media '%s'"
 msgstr  "Erreur en écrivant l’entête du fichier « %s » sur le média « %s »"
@@ -112,7 +112,7 @@ msgstr  "Échec lors de la création du fichier temporaire"
 
 #: src/job/copy-archive/indirect_copy.c:72
 #, c-format
-msgid   "Error, not enough disk space (required: %s, available: %s) to copy archive '%s'"
+msgid   "Error, disk space is not enough (required: %s, available: %s) to copy archive '%s'"
 msgstr  "Erreur, espace disque insuffisant (requis : %s, disponible : %s) pour copier l’archive « %s »"
 
 #: src/job/copy-archive/indirect_copy.c:113
@@ -128,6 +128,16 @@ msgstr  "Erreur en écrivant des données du fichier « %s » dans le fichier 
 #: src/job/copy-archive/indirect_copy.c:177 src/job/copy-archive/util.c:79
 msgid   "Failed to reopen temporary file"
 msgstr  "Échec lors de la réouverture du fichier temporaire"
+
+#: src/job/copy-archive/indirect_copy.c:210
+#, c-format
+msgid   "Error while writing header of file '%s' into media '%s'"
+msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le média « %s »"
+
+#: src/job/copy-archive/indirect_copy.c:259
+#, c-format
+msgid   "Error while writing data of file '%s' to media '%s'"
+msgstr  "Erreur en écrivant des données du fichier « %s » dans le média « %s »"
 
 #: src/job/copy-archive/indirect_copy.c:279
 msgid   "Error while reading from temporary file"

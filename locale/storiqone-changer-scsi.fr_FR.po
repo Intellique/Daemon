@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-scsi v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-13 16:05+0200\n"
+        "POT-Creation-Date: 2015-08-14 10:47+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -61,6 +61,7 @@ msgid   "[%s | %s]: failed to get status from drive #%u %s %s"
 msgstr  "[ %s | %s ] : échec lors de la réinitialisation du lecteur n°%u %s %s"
 
 #: src/changer/scsi_changer/device.c:381 src/changer/scsi_changer/device.c:428 src/changer/scsi_changer/device.c:447
+#: src/changer/scsi_changer/device.c:477
 #, c-format
 msgid   "[%s | %s]: checking media with drive #%u completed"
 msgstr  "[ %s | %s ] : vérification du média avec le lecteur n°%u terminée"
