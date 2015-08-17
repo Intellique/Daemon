@@ -29,6 +29,8 @@
 #include <glob.h>
 // ngettext
 #include <libintl.h>
+// PATH_MAX
+#include <linux/limits.h>
 // printf, sscanf, snprintf
 #include <stdio.h>
 // free, malloc
@@ -152,7 +154,7 @@ struct so_value * soctl_detect_hardware() {
 	printf(ngettext("storiqonectl: Found %zd changer\n", "storiqonectl: Found %zd changers\n", gl.gl_pathc), gl.gl_pathc);
 
 	for (i = 0; i < gl.gl_pathc; i++) {
-		char link[256];
+		char link[PATH_MAX];
 		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
 		link[length] = '\0';
 

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqonectl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-12 19:42+0200\n"
+        "POT-Creation-Date: 2015-08-17 18:33+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -41,27 +41,27 @@ msgstr  "storiqonectl status : récupère l’état du démon\n"
 msgid   "storiqonectl stop : stop storiqoned daemon\n"
 msgstr  "storiqonectl stop : arrête le démon\n"
 
-#: src/storiqonectl/hardware.c:68
+#: src/storiqonectl/hardware.c:70
 #, c-format
 msgid   "storiqonectl: Found %zd drive\n"
 msgid_plural    "storiqonectl: Found %zd drives\n"
 msgstr[0]       "storiqonectl : %zd lecteur trouvé\n"
 msgstr[1]       "storiqonectl : %zd lecteurs trouvés\n"
 
-#: src/storiqonectl/hardware.c:80 src/storiqonectl/hardware.c:92 src/storiqonectl/hardware.c:113
-#: src/storiqonectl/hardware.c:170
+#: src/storiqonectl/hardware.c:82 src/storiqonectl/hardware.c:94 src/storiqonectl/hardware.c:115
+#: src/storiqonectl/hardware.c:172
 #, c-format
 msgid   "storiqonectl: Failed while reading link of file '%s' because %m\n"
 msgstr  "storiqonectl : Échec en lisant le lien du fichier « %s » parce que %m\n"
 
-#: src/storiqonectl/hardware.c:152
+#: src/storiqonectl/hardware.c:154
 #, c-format
 msgid   "storiqonectl: Found %zd changer\n"
 msgid_plural    "storiqonectl: Found %zd changers\n"
 msgstr[0]       "storiqonectl : %zd échangeur trouvé\n"
 msgstr[1]       "storiqonectl : %zd échangeurs trouvés\n"
 
-#: src/storiqonectl/hardware.c:198
+#: src/storiqonectl/hardware.c:200
 #, c-format
 msgid   "storiqonectl: Failed while resolving path of file '%s' because %m\n"
 msgstr  "storiqonectl : Échec en résolvant le chemin du fichier « %s » parce que %m\n"
