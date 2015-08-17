@@ -69,6 +69,9 @@ bool sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, 
 	if (size < 0)
 		return false;
 
+	if (so_file_rm(link) != 0)
+		return false;
+
 	int failed = symlink(media_link, link);
 	if (failed != 0)
 		return false;
