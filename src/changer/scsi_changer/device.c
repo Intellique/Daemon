@@ -29,6 +29,8 @@
 #include <libintl.h>
 // glob, globfree
 #include <glob.h>
+// PATH_MAX
+#include <linux/limits.h>
 // pthread_mutex_t
 #include <pthread.h>
 // printf, sscanf, snprintf
@@ -192,7 +194,7 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 	unsigned int i;
 	bool found = false, has_wwn = sochgr_scsi_changer.wwn != NULL;
 	for (i = 0; i < gl.gl_pathc && !found; i++) {
-		char link[256];
+		char link[PATH_MAX];
 		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
 		if (length < 0) {
 			so_log_write(so_log_level_error,
