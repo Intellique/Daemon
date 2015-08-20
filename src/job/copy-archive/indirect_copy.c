@@ -69,7 +69,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		so_file_convert_size_to_string(available_size, buf_available, 16);
 
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Error, disk space is not enough (required: %s, available: %s) to copy archive '%s'"),
+			dgettext("storiqone-job-copy-archive", "Error, not enough disk space (required: %s, available: %s) to copy archive '%s'"),
 			buf_required, buf_available, self->src_archive->name);
 
 		tmp_file_writer->ops->free(tmp_file_writer);

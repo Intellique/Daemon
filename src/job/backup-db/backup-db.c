@@ -178,7 +178,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 							ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
 							if (nb_write < 0) {
 								so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-									dgettext("storiqone-job-backup-db", "Error while writing into drive because %m"));
+									dgettext("storiqone-job-backup-db", "Error while writing to drive because %m"));
 							} else {
 								nb_total_write += nb_write;
 								position += nb_write;
@@ -236,7 +236,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 
 				if (size_available < backup_size)
 					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-						dgettext("storiqone-job-backup-db", "More space is required to complete backup"));
+						dgettext("storiqone-job-backup-db", "Not enough space available to complete backup"));
 
 				state = get_media;
 				break;

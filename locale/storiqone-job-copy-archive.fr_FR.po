@@ -112,7 +112,7 @@ msgstr  "Échec lors de la création du fichier temporaire"
 
 #: src/job/copy-archive/indirect_copy.c:72
 #, c-format
-msgid   "Error, disk space is not enough (required: %s, available: %s) to copy archive '%s'"
+msgid   "Error, not enough disk space (required: %s, available: %s) to copy archive '%s'"
 msgstr  "Erreur, espace disque insuffisant (requis : %s, disponible : %s) pour copier l’archive « %s »"
 
 #: src/job/copy-archive/indirect_copy.c:113

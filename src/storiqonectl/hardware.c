@@ -79,7 +79,7 @@ struct so_value * soctl_detect_hardware() {
 		char link[256];
 		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
 		if (length < 0) {
-			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), gl.gl_pathv[i]);
+			printf(gettext("storiqonectl: Failed while reading file link '%s' because %m\n"), gl.gl_pathv[i]);
 			continue;
 		}
 
@@ -91,7 +91,7 @@ struct so_value * soctl_detect_hardware() {
 
 		length = readlink(path, link, 256);
 		if (length < 0) {
-			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), path);
+			printf(gettext("storiqonectl: Failed while reading file link '%s' because %m\n"), path);
 
 			free(path);
 			continue;
@@ -112,7 +112,7 @@ struct so_value * soctl_detect_hardware() {
 
 		length = readlink(path, link, 256);
 		if (length < 0) {
-			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), path);
+			printf(gettext("storiqonectl: Failed while reading file link '%s' because %m\n"), path);
 
 			free(path);
 			continue;
@@ -169,7 +169,7 @@ struct so_value * soctl_detect_hardware() {
 
 		length = readlink(path, link, 256);
 		if (length < 0) {
-			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), path);
+			printf(gettext("storiqonectl: Failed while reading file link '%s' because %m\n"), path);
 
 			free(path);
 			continue;
@@ -197,7 +197,7 @@ struct so_value * soctl_detect_hardware() {
 		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
 			char * resolved_path = realpath(gl.gl_pathv[i], link);
 			if (resolved_path == NULL) {
-				printf(gettext("storiqonectl: Failed while resolving path of file '%s' because %m\n"), gl.gl_pathv[i]);
+				printf(gettext("storiqonectl: Failed while resolving file path '%s' because %m\n"), gl.gl_pathv[i]);
 				continue;
 			}
 

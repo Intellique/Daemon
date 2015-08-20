@@ -115,7 +115,7 @@ static void soj_restorearchive_check_worker_check(struct so_job * job, struct so
 	if (so_value_list_get_length(checksums) == 0) {
 		so_value_free(checksums);
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Skip verify '%s' because there is no checksums availables"), ptr->file->restored_to);
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Skipping verifying '%s' because there are no checksums availables"), ptr->file->restored_to);
 		return;
 	}
 

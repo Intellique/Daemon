@@ -17,7 +17,7 @@ msgstr  "Project-Id-Version: job-check-backupdb v1.2\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: src/job/check-backup-db/check-backup-db.c:107
-msgid   "Failed while setting the name of worker thread"
+msgid   "Failed while setting worker thread name"
 msgstr  "Échec lors de la définition du nom du fil d’exécution"
 
 #: src/job/check-backup-db/check-backup-db.c:148

@@ -248,7 +248,7 @@ static void sod_device_exited(int fd __attribute__((unused)), short event, void 
 	so_process_wait(&dev->process, 1);
 	so_process_free(&dev->process, 1);
 
-	so_log_write2(so_log_level_critical, so_log_type_daemon, gettext("Restart changer: %s"), dev->process_name);
+	so_log_write2(so_log_level_critical, so_log_type_daemon, gettext("Restarting changer: %s"), dev->process_name);
 
 	so_process_new(&dev->process, dev->process_name, NULL, 0);
 	dev->fd_in = so_process_pipe_to(&dev->process);

@@ -71,7 +71,7 @@ static void sod_logger_exited(int fd __attribute__((unused)), short event, void 
 	so_process_wait(&logger, 1);
 	so_process_free(&logger, 1);
 
-	so_log_write2(so_log_level_critical, so_log_type_daemon, gettext("Restart logger"));
+	so_log_write2(so_log_level_critical, so_log_type_daemon, gettext("Restarting logger"));
 
 	sod_logger_start(NULL);
 }

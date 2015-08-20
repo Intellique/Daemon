@@ -104,7 +104,7 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 
 		if (size < 0) {
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-job-check-backup-db", "Failed while setting the name of worker thread"));
+				dgettext("storiqone-job-check-backup-db", "Failed while setting worker thread name"));
 
 			free(name);
 			name = "worker";

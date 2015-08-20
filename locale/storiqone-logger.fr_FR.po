@@ -25,7 +25,7 @@ msgstr  "Nouvelle connexion..."
 
 #: src/logger/listen.c:60
 msgid   "Connection closed"
-msgstr  "Connexion fermé"
+msgstr  "Connexion fermée"
 
 #: src/logger/listen.c:69
 msgid   "Received incorrect message"
@@ -39,7 +39,7 @@ msgstr  "Loader : l’accès au fichier « %s » a échoué parce que %m"
 #: src/logger/loader.c:87
 #, c-format
 msgid   "Loader: failed to load '%s' because %s"
-msgstr  "Loader : échec au chargement de « %s » parce que %s"
+msgstr  "Loader : échec du chargement de « %s » parce que %s"
 
 #: src/logger/main.c:57
 msgid   "Storiqoned has hang up"
@@ -48,7 +48,7 @@ msgstr  "Le démon a inopinément quitté"
 #: src/logger/main.c:81
 #, c-format
 msgid   "Starting logger process (pid: %d, ppid: %d, sid: %d)"
-msgstr  "Démarrage du processus logger (pid : %d, ppid : %d : sid : %d)"
+msgstr  "Démarrage du processus de journalisation (pid : %d, ppid : %d : sid : %d)"
 
 #: src/logger/main.c:82
 #, c-format
@@ -56,8 +56,8 @@ msgid   "Checksum: %s, last commit: %s"
 msgstr  "Empreinte : %s, dernier commit : %s"
 
 #: src/logger/main.c:86
-msgid   "No configuration received from daemon, will quit"
-msgstr  "Pas de configuration reçu du démon, va maintenant quitter"
+msgid   "No configuration received from daemon, will now quit"
+msgstr  "Pas de configuration reçue du démon, quitte maintenant"
 
 #: src/logger/main.c:97
 msgid   "Modules loaded"
@@ -65,5 +65,5 @@ msgstr  "Modules chargés"
 
 #: src/logger/main.c:110
 #, c-format
-msgid   "Logger process (pid: %d) will now exit"
-msgstr  "Processus logger (pid : %d) va maintenant quitter"
+msgid   "Logger process (pid: %d) exiting normally"
+msgstr  "Processus de journalisation (pid : %d) arrêt normal"

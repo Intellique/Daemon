@@ -19,12 +19,12 @@ msgstr  "Project-Id-Version: storiqonectl v1.2\n"
 #: src/storiqonectl/config.c:75
 #, c-format
 msgid   "storiqonectl config : basic configuration\n"
-msgstr  "storiqonectl config : configuration basique\n"
+msgstr  "storiqonectl config : configuration de base\n"
 
 #: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:127 src/storiqonectl/daemon.c:181 src/storiqonectl/daemon.c:212
 #, c-format
 msgid   "  -h, --help : show this and exit\n"
-msgstr  "  -h, --help : affiche ceci et quitte\n"
+msgstr  "  -h, --help : affiche ceci et sort\n"
 
 #: src/storiqonectl/daemon.c:126
 #, c-format
@@ -51,7 +51,7 @@ msgstr[1]       "storiqonectl : %zd lecteurs trouvés\n"
 #: src/storiqonectl/hardware.c:82 src/storiqonectl/hardware.c:94 src/storiqonectl/hardware.c:115
 #: src/storiqonectl/hardware.c:172
 #, c-format
-msgid   "storiqonectl: Failed while reading link of file '%s' because %m\n"
+msgid   "storiqonectl: Failed while reading file link '%s' because %m\n"
 msgstr  "storiqonectl : Échec en lisant le lien du fichier « %s » parce que %m\n"
 
 #: src/storiqonectl/hardware.c:154
@@ -63,7 +63,7 @@ msgstr[1]       "storiqonectl : %zd échangeurs trouvés\n"
 
 #: src/storiqonectl/hardware.c:200
 #, c-format
-msgid   "storiqonectl: Failed while resolving path of file '%s' because %m\n"
+msgid   "storiqonectl: Failed while resolving file path '%s' because %m\n"
 msgstr  "storiqonectl : Échec en résolvant le chemin du fichier « %s » parce que %m\n"
 
 #: src/storiqonectl/main.c:64

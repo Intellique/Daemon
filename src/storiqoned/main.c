@@ -118,7 +118,7 @@ int main(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
-	so_log_write2(so_log_level_debug, so_log_type_daemon, gettext("Parsing option: ok"));
+	so_log_write2(so_log_level_debug, so_log_type_daemon, gettext("Parsing options: OK"));
 
 	struct so_value * config = so_json_parse_file(config_file);
 	if (config == NULL)
@@ -144,7 +144,7 @@ int main(int argc, char ** argv) {
 	if (admin_config != NULL && admin_config->type == so_value_hashtable)
 		sod_admin_config(admin_config);
 	else
-		so_log_write2(so_log_level_warning, so_log_type_daemon, gettext("No administration configured"));
+		so_log_write2(so_log_level_warning, so_log_type_daemon, gettext("Administration not configured"));
 
 	struct so_value * db_configs = NULL;
 	so_value_unpack(config, "{so}", "database", &db_configs);
@@ -201,10 +201,10 @@ int main(int argc, char ** argv) {
 
 static void sod_show_help(void) {
 	printf(gettext("storiqone, version: %s, build: %s %s\n"), STORIQONE_VERSION, __DATE__, __TIME__);
-	printf(gettext("    --config=FILE,   -c : Read this configuration FILE instead of “%s”\n"), DAEMON_CONFIG_FILE);
-	printf(gettext("    --help,          -h : Show this and exit\n"));
-	printf(gettext("    --pid-file=FILE, -p : Write the pid of daemon into FILE instead of “%s”\n"), DAEMON_PID_FILE);
-	printf(gettext("    --version,       -V : Show the version of StoriqOne then exit\n"));
+	printf(gettext("    --config=FILE,   -c : Uses this configuration FILE instead of “%s”\n"), DAEMON_CONFIG_FILE);
+	printf(gettext("    --help,          -h : Shows this help and exits\n"));
+	printf(gettext("    --pid-file=FILE, -p : Writes the pid of daemon into FILE instead of “%s”\n"), DAEMON_PID_FILE);
+	printf(gettext("    --version,       -V : prints StoriqOne version number and exits\n"));
 }
 
 void sod_shutdown() {

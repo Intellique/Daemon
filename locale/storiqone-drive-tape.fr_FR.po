@@ -117,32 +117,32 @@ msgstr  "Entête de bande LTFS trouvé (id du volume : %s)"
 #: src/drive/tape_drive/media.c:143
 #, c-format
 msgid   "Failed to read LTFS index from media '%s'"
-msgstr  "Échec lors de la lecture de l’index LTFS sur le média « %s »"
+msgstr  "Échec lors de la lecture de l’index LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:155
 #, c-format
 msgid   "Error while reading LTFS index from media '%s'"
-msgstr  "Erreur en lisant l’index LTFS sur le média « %s »"
+msgstr  "Erreur en lisant l’index LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:166
 #, c-format
 msgid   "Found corrupted LTFS index on media '%s'"
-msgstr  "Trouvé un index LTFS corromptu sur le média « %s »"
+msgstr  "Trouvé un index LTFS corrompu sur le média « %s »"
 
 #: src/drive/tape_drive/media.c:186
 #, c-format
 msgid   "Error, not enough memory to read LTFS index from media '%s'"
-msgstr  "Erreur, pas assez de mémoire pour lire l’index LTFS sur le média « %s »"
+msgstr  "Erreur, pas assez de mémoire pour lire l’index LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:214
 #, c-format
 msgid   "Failed to read LTFS label from media '%s'"
-msgstr  "Échec lors de la lecture de l’étiquette LTFS sur le média « %s »"
+msgstr  "Échec lors de la lecture de l’étiquette LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:226
 #, c-format
 msgid   "Error while reading LTFS label from media '%s'"
-msgstr  "Erreur en lisant l’étiquette LTFS sur le média « %s »"
+msgstr  "Erreur en lisant l’étiquette LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:237
 #, c-format
@@ -152,7 +152,7 @@ msgstr  "Trouvé une étiquette LTFS corrompue sur le média « %s »"
 #: src/drive/tape_drive/media.c:257
 #, c-format
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
-msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS sur le média « %s »"
+msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média « %s »"
 
 #: src/drive/tape_drive/reader.c:139
 #, c-format

@@ -34,7 +34,7 @@ msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur #
 #: src/libstoriqone-changer/listen.c:252
 #, c-format
 msgid   "[%s | %s]: the drive (%s#%u) doesn't support media format (%s)"
-msgstr  "[ %s | %s ] : le lecteur (%s#%u) ne peut utiliser les média au format (%s)"
+msgstr  "[ %s | %s ] : le lecteur (%s#%u) ne peut utiliser les médias au format (%s)"
 
 #: src/libstoriqone-changer/listen.c:345
 #, c-format

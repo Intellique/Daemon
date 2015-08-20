@@ -83,7 +83,7 @@ int main() {
 
 	struct so_value * config = so_json_parse_fd(0, 5000);
 	if (config == NULL || !so_value_hashtable_has_key2(config, "modules")) {
-		solgr_log_write2(so_log_level_emergencey, so_log_type_logger, gettext("No configuration received from daemon, will quit"));
+		solgr_log_write2(so_log_level_emergencey, so_log_type_logger, gettext("No configuration received from daemon, will now quit"));
 		return 1;
 	}
 
@@ -107,7 +107,7 @@ int main() {
 
 	so_value_free(config);
 
-	solgr_log_write2(so_log_level_notice, so_log_type_logger, gettext("Logger process (pid: %d) will now exit"), getpid());
+	solgr_log_write2(so_log_level_notice, so_log_type_logger, gettext("Logger process (pid: %d) exiting normally"), getpid());
 
 	return 0;
 }

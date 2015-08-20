@@ -36,8 +36,8 @@ msgstr  "Erreur lors de la lecture depuis la base de donées parce que %m"
 
 #: src/job/backup-db/backup-db.c:181
 #, c-format
-msgid   "Error while writing into drive because %m"
-msgstr  "Erreur lors de l’écriture dans le lecteur parce que %m"
+msgid   "Error while writing to drive because %m"
+msgstr  "Erreur lors de l’écriture sur le lecteur parce que %m"
 
 #: src/job/backup-db/backup-db.c:196
 #, c-format
@@ -49,8 +49,8 @@ msgid   "No media found, aborting database backup"
 msgstr  "Aucun média trouvé, abandon de la sauvegarde de la base de données"
 
 #: src/job/backup-db/backup-db.c:239
-msgid   "More space is required to complete backup"
-msgstr  "À besoin de plus d’espace pour accomplir la sauvegarde"
+msgid   "Not enough space available to complete backup"
+msgstr  "Pas assez d’espace disponible pour accomplir la sauvegarde"
 
 #: src/job/backup-db/backup-db.c:280
 msgid   "Pool (Storiq one database backup) not found"

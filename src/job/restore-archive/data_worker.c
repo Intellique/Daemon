@@ -191,13 +191,13 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			if (ptr != NULL) {
 				*ptr = '\0';
 				if (access(restore_to, R_OK | W_OK | X_OK) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Create missing directories '%s' with permission 0777"), restore_to);
+					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Creating missing directories '%s' with permission 0777"), restore_to);
 					so_file_mkdir(restore_to, 0777);
 				}
 				*ptr = '/';
 			}
 
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Start restoring file '%s'"), restore_to);
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Starting restoring file '%s'"), restore_to);
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
@@ -239,12 +239,12 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					break;
 				} else if (nb_write >= 0) {
 					if (fchown(fd, file->ownerid, file->groupid)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while restoring user of file (%s) because %m"), restore_to);
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while restoring file owner (%s) because %m"), restore_to);
 						worker->nb_warnings++;
 					}
 
 					if (fchmod(fd, file->perm)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while restoring permission of file '%s' because %m"), restore_to);
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while restoring file permissions '%s' because %m"), restore_to);
 						worker->nb_warnings++;
 					}
 
@@ -253,7 +253,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 						{ file->modify_time, 0 },
 					};
 					if (futimes(fd, tv)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while modification time of file '%s' because %m"), restore_to);
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while setting file date and time '%s' because %m"), restore_to);
 						worker->nb_warnings++;
 					}
 				}
@@ -310,14 +310,14 @@ void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker 
 
 		if (size < 0) {
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-job-restore-archive", "Failed while setting the name of worker thread"));
+				dgettext("storiqone-job-restore-archive", "Failed while setting worker thread name"));
 
 			free(name);
 			name = "worker";
 		}
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-			dgettext("storiqone-job-restore-archive", "Starting worker #%u"), i);
+			dgettext("storiqone-job-restore-archive", "Starting worker thread #%u"), i);
 
 		so_thread_pool_run(name, soj_restorearchive_data_worker_do, first_worker);
 
