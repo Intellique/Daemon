@@ -68,6 +68,7 @@
 
 #include "device.h"
 #include "format/ltfs/ltfs.h"
+#include "format/storiqone/storiqone.h"
 #include "io.h"
 #include "media.h"
 #include "scsi.h"
@@ -77,7 +78,6 @@ static bool sodr_tape_drive_check_support(struct so_media_format * format, bool 
 static unsigned int sodr_tape_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
 static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db);
-static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db);
 static int sodr_tape_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
 static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db);
@@ -311,147 +311,8 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 	return failed;
 }
 
-static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db) {
-	struct so_media * media = sodr_tape_drive.slot->media;
-	if (media == NULL)
-		return -1;
-
-	char * buffer = so_checksum_gen_salt(NULL, 1048576);
-
-	double last_speed = 0;
-
-	ssize_t current_block_size;
-	for (current_block_size = media->media_format->block_size; current_block_size < 1048576; current_block_size <<= 1) {
-		sodr_tape_drive.status = so_drive_status_rewinding;
-		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-		static struct mtop rewind = { MTREW, 1 };
-		sodr_time_start();
-		int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-		sodr_time_stop(&sodr_tape_drive);
-
-		if (failed != 0) {
-			sodr_tape_drive.status = so_drive_status_error;
-			db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-			current_block_size = -1;
-			break;
-		}
-
-		sodr_tape_drive.status = so_drive_status_writing;
-		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-		unsigned int i, nb_loop = 8589934592 / current_block_size;
-
-		struct timespec start;
-		clock_gettime(CLOCK_MONOTONIC, &start);
-
-		for (i = 0; i < nb_loop; i++) {
-			ssize_t nb_write = write(fd_nst, buffer, current_block_size);
-			if (nb_write < 0) {
-				failed = 1;
-				break;
-			}
-		}
-
-		struct timespec end;
-		clock_gettime(CLOCK_MONOTONIC, &end);
-
-		static struct mtop eof = { MTWEOF, 1 };
-		sodr_time_start();
-		failed = ioctl(fd_nst, MTIOCTOP, &eof);
-		sodr_time_stop(&sodr_tape_drive);
-
-		if (failed != 0) {
-			sodr_tape_drive.status = so_drive_status_error;
-			db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-			current_block_size = -1;
-			break;
-		}
-
-		double time_spent = so_time_diff(&end, &start) / 1000000000L;
-		double speed = i * current_block_size;
-		speed /= time_spent;
-
-		if (last_speed > 0 && speed > 52428800 && last_speed * 1.1 > speed)
-			break;
-		else
-			last_speed = speed;
-	}
-	free(buffer);
-
-	sodr_tape_drive.status = so_drive_status_rewinding;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-	static struct mtop rewind = { MTREW, 1 };
-	sodr_time_start();
-	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	sodr_time_stop(&sodr_tape_drive);
-
-	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-	return current_block_size;
-}
-
 static int sodr_tape_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db) {
-	if (block_size < 0)
-		return 1;
-
-	if (block_size == 0)
-		block_size = sodr_tape_drive_find_best_block_size(db);
-
-	sodr_tape_drive.status = so_drive_status_rewinding;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-	static struct mtop rewind = { MTREW, 1 };
-	sodr_time_start();
-	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	sodr_time_stop(&sodr_tape_drive);
-
-	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-	if (failed != 0)
-		return failed;
-
-	struct so_media * media = sodr_tape_drive.slot->media;
-	char * header = malloc(block_size);
-	if (!sodr_media_write_header(media, pool, header, block_size)) {
-		free(header);
-		return 1;
-	}
-
-	sodr_tape_drive.status = so_drive_status_writing;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-	sodr_time_start();
-	ssize_t nb_write = write(fd_nst, header, block_size);
-	sodr_time_stop(&sodr_tape_drive);
-
-	if (nb_write < 0) {
-		sodr_tape_drive.status = so_drive_status_error;
-		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-		free(header);
-		return 1;
-	}
-
-	static struct mtop eof = { MTWEOF, 1 };
-	sodr_time_start();
-	failed = ioctl(fd_nst, MTIOCTOP, &eof);
-	sodr_time_stop(&sodr_tape_drive);
-
-	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-	if (failed == 0)
-		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
-
-	free(header);
-
-	return failed;
+	return sodr_tape_drive_format_storiqone_format_media(&sodr_tape_drive, fd_nst, pool, block_size, db);
 }
 
 ssize_t sodr_tape_drive_get_block_size() {
