@@ -1,0 +1,123 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid   ""
+msgstr  "Project-Id-Version: PACKAGE VERSION\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-08-20 16:32+0200\n"
+        "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+        "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+        "Language-Team: LANGUAGE <LL@li.org>\n"
+        "Language: \n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=CHARSET\n"
+        "Content-Transfer-Encoding: 8bit\n"
+
+#: src/libstoriqone-drive/media.c:143 src/libstoriqone-drive/media.c:225 src/libstoriqone-drive/media.c:307
+#, c-format
+msgid   "Checking Storiq One header in media: %s"
+msgstr  ""
+
+#: src/libstoriqone-drive/media.c:158 src/libstoriqone-drive/media.c:240 src/libstoriqone-drive/media.c:322
+msgid   "Checking Storiq One header in media: Failed"
+msgstr  ""
+
+#: src/libstoriqone-drive/main.c:136
+#, c-format
+msgid   "Drive (type: %s) will stop"
+msgstr  ""
+
+#: src/libstoriqone-drive/media.c:367
+msgid   "Failed to compute digest before writing media header"
+msgstr  ""
+
+#: src/libstoriqone-drive/media.c:145 src/libstoriqone-drive/media.c:227 src/libstoriqone-drive/media.c:309
+#, c-format
+msgid   "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"
+msgstr  ""
+
+#: src/libstoriqone-drive/main.c:115
+#, c-format
+msgid   "Initializing drive (type: %s)"
+msgstr  ""
+
+#: src/libstoriqone-drive/main.c:72
+#, c-format
+msgid   "Starting drive (type: %s)"
+msgstr  ""
+
+#: src/libstoriqone-drive/main.c:122
+#, c-format
+msgid   "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:784
+#, c-format
+msgid   "[%s %s #%u]: Erasing media '%s' (mode: %s)"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:863
+#, c-format
+msgid   "[%s %s #%u]: Parsing archive from media '%s' at position #%u"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:276
+#, c-format
+msgid   "[%s %s #%u]: checking header of media '%s'"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:755
+#, c-format
+msgid   "[%s %s #%u]: counting archives from media '%s'"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:801
+#, c-format
+msgid   "[%s %s #%u]: failed to erase media '%s'"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:840
+#, c-format
+msgid   "[%s %s #%u]: failed to format media '%s'"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:824
+#, c-format
+msgid   "[%s %s #%u]: formatting media '%s'"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:797
+#, c-format
+msgid   "[%s %s #%u]: media '%s' erased successfully"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:836
+#, c-format
+msgid   "[%s %s #%u]: media '%s' formatted successfully"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:421 src/libstoriqone-drive/listen.c:558
+#, c-format
+msgid   "[%s %s #%u]: open media '%s' for reading at position #%d"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:485 src/libstoriqone-drive/listen.c:628
+#, c-format
+msgid   "[%s %s #%u]: open media '%s' for writing"
+msgstr  ""
+
+#: src/libstoriqone-drive/io/format_writer.c:198
+#, c-format
+msgid   "[%s %s #%u]: reopen media '%s' for reading at position #%d"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:786
+msgid   "long"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:786
+msgid   "quick"
+msgstr  ""

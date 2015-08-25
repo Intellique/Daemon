@@ -1,0 +1,61 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid   ""
+msgstr  "Project-Id-Version: PACKAGE VERSION\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-08-20 19:41+0200\n"
+        "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+        "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+        "Language-Team: LANGUAGE <LL@li.org>\n"
+        "Language: \n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=CHARSET\n"
+        "Content-Transfer-Encoding: 8bit\n"
+
+#: src/job/check-backup-db/check-backup-db.c:191
+msgid   "BUG: media should not be empty"
+msgstr  ""
+
+#: src/job/check-backup-db/check-backup-db.c:177
+msgid   "Backup not found"
+msgstr  ""
+
+#: src/job/check-backup-db/check-backup-db.c:151
+#, c-format
+msgid   "Checking backup volume #%u: failed"
+msgstr  ""
+
+#: src/job/check-backup-db/check-backup-db.c:148
+#, c-format
+msgid   "Checking backup volume #%u: success"
+msgstr  ""
+
+#: src/job/check-backup-db/check-backup-db.c:163
+msgid   "Checking backup: failed"
+msgstr  ""
+
+#: src/job/check-backup-db/check-backup-db.c:160
+msgid   "Checking backup: success"
+msgstr  ""
+
+#: src/job/check-backup-db/worker.c:112
+#, c-format
+msgid   "Error, failed to open backup from media '%s'"
+msgstr  ""
+
+#: src/job/check-backup-db/check-backup-db.c:107
+msgid   "Failed while setting worker thread name"
+msgstr  ""
+
+#: src/job/check-backup-db/check-backup-db.c:196
+msgid   "Try to read a media with error status"
+msgstr  ""
+
+#: src/job/check-backup-db/worker.c:82
+#, c-format
+msgid   "Warning, media '%s' not found"
+msgstr  ""
