@@ -1,0 +1,69 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid   ""
+msgstr  "Project-Id-Version: PACKAGE VERSION\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-08-20 19:41+0200\n"
+        "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+        "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+        "Language-Team: LANGUAGE <LL@li.org>\n"
+        "Language: \n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=CHARSET\n"
+        "Content-Transfer-Encoding: 8bit\n"
+
+#: src/job/import-archives/import-archives.c:119
+msgid   "Counting archives"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:218
+msgid   "Critical error: no media linked to current job"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:262
+#, c-format
+msgid   "Failed to find a suitable drive to format media '%s'"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:105
+#, c-format
+msgid   "Failed to load media '%s'"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:126
+#, c-format
+msgid   "Parsing archive #%u"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:241
+msgid   "Pool not found"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:223
+#, c-format
+msgid   "Trying to import a cleaning media '%s'"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:229
+#, c-format
+msgid   "Trying to import a media '%s' which is a member of pool '%s'"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:235
+#, c-format
+msgid   "Trying to import a media '%s' with error status"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:255
+#, c-format
+msgid   "Trying to import archives from media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:246
+#, c-format
+msgid   "Trying to import to a deleted pool '%s'"
+msgstr  ""

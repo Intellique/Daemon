@@ -12,7 +12,6 @@ tags
 test2/
 tmp*
 
-*.pot
 *.mo
 
 .*.sw?

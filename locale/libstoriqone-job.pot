@@ -1,0 +1,104 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid   ""
+msgstr  "Project-Id-Version: PACKAGE VERSION\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-08-12 13:00+0200\n"
+        "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+        "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+        "Language-Team: LANGUAGE <LL@li.org>\n"
+        "Language: \n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=CHARSET\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: src/libstoriqone-job/main.c:65
+msgid   "Daemon unexpectedly quit"
+msgstr  ""
+
+#: src/libstoriqone-job/io/filesystem_reader.c:379
+#, c-format
+msgid   "Failed to read link of file '%s' because %m"
+msgstr  ""
+
+#: src/libstoriqone-job/main.c:187
+#, c-format
+msgid   "Initializing job (type: %s)"
+msgstr  ""
+
+#: src/libstoriqone-job/main.c:121
+#, c-format
+msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
+msgstr  ""
+
+#: src/libstoriqone-job/media.c:91 src/libstoriqone-job/media.c:167
+#, c-format
+msgid   "Media not found (named: %s)"
+msgstr  ""
+
+#: src/libstoriqone-job/main.c:107
+#, c-format
+msgid   "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
+msgstr  ""
+
+#: src/libstoriqone-job/main.c:158
+#, c-format
+msgid   "Starting job (type: %s)"
+msgstr  ""
+
+#: src/libstoriqone-job/main.c:119
+#, c-format
+msgid   "Starting job (type: %s, key: %s, name: %s)"
+msgstr  ""
+
+#: src/libstoriqone-job/main.c:103
+#, c-format
+msgid   "Starting simulation of job (type: %s, key: %s, name: %s)"
+msgstr  ""
+
+#: src/libstoriqone-job/script.c:43
+#, c-format
+msgid   "run script: %d script found, type: %s"
+msgid_plural    "run script: %d scripts found, type: %s"
+msgstr[0]       ""
+msgstr[1]       ""
+
+#: src/libstoriqone-job/script.c:79
+#, c-format
+msgid   "script '%s' exited with code %d"
+msgstr  ""
+
+#: src/libstoriqone-job/script.c:81
+#, c-format
+msgid   "script '%s' exited with code OK"
+msgstr  ""
+
+#: src/libstoriqone-job/script.c:84
+#, c-format
+msgid   "script '%s' has not returned any data"
+msgstr  ""
+
+#: src/libstoriqone-job/script.c:94
+#, c-format
+msgid   "script '%s' has not returned data 'should run'"
+msgstr  ""
+
+#: src/libstoriqone-job/script.c:109
+#, c-format
+msgid   "script '%s' return message: %s"
+msgstr  ""
+
+#: src/libstoriqone-job/script.c:54
+#, c-format
+msgid   "script not found in database, %s, %d/%d"
+msgstr  ""
+
+#: src/libstoriqone-job/script.c:59
+#, c-format
+msgid   "starting script (type: %s, path: %s)"
+msgstr  ""

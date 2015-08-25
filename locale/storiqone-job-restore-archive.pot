@@ -1,0 +1,144 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid   ""
+msgstr  "Project-Id-Version: PACKAGE VERSION\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-08-20 19:41+0200\n"
+        "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+        "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+        "Language-Team: LANGUAGE <LL@li.org>\n"
+        "Language: \n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=CHARSET\n"
+        "Content-Transfer-Encoding: 8bit\n"
+
+#: src/job/restore-archive/restore-archive.c:147
+msgid   "Archive not found"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:194
+#, c-format
+msgid   "Creating missing directories '%s' with permission 0777"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:205
+#, c-format
+msgid   "Error while opening file '%s' for writing because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:236
+#, c-format
+msgid   "Error while reading from media '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:242
+#, c-format
+msgid   "Error while restoring file owner (%s) because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:247
+#, c-format
+msgid   "Error while restoring file permissions '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:213
+#, c-format
+msgid   "Error while seeking into file '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:169
+#, c-format
+msgid   "Error while seeking to file '%s'"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:256
+#, c-format
+msgid   "Error while setting file date and time '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:179
+#, c-format
+msgid   "Error while skipping file '%s'"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:229
+#, c-format
+msgid   "Error while writing to file '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:293
+#, c-format
+msgid   "Failed to change owner and group of '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:271
+#, c-format
+msgid   "Failed to change permission of '%s' to '%03o' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:287
+#, c-format
+msgid   "Failed to create block device '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:281
+#, c-format
+msgid   "Failed to create character device '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:276
+#, c-format
+msgid   "Failed to create fifo '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:268
+#, c-format
+msgid   "Failed to create symbolic link '%s' to '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/check_worker.c:126
+#, c-format
+msgid   "Failed to open '%s' because %m"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:313
+msgid   "Failed while setting worker thread name"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:113
+#, c-format
+msgid   "Getting media (%s)"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:128
+#, c-format
+msgid   "Looking for media (%s)"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:102
+#, c-format
+msgid   "Media not found (named: %s)"
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:153
+msgid   "Restore path should be absolute (starts with '/')"
+msgstr  ""
+
+#: src/job/restore-archive/check_worker.c:118
+#, c-format
+msgid   "Skipping verifying '%s' because there are no checksums availables"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:200
+#, c-format
+msgid   "Starting restoring file '%s'"
+msgstr  ""
+
+#: src/job/restore-archive/data_worker.c:320
+#, c-format
+msgid   "Starting worker thread #%u"
+msgstr  ""
