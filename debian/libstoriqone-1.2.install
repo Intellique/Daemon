@@ -1,3 +1,7 @@
-lib/libstoriqone*.so.1* usr/lib
+lib/libstoriqone*.so.* usr/lib
 lib/libchecksum*.so usr/lib/storiqone/1.2/lib
-debian/tmp/locale/fr_FR/LC_MESSAGES/libstoriqone*.fr_FR.mo usr/share/locale
+
+debian/tmp/locale/fr_FR/LC_MESSAGES/libstoriqone.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/libstoriqone-changer.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/libstoriqone-drive.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/libstoriqone-job.mo usr/share/locale/fr_FR/LC_MESSAGES

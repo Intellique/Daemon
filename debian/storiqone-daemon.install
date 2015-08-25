@@ -7,3 +7,10 @@ bin/storiqoned usr/sbin
 bin/tape_drive usr/lib/storiqone/1.2/bin
 bin/vtl_changer usr/lib/storiqone/1.2/bin
 bin/vtl_drive usr/lib/storiqone/1.2/bin
+
+debian/tmp/locale/fr_FR/LC_MESSAGES/storiqone-job-*.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/storiqone-logger.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/storiqone-changer-*.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/storiqone-drive-*.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/storiqonectl.mo usr/share/locale/fr_FR/LC_MESSAGES
+debian/tmp/locale/fr_FR/LC_MESSAGES/storiqoned.mo usr/share/locale/fr_FR/LC_MESSAGES
