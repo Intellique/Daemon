@@ -1,0 +1,610 @@
+storiqone (1.2b2) polisher; urgency=low
+
+  * New version (multi-process)
+  * LTFS (read only)
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 25 Aug 2015 10:50:40 +0200
+
+stone (1.1.27.4+wheezy) polisher; urgency=low
+
+  * Amélioration du script de création de proxy
+  * Désactivation du ccache pour compiler le démon
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 16 Apr 2015 11:55:01 +0200
+
+stone (1.1.27.3+wheezy) polisher; urgency=low
+
+  * Correctif scriptes sql et config
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 01 Apr 2015 17:35:45 +0200
+
+stone (1.1.27.2+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 27 Feb 2015 18:55:21 +0100
+
+stone (1.1.27+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+  * erase-media
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 24 Feb 2015 17:05:56 +0100
+
+stone (1.1.26+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 28 Jan 2015 16:37:40 +0100
+
+stone (1.1.25+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+  * Améliration du checksum worker
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 27 Jan 2015 19:17:06 +0100
+
+stone (1.1.21+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 12 Nov 2014 11:48:27 +0100
+
+stone (1.1.20+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 30 Oct 2014 12:07:56 +0100
+
+stone (1.1.19+wheezy) polisher; urgency=low
+
+  * Bug fix: archive job: release tape drive more earlier
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 17 Oct 2014 12:58:50 +0200
+
+stone (1.1.18+wheezy) polisher; urgency=low
+
+  * Bug fix: job check archive: checksum
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 03 Sep 2014 17:26:26 +0200
+
+stone (1.1.17+wheezy) polisher; urgency=low
+
+  * Bug fix: espace restante sur bande
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 16 Jul 2014 13:41:28 +0200
+
+stone (1.1.16+wheezy) polisher; urgency=low
+
+  * Bug fix: vérification si la vtl est actif ou non
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 10 Jun 2014 14:48:08 +0200
+
+stone (1.1.15+wheezy) polisher; urgency=low
+
+  * Bug fix: vérification si la librairie est actif ou non
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 06 Jun 2014 18:54:44 +0200
+
+stone (1.1.14+wheezy) polisher; urgency=low
+
+  * Mise à jour du champ update de host
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 05 Jun 2014 18:08:42 +0200
+
+stone (1.1.13+wheezy) polisher; urgency=low
+
+  * Ajout: support: LTO6
+  * script création proxy: utilise 75% des cpus si nb_cpus > 4
+  * Correctif ajout de fichier à une archive existante.
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 19 May 2014 19:10:31 +0200
+
+stone (1.1.12+wheezy) polisher; urgency=low
+
+  * Correctif : correctif concernant les rapports et sur les données envoyés
+    au scriptes post-archivage
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 03 Apr 2014 10:24:12 +0200
+
+stone (1.1.11+wheezy) polisher; urgency=low
+
+  * Correctif : tâche d'archivage, si l'insécabilité d'un pool est au niveau
+    fichier et que l'on archive un fichier qui ne tient pas sur média
+  * Amélioration : Refuse d'archive si dans un pool, le niveau d'insécabilité 
+    est fichier et qu'il existe un fichier plus gros d'un média
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 25 Mar 2014 16:55:54 +0100
+
+stone (1.1.10+wheezy) polisher; urgency=low
+
+  * Correctif : peut archive dans un pool sans checksum
+  * Amélioration : Support des méta-données par fichier et par archive
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 24 Mar 2014 18:33:35 +0100
+
+stone (1.1.9+wheezy) polisher; urgency=low
+
+  * Correctif Librairie / Lecteur: Mise à jour du status
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 19 Mar 2014 17:25:57 +0100
+
+stone (1.1.8+wheezy) polisher; urgency=low
+
+  * Correctif debian/control
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 14 Mar 2014 14:00:18 +0100
+
+stone (1.1.7+wheezy) polisher; urgency=low
+
+  * Correctif tâche de restauration
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 14 Mar 2014 13:12:44 +0100
+
+stone (1.1.6+wheezy) polisher; urgency=low
+
+  * Ajout de checksum sha224 et sha384
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 04 Mar 2014 13:52:06 +0100
+
+stone-wheezy (1.1.5) polisher; urgency=low
+
+  * Correctif de bugs
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 18 Feb 2014 16:19:11 +0100
+
+stone-wheezy (1.1.4) polisher; urgency=low
+
+  * Correctif de bugs
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 17 Feb 2014 17:28:52 +0100
+
+stone-wheezy (1.1.3) polisher; urgency=low
+
+  * Ajout de nouvelles données dans la base de données
+    - date de dernières lecture et écriture de chaque médias
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 07 Feb 2014 13:18:38 +0100
+
+stone-wheezy (1.1.2-1+wheezy) polisher; urgency=low
+
+  * Test
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 27 Jan 2014 22:33:32 +0100
+
+stone-wheezy (1.1.1-1+wheezy) polisher; urgency=low
+
+  * Nouveautés:
+    - Amélioration des notifs (jobrecord)
+    - Chaque archive volume sont liés à un job (ou non)
+    - Ajout du whirpool (checksum, uniquement dans la wheezy)
+  * Correctifs:
+    - taille des medias (vtl)
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 22 Jan 2014 12:27:22 +0100
+
+stone-wheezy (1.1-22+wheezy) polisher; urgency=low
+
+  * Nouvelle numérotation
+  * Nouveau nom de package
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 21 Jan 2014 23:23:52 +0100
+
+stone (1.1-22) unstable; urgency=low
+
+  * Nouvelle fonctionnalité:
+    - Ajout de script pour créer un proxy
+    - Peut lancer des scripts avant/après/en cas erreur
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 16 Jan 2014 10:19:50 +0100
+
+stone (1.1-21) unstable; urgency=low
+
+  * Nouvelle fonctionnalité: support du wwn pour les librairies
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 18 Dec 2013 21:58:27 +0100
+
+stone (1.1-20) unstable; urgency=low
+
+  * Bug fixes: copy archive
+    - miss to update archive time
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 02 Dec 2013 11:19:37 +0100
+
+stone (1.1-19) unstable; urgency=low
+
+  * Bug fixes:
+    - slot iterator
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 29 Nov 2013 18:33:11 +0100
+
+stone (1.1-18) unstable; urgency=low
+
+  * Bug fixes:
+    - standalone drive (lock)
+    - database (integer not enough big)
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 20 Nov 2013 18:40:58 +0100
+
+stone (1.1-17) unstable; urgency=low
+
+  * Bug fixes: restore job
+    - don't wait for check worker
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 07 Nov 2013 12:07:23 +0100
+
+stone (1.1-16) unstable; urgency=low
+
+  * Bug fixes: slot iterator
+    - don't release lock when freeing iterator
+    - inite loop
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 05 Nov 2013 16:29:00 +0100
+
+stone (1.1-15) unstable; urgency=low
+
+  * New feature: report generation
+  * New feature: thread name
+  * Bug fixes: Crash on create archive with unbreakable archive
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 05 Nov 2013 13:00:48 +0100
+
+stone (1.1-14) unstable; urgency=low
+
+  * Remove www part of stone
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 30 Sep 2013 18:34:44 +0200
+
+stone (1.1-13) unstable; urgency=low
+
+  * Bug: Correctif concernant l'initialisation d'un librairie avec plusieurs
+  lecteurs
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 04 Jul 2013 14:12:56 +0200
+
+stone (1.1-12) unstable; urgency=low
+
+  * Bug: Correctif concernant les lecteurs de bande IBM
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 04 Jul 2013 09:58:33 +0200
+
+stone (1.1-11) unstable; urgency=low
+
+  * Bug: Trie des lecteurs, 5 essais max
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 03 Jul 2013 17:49:51 +0200
+
+stone (1.1-10) unstable; urgency=low
+
+  * Bug: vtl, media format for vtl should be disk
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 30 May 2013 21:33:14 +0200
+
+stone (1.1-9) unstable; urgency=low
+
+  * Bug: job formatage & bande en lecture seule
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 02 May 2013 14:00:49 +0200
+
+stone (1.1-8) unstable; urgency=low
+
+  * Bug: job restore-archive:
+    - n'oublie pas de relâcher les verrous
+    - vérifie uniquement les fichiers qui ont des empreintes
+  * Bug: vtl
+    - correctif concernant la permière initialisation de la vtl
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 01 May 2013 01:37:24 +0200
+
+stone (1.1-7) unstable; urgency=low
+
+  * Bug: job create-archive: lors du changement de bande
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 25 Apr 2013 17:34:15 +0200
+
+stone (1.1-6) unstable; urgency=low
+
+  * Bug: tar: fonction forward
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 24 Apr 2013 22:58:34 +0200
+
+stone (1.1-5) unstable; urgency=low
+
+  * Bug: changer: vérification du slot de destination
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 24 Apr 2013 17:17:58 +0200
+
+stone (1.1-4) unstable; urgency=low
+
+  * Bug: job restore-archive: Vérification et ajout des répertoires
+  intermédiaire
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 24 Apr 2013 13:25:20 +0200
+
+stone (1.1-3) unstable; urgency=low
+
+  * Bug: plugin db: variable qui n'a pas été mis à jour
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 24 Apr 2013 12:11:05 +0200
+
+stone (1.1-2) unstable; urgency=low
+
+  * Bug: scsi tape forward
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 24 Apr 2013 09:51:21 +0200
+
+stone (1.1-1) unstable; urgency=low
+
+  * Nouvelle version du démon
+  * Mise à jour de l'interface v0.1.8
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 19 Apr 2013 10:08:37 +0200
+
+stone (1.0.4-1) unstable; urgency=low
+
+  * Interface version v0.1.7
+  * Démon:
+    - On peut délier une bande
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 12 Dec 2012 17:42:19 +0100
+
+stone (1.0.3-17) unstable; urgency=low
+
+  * Correctif tâche d'archivage:
+    Meilleur gestion d'erreur (fin de bande)
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 06 Nov 2012 00:19:39 +0100
+
+stone (1.0.3-16) unstable; urgency=low
+
+  * Correctif tâche d'archivage:
+    Meilleur gestion d'erreur (fin de bande) et correctif du calcul de la
+    capacité restante sur une bande
+  * Amélioration de la tâche de restauration:
+    Si le fichier existe, on ne le supprime pas mais on le restaure sous un
+    autre nom.
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 05 Nov 2012 10:40:16 +0100
+
+stone (1.0.3-15) unstable; urgency=low
+
+  * Correctif tâche d'archivage:
+    La tâche ne sélectionne pas les bandes s'il reste moins de 10% de capacité
+    et si l'archive peut tenir sur le restant d'une bande.
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 11 Oct 2012 10:14:17 +0200
+
+stone (1.0.3-14) unstable; urgency=low
+
+  * Changement dans l'interface v0.1.5:
+    - Correctif sur l'ajout de fichier dans une archive existante. Pas de
+      calcul de checksum dans ce cas.
+    - Correctif du setup initial.
+    - Gestion des homonymes dans la partie archivage.
+    - Correctif sur l'arrêt des tâches.
+    - Dans tablette, il n'y a plus la colonne créateur.
+ 
+  * Changement dans le démon:
+    - Bug: variable non-initialisé dans la tâche d'archivage
+    - Amélioration de l'arrêt d'un tâche en cours
+    - Le démon récupère l'étiquette de la bande ainsi que son nom.
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 11 Oct 2012 10:14:17 +0200
+
+stone (1.0.3-13) unstable; urgency=low
+
+  * 2 patchs pour la vérification des erreurs lorsque l'on charge ou décharge
+    une bande (uniquement le job d'archivage ou de formatage)
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 11 Oct 2012 10:14:17 +0200
+
+stone (1.0.3-12) unstable; urgency=low
+
+  * Mise à jour de l'interface (v0.1.4)
+    - Correctif des méta-données optionnelles (sélection et date)
+    - Le développement des répertoires dans Restauration > Sélectionner
+      une destination
+    - Remplacement du bouton (Récapitulatif en Étape suivante)
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 10 Oct 2012 13:50:24 +0200
+
+stone (1.0.3-11) unstable; urgency=low
+
+  * Comme la version 1.0.3-10 sans le patch b2dc9340a0a3c8ea6424dd8acc808428a6700f60
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 08 Oct 2012 10:19:33 +0200
+
+stone (1.0.3-10) unstable; urgency=low
+
+  * Correctif du job d'archivage
+    Oubli d'un vérou
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 08 Oct 2012 09:42:53 +0200
+
+stone (1.0.3-9) unstable; urgency=low
+
+  * Correctif du job d'archivage
+    Le job a tendance a reprendre la même bande lorsque l'on doit changer de
+    bande.
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 04 Oct 2012 14:24:43 +0200
+
+stone (1.0.3-8) unstable; urgency=low
+
+  * Mise à jour de l'interface (v0.1.3)
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 03 Oct 2012 19:42:24 +0200
+
+stone (1.0.3-7) unstable; urgency=low
+
+  * Mise à jour de l'interface (v0.1.2-louvre)
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 28 Sep 2012 10:16:54 +0200
+
+stone (1.0.3-6) unstable; urgency=low
+
+  * Correctif bug mineurs
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 27 Sep 2012 09:51:04 +0200
+
+stone (1.0.3-5) unstable; urgency=low
+
+  * Correctif concernant la librairie :
+    - La librairie déchargé mal les bandes, elle ne vérifie pas la présence de
+      bande dans le slot de destination.
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 25 Sep 2012 13:23:24 +0200
+
+stone (1.0.3-4) unstable; urgency=low
+
+  * Suppression d'une catégories d'erreur (concernant les vérou danq la base
+    de données)
+  * Amélioration du job de restauration, on restaure aussi le propriétaire,
+    les permissions ainsi que la date de modifications.
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 25 Sep 2012 12:54:12 +0200
+
+stone (1.0.3-3) unstable; urgency=low
+
+  * Correctif concernant la librairie :
+    - La librairie déchargé mal les bandes, que ce soit au setup de celle-ci
+      ou bien après
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 21 Sep 2012 10:08:58 +0200
+
+stone (1.0.3-2) unstable; urgency=low
+
+  * Correctif job restauration: restauration de l'uid et gid
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 18 Sep 2012 10:35:53 +0200
+
+stone (1.0.3-1) unstable; urgency=low
+
+  * deamon : lot of changes
+  * based on version : v1.0-155-g96900e9
+  * interface : new version (not complete)
+  * based on commit : 2alpha-272-g884dfec
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 17 Sep 2012 19:52:46 +0200
+
+stone (1.0.3-0) unstable; urgency=low
+
+  * deamon : lot of changes
+  * based on version : v1.0-144-g198728f
+  * interface : new version (not complete)
+  * based on commit : 2alpha-258-gc05c9a7
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 10 Sep 2012 10:11:53 +0200
+
+stone (1.0.2-6) unstable; urgency=low
+
+  * daemon : bug fix: too many connexion to database
+  * based on version : v1.0-121-ga68b36c
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 02 Jul 2012 14:25:24 +0200
+
+stone (1.0.2-5) unstable; urgency=low
+
+  * daemon : bug fix: integer overflow
+  * based on version : v1.0-119-g1260aec
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 02 Jul 2012 13:46:32 +0200
+
+stone (1.0.2-5) unstable; urgency=low
+
+  * daemon : Work around for lto drive (has correct value)
+  * based on version : v1.0-118-g339d241
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 02 Jul 2012 13:46:25 +0200
+
+stone (1.0.2-4) unstable; urgency=low
+
+  * daemon : Work around for lto drive
+  * based on version : v1.0-117-gcead124
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 02 Jul 2012 10:40:23 +0200
+
+stone (1.0.2-3) unstable; urgency=low
+
+  * small update for interface
+  * daemon : bug fixes with reading size from tar header
+  * replace lib ssl by crypto
+  * based on version : v1.0-114-g1dd8c90
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 27 Jun 2012 18:53:18 +0200
+
+stone (1.0.2-2) unstable; urgency=low
+
+  * interface updated
+  * daemon updated
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 26 Jun 2012 15:42:15 +0200
+
+stone (1.0.2-1) unstable; urgency=low
+
+  * interface updated
+  * daemon updated
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 13 Jun 2012 16:49:56 +0200
+
+stone (1.0.1-6) unstable; urgency=low
+
+  * interface updated
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 06 Jun 2012 13:35:18 +0200
+
+stone (1.0.1-5) unstable; urgency=low
+
+  * daemon: bug fix job restore (again)
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 23 May 2012 02:48:17 +0200
+
+stone (1.0.1-4) unstable; urgency=low
+
+  * daemon: bug fix job restore
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 23 May 2012 00:07:45 +0200
+
+stone (1.0.1-3) unstable; urgency=low
+
+  * Add lastest interface changes
+  * daemon: scheduler: change database poll timeout from 15s to 5s
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 22 May 2012 21:26:02 +0200
+
+stone (1.0.1-2) unstable; urgency=low
+
+  * Bug fix release
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 22 May 2012 20:47:02 +0200
+
+stone (1.0.1-1) unstable; urgency=low
+
+  * daemon: check for malformed utf8 string
+  * daemon: store block number for each files in archive
+  * daemon: bug fix for job restore
+  * web interface: add progressbar
+  * web interface: add checkbox for restore archive
+  * web interface: can delete planned job
+  * web interface: customizable metadata
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 22 May 2012 11:51:22 +0200
+
+stone (1.0-3) unstable; urgency=low
+
+  * Add progress bar for jobs in progress
+  * Fix various bug into user interface
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 30 Apr 2012 18:41:07 +0200
+
+stone (1.0-2) unstable; urgency=low
+
+  * Fix various bug into user interface
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 24 Apr 2012 17:52:49 +0200
+
+stone (1.0-1) unstable; urgency=low
+
+  * Initial release
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 15 Feb 2012 12:31:21 +0100

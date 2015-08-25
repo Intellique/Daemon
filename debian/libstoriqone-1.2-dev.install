@@ -1,0 +1,2 @@
+include/* usr/include/storiqone
+lib/libstoriqone*.so usr/lib

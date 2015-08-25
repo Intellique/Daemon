@@ -1,0 +1,4 @@
+lib/lib*-postgresql.so usr/lib/storiqone/1.2/lib
+script/sql/psql/create_database.sql usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql/insert_initial_data.sql usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql/delete_database.sql usr/share/storiqone-plugin-db-postgresql/scripts
