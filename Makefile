@@ -224,7 +224,7 @@ package:
 	@echo ' CLEAN'
 	@dh_clean
 	@echo ' UPDATE src'
-	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} debian
+	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} debian/wheezy
 	@echo ' BUILD package'
 	@dpkg-buildpackage -us -uc -rfakeroot
 
