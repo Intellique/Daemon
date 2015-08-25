@@ -1,2 +1,3 @@
 lib/libstoriqone*.so.1* usr/lib
 lib/libchecksum*.so usr/lib/storiqone/1.2/lib
+debian/tmp/locale/fr_FR/LC_MESSAGES/libstoriqone*.fr_FR.mo usr/share/locale

@@ -177,7 +177,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 # phony target
 .DEFAULT_GOAL	:= all
-.PHONY: all binaries clean clean-depend cscope ctags debug distclean lib locales package prepare realclean stat stat-extra TAGS tar test
+.PHONY: all binaries clean clean-depend cscope ctags debug distclean install lib locales package prepare realclean stat stat-extra TAGS tar test
 
 all: binaries locales
 
@@ -223,9 +223,9 @@ locales: $(sort ${LOCALE_MO})
 package:
 	@echo ' CLEAN'
 	@dh_clean
-	@echo ' UPDATE src'
+	@echo ' UPDATE      src'
 	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} debian/wheezy
-	@echo ' BUILD package'
+	@echo ' BUILD       package'
 	@dpkg-buildpackage -us -uc -rfakeroot
 
 prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS}) ${VERSION_FILE} cscope tags
