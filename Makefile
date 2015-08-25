@@ -216,7 +216,7 @@ install:
 	@echo ' MKDIR       ${DESTDIR}'
 	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/storiqone/{bin,lib,scripts}
 	@echo ' CP'
-	@cp -R $(cat install.paths) ${DESTDIR}
+	@cp -R $(shell cat install.paths) ${DESTDIR}
 
 locales: $(sort ${LOCALE_MO})
 
