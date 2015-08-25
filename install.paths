@@ -1,6 +1,7 @@
 bin/
 include/
 lib/
+locale/*.mo
 script/pre-post-run/
 script/sql/psql/create_database.sql
 script/sql/psql/delete_database.sql
