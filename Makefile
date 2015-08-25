@@ -226,7 +226,7 @@ package:
 	@echo ' UPDATE      src'
 	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} debian/wheezy
 	@echo ' BUILD       package'
-	@dpkg-buildpackage -us -uc -rfakeroot
+	@dpkg-buildpackage -us -uc -rfakeroot -j2
 
 prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS}) ${VERSION_FILE} cscope tags
 
