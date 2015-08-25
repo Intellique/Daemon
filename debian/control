@@ -32,7 +32,7 @@ Package: storiqone-plugin-db-postgresql
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: postgresql
+Suggests: postgresql (>= 9.4)
 Provides: storiqone-plugin-db
 Description: Storiq one posgresql connector (db-plugin)
  Contains plugin to connect to postresql database
