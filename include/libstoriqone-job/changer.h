@@ -50,10 +50,10 @@ struct so_changer_ops {
 	int (*sync)(struct so_changer * changer);
 };
 
-struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_database_connection * db_connection) __attribute__((nonnull));
-struct so_slot * soj_changer_find_slot(struct so_media * media) __attribute__((nonnull,warn_unused_result));
+struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_database_connection * db_connection);
+struct so_slot * soj_changer_find_slot(struct so_media * media) __attribute__((warn_unused_result));
 bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing);
-void soj_changer_set_config(struct so_value * config) __attribute__((nonnull));
+void soj_changer_set_config(struct so_value * config);
 int soj_changer_sync_all(void);
 
 #endif

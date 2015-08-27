@@ -81,15 +81,15 @@ struct so_job {
 	struct so_value * db_data;
 };
 
-int so_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((nonnull(1,2),format(printf, 5, 6)));
-struct so_value * so_job_convert(struct so_job * job) __attribute__((nonnull,warn_unused_result));
+int so_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 5, 6)));
+struct so_value * so_job_convert(struct so_job * job) __attribute__((warn_unused_result));
 void so_job_free(struct so_job * job);
 void so_job_free2(void * job);
 const char * so_job_report_notif_to_string(enum so_job_record_notif notif, bool translate);
 const char * so_job_status_to_string(enum so_job_status status, bool translate);
-enum so_job_record_notif so_job_string_to_record_notif(const char * notif, bool translate) __attribute__((nonnull));
-enum so_job_status so_job_string_to_status(const char * status, bool translate) __attribute__((nonnull));
-void so_job_sync(struct so_job * job, struct so_value * new_job) __attribute__((nonnull));
+enum so_job_record_notif so_job_string_to_record_notif(const char * notif, bool translate);
+enum so_job_status so_job_string_to_status(const char * status, bool translate);
+void so_job_sync(struct so_job * job, struct so_value * new_job);
 
 #endif
 

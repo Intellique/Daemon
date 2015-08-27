@@ -101,12 +101,12 @@ static struct so_value * so_value_pack_inner(const char ** format, va_list param
 static int so_value_unpack_inner(struct so_value * root, const char ** format, va_list params);
 static bool so_value_valid_inner(struct so_value * value, const char ** format, va_list params);
 
-static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_value * hash, bool weak_ref) __attribute__((nonnull,warn_unused_result));
+static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_value * hash, bool weak_ref) __attribute__((warn_unused_result));
 static void so_value_hashtable_put_inner(struct so_value_hashtable * hash, unsigned int index, struct so_value_hashtable_node * new_node);
 static void so_value_hashtable_rehash(struct so_value_hashtable * hash);
 static void so_value_hashtable_release_node(struct so_value_hashtable_node * node, bool weak_ref);
 
-static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * list, bool weak_ref) __attribute__((nonnull,warn_unused_result));
+static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * list, bool weak_ref) __attribute__((warn_unused_result));
 
 static unsigned long long so_value_compute_addr(const struct so_value * key);
 

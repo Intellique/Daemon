@@ -177,7 +177,7 @@ static enum so_format_reader_header_status soj_format_reader_forward(struct so_f
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	enum so_format_reader_header_status status;
+	enum so_format_reader_header_status status = so_format_reader_header_bad_header;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
 	if (response != NULL) {
 		so_value_unpack(response, "{sisz}",

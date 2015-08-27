@@ -44,9 +44,9 @@ struct dirent;
  */
 int so_file_basic_scandir_filter(const struct dirent * d);
 
-bool so_file_check_link(const char * file) __attribute__((nonnull));
+bool so_file_check_link(const char * file);
 
-ssize_t so_file_compute_size(const char * file, bool recursive) __attribute__((nonnull));
+ssize_t so_file_compute_size(const char * file, bool recursive);
 
 bool so_file_close_fd_on_exec(int fd, bool close);
 
@@ -55,7 +55,7 @@ bool so_file_close_fd_on_exec(int fd, bool close);
  * \param[out] buffer : a 10 bytes already allocated buffer
  * \param[in] mode : convert with this mode
  */
-void so_file_convert_mode(char * buffer, mode_t mode) __attribute__((nonnull));
+void so_file_convert_mode(char * buffer, mode_t mode);
 
 /**
  * \brief Convert \a size to humain readeable format (i.e. 30KB)
@@ -64,9 +64,9 @@ void so_file_convert_mode(char * buffer, mode_t mode) __attribute__((nonnull));
  * \param[out] str : an allocated string which will contain result
  * \param[in] str_len : length of \a str in bytes
  */
-void so_file_convert_size_to_string(size_t size, char * str, ssize_t str_len) __attribute__((nonnull));
+void so_file_convert_size_to_string(size_t size, char * str, ssize_t str_len);
 
-int so_file_cp(const char * src, const char * dst) __attribute__((nonnull));
+int so_file_cp(const char * src, const char * dst);
 
 char * so_file_gid2name(gid_t gid) __attribute__((warn_unused_result));
 
@@ -77,13 +77,13 @@ char * so_file_gid2name(gid_t gid) __attribute__((warn_unused_result));
  * \param[in] mode : create directory with specific mode
  * \returns 0 if ok or read errno
  */
-int so_file_mkdir(const char * dirname, mode_t mode) __attribute__((nonnull));
+int so_file_mkdir(const char * dirname, mode_t mode);
 
-int so_file_mv(const char * src, const char * dst) __attribute__((nonnull));
+int so_file_mv(const char * src, const char * dst);
 
-char * so_file_read_all_from(const char * filename) __attribute__((nonnull));
+char * so_file_read_all_from(const char * filename);
 
-char * so_file_rename(const char * filename) __attribute__((nonnull,warn_unused_result));
+char * so_file_rename(const char * filename) __attribute__((warn_unused_result));
 
 /**
  * \brief Remove recursively path
@@ -91,7 +91,7 @@ char * so_file_rename(const char * filename) __attribute__((nonnull,warn_unused_
  * \param[in] path : a path that will be deleted
  * \returns 0 if ok or read errno
  */
-int so_file_rm(const char * path) __attribute__((nonnull));
+int so_file_rm(const char * path);
 
 char * so_file_uid2name(uid_t uid) __attribute__((warn_unused_result));
 

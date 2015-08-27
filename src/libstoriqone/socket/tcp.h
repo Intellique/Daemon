@@ -35,8 +35,8 @@ int so_socket_tcp6(struct so_value * config);
 int so_socket_tcp6_close(int fd, struct so_value * config);
 bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_callback);
 bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_callback);
-bool so_socket_tcp_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) __attribute__((nonnull));
-bool so_socket_tcp6_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) __attribute__((nonnull));
+bool so_socket_tcp_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback);
+bool so_socket_tcp6_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback);
 int so_socket_server_temp_tcp(struct so_value * config);
 int so_socket_server_temp_tcp6(struct so_value * config);
 

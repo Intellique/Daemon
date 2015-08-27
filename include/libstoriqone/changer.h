@@ -199,17 +199,17 @@ const char * so_changer_action_to_string(enum so_changer_action action, bool tra
 /**
  * \brief Convert an instance of \a changer into an object
  */
-struct so_value * so_changer_convert(struct so_changer * changer) __attribute__((nonnull,warn_unused_result));
+struct so_value * so_changer_convert(struct so_changer * changer) __attribute__((warn_unused_result));
 
 /**
  * \brief Release memory allocated for \a changer
  */
-void so_changer_free(struct so_changer * changer) __attribute__((nonnull));
+void so_changer_free(struct so_changer * changer);
 
 /**
  * \brief Function to pass to so_value_new_custom
  */
-void so_changer_free2(void * changer) __attribute__((nonnull));
+void so_changer_free2(void * changer);
 
 /**
  * \brief Convert an status to string
@@ -227,7 +227,7 @@ const char * so_changer_status_to_string(enum so_changer_status status, bool tra
  * \param[in] translate : compare with translated value
  * \return an enumeration value of \a action
  */
-enum so_changer_action so_changer_string_to_action(const char * action, bool translate) __attribute__((nonnull));
+enum so_changer_action so_changer_string_to_action(const char * action, bool translate);
 
 /**
  * \brief Convert a status to an enumeration
@@ -236,7 +236,7 @@ enum so_changer_action so_changer_string_to_action(const char * action, bool tra
  * \param[in] translate : compare with translated value
  * \return an enumeration value of \a status
  */
-enum so_changer_status so_changer_string_to_status(const char * status, bool translate) __attribute__((nonnull));
+enum so_changer_status so_changer_string_to_status(const char * status, bool translate);
 
 /**
  * \brief Synchronize data of \a changer with \a new_changer
@@ -244,7 +244,7 @@ enum so_changer_status so_changer_string_to_status(const char * status, bool tra
  * \param[in,out] changer : update this \a changer
  * \param[in] new_changer : new data for \a changer
  */
-void so_changer_sync(struct so_changer * changer, struct so_value * new_changer) __attribute__((nonnull));
+void so_changer_sync(struct so_changer * changer, struct so_value * new_changer);
 
 #endif
 

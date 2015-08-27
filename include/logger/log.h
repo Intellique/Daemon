@@ -51,7 +51,7 @@ struct solgr_log_driver {
 	 */
 	const char * name;
 
-	struct solgr_log_module * (*new_module)(struct so_value * param) __attribute__((nonnull,warn_unused_result));
+	struct solgr_log_module * (*new_module)(struct so_value * param) __attribute__((warn_unused_result));
 
 	/**
 	 * \brief cookie

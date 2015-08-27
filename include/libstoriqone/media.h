@@ -169,39 +169,39 @@ struct so_pool {
 };
 
 
-struct so_value * so_media_convert(struct so_media * media) __attribute__((nonnull,warn_unused_result));
-struct so_value * so_media_format_convert(struct so_media_format * format) __attribute__((nonnull,warn_unused_result));
-void so_media_format_sync(struct so_media_format * format, struct so_value * new_format) __attribute__((nonnull));
-struct so_media * so_media_new(struct so_value * media) __attribute__((nonnull,warn_unused_result));
-void so_media_sync(struct so_media * media, struct so_value * new_media) __attribute__((nonnull));
-struct so_value * so_pool_convert(struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
-void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) __attribute__((nonnull));
+struct so_value * so_media_convert(struct so_media * media) __attribute__((warn_unused_result));
+struct so_value * so_media_format_convert(struct so_media_format * format) __attribute__((warn_unused_result));
+void so_media_format_sync(struct so_media_format * format, struct so_value * new_format);
+struct so_media * so_media_new(struct so_value * media) __attribute__((warn_unused_result));
+void so_media_sync(struct so_media * media, struct so_value * new_media);
+struct so_value * so_pool_convert(struct so_pool * pool) __attribute__((warn_unused_result));
+void so_pool_sync(struct so_pool * pool, struct so_value * new_pool);
 
-int so_media_format_cmp(struct so_media_format * f1, struct so_media_format * f2) __attribute__((nonnull));
-struct so_media_format * so_media_format_dup(const struct so_media_format * format) __attribute__((nonnull));
+int so_media_format_cmp(struct so_media_format * f1, struct so_media_format * f2);
+struct so_media_format * so_media_format_dup(const struct so_media_format * format);
 
-void so_media_free(struct so_media * media) __attribute__((nonnull));
-void so_media_free2(void * media) __attribute__((nonnull));
-void so_media_format_free(struct so_media_format * format) __attribute__((nonnull));
-void so_pool_free(struct so_pool * pool) __attribute__((nonnull));
-void so_pool_free2(void * pool) __attribute__((nonnull));
+void so_media_free(struct so_media * media);
+void so_media_free2(void * media);
+void so_media_format_free(struct so_media_format * format);
+void so_pool_free(struct so_pool * pool);
+void so_pool_free2(void * pool);
 
 const char * so_media_format_data_type_to_string(enum so_media_format_data_type type, bool translate);
-enum so_media_format_data_type so_media_string_to_format_data_type(const char * type, bool translate) __attribute__((nonnull));
+enum so_media_format_data_type so_media_string_to_format_data_type(const char * type, bool translate);
 
 const char * so_media_format_mode_to_string(enum so_media_format_mode mode, bool translate);
-enum so_media_format_mode so_media_string_to_format_mode(const char * mode, bool translate) __attribute__((nonnull));
+enum so_media_format_mode so_media_string_to_format_mode(const char * mode, bool translate);
 
 const char * so_media_status_to_string(enum so_media_status status, bool translate);
-enum so_media_status so_media_string_to_status(const char * status, bool translate) __attribute__((nonnull));
+enum so_media_status so_media_string_to_status(const char * status, bool translate);
 
-enum so_media_type so_media_string_to_type(const char * type, bool translate) __attribute__((nonnull));
+enum so_media_type so_media_string_to_type(const char * type, bool translate);
 const char * so_media_type_to_string(enum so_media_type type, bool translate);
 
 const char * so_pool_autocheck_mode_to_string(enum so_pool_autocheck_mode mode, bool translate);
-enum so_pool_autocheck_mode so_pool_string_to_autocheck_mode(const char * mode, bool translate) __attribute__((nonnull));
+enum so_pool_autocheck_mode so_pool_string_to_autocheck_mode(const char * mode, bool translate);
 
-enum so_pool_unbreakable_level so_pool_string_to_unbreakable_level(const char * level, bool translate) __attribute__((nonnull));
+enum so_pool_unbreakable_level so_pool_string_to_unbreakable_level(const char * level, bool translate);
 const char * so_pool_unbreakable_level_to_string(enum so_pool_unbreakable_level level, bool translate);
 
 #endif

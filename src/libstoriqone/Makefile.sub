@@ -14,7 +14,7 @@ LIBSTORIQONE_LOCALE			:= locale/libstoriqone
 
 build/libstoriqone/string.o: build/libstoriqone/unicode.h
 build/libstoriqone/unicode.h: util/unicode/UnicodeData.txt
-	@echo " GEN        unicode datas"
+	@echo " GENERATE   unicode datas"
 	@./script/gen_unicode_table.pl
 
 BIN_SYMS					+= LIBSTORIQONE

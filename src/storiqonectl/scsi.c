@@ -651,6 +651,9 @@ static void soctl_scsi_loader_status_slot(int fd, struct so_changer * changer, s
 					slot->is_ie_port = false;
 				}
 				break;
+
+			default:
+				break;
 		}
 
 		ptr += element_header->element_descriptor_length;
