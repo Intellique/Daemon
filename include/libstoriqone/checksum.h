@@ -216,14 +216,14 @@ struct so_checksum {
 		 * \param[in] checksum a checksum handler
 		 * \return a malloc allocated string which contains a digest in hexadecimal form
 		 */
-		char * (*digest)(struct so_checksum * checksum) __attribute__((nonnull,warn_unused_result));
+		char * (*digest)(struct so_checksum * checksum) __attribute__((warn_unused_result));
 		/**
 		 * \brief This function releases all memory associated to checksum
 		 *
 		 * \param[in] checksum a checksum handler
 		 */
-		void (*free)(struct so_checksum * checksum) __attribute__((nonnull));
-		void (*reset)(struct so_checksum * checksum) __attribute__((nonnull));
+		void (*free)(struct so_checksum * checksum);
+		void (*reset)(struct so_checksum * checksum);
 		/**
 		 * \brief This function reads some data
 		 *
@@ -236,7 +236,7 @@ struct so_checksum {
 		 *
 		 * \note this function can be called after function digest
 		 */
-		ssize_t (*update)(struct so_checksum * checksum, const void * data, ssize_t length) __attribute__((nonnull(1)));
+		ssize_t (*update)(struct so_checksum * checksum, const void * data, ssize_t length);
 	} * ops;
 
 	/**
@@ -294,7 +294,7 @@ struct so_checksum_driver {
  * \return a malloc allocated string which contains checksum or \b NULL if failed
  * \note Returned value should be release with \a free
  */
-char * so_checksum_compute(const char * checksum, const void * data, ssize_t length) __attribute__((nonnull(1),warn_unused_result));
+char * so_checksum_compute(const char * checksum, const void * data, ssize_t length) __attribute__((warn_unused_result));
 
 /**
  * \brief This function converts a digest into hexadecimal form
@@ -306,11 +306,11 @@ char * so_checksum_compute(const char * checksum, const void * data, ssize_t len
  * \note this function suppose that \a hexDigest is already allocated
  * and its size is, at least, \f$ 2 length + 1 \f$
  */
-void so_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest) __attribute__((nonnull));
+void so_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest);
 
 char * so_checksum_gen_salt(const char * checksum, size_t length) __attribute__((warn_unused_result));
 
-struct so_checksum_driver * so_checksum_get_driver(const char * driver) __attribute__((nonnull));
+struct so_checksum_driver * so_checksum_get_driver(const char * driver);
 
 /**
  * \brief Register a checksum driver
@@ -324,9 +324,9 @@ struct so_checksum_driver * so_checksum_get_driver(const char * driver) __attrib
  * }
  * \endcode
  */
-void so_checksum_register_driver(struct so_checksum_driver * driver) __attribute__((nonnull));
+void so_checksum_register_driver(struct so_checksum_driver * driver);
 
-char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) __attribute__((nonnull,warn_unused_result));
+char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) __attribute__((warn_unused_result));
 
 #endif
 

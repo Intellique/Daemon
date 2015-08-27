@@ -54,10 +54,10 @@ struct so_slot {
 	void * db_data;
 };
 
-struct so_value * so_slot_convert(struct so_slot * slot) __attribute__((nonnull,warn_unused_result));
-void so_slot_free(struct so_slot * slot) __attribute__((nonnull));
-void so_slot_free2(void * slot) __attribute__((nonnull));
-void so_slot_sync(struct so_slot * slot, struct so_value * new_slot) __attribute__((nonnull));
+struct so_value * so_slot_convert(struct so_slot * slot) __attribute__((warn_unused_result));
+void so_slot_free(struct so_slot * slot);
+void so_slot_free2(void * slot);
+void so_slot_sync(struct so_slot * slot, struct so_value * new_slot);
 void so_slot_swap(struct so_slot * sa, struct so_slot * sb);
 
 #endif

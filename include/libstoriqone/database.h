@@ -78,7 +78,7 @@ struct so_database_connection {
 		 * \li 0 if ok
 		 * \li < 0 if error
 		 */
-		int (*close)(struct so_database_connection * connect) __attribute__((nonnull));
+		int (*close)(struct so_database_connection * connect);
 		/**
 		 * \brief free memory associated with database connection
 		 *
@@ -92,7 +92,7 @@ struct so_database_connection {
 		 * free(db);
 		 * \endcode
 		 */
-		int (*free)(struct so_database_connection * connect) __attribute__((nonnull));
+		int (*free)(struct so_database_connection * connect);
 		/**
 		 * \brief check if the connection to database is closed
 		 *
@@ -100,7 +100,7 @@ struct so_database_connection {
 		 * \param[in] db a database connection
 		 * \return 0 if the connection is not closed
 		 */
-		bool (*is_connected)(struct so_database_connection * connect) __attribute__((nonnull));
+		bool (*is_connected)(struct so_database_connection * connect);
 
 		/**
 		 * \brief Rool back a transaction
@@ -110,7 +110,7 @@ struct so_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*cancel_transaction)(struct so_database_connection * connect) __attribute__((nonnull));
+		int (*cancel_transaction)(struct so_database_connection * connect);
 		/**
 		 * \brief Finish a transaction
 		 *
@@ -120,7 +120,7 @@ struct so_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*finish_transaction)(struct so_database_connection * connect) __attribute__((nonnull));
+		int (*finish_transaction)(struct so_database_connection * connect);
 		/**
 		 * \brief Starts a transaction
 		 *
@@ -131,68 +131,68 @@ struct so_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*start_transaction)(struct so_database_connection * connect) __attribute__((nonnull));
+		int (*start_transaction)(struct so_database_connection * connect);
 
-		int (*add_host)(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description) __attribute__((nonnull(1,2,3)));
-		bool (*find_host)(struct so_database_connection * connect, const char * uuid, const char * hostname) __attribute__((nonnull(1)));
-		int (*get_host_by_name)(struct so_database_connection * connect, struct so_host * host, const char * name) __attribute__((nonnull));
-		int (*update_host)(struct so_database_connection * connect, const char * uuid) __attribute__((nonnull));
+		int (*add_host)(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+		bool (*find_host)(struct so_database_connection * connect, const char * uuid, const char * hostname);
+		int (*get_host_by_name)(struct so_database_connection * connect, struct so_host * host, const char * name);
+		int (*update_host)(struct so_database_connection * connect, const char * uuid);
 
-		int (*delete_changer)(struct so_database_connection * connect, struct so_changer * changer) __attribute__((nonnull));
-		int (*delete_drive)(struct so_database_connection * connect, struct so_drive * drive) __attribute__((nonnull));
-		struct so_value * (*get_changers)(struct so_database_connection * connect) __attribute__((nonnull));
-		struct so_value * (*get_checksums_from_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
-		struct so_value * (*get_free_medias)(struct so_database_connection * connect, struct so_media_format * media_format, bool online) __attribute__((nonnull,warn_unused_result));
-		struct so_media * (*get_media)(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job) __attribute__((nonnull(1),warn_unused_result));
-		struct so_value * (*get_medias_of_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
+		int (*delete_changer)(struct so_database_connection * connect, struct so_changer * changer);
+		int (*delete_drive)(struct so_database_connection * connect, struct so_drive * drive);
+		struct so_value * (*get_changers)(struct so_database_connection * connect);
+		struct so_value * (*get_checksums_from_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((warn_unused_result));
+		struct so_value * (*get_free_medias)(struct so_database_connection * connect, struct so_media_format * media_format, bool online) __attribute__((warn_unused_result));
+		struct so_media * (*get_media)(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job) __attribute__((warn_unused_result));
+		struct so_value * (*get_medias_of_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((warn_unused_result));
 		struct so_media_format * (*get_media_format)(struct so_database_connection * connect, unsigned int density_code, enum so_media_format_mode mode);
-		struct so_pool * (*get_pool)(struct so_database_connection * connect, const char * uuid, struct so_job * job) __attribute__((nonnull(1),warn_unused_result));
-		struct so_value * (*get_pool_by_pool_mirror)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
-		struct so_value * (*get_standalone_drives)(struct so_database_connection * connect) __attribute__((nonnull));
-		struct so_value * (*get_vtls)(struct so_database_connection * connect, bool new_vtl) __attribute__((nonnull));
-		int (*sync_changer)(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method) __attribute__((nonnull));
-		int (*sync_drive)(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method) __attribute__((nonnull));
-		int (*sync_media)(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method) __attribute__((nonnull));
-		struct so_value * (*update_vtl)(struct so_database_connection * connect, struct so_changer * vtl) __attribute__((nonnull));
+		struct so_pool * (*get_pool)(struct so_database_connection * connect, const char * uuid, struct so_job * job) __attribute__((warn_unused_result));
+		struct so_value * (*get_pool_by_pool_mirror)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((warn_unused_result));
+		struct so_value * (*get_standalone_drives)(struct so_database_connection * connect);
+		struct so_value * (*get_vtls)(struct so_database_connection * connect, bool new_vtl);
+		int (*sync_changer)(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
+		int (*sync_drive)(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
+		int (*sync_media)(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
+		struct so_value * (*update_vtl)(struct so_database_connection * connect, struct so_changer * vtl);
 
 		int (*add_job_record)(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
-		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data) __attribute__((nonnull(1,2,5)));
-		char * (*get_restore_path)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
-		int (*start_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
-		int (*stop_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
-		int (*sync_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
-		int (*sync_jobs)(struct so_database_connection * connect, struct so_value * jobs) __attribute__((nonnull));
+		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
+		char * (*get_restore_path)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
+		int (*start_job)(struct so_database_connection * connect, struct so_job * job);
+		int (*stop_job)(struct so_database_connection * connect, struct so_job * job);
+		int (*sync_job)(struct so_database_connection * connect, struct so_job * job);
+		int (*sync_jobs)(struct so_database_connection * connect, struct so_value * jobs);
 
 		int (*get_nb_scripts)(struct so_database_connection * connect, const char * job_type, enum so_script_type type, struct so_pool * pool);
 		char * (*get_script)(struct so_database_connection * connect, const char * job_type, unsigned int sequence, enum so_script_type type, struct so_pool * pool);
 
-		bool (*find_plugin_checksum)(struct so_database_connection * connect, const char * checksum) __attribute__((nonnull));
-		int (*sync_plugin_checksum)(struct so_database_connection * connect, struct so_checksum_driver * driver) __attribute__((nonnull));
-		int (*sync_plugin_job)(struct so_database_connection * connect, const char * job) __attribute__((nonnull));
+		bool (*find_plugin_checksum)(struct so_database_connection * connect, const char * checksum);
+		int (*sync_plugin_checksum)(struct so_database_connection * connect, struct so_checksum_driver * driver);
+		int (*sync_plugin_job)(struct so_database_connection * connect, const char * job);
 
-		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
-		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume) __attribute__((nonnull));
-		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull,warn_unused_result));
-		struct so_archive * (*get_archive_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
-		struct so_archive_format * (*get_archive_format_by_name)(struct so_database_connection * connect, const char * name) __attribute__((nonnull,warn_unused_result));
-		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((nonnull,warn_unused_result));
-		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
-		struct so_value * (*get_synchronized_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull,warn_unused_result));
-		bool (*is_archive_synchronized)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));
-		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy) __attribute__((nonnull));
-		int (*mark_archive_as_purged)(struct so_database_connection * connect, struct so_media * media, struct so_job * job) __attribute__((nonnull));
-		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original) __attribute__((nonnull(1,2)));
-		int (*sync_archive_format)(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats) __attribute__((nonnull));
-		int (*update_link_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job) __attribute__((nonnull));
+		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume);
+		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
+		struct so_archive * (*get_archive_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
+		struct so_archive_format * (*get_archive_format_by_name)(struct so_database_connection * connect, const char * name) __attribute__((warn_unused_result));
+		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((warn_unused_result));
+		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+		struct so_value * (*get_synchronized_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
+		bool (*is_archive_synchronized)(struct so_database_connection * connect, struct so_archive * archive);
+		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
+		int (*mark_archive_as_purged)(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
+		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
+		int (*sync_archive_format)(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
+		int (*update_link_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job);
 
-		int (*backup_add)(struct so_database_connection * connect, struct so_backup * backup) __attribute__((nonnull));
-		struct so_backup * (*get_backup)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
+		int (*backup_add)(struct so_database_connection * connect, struct so_backup * backup);
+		struct so_backup * (*get_backup)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
 		int (*mark_backup_volume_checked)(struct so_database_connection * connect, struct so_backup_volume * volume);
 
-		bool (*find_user_by_login)(struct so_database_connection * connect, const char * login) __attribute__((nonnull));
+		bool (*find_user_by_login)(struct so_database_connection * connect, const char * login);
 
-		int (*create_selected_file_if_missing)(struct so_database_connection * connect, const char * path) __attribute__((nonnull));
-		struct so_value * (*get_selected_files_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
+		int (*create_selected_file_if_missing)(struct so_database_connection * connect, const char * path);
+		struct so_value * (*get_selected_files_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
 	} * ops;
 
 	/**
@@ -237,11 +237,11 @@ struct so_database_config {
 		 *
 		 * \returns a database connection
 		 */
-		struct so_database_connection * (*connect)(struct so_database_config * db_config) __attribute__((nonnull,warn_unused_result));
+		struct so_database_connection * (*connect)(struct so_database_config * db_config) __attribute__((warn_unused_result));
 		/**
 		 * \brief Check if database is online
 		 */
-		int (*ping)(struct so_database_config * db_config) __attribute__((nonnull));
+		int (*ping)(struct so_database_config * db_config);
 	} * ops;
 
 	/**
@@ -281,7 +281,7 @@ struct so_database {
 		 * \param[in] params hashtable which contains parameters
 		 * \returns \b 0 if ok
 		 */
-		struct so_database_config * (*add)(struct so_value * params) __attribute__((nonnull));
+		struct so_database_config * (*add)(struct so_value * params);
 		/**
 		 * \brief Get default database configuration
 		 */
@@ -321,9 +321,9 @@ struct so_database * so_database_get_default_driver(void);
  * \note if this driver is not loaded, this function will load it
  * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
  */
-struct so_database * so_database_get_driver(const char * driver) __attribute__((nonnull));
+struct so_database * so_database_get_driver(const char * driver);
 
-void so_database_load_config(struct so_value * config) __attribute__((nonnull));
+void so_database_load_config(struct so_value * config);
 
 /**
  * \brief Register a database driver
@@ -334,7 +334,7 @@ void so_database_load_config(struct so_value * config) __attribute__((nonnull));
  * \code
  * static void database_myDb_init() __attribute__((constructor)) {
  */
-void so_database_register_driver(struct so_database * driver) __attribute__((nonnull));
+void so_database_register_driver(struct so_database * driver);
 
 #endif
 

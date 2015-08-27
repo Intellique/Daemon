@@ -44,7 +44,7 @@ struct so_job_driver {
 };
 
 struct so_job * soj_job_get(void);
-void soj_job_register(struct so_job_driver * driver) __attribute__((nonnull));
+void soj_job_register(struct so_job_driver * driver);
 
 #endif
 

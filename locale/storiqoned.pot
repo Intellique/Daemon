@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-20 19:41+0200\n"
+        "POT-Creation-Date: 2015-08-27 07:59+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,41 +16,41 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
 
-#: src/storiqoned/main.c:204
+#: src/storiqoned/main.c:205
 #, c-format
 msgid   "    --config=FILE,   -c : Uses this configuration FILE instead of “%s”\n"
 msgstr  ""
 
-#: src/storiqoned/main.c:205
+#: src/storiqoned/main.c:206
 #, c-format
 msgid   "    --help,          -h : Shows this help and exits\n"
 msgstr  ""
 
-#: src/storiqoned/main.c:206
+#: src/storiqoned/main.c:207
 #, c-format
 msgid   "    --pid-file=FILE, -p : Writes the pid of daemon into FILE instead of “%s”\n"
 msgstr  ""
 
-#: src/storiqoned/main.c:207
+#: src/storiqoned/main.c:208
 #, c-format
 msgid   "    --version,       -V : prints StoriqOne version number and exits\n"
 msgstr  ""
 
-#: src/storiqoned/main.c:147
+#: src/storiqoned/main.c:148
 msgid   "Administration not configured"
 msgstr  ""
 
-#: src/storiqoned/main.c:66
+#: src/storiqoned/main.c:67
 #, c-format
 msgid   "Checksum: %s, last commit: %s"
 msgstr  ""
 
-#: src/storiqoned/main.c:113
+#: src/storiqoned/main.c:114
 #, c-format
 msgid   "Checksum: %s, last commit: %s\n"
 msgstr  ""
 
-#: src/storiqoned/main.c:192
+#: src/storiqoned/main.c:193
 msgid   "Daemon will shut down"
 msgstr  ""
 
@@ -58,7 +58,7 @@ msgstr  ""
 msgid   "New connection 'admin'"
 msgstr  ""
 
-#: src/storiqoned/main.c:121
+#: src/storiqoned/main.c:122
 msgid   "Parsing options: OK"
 msgstr  ""
 
@@ -71,22 +71,22 @@ msgstr  ""
 msgid   "Restarting logger"
 msgstr  ""
 
-#: src/storiqoned/main.c:98
+#: src/storiqoned/main.c:99
 #, c-format
 msgid   "Using configuration file: '%s' instead of '%s'"
 msgstr  ""
 
-#: src/storiqoned/main.c:65
+#: src/storiqoned/main.c:66
 #, c-format
 msgid   "storiqone (pid: %d, sid: %d)"
 msgstr  ""
 
-#: src/storiqoned/main.c:64
+#: src/storiqoned/main.c:65
 #, c-format
 msgid   "storiqone, version: %s, build: %s %s"
 msgstr  ""
 
-#: src/storiqoned/main.c:112 src/storiqoned/main.c:203
+#: src/storiqoned/main.c:113 src/storiqoned/main.c:204
 #, c-format
 msgid   "storiqone, version: %s, build: %s %s\n"
 msgstr  ""

@@ -30,7 +30,7 @@
 struct so_drive;
 
 void sodr_time_start(void);
-void sodr_time_stop(struct so_drive * drive) __attribute__((nonnull));
+void sodr_time_stop(struct so_drive * drive);
 
 #endif
 
