@@ -438,7 +438,8 @@ int soctl_scsi_loaderinfo(const char * filename, struct so_changer * changer, st
 
 	soctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
 	soctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
-	soctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_import_export_element);
+	if (result.number_of_import_export_elements > 0)
+		soctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_import_export_element);
 
 	return 0;
 }
