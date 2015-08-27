@@ -1,3 +1,9 @@
+storiqone (1.2b2-3) polisher; urgency=low
+
+  * Petit oubli
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 27 Aug 2015 13:38:44 +0200
+
 storiqone (1.2b2-2) polisher; urgency=low
 
   * Suppression de l'attribut 'nonnull'
