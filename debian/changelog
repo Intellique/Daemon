@@ -1,3 +1,9 @@
+storiqone (1.2b2-2) polisher; urgency=low
+
+  * Suppression de l'attribut 'nonnull'
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 27 Aug 2015 10:35:15 +0200
+
 storiqone (1.2b2-1) polisher; urgency=low
 
   * Ajout des locales
