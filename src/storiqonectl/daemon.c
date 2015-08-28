@@ -136,7 +136,7 @@ int soctl_start_daemon(int argc, char ** argv) {
 		return 1;
 
 	struct so_process daemon;
-	so_process_new(&daemon, "./bin/storiqoned", NULL, 0);
+	so_process_new(&daemon, "storiqoned", NULL, 0);
 	so_process_start(&daemon, 1);
 
 	bool ok = false;
