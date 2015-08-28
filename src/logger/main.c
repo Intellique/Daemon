@@ -54,7 +54,8 @@ static void daemon_request(int fd, short event, void * data);
 static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
 	switch (event) {
 		case POLLHUP:
-			solgr_log_write2(so_log_level_alert, so_log_type_logger, gettext("Storiqoned has hang up"));
+			solgr_log_write2(so_log_level_alert, so_log_type_logger,
+				gettext("Storiqoned has hang up"));
 			stop = true;
 			break;
 	}
@@ -78,12 +79,17 @@ int main() {
 	bindtextdomain("storiqone-logger", LOCALE_DIR);
 	textdomain("storiqone-logger");
 
-	solgr_log_write2(so_log_level_notice, so_log_type_logger, gettext("Starting logger process (pid: %d, ppid: %d, sid: %d)"), getpid(), getppid(), getsid(0));
-	solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Checksum: %s, last commit: %s"), LOGGER_SRCSUM, STORIQONE_GIT_COMMIT);
+	solgr_log_write2(so_log_level_notice, so_log_type_logger,
+		gettext("Starting logger process (pid: %d, ppid: %d, sid: %d)"),
+		getpid(), getppid(), getsid(0));
+	solgr_log_write2(so_log_level_debug, so_log_type_logger,
+		gettext("Checksum: %s, last commit: %s"),
+		LOGGER_SRCSUM, STORIQONE_GIT_COMMIT);
 
-	struct so_value * config = so_json_parse_fd(0, 5000);
+	struct so_value * config = so_json_parse_fd(0, 60000);
 	if (config == NULL || !so_value_hashtable_has_key2(config, "modules")) {
-		solgr_log_write2(so_log_level_emergencey, so_log_type_logger, gettext("No configuration received from daemon, will now quit"));
+		solgr_log_write2(so_log_level_emergencey, so_log_type_logger,
+			gettext("No configuration received from daemon, will now quit"));
 		return 1;
 	}
 
@@ -94,7 +100,8 @@ int main() {
 	so_value_unpack(config, "{soso}", "modules", &module, "socket", &socket);
 
 	solgr_log_load(module);
-	solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Modules loaded"));
+	solgr_log_write2(so_log_level_debug, so_log_type_logger,
+		gettext("Modules loaded"));
 
 	solgr_listen_configure(socket);
 
@@ -107,7 +114,9 @@ int main() {
 
 	so_value_free(config);
 
-	solgr_log_write2(so_log_level_notice, so_log_type_logger, gettext("Logger process (pid: %d) exiting normally"), getpid());
+	solgr_log_write2(so_log_level_notice, so_log_type_logger,
+		gettext("Logger process (pid: %d) exiting normally"),
+		getpid());
 
 	return 0;
 }
