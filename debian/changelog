@@ -1,3 +1,9 @@
+storiqone (1.2b2-4) polisher; urgency=low
+
+  * Changement du chemin pour démarrer le démon
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 28 Aug 2015 11:15:39 +0200
+
 storiqone (1.2b2-3) polisher; urgency=low
 
   * Petit oubli
