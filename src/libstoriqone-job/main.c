@@ -62,7 +62,8 @@ static void job_worker(void * arg);
 static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
 	switch (event) {
 		case POLLHUP:
-			so_log_write(so_log_level_alert, dgettext("libstoriqone-job", "Daemon unexpectedly quit"));
+			so_log_write(so_log_level_alert,
+				dgettext("libstoriqone-job", "Daemon unexpectedly quit"));
 			stop = true;
 			break;
 	}
@@ -100,11 +101,15 @@ static void job_worker(void * arg) {
 	if (db_connect == NULL)
 		goto error;
 
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Starting simulation of job (type: %s, key: %s, name: %s)"), j->type, j->key, j->name);
+	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
+		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, key: %s, name: %s)"),
+		j->type, j->key, j->name);
 
 	int failed = job_dr->simulate(j, db_connect);
 	if (failed != 0) {
-		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"), j->type, j->key, j->name, failed);
+		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("libstoriqone-job", "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"),
+			j->type, j->key, j->name, failed);
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;
@@ -116,9 +121,13 @@ static void job_worker(void * arg) {
 		goto error;
 	}
 
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Starting job (type: %s, key: %s, name: %s)"), j->type, j->key, j->name);
+	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
+		dgettext("libstoriqone-job", "Starting job (type: %s, key: %s, name: %s)"),
+		j->type, j->key, j->name);
 	failed = job_dr->run(j, db_connect);
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Job exit (type: %s, key: %s, name: %s), exit code: %d"), j->type, j->key, j->name, failed);
+	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
+		dgettext("libstoriqone-job", "Job exit (type: %s, key: %s, name: %s), exit code: %d"),
+		j->type, j->key, j->name, failed);
 
 	if (failed != 0 && job->stopped_by_user)
 		goto error;
@@ -146,16 +155,23 @@ int main() {
 	if (job_dr == NULL)
 		return 1;
 
-	struct so_value * config = so_json_parse_fd(0, 5000);
+	struct so_value * config = so_json_parse_fd(0, 60000);
 	if (config == NULL)
 		return 2;
 
 	struct so_value * log_config = NULL, * db_config = NULL, * devices = NULL, * vjob = NULL;
-	so_value_unpack(config, "{sosososo}", "logger", &log_config, "database", &db_config, "devices", &devices, "job", &vjob);
+	so_value_unpack(config, "{sosososo}",
+		"logger", &log_config,
+		"database", &db_config,
+		"devices", &devices,
+		"job", &vjob
+	);
 	if (log_config == NULL || db_config == NULL || devices == NULL || vjob == NULL)
 		return 3;
 
-	so_log_write(so_log_level_info, dgettext("libstoriqone-job", "Starting job (type: %s)"), job_dr->name);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-job", "Starting job (type: %s)"),
+		job_dr->name);
 
 	so_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
@@ -184,7 +200,9 @@ int main() {
 	job->status = so_job_status_running;
 	if (job->repetition > 0)
 		job->repetition--;
-	so_log_write(so_log_level_info, dgettext("libstoriqone-job", "Initializing job (type: %s)"), job_dr->name);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-job", "Initializing job (type: %s)"),
+		job_dr->name);
 
 	db_connect->ops->sync_job(db_connect, job);
 	db_connect->ops->start_job(db_connect, job);
@@ -207,7 +225,10 @@ int main() {
 
 	db_connect->ops->stop_job(db_connect, job);
 
-	struct so_value * status = so_value_pack("{ssso}", "command", "finished", "job", so_job_convert(job));
+	struct so_value * status = so_value_pack("{ssso}",
+		"command", "finished",
+		"job", so_job_convert(job)
+	);
 	so_json_encode_to_fd(status, 1, true);
 	so_value_free(status);
 
