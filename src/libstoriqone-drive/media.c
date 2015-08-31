@@ -138,11 +138,15 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 
 	if (ok) {
 		if (check) {
-			ok = !strcmp(media->uuid, uuid) && !strcmp(media->pool->uuid, pool_id);
+			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"), ok ? "OK" : "Failed");
+			so_log_write(so_log_level_info,
+				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
+				ok ? "OK" : "Failed");
 		} else {
-			so_log_write(so_log_level_debug, dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"), uuid, name, block_size);
+			so_log_write(so_log_level_debug,
+				dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"),
+				uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
 			if (has_label) {
@@ -155,7 +159,8 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 			media->block_size = block_size;
 		}
 	} else if (check)
-		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
+		so_log_write(so_log_level_info,
+			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
 		media->status = so_media_status_foreign;
 
@@ -220,11 +225,15 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 
 	if (ok) {
 		if (check) {
-			ok = !strcmp(media->uuid, uuid) && !strcmp(media->pool->uuid, pool_id);
+			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"), ok ? "OK" : "Failed");
+			so_log_write(so_log_level_info,
+				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
+				ok ? "OK" : "Failed");
 		} else {
-			so_log_write(so_log_level_debug, dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"), uuid, name, block_size);
+			so_log_write(so_log_level_debug,
+				dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"),
+				uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
 			if (has_label) {
@@ -237,7 +246,8 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 			media->block_size = block_size;
 		}
 	} else if (check)
-		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
+		so_log_write(so_log_level_info,
+			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
 		media->status = so_media_status_foreign;
 
@@ -302,11 +312,15 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 
 	if (ok) {
 		if (check) {
-			ok = !strcmp(media->uuid, uuid) && !strcmp(media->pool->uuid, pool_id);
+			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"), ok ? "OK" : "Failed");
+			so_log_write(so_log_level_info,
+				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
+				ok ? "OK" : "Failed");
 		} else {
-			so_log_write(so_log_level_debug, dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"), uuid, name, block_size);
+			so_log_write(so_log_level_debug,
+				dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"),
+				uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
 			if (has_label) {
@@ -319,7 +333,8 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 			media->block_size = block_size;
 		}
 	} else if (check)
-		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
+		so_log_write(so_log_level_info,
+			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
 		media->status = so_media_status_foreign;
 
