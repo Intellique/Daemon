@@ -210,7 +210,11 @@ int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int f
 		media->total_block = media->media_format->capacity / block_size;
 
 		media->nb_volumes = 1;
-	}
+
+		so_pool_free(media->pool);
+		media->pool = pool;
+	} else
+		so_pool_free(pool);
 
 	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
