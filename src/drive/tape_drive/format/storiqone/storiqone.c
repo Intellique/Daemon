@@ -101,13 +101,13 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_d
 			}
 		}
 
-		struct timespec end;
-		clock_gettime(CLOCK_MONOTONIC, &end);
-
 		static struct mtop eof = { MTWEOF, 1 };
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCTOP, &eof);
 		sodr_time_stop(drive);
+
+		struct timespec end;
+		clock_gettime(CLOCK_MONOTONIC, &end);
 
 		if (failed != 0) {
 			drive->status = so_drive_status_error;
