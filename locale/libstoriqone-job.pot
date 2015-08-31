@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-12 13:00+0200\n"
+        "POT-Creation-Date: 2015-08-31 16:14+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: src/libstoriqone-job/main.c:65
+#: src/libstoriqone-job/main.c:66
 msgid   "Daemon unexpectedly quit"
 msgstr  ""
 
@@ -26,12 +26,12 @@ msgstr  ""
 msgid   "Failed to read link of file '%s' because %m"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:187
+#: src/libstoriqone-job/main.c:204
 #, c-format
 msgid   "Initializing job (type: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:121
+#: src/libstoriqone-job/main.c:129
 #, c-format
 msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
 msgstr  ""
@@ -41,22 +41,22 @@ msgstr  ""
 msgid   "Media not found (named: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:107
+#: src/libstoriqone-job/main.c:111
 #, c-format
 msgid   "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:158
+#: src/libstoriqone-job/main.c:173
 #, c-format
 msgid   "Starting job (type: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:119
+#: src/libstoriqone-job/main.c:125
 #, c-format
 msgid   "Starting job (type: %s, key: %s, name: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:103
+#: src/libstoriqone-job/main.c:105
 #, c-format
 msgid   "Starting simulation of job (type: %s, key: %s, name: %s)"
 msgstr  ""
