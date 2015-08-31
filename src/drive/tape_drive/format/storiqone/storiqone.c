@@ -24,6 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dgettext
+#include <libintl.h>
 // free, malloc
 #include <stdlib.h>
 // struct mtget
@@ -37,6 +39,8 @@
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
+#include <libstoriqone/file.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/time.h>
@@ -53,30 +57,34 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_d
 	if (media == NULL)
 		return -1;
 
+	so_log_write(so_log_level_notice,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Finding best block size"),
+		drive->vendor, drive->model, drive->index);
+
 	char * buffer = so_checksum_gen_salt(NULL, 1048576);
 
 	double last_speed = 0;
 
-	ssize_t current_block_size;
+	drive->status = so_drive_status_rewinding;
+	db->ops->sync_drive(db, drive, true, so_database_sync_default);
+
+	static struct mtop rewind = { MTREW, 1 };
+	sodr_time_start();
+	int failed = ioctl(fd, MTIOCTOP, &rewind);
+	sodr_time_stop(drive);
+
+	drive->status = so_drive_status_writing;
+	db->ops->sync_drive(db, drive, true, so_database_sync_default);
+
+	ssize_t current_block_size = 0;
+	char buf_size[24] = "";
+
 	for (current_block_size = media->media_format->block_size; current_block_size < 1048576; current_block_size <<= 1) {
-		drive->status = so_drive_status_rewinding;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		so_file_convert_size_to_string(current_block_size, buf_size, 24);
 
-		static struct mtop rewind = { MTREW, 1 };
-		sodr_time_start();
-		int failed = ioctl(fd, MTIOCTOP, &rewind);
-		sodr_time_stop(drive);
-
-		if (failed != 0) {
-			drive->status = so_drive_status_error;
-			db->ops->sync_drive(db, drive, true, so_database_sync_default);
-
-			current_block_size = -1;
-			break;
-		}
-
-		drive->status = so_drive_status_writing;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Test (block size: %s)"),
+			drive->vendor, drive->model, drive->index, buf_size);
 
 		unsigned int i, nb_loop = 8589934592 / current_block_size;
 
@@ -85,6 +93,8 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_d
 
 		for (i = 0; i < nb_loop; i++) {
 			ssize_t nb_write = write(fd, buffer, current_block_size);
+			media->nb_total_write++;
+
 			if (nb_write < 0) {
 				failed = 1;
 				break;
@@ -111,6 +121,15 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_d
 		double speed = i * current_block_size;
 		speed /= time_spent;
 
+		char buf_speed[24];
+		so_file_convert_size_to_string((ssize_t) speed, buf_speed, 24);
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Test (block size: %s), throughput: %s/s"),
+			drive->vendor, drive->model, drive->index, buf_size, buf_speed);
+
+		media->last_write = time(NULL);
+		media->write_count++;
+
 		if (last_speed > 0 && speed > 52428800 && last_speed * 1.1 > speed)
 			break;
 		else
@@ -118,13 +137,9 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_d
 	}
 	free(buffer);
 
-	drive->status = so_drive_status_rewinding;
-	db->ops->sync_drive(db, drive, true, so_database_sync_default);
-
-	static struct mtop rewind = { MTREW, 1 };
-	sodr_time_start();
-	int failed = ioctl(fd, MTIOCTOP, &rewind);
-	sodr_time_stop(drive);
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Found best block size: %s"),
+		drive->vendor, drive->model, drive->index, buf_size);
 
 	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
@@ -179,6 +194,23 @@ int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int f
 	sodr_time_start();
 	failed = ioctl(fd, MTIOCTOP, &eof);
 	sodr_time_stop(drive);
+
+	if (failed == 0) {
+		media->status = so_media_status_in_use;
+
+		media->last_write = time(NULL);
+
+		media->write_count++;
+		media->operation_count++;
+
+		media->nb_total_write++;
+
+		media->block_size = block_size;
+		media->free_block = media->total_block - 1;
+		media->total_block = media->media_format->capacity / block_size;
+
+		media->nb_volumes = 1;
+	}
 
 	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
