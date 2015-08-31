@@ -1,3 +1,9 @@
+storiqone (1.2b2-6) polisher; urgency=low
+
+  * Séparation des jobs et d'autres exécutables en deux répertoires
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 31 Aug 2015 13:39:12 +0200
+
 storiqone (1.2b2-5) polisher; urgency=low
 
   * Changement du chemin du fichier de configuration
