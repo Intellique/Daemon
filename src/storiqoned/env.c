@@ -51,7 +51,7 @@ bool sod_env_setup() {
 
 	char * path = getenv("PATH");
 	char * new_path = NULL;
-	int size = asprintf(&new_path, DAEMON_BIN_DIR ":%s", path);
+	int size = asprintf(&new_path, DAEMON_BIN_DIR ":" DAEMON_JOB_DIR ":%s", path);
 	if (size < 0)
 		return false;
 
