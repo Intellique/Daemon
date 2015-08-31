@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-20 19:41+0200\n"
+        "POT-Creation-Date: 2015-08-31 13:28+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Type: text/plain; charset=CHARSET\n"
         "Content-Transfer-Encoding: 8bit\n"
 
-#: src/logger/main.c:82
+#: src/logger/main.c:86
 #, c-format
 msgid   "Checksum: %s, last commit: %s"
 msgstr  ""
@@ -25,12 +25,12 @@ msgstr  ""
 msgid   "Connection closed"
 msgstr  ""
 
-#: src/logger/loader.c:75
+#: src/logger/loader.c:76
 #, c-format
-msgid   "Loader: access to file '%s' failed because %m"
+msgid   "Loader: failed to access to file '%s' because %m"
 msgstr  ""
 
-#: src/logger/loader.c:87
+#: src/logger/loader.c:90
 #, c-format
 msgid   "Loader: failed to load '%s' because %s"
 msgstr  ""
@@ -39,12 +39,12 @@ msgstr  ""
 msgid   "Log: file: logrotate detected"
 msgstr  ""
 
-#: src/logger/main.c:110
+#: src/logger/main.c:118
 #, c-format
 msgid   "Logger process (pid: %d) exiting normally"
 msgstr  ""
 
-#: src/logger/main.c:97
+#: src/logger/main.c:104
 msgid   "Modules loaded"
 msgstr  ""
 
@@ -52,7 +52,7 @@ msgstr  ""
 msgid   "New connection..."
 msgstr  ""
 
-#: src/logger/main.c:86
+#: src/logger/main.c:92
 msgid   "No configuration received from daemon, will now quit"
 msgstr  ""
 
@@ -60,11 +60,11 @@ msgstr  ""
 msgid   "Received incorrect message"
 msgstr  ""
 
-#: src/logger/main.c:81
+#: src/logger/main.c:83
 #, c-format
 msgid   "Starting logger process (pid: %d, ppid: %d, sid: %d)"
 msgstr  ""
 
-#: src/logger/main.c:57
+#: src/logger/main.c:58
 msgid   "Storiqoned has hang up"
 msgstr  ""
