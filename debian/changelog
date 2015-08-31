@@ -1,3 +1,9 @@
+storiqone (1.2b2-5) polisher; urgency=low
+
+  * Changement du chemin du fichier de configuration
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 31 Aug 2015 10:36:21 +0200
+
 storiqone (1.2b2-4) polisher; urgency=low
 
   * Changement du chemin pour démarrer le démon
