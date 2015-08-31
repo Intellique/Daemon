@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-31 18:43+0200\n"
+        "POT-Creation-Date: 2015-09-01 00:15+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,12 +16,12 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Type: text/plain; charset=CHARSET\n"
         "Content-Transfer-Encoding: 8bit\n"
 
-#: src/libstoriqone-drive/media.c:143 src/libstoriqone-drive/media.c:225 src/libstoriqone-drive/media.c:307
+#: src/libstoriqone-drive/media.c:144 src/libstoriqone-drive/media.c:231 src/libstoriqone-drive/media.c:318
 #, c-format
 msgid   "Checking Storiq One header in media: %s"
 msgstr  ""
 
-#: src/libstoriqone-drive/media.c:158 src/libstoriqone-drive/media.c:240 src/libstoriqone-drive/media.c:322
+#: src/libstoriqone-drive/media.c:163 src/libstoriqone-drive/media.c:250 src/libstoriqone-drive/media.c:337
 msgid   "Checking Storiq One header in media: Failed"
 msgstr  ""
 
@@ -30,11 +30,11 @@ msgstr  ""
 msgid   "Drive (type: %s) will stop"
 msgstr  ""
 
-#: src/libstoriqone-drive/media.c:368
+#: src/libstoriqone-drive/media.c:383
 msgid   "Failed to compute digest before writing media header"
 msgstr  ""
 
-#: src/libstoriqone-drive/media.c:145 src/libstoriqone-drive/media.c:227 src/libstoriqone-drive/media.c:309
+#: src/libstoriqone-drive/media.c:148 src/libstoriqone-drive/media.c:235 src/libstoriqone-drive/media.c:322
 #, c-format
 msgid   "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"
 msgstr  ""
