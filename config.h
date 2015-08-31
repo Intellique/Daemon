@@ -31,6 +31,7 @@
 #define DAEMON_SOCKET_DIR "/var/run/storiqone"
 #define DAEMON_PID_FILE "/var/run/storiqone.pid"
 #define DAEMON_BIN_DIR "/usr/lib/storiqone/1.2/bin"
+#define DAEMON_JOB_DIR "/usr/lib/storiqone/1.2/job"
 #define LOCALE_DIR "/usr/share/locale/"
 #define MODULE_PATH "/usr/lib/storiqone/1.2/lib"
 #define SCRIPT_PATH "/usr/lib/storiqone/1.2/scripts"
