@@ -420,6 +420,9 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_databa
 	if (sodr_tape_drive_set_file_position(-1, db))
 		return NULL;
 
+	if (sodr_tape_drive_update_status(db) != 0)
+		return NULL;
+
 	sodr_tape_drive.slot->media->write_count++;
 	so_log_write(so_log_level_debug,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is open for writing"),
