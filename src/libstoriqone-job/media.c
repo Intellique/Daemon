@@ -36,6 +36,7 @@
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/changer.h>
+#include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
 
 #include "media.h"
@@ -199,8 +200,42 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 
 		if (drive == NULL)
 			so_value_list_unshift(medias, vmedia, false);
-		else
+		else {
 			so_value_free(vmedia);
+
+			drive->ops->sync(drive);
+
+			media = drive->slot->media;
+			if (media->status == so_media_status_new) {
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					dgettext("libstoriqone-job", "Automatic formatting media '%s'"),
+					media->name);
+
+				int failed = drive->ops->format_media(drive, 0, pool);
+				if (failed != 0) {
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						dgettext("libstoriqone-job", "Failed to format media"));
+
+					drive->ops->release(drive);
+
+					return NULL;
+				}
+
+				if (drive->ops->check_header(drive)) {
+					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+						dgettext("libstoriqone-job", "Checking media header '%s' was successful"),
+						media->name);
+				} else {
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						dgettext("storiqone-job-format-media", "Checking media header '%s': failed"),
+						media->name);
+
+					drive->ops->release(drive);
+
+					return NULL;
+				}
+			}
+		}
 
 		job->status = so_job_status_running;
 

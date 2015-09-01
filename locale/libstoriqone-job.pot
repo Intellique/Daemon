@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-31 16:14+0200\n"
+        "POT-Creation-Date: 2015-09-01 10:03+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,8 +17,27 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
+#: src/libstoriqone-job/media.c:211
+#, c-format
+msgid   "Automatic formatting media '%s'"
+msgstr  ""
+
+#: src/libstoriqone-job/media.c:226
+#, c-format
+msgid   "Checking media header '%s' was successful"
+msgstr  ""
+
+#: src/libstoriqone-job/media.c:230
+#, c-format
+msgid   "Checking media header '%s': failed"
+msgstr  ""
+
 #: src/libstoriqone-job/main.c:66
 msgid   "Daemon unexpectedly quit"
+msgstr  ""
+
+#: src/libstoriqone-job/media.c:217
+msgid   "Failed to format media"
 msgstr  ""
 
 #: src/libstoriqone-job/io/filesystem_reader.c:379
@@ -36,7 +55,7 @@ msgstr  ""
 msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
 msgstr  ""
 
-#: src/libstoriqone-job/media.c:91 src/libstoriqone-job/media.c:167
+#: src/libstoriqone-job/media.c:92 src/libstoriqone-job/media.c:168
 #, c-format
 msgid   "Media not found (named: %s)"
 msgstr  ""
