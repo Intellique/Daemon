@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-31 18:46+0200\n"
+        "POT-Creation-Date: 2015-09-01 23:57+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -71,7 +71,7 @@ msgstr  ""
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:769
+#: src/drive/tape_drive/device.c:772
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  ""
@@ -81,7 +81,7 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:778
+#: src/drive/tape_drive/device.c:781
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  ""
@@ -96,17 +96,17 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:598
+#: src/drive/tape_drive/device.c:601
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:614
+#: src/drive/tape_drive/device.c:617
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:610
+#: src/drive/tape_drive/device.c:613
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  ""
@@ -121,17 +121,17 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Found best block size: %s"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:621
+#: src/drive/tape_drive/device.c:624
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:655 src/drive/tape_drive/device.c:662
+#: src/drive/tape_drive/device.c:658 src/drive/tape_drive/device.c:665
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:634 src/drive/tape_drive/device.c:651
+#: src/drive/tape_drive/device.c:637 src/drive/tape_drive/device.c:654
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 msgstr  ""
@@ -146,7 +146,7 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Test (block size: %s), throughput: %s/s"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:561
+#: src/drive/tape_drive/device.c:564
 #, c-format
 msgid   "[%s | %s | #%u]: Trying to recover from error"
 msgstr  ""
@@ -161,7 +161,7 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:425
+#: src/drive/tape_drive/device.c:428
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  ""
