@@ -24,17 +24,24 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dgettext
+#include <libintl.h>
 // poll
 #include <poll.h>
 // free
 #include <stdlib.h>
+// clock_gettime
+#include <time.h>
 // close
 #include <unistd.h>
 
+#include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/string.h>
+#include <libstoriqone/time.h>
 #include <libstoriqone/value.h>
 
 #include "io.h"
@@ -47,6 +54,23 @@ void sodr_io_init(struct sodr_command commands[]) {
 	unsigned int i;
 	for (i = 0; commands[i].name != NULL; i++)
 		commands[i].hash = so_string_compute_hash2(commands[i].name);
+}
+
+void sodr_io_print_throughtput(struct sodr_peer * peer) {
+	struct timespec end_time = { 0, 0 };
+	clock_gettime(CLOCK_MONOTONIC, &end_time);
+
+	double time_spent = so_time_diff(&end_time, &peer->start_time) / 1000000000L;
+	double speed = peer->nb_total_bytes / time_spent;
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	char buf_speed[24];
+	so_file_convert_size_to_string((ssize_t) speed, buf_speed, 24);
+	so_log_write(so_log_level_debug,
+		dgettext("libstoriqone-drive", "[%s | %s | #%u]: Throughput: %s/s"),
+		drive->vendor, drive->model, drive->index, buf_speed);
 }
 
 void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
