@@ -31,6 +31,8 @@
 #include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
+// time_t
+#include <sys/time.h>
 
 struct sodr_peer {
 	int fd;
@@ -47,6 +49,9 @@ struct sodr_peer {
 	char * buffer;
 	ssize_t buffer_length;
 	bool has_checksums;
+
+	struct timespec start_time;
+	ssize_t nb_total_bytes;
 
 	bool disconnected;
 	volatile bool owned;

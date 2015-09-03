@@ -84,6 +84,8 @@ static void sodr_io_raw_reader_close(struct sodr_peer * peer, struct so_value * 
 		peer->buffer_length = 0;
 	}
 
+	sodr_io_print_throughtput(peer);
+
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
@@ -143,6 +145,7 @@ static void sodr_io_raw_reader_read(struct sodr_peer * peer, struct so_value * r
 			break;
 
 		nb_total_read += nb_read;
+		peer->nb_total_bytes += nb_read;
 
 		send(peer->fd_data, peer->buffer, nb_read, 0);
 	}
