@@ -1,3 +1,9 @@
+storiqone (1.2b2-8) polisher; urgency=low
+
+  * Correctif tape_drive, mauvais file info
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 02 Sep 2015 00:21:37 +0200
+
 storiqone (1.2b2-7) polisher; urgency=low
 
   * Correctif formattage des bandes lto
