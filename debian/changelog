@@ -1,3 +1,9 @@
+storiqone (1.2b2-9) polisher; urgency=low
+
+  * Ajout: mesure des débit moyen par lecteur
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 03 Sep 2015 11:55:43 +0200
+
 storiqone (1.2b2-8) polisher; urgency=low
 
   * Correctif tape_drive, mauvais file info
