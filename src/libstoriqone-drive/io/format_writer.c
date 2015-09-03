@@ -89,12 +89,15 @@ static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_va
 	so_format_file_init(&file);
 	so_format_file_sync(&file, vfile);
 
+	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
 	enum so_format_writer_status status = peer->format_writer->ops->add_file(peer->format_writer, &file);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
 	so_format_file_free(&file);
+
+	peer->nb_total_bytes += position - current_position;
 
 	struct so_value * response = so_value_pack("{sisiszsz}",
 		"returned", status,
@@ -110,12 +113,15 @@ static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_v
 	char * label = NULL;
 	so_value_unpack(request, "{s{so}}", "params", "label", &label);
 
+	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
 	enum so_format_writer_status status = peer->format_writer->ops->add_label(peer->format_writer, label);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
 	free(label);
+
+	peer->nb_total_bytes += position - current_position;
 
 	struct so_value * response = so_value_pack("{sisiszsz}",
 		"returned", status,
@@ -149,6 +155,8 @@ static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value
 		peer->has_checksums = false;
 	}
 
+	sodr_io_print_throughtput(peer);
+
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 
@@ -174,8 +182,12 @@ static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, 
 }
 
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
 	ssize_t eof = peer->format_writer->ops->end_of_file(peer->format_writer);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+	ssize_t new_position = peer->format_reader->ops->position(peer->format_reader);
+
+	peer->nb_total_bytes += new_position - current_position;
 
 	struct so_value * response = so_value_pack("{szsi}", "returned", eof, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
@@ -185,6 +197,8 @@ static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so
 static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
+
+	sodr_io_print_throughtput(peer);
 
 	struct so_media * media = drive->slot->media;
 
@@ -227,12 +241,15 @@ static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct s
 	so_format_file_init(&file);
 	so_format_file_sync(&file, vfile);
 
+	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
 	enum so_format_writer_status status = peer->format_writer->ops->restart_file(peer->format_writer, &file, position);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t new_position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
 	so_format_file_free(&file);
+
+	peer->nb_total_bytes += new_position - current_position;
 
 	struct so_value * response = so_value_pack("{sisiszsz}",
 		"returned", status,
@@ -273,6 +290,7 @@ static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value
 		}
 
 		nb_total_write += nb_write;
+		peer->nb_total_bytes += nb_write;
 	}
 
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
