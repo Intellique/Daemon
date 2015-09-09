@@ -27,7 +27,7 @@
 #define _GNU_SOURCE
 // fcntl, splice, tee
 #include <fcntl.h>
-// close, fcntl, pipe
+// close, fcntl, pipe, read
 #include <unistd.h>
 
 #include <libstoriqone/pipe.h>
@@ -38,9 +38,12 @@ void so_pipe_free(struct so_pipe * pipe) {
 
 	close(pipe->fd_read);
 	close(pipe->fd_write);
+
+	pipe->fd_read = pipe->fd_write = -1;
+	pipe->buffer_size = pipe->available_bytes = 0;
 }
 
-bool so_pipe_new(struct so_pipe * new_pipe, size_t length) {
+bool so_pipe_new(struct so_pipe * new_pipe, ssize_t length) {
 	if (new_pipe == NULL)
 		return false;
 
@@ -67,6 +70,56 @@ bool so_pipe_new(struct so_pipe * new_pipe, size_t length) {
 }
 
 
+ssize_t so_pipe_read(struct so_pipe * pipe, char * buffer, ssize_t length) {
+	if (length > pipe->available_bytes)
+		length = pipe->available_bytes;
+
+	ssize_t nb_read = read(pipe->fd_read, buffer, length);
+	if (nb_read < 0)
+		return nb_read;
+
+	pipe->available_bytes -= nb_read;
+
+	return nb_read;
+}
+
+
+ssize_t so_pipe_forward(struct so_pipe * pipe, ssize_t length) {
+	if (length > pipe->available_bytes)
+		length = pipe->available_bytes;
+
+	ssize_t nb_total_read = 0;
+	while (nb_total_read < length) {
+		ssize_t will_read = 8192 < length - nb_total_read ? 8192 : length - nb_total_read;
+
+		char buffer[8192];
+		ssize_t nb_read = read(pipe->fd_read, buffer, will_read);
+
+		if (nb_read < 0)
+			return nb_read;
+
+		nb_total_read += nb_read;
+		pipe->available_bytes -= nb_read;
+	}
+
+	return nb_total_read;
+}
+
+
+ssize_t so_pipe_splice(struct so_pipe * pipe_in, struct so_pipe * pipe_out, size_t length, unsigned int flags) {
+	if (pipe_in == NULL || pipe_out == NULL)
+		return -1;
+
+	ssize_t nb_spliced = splice(pipe_in->fd_read, NULL, pipe_out->fd_write, NULL, length, flags);
+	if (nb_spliced < 0)
+		return nb_spliced;
+
+	pipe_in->available_bytes -= nb_spliced;
+	pipe_out->available_bytes += nb_spliced;
+
+	return nb_spliced;
+}
+
 ssize_t so_pipe_splice_from(struct so_pipe * pipe_in, int fd_out, loff_t * off_out, size_t length, unsigned int flags) {
 	if (pipe_in == 0 || fd_out < 0)
 		return -1;
@@ -88,7 +141,7 @@ ssize_t so_pipe_splice_to(int fd_in, loff_t * off_in, struct so_pipe * pipe_out,
 	if (nb_spliced < 0)
 		return nb_spliced;
 
-	pipe_out->available_bytes -= nb_spliced;
+	pipe_out->available_bytes += nb_spliced;
 
 	return nb_spliced;
 }
@@ -101,7 +154,7 @@ ssize_t so_pipe_tee(struct so_pipe * pipe_in, struct so_pipe * pipe_out, size_t 
 	ssize_t nb_tee = tee(pipe_in->fd_read, pipe_out->fd_write, length, flags);
 
 	if (nb_tee > 0)
-		pipe_out->buffer_size += nb_tee;
+		pipe_out->available_bytes += nb_tee;
 
 	return nb_tee;
 }
