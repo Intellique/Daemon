@@ -27,7 +27,7 @@
 #define _GNU_SOURCE
 // fcntl, splice, tee
 #include <fcntl.h>
-// close, fcntl, pipe, read
+// close, fcntl, pipe, read, write
 #include <unistd.h>
 
 #include <libstoriqone/pipe.h>
@@ -83,26 +83,50 @@ ssize_t so_pipe_read(struct so_pipe * pipe, char * buffer, ssize_t length) {
 	return nb_read;
 }
 
+ssize_t so_pipe_write(struct so_pipe * pipe, const char * buffer, ssize_t length) {
+	ssize_t remain = pipe->buffer_size - pipe->available_bytes;
+	if (remain == 0)
+		return 0;
+
+	if (length > remain)
+		length = remain;
+
+	ssize_t nb_write = write(pipe->fd_write, buffer, length);
+	if (nb_write < 0)
+		return nb_write;
+
+	pipe->available_bytes += nb_write;
+
+	return nb_write;
+}
+
 
 ssize_t so_pipe_forward(struct so_pipe * pipe, ssize_t length) {
 	if (length > pipe->available_bytes)
 		length = pipe->available_bytes;
 
-	ssize_t nb_total_read = 0;
-	while (nb_total_read < length) {
-		ssize_t will_read = 8192 < length - nb_total_read ? 8192 : length - nb_total_read;
+	int fd = open("/dev/null", O_WRONLY);
+	if (fd < 0) {
+		ssize_t nb_total_read = 0;
+		while (nb_total_read < length) {
+			ssize_t will_read = 8192 < length - nb_total_read ? 8192 : length - nb_total_read;
 
-		char buffer[8192];
-		ssize_t nb_read = read(pipe->fd_read, buffer, will_read);
+			char buffer[8192];
+			ssize_t nb_read = read(pipe->fd_read, buffer, will_read);
 
-		if (nb_read < 0)
-			return nb_read;
+			if (nb_read < 0)
+				return nb_read;
 
-		nb_total_read += nb_read;
-		pipe->available_bytes -= nb_read;
+			nb_total_read += nb_read;
+			pipe->available_bytes -= nb_read;
+		}
+
+		return nb_total_read;
+	} else {
+		ssize_t nb_spliced = splice(pipe->fd_read, NULL, fd, NULL, length, 0);
+		close(fd);
+		return nb_spliced;
 	}
-
-	return nb_total_read;
 }
 
 

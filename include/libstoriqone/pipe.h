@@ -46,6 +46,7 @@ bool so_pipe_new(struct so_pipe * pipe, ssize_t buffer_size);
 ssize_t so_pipe_forward(struct so_pipe * pipe, ssize_t length);
 
 ssize_t so_pipe_read(struct so_pipe * pipe, char * buffer, ssize_t length);
+ssize_t so_pipe_write(struct so_pipe * pipe, const char * buffer, ssize_t length);
 
 ssize_t so_pipe_splice(struct so_pipe * pipe_in, struct so_pipe * pipe_out, size_t length, unsigned int flags);
 ssize_t so_pipe_splice_from(struct so_pipe * pipe_in, int fd_out, loff_t * off_out, size_t length, unsigned int flags);
