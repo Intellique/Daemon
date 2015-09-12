@@ -43,6 +43,7 @@ struct so_pipe {
 void so_pipe_free(struct so_pipe * pipe);
 bool so_pipe_new(struct so_pipe * pipe, ssize_t buffer_size);
 
+ssize_t so_pipe_fill(struct so_pipe * pipe, ssize_t length);
 ssize_t so_pipe_forward(struct so_pipe * pipe, ssize_t length);
 
 ssize_t so_pipe_read(struct so_pipe * pipe, char * buffer, ssize_t length);

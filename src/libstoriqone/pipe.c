@@ -27,6 +27,8 @@
 #define _GNU_SOURCE
 // fcntl, splice, tee
 #include <fcntl.h>
+// bzero
+#include <strings.h>
 // close, fcntl, pipe, read, write
 #include <unistd.h>
 
@@ -101,6 +103,38 @@ ssize_t so_pipe_write(struct so_pipe * pipe, const char * buffer, ssize_t length
 }
 
 
+ssize_t so_pipe_fill(struct so_pipe * pipe, ssize_t length) {
+	ssize_t remain = pipe->buffer_size - pipe->available_bytes;
+	if (length > remain)
+		length = remain;
+
+	int fd = open("/dev/zero", O_RDONLY);
+	if (fd < 0) {
+		char buffer[8192];
+		bzero(buffer, 8192 > length ? length : 8192);
+
+		ssize_t nb_total_write = 0;
+		while (nb_total_write < length) {
+			ssize_t will_write = 8192 < length - nb_total_write ? 8192 : length - nb_total_write;
+
+			ssize_t nb_write = write(pipe->fd_write, buffer, will_write);
+
+			if (nb_write < 0)
+				return nb_write;
+
+			nb_total_write += nb_write;
+			pipe->available_bytes += nb_write;
+		}
+	} else {
+		ssize_t nb_spliced = splice(fd, NULL, pipe->fd_write, NULL, length, 0);
+		close(fd);
+
+		pipe->available_bytes += nb_spliced;
+
+		return nb_spliced;
+	}
+}
+
 ssize_t so_pipe_forward(struct so_pipe * pipe, ssize_t length) {
 	if (length > pipe->available_bytes)
 		length = pipe->available_bytes;
@@ -125,6 +159,9 @@ ssize_t so_pipe_forward(struct so_pipe * pipe, ssize_t length) {
 	} else {
 		ssize_t nb_spliced = splice(pipe->fd_read, NULL, fd, NULL, length, 0);
 		close(fd);
+
+		pipe->available_bytes -= nb_spliced;
+
 		return nb_spliced;
 	}
 }
