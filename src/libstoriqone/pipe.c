@@ -125,6 +125,8 @@ ssize_t so_pipe_fill(struct so_pipe * pipe, ssize_t length) {
 			nb_total_write += nb_write;
 			pipe->available_bytes += nb_write;
 		}
+
+		return nb_total_write;
 	} else {
 		ssize_t nb_spliced = splice(fd, NULL, pipe->fd_write, NULL, length, 0);
 		close(fd);
