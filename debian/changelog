@@ -1,3 +1,9 @@
+storiqone (1.2rc1-1) polisher; urgency=low
+
+  * First release candidate
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 14 Sep 2015 12:18:24 +0200
+
 storiqone (1.2b2-9) polisher; urgency=low
 
   * Ajout: mesure des débit moyen par lecteur

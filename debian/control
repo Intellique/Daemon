@@ -13,6 +13,7 @@ Package: libstoriqone-1.2
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: libc6 (>= 2.19)
 Description: Storiq one libraries (libs)
 
 Package: libstoriqone-1.2-dev
