@@ -50,10 +50,15 @@
 #include <libstoriqone/drive.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
 #include "hardware.h"
 #include "scsi.h"
+
+static char * soctl_read_fc_address(const char * path);
+static char * soctl_read_sas_address(const char * path, int host);
+
 
 struct so_value * soctl_detect_hardware() {
 	struct so_value * changers = so_value_new_linked_list();
@@ -155,7 +160,11 @@ struct so_value * soctl_detect_hardware() {
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[PATH_MAX];
-		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
+		ssize_t length = readlink(gl.gl_pathv[i], link, PATH_MAX);
+		if (length < 0) {
+			printf(gettext("storiqonectl: Failed while reading file link '%s' because %m\n"), gl.gl_pathv[i]);
+			continue;
+		}
 		link[length] = '\0';
 
 		char * ptr = strrchr(link, '/') + 1;
@@ -167,7 +176,7 @@ struct so_value * soctl_detect_hardware() {
 		if (size < 0)
 			continue;
 
-		length = readlink(path, link, 256);
+		length = readlink(path, link, PATH_MAX);
 		if (length < 0) {
 			printf(gettext("storiqonectl: Failed while reading file link '%s' because %m\n"), path);
 
@@ -189,42 +198,9 @@ struct so_value * soctl_detect_hardware() {
 		changer->status = so_changer_status_unknown;
 		changer->enable = true;
 
-		size = asprintf(&path, "/sys/class/sas_host/host%d", host);
-		if (size < 0)
-			continue;
-
-		struct stat st;
-		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
-			char * resolved_path = realpath(gl.gl_pathv[i], link);
-			if (resolved_path == NULL) {
-				printf(gettext("storiqonectl: Failed while resolving file path '%s' because %m\n"), gl.gl_pathv[i]);
-				continue;
-			}
-
-			ptr = strstr(link, "end_device-");
-			if (ptr != NULL) {
-				char * cp = strchr(ptr, '/');
-				if (cp != NULL)
-					*cp = '\0';
-
-				free(path);
-				size = asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
-				if (size < 0)
-					continue;
-
-				char * data = so_file_read_all_from(path);
-				cp = strchr(data, '\n');
-				if (cp != NULL)
-					*cp = '\0';
-
-				size = asprintf(&changer->wwn, "sas:%s", data);
-				if (size < 0)
-					continue;
-
-				free(data);
-			}
-		}
-		free(path);
+		changer->wwn = soctl_read_sas_address(gl.gl_pathv[i], host);
+		if (changer->wwn == NULL)
+			changer->wwn = soctl_read_fc_address(gl.gl_pathv[i]);
 
 		soctl_scsi_loaderinfo(device, changer, drives);
 		free(device);
@@ -236,5 +212,90 @@ struct so_value * soctl_detect_hardware() {
 	so_value_free(drives);
 
 	return changers;
+}
+
+static char * soctl_read_fc_address(const char * path) {
+	char link[PATH_MAX];
+	char * resolved_path = realpath(path, link);
+	if (resolved_path == NULL)
+		return NULL;
+
+	char * ptr = strstr(link, "rport-");
+	if (ptr == NULL)
+		return NULL;
+
+	char * cp = strchr(ptr, '/');
+	if (cp != NULL)
+		*cp = '\0';
+
+	char * filename;
+	int size = asprintf(&filename, "/sys/class/fc_remote_ports/%s/port_name", ptr);
+	if (size < 0)
+		return NULL;
+
+	char * data = so_file_read_all_from(path);
+	if (data == NULL)
+		goto error_read_fc_address;
+
+	so_string_rtrim(data, '\n');
+
+	char * fc_address;
+	size = asprintf(&fc_address, "fc:%s", data);
+
+	free(data);
+	free(filename);
+
+	return size > 0 ? fc_address : NULL;
+
+error_read_fc_address:
+	free(filename);
+	return NULL;
+}
+
+static char * soctl_read_sas_address(const char * path, int host) {
+	char * dir;
+	int size = asprintf(&dir, "/sys/class/sas_host/host%d", host);
+	if (size < 0)
+		return NULL;
+
+	char link[PATH_MAX];
+	char * resolved_path = realpath(path, link);
+	if (resolved_path == NULL)
+		goto error_resolved_path;
+
+	char * ptr = strstr(link, "end_device-");
+	if (ptr == NULL)
+		goto error_resolved_path;
+
+	char * cp = strchr(ptr, '/');
+	if (cp != NULL)
+		*cp = '\0';
+
+	char * filename;
+	size = asprintf(&filename, "/sys/class/sas_device/%s/sas_address", ptr);
+	if (size < 0)
+		goto error_resolved_path;
+
+	char * data = so_file_read_all_from(path);
+	if (data == NULL)
+		goto error_read_sas_address;
+
+	so_string_rtrim(data, '\n');
+
+	char * sas_address;
+	size = asprintf(&sas_address, "sas:%s", data);
+
+	free(data);
+	free(filename);
+	free(dir);
+
+	return size > 0 ? sas_address : NULL;
+
+error_read_sas_address:
+	free(filename);
+
+error_resolved_path:
+	free(dir);
+	return NULL;
 }
 
