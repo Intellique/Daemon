@@ -1216,6 +1216,7 @@ static void sochgr_scsi_changer_scsi_update_status2(int fd, struct so_changer * 
 						dr->status = so_drive_status_unknown;
 						dr->changer = changer;
 						dr->slot = slot;
+						dr->index = i;
 						slot->drive = dr;
 
 						struct so_value * vslot = NULL;
