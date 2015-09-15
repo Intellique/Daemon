@@ -55,6 +55,7 @@
 #include <libstoriqone/media.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
@@ -72,6 +73,8 @@ static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive
 static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_put_online(struct so_database_connection * db_connection);
+static char * sochgr_scsi_changer_read_fc_address(const char * path);
+static char * sochgr_scsi_changer_read_sas_address(const char * path);
 static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_wait(void);
@@ -195,7 +198,7 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 	bool found = false, has_wwn = sochgr_scsi_changer.wwn != NULL;
 	for (i = 0; i < gl.gl_pathc && !found; i++) {
 		char link[PATH_MAX];
-		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
+		ssize_t length = readlink(gl.gl_pathv[i], link, PATH_MAX);
 		if (length < 0) {
 			so_log_write(so_log_level_error,
 				dgettext("storiqone-changer-scsi", "Failed while reading link of file '%s' because %m"),
@@ -214,7 +217,7 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		if (size < 0)
 			continue;
 
-		length = readlink(path, link, 256);
+		length = readlink(path, link, PATH_MAX);
 		if (length < 0) {
 			so_log_write(so_log_level_error,
 				dgettext("storiqone-changer-scsi", "Failed while reading link of file '%s' because %m"),
@@ -231,61 +234,16 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		if (size < 0)
 			continue;
 
-		size = asprintf(&path, "/sys/class/sas_host/host%d", host);
-		if (size < 0) {
-			free(device);
-			continue;
+		if (has_wwn) {
+			char * wwn = sochgr_scsi_changer_read_sas_address(gl.gl_pathv[i]);
+			if (wwn == NULL)
+				wwn = sochgr_scsi_changer_read_fc_address(gl.gl_pathv[i]);
+
+			if (wwn != NULL && !strcmp(wwn, sochgr_scsi_changer.wwn))
+				found = true;
+
+			free(wwn);
 		}
-
-		struct stat st;
-		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
-			char * resolved_path = realpath(gl.gl_pathv[i], link);
-			if (resolved_path == NULL) {
-				so_log_write(so_log_level_error,
-					dgettext("storiqone-changer-scsi", "Failed while resolving path of file '%s' because %m"),
-					gl.gl_pathv[i]);
-				continue;
-			}
-
-			ptr = strstr(link, "end_device-");
-			if (ptr != NULL) {
-				char * cp = strchr(ptr, '/');
-				if (cp != NULL)
-					*cp = '\0';
-
-				free(path);
-				size = asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
-				if (size < 0)
-					continue;
-
-				char * data = so_file_read_all_from(path);
-				if (data == NULL)
-					continue;
-
-				cp = strchr(data, '\n');
-				if (cp != NULL)
-					*cp = '\0';
-
-				char * wwn = NULL;
-				size = asprintf(&wwn, "sas:%s", data);
-				if (size < 0) {
-					free(data);
-					continue;
-				}
-
-				if (has_wwn && !strcmp(wwn, sochgr_scsi_changer.wwn))
-					found = true;
-				else if (!has_wwn) {
-					free(sochgr_scsi_changer.wwn);
-					sochgr_scsi_changer.wwn = wwn;
-				}
-
-				if (has_wwn)
-					free(wwn);
-				free(data);
-			}
-		}
-		free(path);
 
 		if (found)
 			sochgr_scsi_changer_scsi_check_changer(&sochgr_scsi_changer, device);
@@ -676,6 +634,82 @@ static int sochgr_scsi_changer_put_online(struct so_database_connection * db_con
 	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	return failed;
+}
+
+static char * sochgr_scsi_changer_read_fc_address(const char * path) {
+	char link[PATH_MAX];
+	char * resolved_path = realpath(path, link);
+	if (resolved_path == NULL)
+		return NULL;
+
+	char * ptr = strstr(link, "rport-");
+	if (ptr == NULL)
+		return NULL;
+
+	char * cp = strchr(ptr, '/');
+	if (cp != NULL)
+		*cp = '\0';
+
+	char * filename;
+	int size = asprintf(&filename, "/sys/class/fc_remote_ports/%s/port_name", ptr);
+	if (size < 0)
+		return NULL;
+
+	char * data = so_file_read_all_from(filename);
+	if (data == NULL)
+		goto error_read_fc_address;
+
+	so_string_rtrim(data, '\n');
+
+	char * fc_address;
+	size = asprintf(&fc_address, "fc:%s", data);
+
+	free(data);
+	free(filename);
+
+	return size > 0 ? fc_address : NULL;
+
+error_read_fc_address:
+	free(filename);
+	return NULL;
+}
+
+static char * sochgr_scsi_changer_read_sas_address(const char * path) {
+	char link[PATH_MAX];
+	char * resolved_path = realpath(path, link);
+	if (resolved_path == NULL)
+		return NULL;
+
+	char * ptr = strstr(link, "end_device-");
+	if (ptr == NULL)
+		return NULL;
+
+	char * cp = strchr(ptr, '/');
+	if (cp != NULL)
+		*cp = '\0';
+
+	char * filename;
+	int size = asprintf(&filename, "/sys/class/sas_device/%s/sas_address", ptr);
+	if (size < 0)
+		return NULL;
+
+	char * data = so_file_read_all_from(filename);
+	if (data == NULL)
+		goto error_read_sas_address;
+
+	so_string_rtrim(data, '\n');
+
+	char * sas_address;
+	size = asprintf(&sas_address, "sas:%s", data);
+
+	free(data);
+	free(filename);
+
+	return size > 0 ? sas_address : NULL;
+
+error_read_sas_address:
+	free(filename);
+	return NULL;
 }
 
 static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_connection __attribute__((unused))) {
