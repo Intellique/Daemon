@@ -52,6 +52,7 @@
 #include <unistd.h>
 
 #include <libstoriqone/changer.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
@@ -565,6 +566,8 @@ void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char
 	int fd = open(device, O_RDWR);
 	if (fd < 0)
 		return;
+
+	so_file_close_fd_on_exec(fd, true);
 
 	struct scsi_request_sense sense;
 	struct {

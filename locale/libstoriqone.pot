@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-15 15:16+0200\n"
+        "POT-Creation-Date: 2015-09-15 16:09+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -47,35 +47,35 @@ msgstr  ""
 msgid   "%zd B"
 msgstr  ""
 
-#: src/libstoriqone/log.c:82
+#: src/libstoriqone/log.c:83
 msgid   "Alert"
 msgstr  ""
 
-#: src/libstoriqone/log.c:104
+#: src/libstoriqone/log.c:105
 msgid   "Changer"
 msgstr  ""
 
-#: src/libstoriqone/log.c:109
+#: src/libstoriqone/log.c:110
 msgid   "Checksum Plugin"
 msgstr  ""
 
-#: src/libstoriqone/log.c:83
+#: src/libstoriqone/log.c:84
 msgid   "Critical"
 msgstr  ""
 
-#: src/libstoriqone/log.c:105
+#: src/libstoriqone/log.c:106
 msgid   "Daemon"
 msgstr  ""
 
-#: src/libstoriqone/log.c:110
+#: src/libstoriqone/log.c:111
 msgid   "Database Plugin"
 msgstr  ""
 
-#: src/libstoriqone/log.c:84
+#: src/libstoriqone/log.c:85
 msgid   "Debug"
 msgstr  ""
 
-#: src/libstoriqone/log.c:106
+#: src/libstoriqone/log.c:107
 msgid   "Drive"
 msgstr  ""
 
@@ -86,11 +86,11 @@ msgid_plural    "Dump %zd stacks, stack addr: %p, stack size: %zd"
 msgstr[0]       ""
 msgstr[1]       ""
 
-#: src/libstoriqone/log.c:85
+#: src/libstoriqone/log.c:86
 msgid   "Emergency"
 msgstr  ""
 
-#: src/libstoriqone/log.c:86
+#: src/libstoriqone/log.c:87
 msgid   "Error"
 msgstr  ""
 
@@ -99,43 +99,43 @@ msgstr  ""
 msgid   "Failed while setting the name of thread '%s' because %m"
 msgstr  ""
 
-#: src/libstoriqone/log.c:87
+#: src/libstoriqone/log.c:88
 msgid   "Info"
 msgstr  ""
 
-#: src/libstoriqone/log.c:107
+#: src/libstoriqone/log.c:108
 msgid   "Job"
 msgstr  ""
 
-#: src/libstoriqone/log.c:111
+#: src/libstoriqone/log.c:112
 msgid   "Log Plugin"
 msgstr  ""
 
-#: src/libstoriqone/log.c:108
+#: src/libstoriqone/log.c:109
 msgid   "Logger"
 msgstr  ""
 
-#: src/libstoriqone/log.c:88
+#: src/libstoriqone/log.c:89
 msgid   "Notice"
 msgstr  ""
 
-#: src/libstoriqone/log.c:112
+#: src/libstoriqone/log.c:113
 msgid   "Scheduler"
 msgstr  ""
 
-#: src/libstoriqone/log.c:91
+#: src/libstoriqone/log.c:92
 msgid   "Unknown level"
 msgstr  ""
 
-#: src/libstoriqone/log.c:117
+#: src/libstoriqone/log.c:118
 msgid   "Unknown type"
 msgstr  ""
 
-#: src/libstoriqone/log.c:114
+#: src/libstoriqone/log.c:115
 msgid   "User Interface"
 msgstr  ""
 
-#: src/libstoriqone/log.c:115
+#: src/libstoriqone/log.c:116
 msgid   "User Message"
 msgstr  ""
 
@@ -143,7 +143,7 @@ msgstr  ""
 msgid   "WORM"
 msgstr  ""
 
-#: src/libstoriqone/log.c:89
+#: src/libstoriqone/log.c:90
 msgid   "Warning"
 msgstr  ""
 

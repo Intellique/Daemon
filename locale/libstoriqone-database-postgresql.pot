@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-14 15:07+0200\n"
+        "POT-Creation-Date: 2015-09-15 15:46+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,20 +16,20 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Type: text/plain; charset=CHARSET\n"
         "Content-Transfer-Encoding: 8bit\n"
 
-#: src/database/postgresql/connection.c:335
+#: src/database/postgresql/connection.c:339
 msgid   "PSQL: Can't create checkpoint because there is an error in current transaction"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:338
+#: src/database/postgresql/connection.c:342
 msgid   "PSQL: Can't create checkpoint because there is no active transaction"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:482
+#: src/database/postgresql/connection.c:486
 #, c-format
 msgid   "PSQL: Host not found into database (%s)"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:373
+#: src/database/postgresql/connection.c:377
 msgid   "PSQL: Rolling back transaction because current transaction encountered an error"
 msgstr  ""
 
@@ -43,21 +43,21 @@ msgstr  ""
 msgid   "PSQL: error => %s"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:355
+#: src/database/postgresql/connection.c:359
 #, c-format
 msgid   "PSQL: error while creating a savepoint => %s"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:294
+#: src/database/postgresql/connection.c:298
 #, c-format
 msgid   "PSQL: error while rolling back a savepoint => %s"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:1462 src/database/postgresql/connection.c:1475
+#: src/database/postgresql/connection.c:1466 src/database/postgresql/connection.c:1479
 msgid   "PSQL: error while synchronizing changer slots with database"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:1441
+#: src/database/postgresql/connection.c:1445
 msgid   "PSQL: error while synchronizing drive with database"
 msgstr  ""
 
@@ -71,7 +71,7 @@ msgstr  ""
 msgid   "PSQL: hint => %s"
 msgstr  ""
 
-#: src/database/postgresql/connection.c:4399
+#: src/database/postgresql/connection.c:4403
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  ""

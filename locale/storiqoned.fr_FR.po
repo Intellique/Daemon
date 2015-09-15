@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqoned v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-31 15:49+0200\n"
+        "POT-Creation-Date: 2015-09-15 15:59+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -24,7 +24,7 @@ msgstr  "Nouvelle connexion « admin »"
 msgid   "Restarting changer: %s"
 msgstr  "Redémarrage de l’échangeur : %s"
 
-#: src/storiqoned/logger.c:74
+#: src/storiqoned/logger.c:75
 msgid   "Restarting logger"
 msgstr  "Redémarrage de la journalisation"
 

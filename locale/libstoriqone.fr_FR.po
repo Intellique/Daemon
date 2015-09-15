@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-15 15:16+0200\n"
+        "POT-Creation-Date: 2015-09-15 15:54+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -433,87 +433,87 @@ msgstr  "libstoriqone : loader : échec lors de l’accès au fichier « %s 
 msgid   "libstoriqone: loader: failed to load '%s' because %s"
 msgstr  "libstoriqone : loader : échec du chargemenet de « %s » parce que %s"
 
-#: src/libstoriqone/log.c:82
+#: src/libstoriqone/log.c:83
 msgid   "Alert"
 msgstr  "Alerte"
 
-#: src/libstoriqone/log.c:83
+#: src/libstoriqone/log.c:84
 msgid   "Critical"
 msgstr  "Critique"
 
-#: src/libstoriqone/log.c:84
+#: src/libstoriqone/log.c:85
 msgid   "Debug"
 msgstr  "Débogage"
 
-#: src/libstoriqone/log.c:85
+#: src/libstoriqone/log.c:86
 msgid   "Emergency"
 msgstr  "Urgent"
 
-#: src/libstoriqone/log.c:86
+#: src/libstoriqone/log.c:87
 msgid   "Error"
 msgstr  "Erreur"
 
-#: src/libstoriqone/log.c:87
+#: src/libstoriqone/log.c:88
 msgid   "Info"
 msgstr  "Info"
 
-#: src/libstoriqone/log.c:88
+#: src/libstoriqone/log.c:89
 msgid   "Notice"
 msgstr  "Avis"
 
-#: src/libstoriqone/log.c:89
+#: src/libstoriqone/log.c:90
 msgid   "Warning"
 msgstr  "Attention"
 
-#: src/libstoriqone/log.c:91
+#: src/libstoriqone/log.c:92
 msgid   "Unknown level"
 msgstr  "Niveau inconnu"
 
-#: src/libstoriqone/log.c:104
+#: src/libstoriqone/log.c:105
 msgid   "Changer"
 msgstr  "Échangeur"
 
-#: src/libstoriqone/log.c:105
+#: src/libstoriqone/log.c:106
 msgid   "Daemon"
 msgstr  "Démon"
 
-#: src/libstoriqone/log.c:106
+#: src/libstoriqone/log.c:107
 msgid   "Drive"
 msgstr  "Lecteur"
 
-#: src/libstoriqone/log.c:107
+#: src/libstoriqone/log.c:108
 msgid   "Job"
 msgstr  "Tâche"
 
-#: src/libstoriqone/log.c:108
+#: src/libstoriqone/log.c:109
 msgid   "Logger"
 msgstr  "Enregistreur"
 
-#: src/libstoriqone/log.c:109
+#: src/libstoriqone/log.c:110
 msgid   "Checksum Plugin"
 msgstr  "Greffon de somme de contrôle"
 
-#: src/libstoriqone/log.c:110
+#: src/libstoriqone/log.c:111
 msgid   "Database Plugin"
 msgstr  "Greffon de la base de données"
 
-#: src/libstoriqone/log.c:111
+#: src/libstoriqone/log.c:112
 msgid   "Log Plugin"
 msgstr  "Greffon d’enregistrement"
 
-#: src/libstoriqone/log.c:112
+#: src/libstoriqone/log.c:113
 msgid   "Scheduler"
 msgstr  "Ordonnanceur"
 
-#: src/libstoriqone/log.c:114
+#: src/libstoriqone/log.c:115
 msgid   "User Interface"
 msgstr  "Interface utilisateur"
 
-#: src/libstoriqone/log.c:115
+#: src/libstoriqone/log.c:116
 msgid   "User Message"
 msgstr  "Message utilisateur"
 
-#: src/libstoriqone/log.c:117
+#: src/libstoriqone/log.c:118
 msgid   "Unknown type"
 msgstr  "Type inconnu"
 

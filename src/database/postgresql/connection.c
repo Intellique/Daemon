@@ -46,6 +46,7 @@
 #include <libstoriqone/changer.h>
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/drive.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/job.h>
 #include <libstoriqone/json.h>
@@ -224,6 +225,9 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 
 struct so_database_connection * so_database_postgresql_connect_init(PGconn * pg_connect) {
 	PQsetErrorVerbosity(pg_connect, PQERRORS_VERBOSE);
+
+	int fd = PQsocket(pg_connect);
+	so_file_close_fd_on_exec(fd, true);
 
 	struct so_database_postgresql_connection_private * self = malloc(sizeof(struct so_database_postgresql_connection_private));
 	self->connect = pg_connect;
