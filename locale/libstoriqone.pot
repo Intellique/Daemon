@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-14 10:47+0200\n"
+        "POT-Creation-Date: 2015-09-15 15:16+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -538,17 +538,22 @@ msgstr  ""
 msgid   "so_file_mv: failed to rename '%s' to '%s' because %m"
 msgstr  ""
 
+#: src/libstoriqone/file.c:566
+#, c-format
+msgid   "so_file_read_all_from: error while reading from file '%s' because %m"
+msgstr  ""
+
 #: src/libstoriqone/file.c:549
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
 msgstr  ""
 
-#: src/libstoriqone/file.c:572
+#: src/libstoriqone/file.c:579
 #, c-format
 msgid   "so_file_read_all_from: failed while reading from '%s' because %m"
 msgstr  ""
 
-#: src/libstoriqone/file.c:623
+#: src/libstoriqone/file.c:630
 #, c-format
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  ""
