@@ -57,7 +57,7 @@
 #include "scsi.h"
 
 static char * soctl_read_fc_address(const char * path);
-static char * soctl_read_sas_address(const char * path, int host);
+static char * soctl_read_sas_address(const char * path);
 
 
 struct so_value * soctl_detect_hardware() {
@@ -198,7 +198,7 @@ struct so_value * soctl_detect_hardware() {
 		changer->status = so_changer_status_unknown;
 		changer->enable = true;
 
-		changer->wwn = soctl_read_sas_address(gl.gl_pathv[i], host);
+		changer->wwn = soctl_read_sas_address(gl.gl_pathv[i]);
 		if (changer->wwn == NULL)
 			changer->wwn = soctl_read_fc_address(gl.gl_pathv[i]);
 
@@ -233,7 +233,7 @@ static char * soctl_read_fc_address(const char * path) {
 	if (size < 0)
 		return NULL;
 
-	char * data = so_file_read_all_from(path);
+	char * data = so_file_read_all_from(filename);
 	if (data == NULL)
 		goto error_read_fc_address;
 
@@ -252,31 +252,26 @@ error_read_fc_address:
 	return NULL;
 }
 
-static char * soctl_read_sas_address(const char * path, int host) {
-	char * dir;
-	int size = asprintf(&dir, "/sys/class/sas_host/host%d", host);
-	if (size < 0)
-		return NULL;
-
+static char * soctl_read_sas_address(const char * path) {
 	char link[PATH_MAX];
 	char * resolved_path = realpath(path, link);
 	if (resolved_path == NULL)
-		goto error_resolved_path;
+		return NULL;
 
 	char * ptr = strstr(link, "end_device-");
 	if (ptr == NULL)
-		goto error_resolved_path;
+		return NULL;
 
 	char * cp = strchr(ptr, '/');
 	if (cp != NULL)
 		*cp = '\0';
 
 	char * filename;
-	size = asprintf(&filename, "/sys/class/sas_device/%s/sas_address", ptr);
+	int size = asprintf(&filename, "/sys/class/sas_device/%s/sas_address", ptr);
 	if (size < 0)
-		goto error_resolved_path;
+		return NULL;
 
-	char * data = so_file_read_all_from(path);
+	char * data = so_file_read_all_from(filename);
 	if (data == NULL)
 		goto error_read_sas_address;
 
@@ -287,15 +282,11 @@ static char * soctl_read_sas_address(const char * path, int host) {
 
 	free(data);
 	free(filename);
-	free(dir);
 
 	return size > 0 ? sas_address : NULL;
 
 error_read_sas_address:
 	free(filename);
-
-error_resolved_path:
-	free(dir);
 	return NULL;
 }
 
