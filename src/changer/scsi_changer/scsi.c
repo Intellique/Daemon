@@ -984,7 +984,7 @@ static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct
 		close(fd);
 
 		if (ok) {
-			sochgr_drive_register(drive, config, "tape_drive", i);
+			sochgr_drive_register(drive, config, "tape_drive");
 			break;
 		}
 	}

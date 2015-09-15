@@ -172,7 +172,7 @@ static int sochgr_drive_lock(struct so_drive * drive, const char * job_key) {
 	return ok ? 0 : -1;
 }
 
-void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name, unsigned int index) {
+void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name) {
 	if (!drive->enable)
 		return;
 
@@ -188,7 +188,7 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 	 */
 
 	char buffer_index[12];
-	snprintf(buffer_index, 12, "#%u", index);
+	snprintf(buffer_index, 12, "#%u", drive->index);
 
 	const char * params[] = { buffer_index };
 	so_process_new(&self->process, process_name, params, 1);
@@ -215,7 +215,7 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 	if (drives_config == NULL)
 		drives_config = so_value_new_linked_list();
 
-	if (so_value_list_get_length(drives_config) <= index)
+	if (so_value_list_get_length(drives_config) <= drive->index)
 		so_value_list_push(drives_config, dr_config, true);
 }
 

@@ -42,7 +42,7 @@ struct so_drive_ops {
 	int (*update_status)(struct so_drive * drive);
 };
 
-void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name, unsigned int index);
+void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name);
 
 #endif
 
