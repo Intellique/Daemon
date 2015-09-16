@@ -30,6 +30,8 @@
 #include <libintl.h>
 // printf
 #include <stdio.h>
+// bool
+#include <stdbool.h>
 // waitpid
 #include <sys/types.h>
 // waitpid
@@ -47,7 +49,8 @@
 #include "config.h"
 
 enum {
-	OPT_HELP = 'h',
+	OPT_HELP    = 'h',
+	OPT_VERBOSE = 'v',
 };
 
 static int soctl_daemon_init_socket(struct so_value * config);
@@ -124,7 +127,7 @@ int soctl_start_daemon(int argc, char ** argv) {
 
 			case OPT_HELP:
 				printf(gettext("storiqonectl start : start storiqoned\n"));
-				printf(gettext("  -h, --help : show this and exit\n"));
+				printf(gettext("  -h, --help    : show this and exit\n"));
 				return 0;
 
 			default:
@@ -162,12 +165,14 @@ int soctl_status_daemon(int argc, char ** argv) {
 	int option_index = 0;
 	static struct option long_options[] = {
 		{ "help",     0, NULL, OPT_HELP },
+		{ "verbose",  0, NULL, OPT_VERBOSE },
 
 		{ NULL, 0, NULL, 0 },
 	};
 
 	// parse option
 	int opt;
+	bool verbose = false;
 	optind = 0;
 	do {
 		opt = getopt_long(argc, argv, "h", long_options, &option_index);
@@ -178,15 +183,28 @@ int soctl_status_daemon(int argc, char ** argv) {
 
 			case OPT_HELP:
 				printf(gettext("storiqonectl status : get status of storiqoned\n"));
-				printf(gettext("  -h, --help : show this and exit\n"));
+				printf(gettext("  -h, --help    : show this and exit\n"));
+				printf(gettext("  -v, --verbose : increase verbosity\n"));
 				return 0;
+
+			case OPT_VERBOSE:
+				verbose = true;
+				break;
 
 			default:
 				return 1;
 		}
 	} while (opt > -1);
 
-	return soctl_daemon_try_connect() ? 0 : 1;
+	if (soctl_daemon_try_connect()) {
+		if (verbose)
+			printf("%s%s", gettext("Status of daemon: "), gettext("alive"));
+		return 0;
+	} else {
+		if (verbose)
+			printf("%s%s", gettext("Status of daemon: "), gettext("unknown"));
+		return 1;
+	}
 }
 
 int soctl_stop_daemon(int argc, char ** argv) {
@@ -209,7 +227,7 @@ int soctl_stop_daemon(int argc, char ** argv) {
 
 			case OPT_HELP:
 				printf(gettext("storiqonectl stop : stop storiqoned daemon\n"));
-				printf(gettext("  -h, --help : show this and exit\n"));
+				printf(gettext("  -h, --help    : show this and exit\n"));
 				return 0;
 
 			default:

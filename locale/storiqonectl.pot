@@ -7,7 +7,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-15 08:52+0200\n"
+        "POT-Creation-Date: 2015-09-15 20:18+0200\n"
         "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
         "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
         "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,9 +17,14 @@ msgstr  "Project-Id-Version: PACKAGE VERSION\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:127 src/storiqonectl/daemon.c:181 src/storiqonectl/daemon.c:212
+#: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:130 src/storiqonectl/daemon.c:186 src/storiqonectl/daemon.c:230
 #, c-format
-msgid   "  -h, --help : show this and exit\n"
+msgid   "  -h, --help    : show this and exit\n"
+msgstr  ""
+
+#: src/storiqonectl/daemon.c:187
+#, c-format
+msgid   "  -v, --verbose : increase verbosity\n"
 msgstr  ""
 
 #: src/storiqonectl/main.c:64
@@ -27,22 +32,30 @@ msgstr  ""
 msgid   "Error: command not found (%s)\n"
 msgstr  ""
 
+#: src/storiqonectl/daemon.c:201 src/storiqonectl/daemon.c:205
+msgid   "Status of daemon: "
+msgstr  ""
+
+#: src/storiqonectl/daemon.c:201
+msgid   "alive"
+msgstr  ""
+
 #: src/storiqonectl/config.c:75
 #, c-format
 msgid   "storiqonectl config : basic configuration\n"
 msgstr  ""
 
-#: src/storiqonectl/daemon.c:126
+#: src/storiqonectl/daemon.c:129
 #, c-format
 msgid   "storiqonectl start : start storiqoned\n"
 msgstr  ""
 
-#: src/storiqonectl/daemon.c:180
+#: src/storiqonectl/daemon.c:185
 #, c-format
 msgid   "storiqonectl status : get status of storiqoned\n"
 msgstr  ""
 
-#: src/storiqonectl/daemon.c:211
+#: src/storiqonectl/daemon.c:229
 #, c-format
 msgid   "storiqonectl stop : stop storiqoned daemon\n"
 msgstr  ""
@@ -66,3 +79,7 @@ msgid   "storiqonectl: Found %zd drive\n"
 msgid_plural    "storiqonectl: Found %zd drives\n"
 msgstr[0]       ""
 msgstr[1]       ""
+
+#: src/storiqonectl/daemon.c:205
+msgid   "unknown"
+msgstr  ""
