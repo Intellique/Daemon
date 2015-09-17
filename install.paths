@@ -2,6 +2,8 @@ bin/
 include/
 lib/
 locale/*.mo
+script/init.d/
+script/logrotate.d/
 script/pre-post-run/
 script/sql/psql/create_database.sql
 script/sql/psql/delete_database.sql

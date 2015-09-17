@@ -1,4 +1,5 @@
 MAKEFLAGS 	+= -rR --no-print-directory
+SHELL=/bin/bash
 
 # commands
 # static code analysis tool: cppcheck, sparse (cgcc), splint
@@ -215,7 +216,7 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 
 install:
 	@echo ' MKDIR       ${DESTDIR}'
-	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/storiqone/{bin,lib,scripts}
+	@mkdir -p ${DESTDIR}/etc/{init.d,logrotate.d,storiq} ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/storiqone/{bin,lib,scripts}
 	@echo ' CP'
 	@./script/install.sh
 
