@@ -19,27 +19,47 @@ test -f $DAEMON || exit 0
 case "$1" in
   start)
 	echo -n "Starting $DESC: "
-	start-stop-daemon --start --quiet --exec $DAEMON -- $PARAMETERS
+
+	storiqonectl start
+	STATUS=$?
+
 	echo "$NAME."
+	exit $STATUS
 	;;
   stop)
 	echo -n "Stopping $DESC: "
-	start-stop-daemon --stop --quiet --exec $DAEMON
+
+	storiqonectl stop
+	STATUS=$?
+
 	echo "$NAME."
+	exit $STATUS
 	;;
   restart|force-reload)
 	echo -n "Restarting $DESC: "
-	start-stop-daemon --stop --quiet --exec $DAEMON
+
+	storiqonectl stop
+	STATUS=$?
+
+	if [ "$STATUS" -ne 0 ]; then
+		echo -n "failed"
+		exit $STATUS
+	fi
+
 	sleep 1
-	start-stop-daemon --start --quiet --exec $DAEMON -- $PARAMETERS
+
+	storiqonectl start
+	STATUS=$?
+
 	echo "$NAME."
+	exit $STATUS
 	;;
   restart-if-running)
 	set +e
 	echo -n "Restarting $DESC (if running): "
-	if start-stop-daemon --stop --quiet --exec $DAEMON; then
+	if storiqonectl status; then
 		sleep 1
-		start-stop-daemon --start --quiet --exec $DAEMON -- $PARAMETERS
+		storiqonectl start
 	fi
 	echo "$NAME."
 	;;

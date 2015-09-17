@@ -1,0 +1,13 @@
+/var/log/stone/storiqone.log {
+	weekly
+	rotate 52
+
+	compress
+	compressoptions "-9"
+	delaycompress
+
+	missingok
+	notifempty
+	create 0660 root root
+}
+

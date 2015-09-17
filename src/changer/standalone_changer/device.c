@@ -136,7 +136,7 @@ static int sochgr_standalone_changer_init(struct so_value * config, struct so_da
 		"slot", &vslot
 	);
 
-	sochgr_drive_register(dr, drive, "tape_drive", 0);
+	sochgr_drive_register(dr, drive, "tape_drive");
 
 	sochgr_standalone_changer.status = so_changer_status_idle;
 	db_connection->ops->sync_changer(db_connection, &sochgr_standalone_changer, so_database_sync_id_only);

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqonectl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-15 08:52+0200\n"
+        "POT-Creation-Date: 2015-09-15 20:18+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -21,22 +21,39 @@ msgstr  "Project-Id-Version: storiqonectl v1.2\n"
 msgid   "storiqonectl config : basic configuration\n"
 msgstr  "storiqonectl config : configuration de base\n"
 
-#: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:127 src/storiqonectl/daemon.c:181 src/storiqonectl/daemon.c:212
+#: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:130 src/storiqonectl/daemon.c:186 src/storiqonectl/daemon.c:230
 #, c-format
-msgid   "  -h, --help : show this and exit\n"
-msgstr  "  -h, --help : affiche ceci et sort\n"
+msgid   "  -h, --help    : show this and exit\n"
+msgstr  "  -h, --help    : affiche ceci et sort\n"
 
-#: src/storiqonectl/daemon.c:126
+#: src/storiqonectl/daemon.c:129
 #, c-format
 msgid   "storiqonectl start : start storiqoned\n"
 msgstr  "storiqonectl start : démarre le démon\n"
 
-#: src/storiqonectl/daemon.c:180
+#: src/storiqonectl/daemon.c:185
 #, c-format
 msgid   "storiqonectl status : get status of storiqoned\n"
 msgstr  "storiqonectl status : récupère l’état du démon\n"
 
-#: src/storiqonectl/daemon.c:211
+#: src/storiqonectl/daemon.c:187
+#, c-format
+msgid   "  -v, --verbose : increase verbosity\n"
+msgstr  "  -v, --verbose : augmente la verbositée\n"
+
+#: src/storiqonectl/daemon.c:201 src/storiqonectl/daemon.c:205
+msgid   "Status of daemon: "
+msgstr  "État du démon : "
+
+#: src/storiqonectl/daemon.c:201
+msgid   "alive"
+msgstr  "en vie"
+
+#: src/storiqonectl/daemon.c:205
+msgid   "unknown"
+msgstr  "inconnu"
+
+#: src/storiqonectl/daemon.c:229
 #, c-format
 msgid   "storiqonectl stop : stop storiqoned daemon\n"
 msgstr  "storiqonectl stop : arrête le démon\n"

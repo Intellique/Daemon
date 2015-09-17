@@ -561,7 +561,14 @@ char * so_file_read_all_from(const char * filename) {
 	char * data = malloc(st.st_size + 1);
 
 	ssize_t nb_read = read(fd, data, st.st_size);
-	data[st.st_size] = '\0';
+	if (nb_read < 0) {
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_read_all_from: error while reading from file '%s' because %m"),
+			filename);
+		return NULL;
+	}
+
+	data[nb_read] = '\0';
 
 	close(fd);
 

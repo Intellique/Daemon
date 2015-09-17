@@ -52,6 +52,7 @@
 #include <unistd.h>
 
 #include <libstoriqone/changer.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
@@ -566,6 +567,8 @@ void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char
 	if (fd < 0)
 		return;
 
+	so_file_close_fd_on_exec(fd, true);
+
 	struct scsi_request_sense sense;
 	struct {
 		unsigned char mode_data_length;
@@ -981,7 +984,7 @@ static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct
 		close(fd);
 
 		if (ok) {
-			sochgr_drive_register(drive, config, "tape_drive", i);
+			sochgr_drive_register(drive, config, "tape_drive");
 			break;
 		}
 	}
@@ -1213,6 +1216,7 @@ static void sochgr_scsi_changer_scsi_update_status2(int fd, struct so_changer * 
 						dr->status = so_drive_status_unknown;
 						dr->changer = changer;
 						dr->slot = slot;
+						dr->index = i;
 						slot->drive = dr;
 
 						struct so_value * vslot = NULL;

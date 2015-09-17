@@ -320,7 +320,7 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 				struct so_drive * drive = sochgr_vtl_changer.drives + i;
 				struct sochgr_vtl_drive * dr_p = sochgr_vtl_drives + i;
 
-				sochgr_drive_register(drive, dr_p->params, "vtl_drive", i);
+				sochgr_drive_register(drive, dr_p->params, "vtl_drive");
 			}
 
 			sochgr_vtl_changer.nb_drives = nb_drives;
@@ -446,7 +446,7 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		struct so_drive * drive = sochgr_vtl_changer.drives + i;
 		struct sochgr_vtl_drive * dr_p = sochgr_vtl_drives + i;
 
-		sochgr_drive_register(drive, dr_p->params, "vtl_drive", i);
+		sochgr_drive_register(drive, dr_p->params, "vtl_drive");
 	}
 
 	return 0;

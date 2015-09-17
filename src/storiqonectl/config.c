@@ -73,7 +73,7 @@ int soctl_config(int argc, char ** argv) {
 
 			case OPT_HELP:
 				printf(gettext("storiqonectl config : basic configuration\n"));
-				printf(gettext("  -h, --help : show this and exit\n"));
+				printf(gettext("  -h, --help    : show this and exit\n"));
 				return 0;
 
 			default:

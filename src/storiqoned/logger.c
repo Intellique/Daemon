@@ -33,6 +33,7 @@
 // access, close, unlink, write
 #include <unistd.h>
 
+#include <libstoriqone/file.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/poll.h>
@@ -92,6 +93,7 @@ bool sod_logger_start(struct so_value * config) {
 
 	so_process_new(&logger, "logger", NULL, 0);
 	logger_in = so_process_pipe_to(&logger);
+	so_file_close_fd_on_exec(logger_in, true);
 	so_process_set_null(&logger, so_process_stdout);
 	so_process_set_null(&logger, so_process_stderr);
 	so_process_set_nice(&logger, 4);

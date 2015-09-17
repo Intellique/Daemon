@@ -50,6 +50,7 @@
 
 #define gettext_noop(String) String
 
+#include <libstoriqone/file.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/thread_pool.h>
@@ -257,6 +258,11 @@ static void so_log_send_message(void * arg) {
 			socket = so_socket(config);
 			if (socket < 0)
 				sleep(1);
+
+			if (!so_log_running)
+				break;
+
+			so_file_close_fd_on_exec(socket, true);
 		}
 
 		struct so_value_iterator * iter = so_value_list_get_iterator(messages);
