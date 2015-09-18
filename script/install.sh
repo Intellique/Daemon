@@ -1,11 +1,32 @@
 #! /bin/bash
 
-while read line; do
-	for file in $(eval echo $line); do
-		output_file=debian/tmp/$(echo $file | perl -pe 's!^locale/(.*)\.(.*)\.mo$!locale/$2/LC_MESSAGES/$1.mo!')
+while read src dest strip; do
+	output_dir=$1
+	if [ -n "$dest" ]; then
+		output_dir=$output_dir/$dest
+	fi
 
-		mkdir -p $(dirname $output_file)
-		cp -a $file $output_file
-	done
+	if [ ! -d "$output_dir" ]; then
+		mkdir -vp "$output_dir"
+	fi
+
+	if [ -d "$src" ]; then
+		cp -av "$src" "$output_dir"
+	else
+		for file in $(eval echo $src); do
+			if [ -n "$strip" ]; then
+				src_dir=$(dirname $file)
+
+				new_dir="$output_dir"${src_dir:${#strip}}
+				if [ ! -d "$new_dir" ]; then
+					mkdir -vp "$new_dir"
+				fi
+
+				cp -av "$file" "$new_dir"
+			else
+				cp -av "$file" "$output_dir"
+			fi
+		done
+	fi
 done < install.paths
 
