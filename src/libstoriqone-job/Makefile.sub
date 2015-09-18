@@ -10,6 +10,6 @@ LIBSTORIQONEJOB_DEPEND_LIB		:= lib/libstoriqone.so
 
 LIBSTORIQONEJOB_CHCKSUM_FILE	:= libstoriqone-job.chcksum
 
-LIBSTORIQONEJOB_LOCALE			:= locale/libstoriqone-job
+LIBSTORIQONEJOB_LOCALE			:= libstoriqone-job
 
 BIN_SYMS						+= LIBSTORIQONEJOB

@@ -8,6 +8,6 @@ LOGGER_DEPEND_LIB	:= lib/libstoriqone.so
 
 LOGGER_CHCKSUM_FILE	:= logger.chcksum
 
-LOGGER_LOCALE		:= locale/storiqone-logger
+LOGGER_LOCALE		:= storiqone-logger
 
 BIN_SYMS			+= LOGGER

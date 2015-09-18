@@ -10,6 +10,6 @@ LIBSTORIQONECHANGER_DEPEND_LIB		:= lib/libstoriqone.so
 
 LIBSTORIQONECHANGER_CHCKSUM_FILE	:= libstoriqone-changer.chcksum
 
-LIBSTORIQONECHANGER_LOCALE			:= locale/libstoriqone-changer
+LIBSTORIQONECHANGER_LOCALE			:= libstoriqone-changer
 
 BIN_SYMS							+= LIBSTORIQONECHANGER

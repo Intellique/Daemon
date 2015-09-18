@@ -8,6 +8,6 @@ STORIQONECTL_DEPEND_LIB		:= lib/libstoriqone.so
 
 STORIQONECTL_CHCKSUM_FILE	:= storiqonectl.chcksum
 
-STORIQONECTL_LOCALE			:= locale/storiqonectl
+STORIQONECTL_LOCALE			:= storiqonectl
 
 BIN_SYMS					+= STORIQONECTL

@@ -8,6 +8,6 @@ STORIQONE_JOB_COPYARCHIVE_DEPEND_LIB	:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_COPYARCHIVE_CHCKSUM_FILE	:= job_copy-archive.chcksum
 
-STORIQONE_JOB_COPYARCHIVE_LOCALE		:= locale/storiqone-job-copy-archive
+STORIQONE_JOB_COPYARCHIVE_LOCALE		:= storiqone-job-copy-archive
 
 BIN_SYMS								+= STORIQONE_JOB_COPYARCHIVE

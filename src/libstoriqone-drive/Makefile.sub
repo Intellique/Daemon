@@ -10,6 +10,6 @@ LIBSTORIQONEDRIVE_DEPEND_LIB	:= lib/libstoriqone.so
 
 LIBSTORIQONEDRIVE_CHCKSUM_FILE	:= libstoriqone-drive.chcksum
 
-LIBSTORIQONEDRIVE_LOCALE		:= locale/libstoriqone-drive
+LIBSTORIQONEDRIVE_LOCALE		:= libstoriqone-drive
 
 BIN_SYMS						+= LIBSTORIQONEDRIVE

@@ -10,7 +10,7 @@ LIBSTORIQONE_DEPEND_LIB		:=
 
 LIBSTORIQONE_CHCKSUM_FILE	:= libstoriqone.chcksum
 
-LIBSTORIQONE_LOCALE			:= locale/libstoriqone
+LIBSTORIQONE_LOCALE			:= libstoriqone
 
 build/libstoriqone/string.o: build/libstoriqone/unicode.h
 build/libstoriqone/unicode.h: util/unicode/UnicodeData.txt

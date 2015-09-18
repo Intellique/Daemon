@@ -8,6 +8,6 @@ STORIQONE_JOB_CHECK_ARCHIVE_DEPEND_LIB		:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_CHECK_ARCHIVE_CHCKSUM_FILE	:= job_check-archive.chcksum
 
-STORIQONE_JOB_CHECK_ARCHIVE_LOCALE			:= locale/storiqone-job-check-archive
+STORIQONE_JOB_CHECK_ARCHIVE_LOCALE			:= storiqone-job-check-archive
 
 BIN_SYMS									+= STORIQONE_JOB_CHECK_ARCHIVE

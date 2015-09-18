@@ -1,23 +1,32 @@
 #! /bin/bash
 
-while read src dest; do
-	for file in $(eval echo $src); do
-		fake_file=$(echo -n $file | perl -pe 's!^locale/(.*)\.(.*)\.mo$!locale/$2/LC_MESSAGES/$1.mo!')
-		input_dir=$(dirname $fake_file)
+while read src dest strip; do
+	output_dir=$1
+	if [ -n "$dest" ]; then
+		output_dir=$output_dir/$dest
+	fi
 
-		if [ -z "$dest" ]; then
-			output_dir=$1/${input_dir%.}
-		else
-			output_dir=$1/$dest
-		fi
+	if [ ! -d "$output_dir" ]; then
+		mkdir -vp "$output_dir"
+	fi
 
-		if [ ! -d "$output_dir" ]; then
-			mkdir -vp $output_dir
-		fi
+	if [ -d "$src" ]; then
+		cp -av "$src" "$output_dir"
+	else
+		for file in $(eval echo $src); do
+			if [ -n "$strip" ]; then
+				src_dir=$(dirname $file)
 
-		cp -av "$file" "$output_dir"
+				new_dir="$output_dir"${src_dir:${#strip}}
+				if [ ! -d "$new_dir" ]; then
+					mkdir -vp "$new_dir"
+				fi
 
-		printf "dest: %s, file: %s\n" "$output_dir" "$file"
-	done
+				cp -av "$file" "$new_dir"
+			else
+				cp -av "$file" "$output_dir"
+			fi
+		done
+	fi
 done < install.paths
 

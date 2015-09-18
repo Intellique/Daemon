@@ -1,10 +1,10 @@
-bin
-include					usr
-lib
-locale/*.mo
-script/init.d/storiqoned		etc/init.d/
-script/logrotate.d/storiqoned		etc/logrotate.d/
-script/pre-post-run
-script/sql/psql/create_database.sql
-script/sql/psql/delete_database.sql
-script/sql/psql/insert_initial_data.sql
+bin/
+include/									usr
+lib/
+locale/*/LC_MESSAGES/*.mo					usr/share/locale									locale
+script/init.d/								etc
+script/logrotate.d/							etc
+script/pre-post-run/						usr/lib/storiqone/1.2/scripts
+script/sql/psql/create_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql/delete_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql/insert_initial_data.sql		usr/share/storiqone-plugin-db-postgresql/scripts
