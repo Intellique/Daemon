@@ -218,7 +218,7 @@ install:
 	@echo ' MKDIR       ${DESTDIR}'
 	@mkdir -p ${DESTDIR}/etc/{init.d,logrotate.d,storiq} ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/storiqone/{bin,lib,scripts}
 	@echo ' CP'
-	@./script/install.sh
+	@./script/install.sh ${DESTDIR}
 
 locales: $(sort ${LOCALE_MO})
 

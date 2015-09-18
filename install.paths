@@ -1,10 +1,10 @@
-bin/
-include/
-lib/
+bin
+include					usr
+lib
 locale/*.mo
-script/init.d/
-script/logrotate.d/
-script/pre-post-run/
+script/init.d/storiqoned		etc/init.d/
+script/logrotate.d/storiqoned		etc/logrotate.d/
+script/pre-post-run
 script/sql/psql/create_database.sql
 script/sql/psql/delete_database.sql
 script/sql/psql/insert_initial_data.sql
