@@ -3,5 +3,5 @@
 set -e
 
 if [ "$1" = remove ]; then
-	chkconfig stoned off
+	chkconfig storiqoned off
 fi

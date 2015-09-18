@@ -3,5 +3,5 @@
 set -e
 
 if [ "$1" = configure ]; then
-	chkconfig stoned on
+	chkconfig storiqoned on
 fi

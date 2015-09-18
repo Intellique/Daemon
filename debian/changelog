@@ -1,3 +1,9 @@
+storiqone (1.2rc4-2) polisher; urgency=low
+
+  * Fix pre/post installation scripts
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 18 Sep 2015 16:18:18 +0200
+
 storiqone (1.2rc4-1) polisher; urgency=low
 
   * Fourth release candidate
