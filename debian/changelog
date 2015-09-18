@@ -1,3 +1,10 @@
+storiqone (1.2rc4-1) polisher; urgency=low
+
+  * Fourth release candidate
+  * Update install paths
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 18 Sep 2015 15:49:42 +0200
+
 storiqone (1.2rc3-1) polisher; urgency=low
 
   * Third release candidate
