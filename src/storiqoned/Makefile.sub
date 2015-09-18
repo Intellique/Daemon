@@ -8,6 +8,6 @@ STORIQONED_DEPEND_LIB	:= lib/libstoriqone.so
 
 STORIQONED_CHCKSUM_FILE	:= storiqoned.chcksum
 
-STORIQONED_LOCALE		:= locale/storiqoned
+STORIQONED_LOCALE		:= storiqoned
 
 BIN_SYMS				+= STORIQONED

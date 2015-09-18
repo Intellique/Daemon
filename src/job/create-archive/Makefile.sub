@@ -8,6 +8,6 @@ STORIQONE_JOB_CREATE_ARCHIVE_DEPEND_LIB		:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_CREATE_ARCHIVE_CHCKSUM_FILE	:= job_create-archive.chcksum
 
-STORIQONE_JOB_CREATE_ARCHIVE_LOCALE			:= locale/storiqone-job-create-archive
+STORIQONE_JOB_CREATE_ARCHIVE_LOCALE			:= storiqone-job-create-archive
 
 BIN_SYMS									+= STORIQONE_JOB_CREATE_ARCHIVE

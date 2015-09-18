@@ -8,6 +8,6 @@ STORIQONE_JOB_RESTOREARCHIVE_DEPEND_LIB		:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_RESTOREARCHIVE_CHCKSUM_FILE	:= job_restore-archive.chcksum
 
-STORIQONE_JOB_RESTOREARCHIVE_LOCALE			:= locale/storiqone-job-restore-archive
+STORIQONE_JOB_RESTOREARCHIVE_LOCALE			:= storiqone-job-restore-archive
 
 BIN_SYMS									+= STORIQONE_JOB_RESTOREARCHIVE

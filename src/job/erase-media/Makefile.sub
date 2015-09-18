@@ -8,6 +8,6 @@ STORIQONE_JOB_ERASEMEDIA_DEPEND_LIB		:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_ERASEMEDIA_CHCKSUM_FILE	:= job_erase-media.chcksum
 
-STORIQONE_JOB_ERASEMEDIA_LOCALE			:= locale/storiqone-job-erase-media
+STORIQONE_JOB_ERASEMEDIA_LOCALE			:= storiqone-job-erase-media
 
 BIN_SYMS								+= STORIQONE_JOB_ERASEMEDIA

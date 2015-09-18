@@ -8,6 +8,6 @@ STORIQONE_JOB_CHECKBACKUPDB_DEPEND_LIB		:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_CHECKBACKUPDB_CHCKSUM_FILE	:= job_check-backup-db.chcksum
 
-STORIQONE_JOB_CHECKBACKUPDB_LOCALE			:= locale/storiqone-job-check-backup-db
+STORIQONE_JOB_CHECKBACKUPDB_LOCALE			:= storiqone-job-check-backup-db
 
 BIN_SYMS									+= STORIQONE_JOB_CHECKBACKUPDB

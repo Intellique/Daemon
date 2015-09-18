@@ -8,6 +8,6 @@ STORIQONE_JOB_IMPORTARCHIVES_DEPEND_LIB		:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_IMPORTARCHIVES_CHCKSUM_FILE	:= job_import-archives.chcksum
 
-STORIQONE_JOB_IMPORTARCHIVES_LOCALE			:= locale/storiqone-job-import-archives
+STORIQONE_JOB_IMPORTARCHIVES_LOCALE			:= storiqone-job-import-archives
 
 BIN_SYMS									+= STORIQONE_JOB_IMPORTARCHIVES
