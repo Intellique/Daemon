@@ -89,7 +89,7 @@ static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_va
 	so_format_file_init(&file);
 	so_format_file_sync(&file, vfile);
 
-	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
+	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
 	enum so_format_writer_status status = peer->format_writer->ops->add_file(peer->format_writer, &file);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
@@ -113,7 +113,7 @@ static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_v
 	char * label = NULL;
 	so_value_unpack(request, "{s{so}}", "params", "label", &label);
 
-	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
+	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
 	enum so_format_writer_status status = peer->format_writer->ops->add_label(peer->format_writer, label);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
@@ -182,10 +182,10 @@ static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, 
 }
 
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
+	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t eof = peer->format_writer->ops->end_of_file(peer->format_writer);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
-	ssize_t new_position = peer->format_reader->ops->position(peer->format_reader);
+	ssize_t new_position = peer->format_writer->ops->position(peer->format_writer);
 
 	peer->nb_total_bytes += new_position - current_position;
 
@@ -241,7 +241,7 @@ static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct s
 	so_format_file_init(&file);
 	so_format_file_sync(&file, vfile);
 
-	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
+	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
 	enum so_format_writer_status status = peer->format_writer->ops->restart_file(peer->format_writer, &file, position);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t new_position = peer->format_writer->ops->position(peer->format_writer);
