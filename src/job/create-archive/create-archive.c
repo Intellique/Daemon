@@ -135,8 +135,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 			enum so_format_reader_header_status status;
 			while (status = src_files[i]->ops->get_header(src_files[i], &file), status == so_format_reader_header_ok) {
 				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-						dgettext("storiqone-job-create-archive", "Adding %s to archive"),
-						file.filename);
+					dgettext("storiqone-job-create-archive", "Adding %s to archive"),
+					file.filename);
 
 				if (round == 1)
 					soj_create_archive_meta_worker_add_file(file.filename, root);
@@ -144,8 +144,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(job, &file, round == 1, db_connect);
 				if (write_status != so_format_writer_ok) {
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-							dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
-							file.filename);
+						dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
+						file.filename);
 					break;
 				}
 
@@ -165,8 +165,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 					if (nb_read < 0) {
 						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-								dgettext("storiqone-job-create-archive", "Error while reading from %s"),
-								file.filename);
+							dgettext("storiqone-job-create-archive", "Error while reading from %s"),
+							file.filename);
 						failed = -1;
 					} else {
 						failed = soj_create_archive_worker_end_of_file();
@@ -207,6 +207,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	}
 	so_value_iterator_free(iter);
 
+	job->done = 0.99;
+
 	struct so_value * archives = soj_create_archive_worker_archives();
 	iter = so_value_list_get_iterator(archives);
 	while (so_value_iterator_has_next(iter)) {
@@ -238,6 +240,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	if (failed != 0)
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-create-archive", "Error while synchronizing archive with database"));
+	else
+		job->done = 1;
 
 	return failed;
 }

@@ -192,6 +192,8 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 
 	soj_create_archive_add_file3(worker, file, position);
 
+	worker->total_done = worker->writer->ops->position(worker->writer);
+
 	return status;
 }
 
@@ -688,6 +690,8 @@ ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_
 		available -= nb_write;
 		worker->position += nb_write;
 	}
+
+	worker->total_done = worker->writer->ops->position(worker->writer);
 
 	return nb_total_write;
 }
