@@ -59,7 +59,7 @@ msgstr  "Erreur, aucun pool et aucune archive de défini"
 #: src/job/create-archive/create-archive.c:305
 #, c-format
 msgid   "Error, you can't add files to archive '%s' by policy"
-msgstr  "Erreur, la politique n'autorise pas l'ajout de fichiers à l’archive « %s » "
+msgstr  "Erreur, la politique n’autorise pas l'ajout de fichiers à l’archive « %s » "
 
 #: src/job/create-archive/create-archive.c:312
 #, c-format
@@ -84,7 +84,7 @@ msgstr  ""
 #: src/job/create-archive/create-archive.c:351
 #, c-format
 msgid   "Warning, skipping archive '%s' from pool '%s' because this archive is not synchronized"
-msgstr  "Attention, l’archive « %s » du pool « %s » n'est pas traitée parce qu’elle n’est pas synchronisée"
+msgstr  "Attention, l’archive « %s » du pool « %s » n’est pas traitée parce qu’elle n’est pas synchronisée"
 
 #: src/job/create-archive/create-archive.c:357
 #, c-format
@@ -104,7 +104,7 @@ msgstr  "Erreur : espace insuffisant dans le pool (%s)"
 #: src/job/create-archive/create-archive.c:378
 #, c-format
 msgid   "Space required (%s) to add to archive '%s'"
-msgstr  "Espace requis (%s) pour ajouter à l'archive « %s »"
+msgstr  "Espace requis (%s) pour ajouter à l’archive « %s »"
 
 #: src/job/create-archive/worker.c:129 src/job/create-archive/worker.c:146
 #, c-format
@@ -119,7 +119,7 @@ msgstr  "L’archive continue sur le média (%s)"
 #: src/job/create-archive/worker.c:588
 #, c-format
 msgid   "Warning, not archiving to pool '%s': not enough space (space reserved: %s, space required: %s)"
-msgstr  "Attention, impossible d'archiver dans le pool « %s » : pas assez d’espace dans celui-ci (espace réservé : %s, espace "
+msgstr  "Attention, impossible d’archiver dans le pool « %s » : pas assez d’espace dans celui-ci (espace réservé : %s, espace "
         "requis : %s)"
 
 #: src/job/create-archive/worker.c:598

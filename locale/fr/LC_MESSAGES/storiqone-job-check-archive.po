@@ -23,7 +23,7 @@ msgstr  "Archive non trouvée"
 #: src/job/check-archive/quick_mode.c:80
 #, c-format
 msgid   "Starting check archive (%s) in quick mode"
-msgstr  "Démarrage de la vérification de l'archive (%s) en mode rapide"
+msgstr  "Démarrage de la vérification de l’archive (%s) en mode rapide"
 
 #: src/job/check-archive/quick_mode.c:127
 msgid   "Failed to set worker thread name"
@@ -32,7 +32,7 @@ msgstr  "Échec lors de la définition du nom du fil d’exécution"
 #: src/job/check-archive/quick_mode.c:134
 #, c-format
 msgid   "Starting worker #%u"
-msgstr  "Démarrage du fil d'exécution #%u"
+msgstr  "Démarrage du fil d’exécution #%u"
 
 #: src/job/check-archive/quick_mode.c:198 src/job/check-archive/thorough_mode.c:78
 #, c-format
@@ -52,4 +52,4 @@ msgstr  "Recherche du média (%s)"
 #: src/job/check-archive/thorough_mode.c:51
 #, c-format
 msgid   "Starting check archive (%s) in thorough mode"
-msgstr  "Démarrage de la vérification de l'archive (%s) en mode minutieux"
+msgstr  "Démarrage de la vérification de l’archive (%s) en mode minutieux"
