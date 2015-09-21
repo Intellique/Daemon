@@ -134,12 +134,12 @@ $$($(1)_LOCALE_POT): $$($(1)_SRC_FILES)
 	@xgettext -d $$($(1)_LOCALE) -o $$@ --from-code=UTF-8 -i -w 128 -s $$($(1)_SRC_FILES)
 
 $$($(1)_LOCALE_PO): $$($(1)_LOCALE_POT)
-	@echo " MSGMERGE   $$(@F)"
+	@echo " MSGMERGE   $$@"
 	@msgmerge -q --backup=off -F -N -U -i -w 128 $$@ $$<
 	@touch $$@
 
 %.mo: %.po
-	@echo " MSGFMT     $$(@F)"
+	@echo " MSGFMT     $$@"
 	@msgfmt -f --check --output-file $$@ $$<
 
 endif
