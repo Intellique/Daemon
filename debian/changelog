@@ -1,3 +1,9 @@
+storiqone (1.2rc5-1) polisher; urgency=low
+
+  * Bug fix: nasty copy & paste
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 21 Sep 2015 11:45:10 +0200
+
 storiqone (1.2rc4-2) polisher; urgency=low
 
   * Fix pre/post installation scripts
