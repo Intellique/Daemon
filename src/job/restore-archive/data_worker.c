@@ -62,14 +62,21 @@
 static void soj_restorearchive_data_worker_do(void * arg);
 
 
-struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker) {
+struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_archive_volume * vol, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker) {
 	struct soj_restorearchive_data_worker * worker = malloc(sizeof(struct soj_restorearchive_data_worker));
 	bzero(worker, sizeof(struct soj_restorearchive_data_worker));
 
 	worker->archive = archive;
-	worker->media = media;
+	worker->media = vol->media;
 	worker->db_config = db_config;
 	worker->status = so_job_status_running;
+
+	unsigned int j;
+	for (j = 0; j < vol->nb_files; j++) {
+		struct so_archive_files * ptr_file = vol->files + j;
+		if (soj_restorearchive_path_filter(ptr_file->file->path))
+			worker->nb_total_files++;
+	}
 
 	if (previous_worker != NULL)
 		previous_worker->next = worker;
@@ -197,7 +204,9 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				*ptr = '/';
 			}
 
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Starting restoring file '%s'"), restore_to);
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-job-restore-archive", "Starting restoring file '%s'"),
+				restore_to);
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
@@ -293,6 +302,10 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to change owner and group of '%s' because %m"), restore_to);
 				worker->nb_warnings++;
 			}
+
+			worker->nb_total_files_done++;
+			if (worker->nb_total_files <= worker->nb_total_files_done)
+				break;
 		}
 
 		reader->ops->free(reader);
