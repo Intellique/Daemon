@@ -16,7 +16,7 @@ STRIP		:= ${TARGET}strip
 # variable
 NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
-VERSION		:= 1.2rc5
+VERSION		:= v1.2rc5
 
 
 GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar.gz
