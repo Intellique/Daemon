@@ -16,6 +16,7 @@ STRIP		:= ${TARGET}strip
 # variable
 NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
+VERSION		:= 1.2rc5
 
 
 GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar.gz
@@ -228,7 +229,7 @@ package:
 	@echo ' CLEAN'
 	@dh_clean
 	@echo ' UPDATE      src'
-	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} v1.2rc4
+	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} ${VERSION}
 	@echo ' BUILD       package'
 	@dpkg-buildpackage -us -uc -rfakeroot
 
