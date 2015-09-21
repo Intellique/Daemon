@@ -27,7 +27,7 @@
 #ifndef __STORIQONE_CONFIG_H__
 #define __STORIQONE_CONFIG_H__
 
-#define DAEMON_CONFIG_FILE "/etc/storiq/stone.conf"
+#define DAEMON_CONFIG_FILE "/etc/storiq/storiqone.conf"
 #define DAEMON_SOCKET_DIR "/var/run/storiqone"
 #define DAEMON_PID_FILE "/var/run/storiqone.pid"
 #define DAEMON_BIN_DIR "/usr/lib/storiqone/1.2/bin"

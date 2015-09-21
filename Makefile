@@ -16,9 +16,10 @@ STRIP		:= ${TARGET}strip
 # variable
 NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
+VERSION		:= 1.2rc5
 
 
-GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar
+GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar.gz
 GIT_HEAD	:= $(shell ./script/git-head.pl)
 
 BINS		:=
@@ -220,16 +221,16 @@ install:
 	@echo ' MKDIR       ${DESTDIR}'
 	@mkdir -p ${DESTDIR}/etc/{init.d,logrotate.d,storiq} ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/storiqone/{bin,lib,scripts}
 	@echo ' CP'
-	@./script/install.sh
+	@./script/install.sh ${DESTDIR}
 
 locales: $(sort ${LOCALE_MO})
 
 package:
 	@echo ' CLEAN'
 	@dh_clean
-	@echo ' UPDATE src'
-	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} debian
-	@echo ' BUILD package'
+	@echo ' UPDATE      src'
+	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} ${VERSION}
+	@echo ' BUILD       package'
 	@dpkg-buildpackage -us -uc -rfakeroot
 
 rebuild: clean all
