@@ -36,6 +36,8 @@
 #include <string.h>
 // bzero
 #include <strings.h>
+// sleep
+#include <unistd.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
@@ -231,6 +233,8 @@ int main() {
 	);
 	so_json_encode_to_fd(status, 1, true);
 	so_value_free(status);
+
+	sleep(2);
 
 	job_dr->exit(job, db_connect);
 
