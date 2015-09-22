@@ -49,6 +49,7 @@
 #include "config.h"
 
 static struct so_archive * archive = NULL;
+static bool has_selected_path = false;
 static char * restore_path = NULL;
 static struct so_value * selected_path = NULL;
 
@@ -93,18 +94,24 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 		struct so_archive_volume * vol = archive->volumes + i;
 		bool found = false;
 
-		unsigned int j;
-		for (j = 0; j < vol->nb_files && !found; j++) {
-			struct so_archive_files * ptr_file = vol->files + j;
-			found = soj_restorearchive_path_filter(ptr_file->file->path);
-		}
+		if (has_selected_path) {
+			unsigned int j;
+			for (j = 0; j < vol->nb_files; j++) {
+				struct so_archive_files * ptr_file = vol->files + j;
 
-		if (!found)
-			continue;
+				if (soj_restorearchive_path_filter(ptr_file->file->path)) {
+					found = true;
+					total_size += ptr_file->file->size;
+				}
+			}
 
-		total_size += vol->size;
+			if (!found)
+				continue;
 
-		found = false;
+			found = false;
+		} else
+			total_size += vol->size;
+
 		struct soj_restorearchive_data_worker * ptr;
 		for (ptr = workers; !found && ptr != NULL; ptr = ptr->next)
 			if (strcmp(ptr->media->medium_serial_number, vol->media->medium_serial_number) == 0)
@@ -171,6 +178,8 @@ static int soj_restorearchive_simulate(struct so_job * job, struct so_database_c
 	selected_path = db_connect->ops->get_selected_files_by_job(db_connect, job);
 	if (selected_path == NULL)
 		selected_path = so_value_new_linked_list();
+
+	has_selected_path = so_value_list_get_length(selected_path) > 0;
 
 	soj_restorearchive_path_init(restore_path, selected_path);
 
