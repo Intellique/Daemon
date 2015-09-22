@@ -213,6 +213,8 @@ struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive 
 	if (block_size < 0)
 		return NULL;
 
+	drive->status = so_drive_status_reading;
+
 	struct sodr_tape_drive_reader * self = malloc(sizeof(struct sodr_tape_drive_reader));
 	self->fd = fd;
 
