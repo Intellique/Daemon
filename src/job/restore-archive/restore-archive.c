@@ -86,8 +86,6 @@ static void soj_restorearchive_init() {
 }
 
 static int soj_restorearchive_run(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_restorearchive_check_worker_start(db_connect->config);
-
 	struct soj_restorearchive_data_worker * workers = NULL, * last_worker = NULL;
 	size_t total_size = 0;
 	unsigned int i;
@@ -95,15 +93,25 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 		struct so_archive_volume * vol = archive->volumes + i;
 		bool found = false;
 
+		unsigned int j;
+		for (j = 0; j < vol->nb_files && !found; j++) {
+			struct so_archive_files * ptr_file = vol->files + j;
+			found = soj_restorearchive_path_filter(ptr_file->file->path);
+		}
+
+		if (!found)
+			continue;
+
 		total_size += vol->size;
 
+		found = false;
 		struct soj_restorearchive_data_worker * ptr;
 		for (ptr = workers; !found && ptr != NULL; ptr = ptr->next)
 			if (strcmp(ptr->media->medium_serial_number, vol->media->medium_serial_number) == 0)
 				found = true;
 
 		if (!found) {
-			last_worker = soj_restorearchive_data_worker_new(archive, vol->media, db_connect->config, last_worker);
+			last_worker = soj_restorearchive_data_worker_new(archive, vol, db_connect->config, last_worker);
 
 			if (workers == NULL)
 				workers = last_worker;
@@ -112,6 +120,12 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 
 	job->done = 0.01;
 
+	if (total_size == 0) {
+		job->done = 1;
+		return 0;
+	}
+
+	soj_restorearchive_check_worker_start(db_connect->config);
 	soj_restorearchive_data_worker_start(workers, job, db_connect);
 
 	bool finished = false;

@@ -125,4 +125,4 @@ msgstr  "Vérification de l’entête Storiq One sur le média : échec"
 
 #: src/libstoriqone-drive/media.c:383
 msgid   "Failed to compute digest before writing media header"
-msgstr  "Échec du calcul de l’empreinte avant l'écriture de l’entête du média"
+msgstr  "Échec du calcul de l’empreinte avant l’écriture de l’entête du média"

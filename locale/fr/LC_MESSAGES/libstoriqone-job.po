@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-01 10:03+0200\n"
+        "POT-Creation-Date: 2015-09-21 16:26+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -21,36 +21,36 @@ msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
 msgid   "Failed to read link of file '%s' because %m"
 msgstr  "Échec lors de la lecture du lien symbolique du fichier « %s » parce que %m"
 
-#: src/libstoriqone-job/main.c:66
+#: src/libstoriqone-job/main.c:68
 msgid   "Daemon unexpectedly quit"
 msgstr  "Le démon a inopinément quitté"
 
-#: src/libstoriqone-job/main.c:105
+#: src/libstoriqone-job/main.c:107
 #, c-format
 msgid   "Starting simulation of job (type: %s, key: %s, name: %s)"
 msgstr  "Démarrage de la simulation de la tâche (type : %s, clef : %s, nom : %s)"
 
-#: src/libstoriqone-job/main.c:111
+#: src/libstoriqone-job/main.c:113
 #, c-format
 msgid   "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
 msgstr  "La simulation de la tâche (type : %s, clef : %s, nom : %s) a échoué avec le code : %d"
 
-#: src/libstoriqone-job/main.c:125
+#: src/libstoriqone-job/main.c:127
 #, c-format
 msgid   "Starting job (type: %s, key: %s, name: %s)"
 msgstr  "Démarrage de la tâche (type : %s, clef : %s, nom : %s)"
 
-#: src/libstoriqone-job/main.c:129
+#: src/libstoriqone-job/main.c:131
 #, c-format
 msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
 msgstr  "Fin de la tâche (type : %s, clef : %s, nom : %s), code de sorti : %d"
 
-#: src/libstoriqone-job/main.c:173
+#: src/libstoriqone-job/main.c:175
 #, c-format
 msgid   "Starting job (type: %s)"
 msgstr  "Démarrage de la tâche (type : %s)"
 
-#: src/libstoriqone-job/main.c:204
+#: src/libstoriqone-job/main.c:206
 #, c-format
 msgid   "Initializing job (type: %s)"
 msgstr  "Initialisation de la tâche (type : %s)"

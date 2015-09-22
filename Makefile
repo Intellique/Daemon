@@ -16,7 +16,7 @@ STRIP		:= ${TARGET}strip
 # variable
 NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
-VERSION		:= v1.2rc5
+VERSION		:= v1.2rc6
 
 
 GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar.gz
@@ -134,12 +134,12 @@ $$($(1)_LOCALE_POT): $$($(1)_SRC_FILES)
 	@xgettext -d $$($(1)_LOCALE) -o $$@ --from-code=UTF-8 -i -w 128 -s $$($(1)_SRC_FILES)
 
 $$($(1)_LOCALE_PO): $$($(1)_LOCALE_POT)
-	@echo " MSGMERGE   $$(@F)"
+	@echo " MSGMERGE   $$@"
 	@msgmerge -q --backup=off -F -N -U -i -w 128 $$@ $$<
 	@touch $$@
 
 %.mo: %.po
-	@echo " MSGFMT     $$(@F)"
+	@echo " MSGFMT     $$@"
 	@msgfmt -f --check --output-file $$@ $$<
 
 endif
@@ -272,7 +272,7 @@ tags: ${SRC_FILES} ${HEAD_FILES}
 	@echo " CTAGS"
 	@${CTAGS} ${CTAGS_OPT}
 
-ifeq ($(findstring $(MAKECMDGOALS),check clean distclean doc stat),)
+ifeq ($(findstring $(MAKECMDGOALS),check clean distclean doc package stat),)
 -include configure.vars
 -include ${DEP_FILES}
 endif

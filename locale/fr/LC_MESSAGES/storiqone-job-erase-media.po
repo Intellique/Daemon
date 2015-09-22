@@ -24,7 +24,7 @@ msgstr  "Échec lors du chargement du média « %s »"
 #: src/job/erase-media/erase-media.c:134
 #, c-format
 msgid   "Trying to erase a write protected media '%s'"
-msgstr  "Tentative d’effacement d'un média protégé en écriture « %s »"
+msgstr  "Tentative d’effacement d’un média protégé en écriture « %s »"
 
 #: src/job/erase-media/erase-media.c:146
 #, c-format
@@ -68,7 +68,7 @@ msgstr  "Tentative d’effacement d’un média qui a un statut en erreur"
 #: src/job/erase-media/erase-media.c:200
 #, c-format
 msgid   "Trying to erase a media containing a non-deleted archive (named: %s)"
-msgstr  "Tentative d’effacement d'un média contenant une archive non supprimée (nommé : %s)"
+msgstr  "Tentative d’effacement d’un média contenant une archive non supprimée (nommé : %s)"
 
 #: src/job/erase-media/erase-media.c:209
 #, c-format
