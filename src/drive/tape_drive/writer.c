@@ -245,6 +245,8 @@ static int sodr_tape_drive_writer_last_errno(struct so_stream_writer * sw) {
 struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position) {
 	ssize_t block_size = sodr_tape_drive_get_block_size();
 
+	drive->status = so_drive_status_writing;
+
 	struct sodr_tape_drive_writer * self = malloc(sizeof(struct sodr_tape_drive_writer));
 	self->fd = fd;
 	self->buffer = malloc(block_size);
