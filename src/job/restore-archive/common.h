@@ -36,6 +36,7 @@
 
 struct so_archive;
 struct so_archive_file;
+struct so_archive_volume;
 struct so_database_config;
 struct so_media;
 struct so_value;
