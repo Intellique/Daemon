@@ -1,3 +1,12 @@
+storiqone (1.2rc6-1) polisher; urgency=low
+
+  * Bug fix:
+    - create archive progression
+    - typos in french messages
+  * Improve restore archive
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 22 Sep 2015 09:46:32 +0200
+
 storiqone (1.2rc5-1) polisher; urgency=low
 
   * Bug fix: nasty copy & paste
