@@ -16,7 +16,7 @@ STRIP		:= ${TARGET}strip
 # variable
 NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
-VERSION		:= 1.2rc5
+VERSION		:= v1.2rc6
 
 
 GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar.gz
@@ -272,7 +272,7 @@ tags: ${SRC_FILES} ${HEAD_FILES}
 	@echo " CTAGS"
 	@${CTAGS} ${CTAGS_OPT}
 
-ifeq ($(findstring $(MAKECMDGOALS),check clean distclean doc stat),)
+ifeq ($(findstring $(MAKECMDGOALS),check clean distclean doc package stat),)
 -include configure.vars
 -include ${DEP_FILES}
 endif
