@@ -43,7 +43,7 @@ msgstr  "Démarrage de la tâche (type : %s, clef : %s, nom : %s)"
 #: src/libstoriqone-job/main.c:131
 #, c-format
 msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
-msgstr  "Fin de la tâche (type : %s, clef : %s, nom : %s), code de sorti : %d"
+msgstr  "Fin de la tâche (type : %s, clef : %s, nom : %s), code de sortie : %d"
 
 #: src/libstoriqone-job/main.c:175
 #, c-format
