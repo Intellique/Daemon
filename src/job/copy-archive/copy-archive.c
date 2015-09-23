@@ -26,6 +26,8 @@
 
 // bindtextdomain, dgettext
 #include <libintl.h>
+// free
+#include <stdlib.h>
 // strdup
 #include <string.h>
 // sleep
@@ -36,6 +38,7 @@
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
@@ -155,6 +158,15 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 				dgettext("storiqone-job-copy-archive", "Synchronizing archive '%s' into database"),
 				data.src_archive->name);
 
+			struct so_value * report = so_value_pack("{sisosososO}",
+				"report version", 2,
+				"job", so_job_convert(job),
+				"host", so_host_get_info2(),
+				"pool", so_pool_convert(data.copy_archive->volumes->media->pool),
+				"archive", so_archive_convert(data.copy_archive)
+			);
+			char * json = so_json_encode_to_string(report);
+
 			failed = db_connect->ops->start_transaction(db_connect);
 			if (failed != 0) {
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -163,6 +175,8 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive, data.src_archive);
 				if (failed == 0)
 					failed = db_connect->ops->link_archives(db_connect, job, data.src_archive, data.copy_archive);
+
+				db_connect->ops->add_report(db_connect, job, data.copy_archive, NULL, json);
 
 				if (failed != 0)
 					db_connect->ops->cancel_transaction(db_connect);
@@ -180,6 +194,9 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 					data.src_archive->name);
 				job->done = 1;
 			}
+
+			free(json);
+			so_value_free(report);
 		}
 	}
 

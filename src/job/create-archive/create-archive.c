@@ -209,33 +209,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 	job->done = 0.99;
 
-	struct so_value * archives = soj_create_archive_worker_archives();
-	iter = so_value_list_get_iterator(archives);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * varchive = so_value_iterator_get_value(iter, false);
-		struct so_archive * archive = so_value_custom_get(varchive);
-
-		if (archive->nb_volumes < 1)
-			continue;
-
-		struct so_archive_volume * vol = archive->volumes;
-		struct so_pool * pool = vol->media->pool;
-
-		struct so_value * report = so_value_pack("{sisosososOsO}",
-			"report version", 2,
-			"job", so_job_convert(job),
-			"host", so_host_get_info2(),
-			"pool", so_pool_convert(pool),
-			"archive", varchive,
-			"selected paths", selected_path
-		);
-
-		char * json = so_json_encode_to_string(report);
-		db_connect->ops->add_report(db_connect, job, archive, NULL, json);
-
-		free(json);
-		so_value_free(report);
-	}
+	soj_create_archive_worker_generate_report(job, selected_path, db_connect);
 
 	if (failed != 0)
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,

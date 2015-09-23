@@ -42,6 +42,7 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_job * 
 int soj_create_archive_worker_close(bool first_round);
 ssize_t soj_create_archive_worker_end_of_file(void);
 bool soj_create_archive_worker_finished(void);
+void soj_create_archive_worker_generate_report(struct so_job * job, struct so_value * selected_path, struct so_database_connection * db_connect);
 void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archive * primary_archive, struct so_value * mirrors);
 void soj_create_archive_worker_init_pool(struct so_job * job, struct so_pool * primary_pool, struct so_value * mirrors);
 void soj_create_archive_worker_prepare_medias(struct so_database_connection * db_connect);

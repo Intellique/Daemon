@@ -37,6 +37,7 @@
 #include <unistd.h>
 
 #include <libstoriqone/file.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
 #include "common.h"
@@ -97,6 +98,7 @@ const char * soj_restorearchive_path_get(const char * path, const char * parent,
 		}
 
 		if (restore_path != NULL) {
+			so_string_delete_double_char(restore_path, '/');
 			so_value_hashtable_put2(path_files, path, so_value_new_string(restore_path), true);
 			free(restore_path);
 		} else {
