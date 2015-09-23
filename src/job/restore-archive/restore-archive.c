@@ -35,6 +35,7 @@
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
@@ -158,6 +159,21 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 		job->done = 1;
 
 	soj_restorearchive_check_worker_stop();
+
+
+	struct so_value * report = so_value_pack("{sisososOsO}",
+		"report version", 2,
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"archive", so_archive_convert(archive),
+		"selected paths", selected_path
+	);
+
+	char * json = so_json_encode_to_string(report);
+	db_connect->ops->add_report(db_connect, job, archive, NULL, json);
+
+	free(json);
+	so_value_free(report);
 
 	return 0;
 }
