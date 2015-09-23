@@ -43,6 +43,7 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/host.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -91,6 +92,7 @@ static void soj_create_archive_add_file3(struct soj_create_archive_worker * work
 static int soj_create_archive_worker_change_volume(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
+static void soj_create_archive_worker_generate_report2(struct so_job * job, struct so_archive * archive, struct so_value * selected_path, struct so_database_connection * db_connect);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
 static void soj_create_archive_worker_prepare_medias3(struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
@@ -389,6 +391,43 @@ bool soj_create_archive_worker_finished() {
 	}
 
 	return true;
+}
+
+void soj_create_archive_worker_generate_report(struct so_job * job, struct so_value * selected_path, struct so_database_connection * db_connect) {
+	soj_create_archive_worker_generate_report2(job, primary_worker->archive, selected_path, db_connect);
+
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (worker->state != soj_worker_status_ready)
+			continue;
+
+		soj_create_archive_worker_generate_report2(job, worker->archive, selected_path, db_connect);
+	}
+}
+
+static void soj_create_archive_worker_generate_report2(struct so_job * job, struct so_archive * archive, struct so_value * selected_path, struct so_database_connection * db_connect) {
+	if (archive->nb_volumes < 1)
+		return;
+
+	struct so_archive_volume * vol = archive->volumes;
+	struct so_pool * pool = vol->media->pool;
+
+	struct so_value * report = so_value_pack("{sisosososOsO}",
+		"report version", 2,
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool", so_pool_convert(pool),
+		"archive", so_archive_convert(archive),
+		"selected paths", selected_path
+	);
+
+	char * json = so_json_encode_to_string(report);
+	db_connect->ops->add_report(db_connect, job, archive, NULL, json);
+
+	free(json);
+	so_value_free(report);
 }
 
 void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archive * primary_archive, struct so_value * archive_mirrors) {
