@@ -98,7 +98,8 @@ static void soj_erasemedia_init() {
 }
 
 static void soj_erasemedia_make_report(struct so_job * job, struct so_database_connection * db_connect) {
-	struct so_value * report = so_value_pack("{sosososo}",
+	struct so_value * report = so_value_pack("{sisosososo}",
+		"report version", 2,
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
 		"media", so_media_convert(soj_erasemedia_media),
