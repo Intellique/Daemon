@@ -1,3 +1,9 @@
+storiqone (1.2rc8-1) polisher; urgency=low
+
+  * Generate report for create-archive, copy-archive, erase-media and restore-archive
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 23 Sep 2015 13:37:25 +0200
+
 storiqone (1.2rc7-1) polisher; urgency=low
 
   * Bug fix:
