@@ -1,3 +1,10 @@
+storiqone (1.2.1-1) polisher; urgency=low
+
+  * Bug fix release
+    - wrong block size in media label while formatting media (LTO)
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 25 Sep 2015 08:04:23 +0200
+
 storiqone (1.2-1) polisher; urgency=low
 
   * Final release
