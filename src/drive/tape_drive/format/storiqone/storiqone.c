@@ -130,9 +130,13 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_d
 		media->last_write = time(NULL);
 		media->write_count++;
 
-		if (last_speed > 0 && speed > 52428800 && last_speed * 1.1 > speed)
+		if (last_speed > 0 && speed > 52428800 && last_speed * 1.1 > speed) {
+			if (last_speed > speed) {
+				current_block_size >>= 1;
+				so_file_convert_size_to_string(current_block_size, buf_size, 24);
+			}
 			break;
-		else
+		} else
 			last_speed = speed;
 	}
 	free(buffer);
@@ -154,6 +158,9 @@ int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int f
 	if (block_size == 0)
 		block_size = sodr_tape_drive_format_storiqone_find_best_block_size(drive, fd, db);
 
+	if (block_size < 0)
+		return 1;
+
 	drive->status = so_drive_status_rewinding;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
@@ -169,6 +176,8 @@ int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int f
 		return failed;
 
 	struct so_media * media = drive->slot->media;
+	media->block_size = block_size;
+
 	char * header = malloc(block_size);
 	if (!sodr_media_write_header(media, pool, header, block_size)) {
 		free(header);
