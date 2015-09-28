@@ -182,7 +182,7 @@ int so_socket_tcp6(struct so_value * config) {
 int so_socket_tcp_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_in addr_v4;
 	bzero(&addr_v4, sizeof(addr_v4));
-	socklen_t length;
+	socklen_t length = sizeof(addr_v4);
 
 	int new_fd = accept(fd, (struct sockaddr *) &addr_v4, &length);
 
@@ -194,7 +194,7 @@ int so_socket_tcp_accept_and_close(int fd, struct so_value * config) {
 int so_socket_tcp6_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_in6 addr_v6;
 	bzero(&addr_v6, sizeof(addr_v6));
-	socklen_t length;
+	socklen_t length = sizeof(addr_v6);
 
 	int new_fd = accept(fd, (struct sockaddr *) &addr_v6, &length);
 
