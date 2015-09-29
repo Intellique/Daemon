@@ -39,7 +39,7 @@
 #include <locale.h>
 // getpwuid_r
 #include <pwd.h>
-// asprintf, rename, snprintf
+// asprintf, rename, sscanf, snprintf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
@@ -192,7 +192,7 @@ void so_file_convert_size_to_string(size_t size, char * str, ssize_t str_len) {
 	unsigned short mult = 0;
 	double tsize = size;
 
-	while (tsize >= 8192 && mult < 4) {
+	while (tsize >= 8192 && mult < 5) {
 		tsize /= 1024;
 		mult++;
 	}
@@ -207,17 +207,25 @@ void so_file_convert_size_to_string(size_t size, char * str, ssize_t str_len) {
 		case 0:
 			snprintf(str, str_len, dgettext("libstoriqone", "%zd B"), size);
 			break;
+
 		case 1:
 			snprintf(str, str_len, dgettext("libstoriqone", "%.*f KB"), fixed, tsize);
 			break;
+
 		case 2:
 			snprintf(str, str_len, dgettext("libstoriqone", "%.*f MB"), fixed, tsize);
 			break;
+
 		case 3:
 			snprintf(str, str_len, dgettext("libstoriqone", "%.*f GB"), fixed, tsize);
 			break;
-		default:
+
+		case 4:
 			snprintf(str, str_len, dgettext("libstoriqone", "%.*f TB"), fixed, tsize);
+			break;
+
+		default:
+			snprintf(str, str_len, dgettext("libstoriqone", "%.*f PB"), fixed, tsize);
 	}
 
 	struct lconv * locale_info = localeconv();
@@ -540,6 +548,65 @@ int so_file_mv(const char * src, const char * dst) {
 	free(cpdst);
 
 	return failed;
+}
+
+ssize_t so_file_parse_size(const char * size) {
+	double dsize = 0;
+	ssize_t lsize = 0;
+	char mult = '\0';
+
+	static const struct {
+		char * pat;
+		short nbElt;
+	} pattern[] = {
+		{ "%lg %c", 2 },
+		{ "%lg%c",  2 },
+		{ "%llu",   1 },
+
+		{ 0, 0},
+	};
+
+	int i;
+	for (i = 0; pattern[i].pat != NULL; i++) {
+		if (pattern[i].nbElt == 2 && sscanf(size, pattern[i].pat, &dsize, &mult) == 2) {
+			if (dsize < 0)
+				return -1;
+
+			if (mult == ' ')
+				continue;
+
+			switch (mult) {
+				case 'k':
+				case 'K':
+					dsize *= 1024;
+					break;
+
+				case 'm':
+				case 'M':
+					dsize *= 1048576;
+					break;
+
+				case 'g':
+				case 'G':
+					dsize *= 1073741824;
+					break;
+
+				case 't':
+				case 'T':
+					dsize *= 1099511627776L;
+					break;
+
+				case 'p':
+				case 'P':
+					dsize *= 1125899906842624L;
+					break;
+			}
+			return (ssize_t) dsize;
+		} else if (pattern[i].nbElt == 1 && sscanf(size, pattern[i].pat, &lsize) == 1)
+			return lsize;
+	}
+
+	return -1;
 }
 
 char * so_file_read_all_from(const char * filename) {

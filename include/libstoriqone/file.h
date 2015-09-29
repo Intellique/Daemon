@@ -81,6 +81,8 @@ int so_file_mkdir(const char * dirname, mode_t mode);
 
 int so_file_mv(const char * src, const char * dst);
 
+ssize_t so_file_parse_size(const char * size);
+
 char * so_file_read_all_from(const char * filename);
 
 char * so_file_rename(const char * filename) __attribute__((warn_unused_result));
