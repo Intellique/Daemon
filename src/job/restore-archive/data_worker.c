@@ -106,7 +106,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			case alert_user:
 				worker->status = so_job_status_waiting;
 				if (!has_alert_user)
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 						dgettext("storiqone-job-restore-archive", "Media not found (named: %s)"),
 						worker->media->name);
 				has_alert_user = true;
@@ -119,7 +119,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				break;
 
 			case get_media:
-				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 					dgettext("storiqone-job-restore-archive", "Getting media (%s)"),
 					worker->media->name);
 				drive = slot->changer->ops->get_media(slot->changer, slot, false);
@@ -136,7 +136,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				break;
 
 			case look_for_media:
-				so_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_important,
 					dgettext("storiqone-job-restore-archive", "Looking for media (%s)"),
 					worker->media->name);
 				slot = soj_changer_find_slot(worker->media);
@@ -181,7 +181,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 			enum so_format_reader_header_status status = reader->ops->forward(reader, ptr_file->position);
 			if (status != so_format_reader_header_ok) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-restore-archive", "Error while seeking to file '%s'"),
 					file->path);
 				worker->nb_errors++;
@@ -200,7 +200,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			} while (status != so_format_reader_header_ok);
 
 			if (status != so_format_reader_header_ok) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-restore-archive", "Error while seeking to file '%s'"),
 					file->path);
 				worker->nb_errors++;
@@ -211,13 +211,13 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			so_string_rtrim(header.filename, '/');
 
 			while (strcmp(header.filename, file->path) != 0) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-restore-archive", "Skipping file '%s'"),
 					header.filename);
 
 				status = reader->ops->skip_file(reader);
 				if (status != so_format_reader_header_ok) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-restore-archive", "Error while seeking to file '%s'"),
 						header.filename);
 					worker->nb_errors++;
@@ -226,7 +226,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 				status = reader->ops->get_header(reader, &header);
 				if (status != so_format_reader_header_ok) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-restore-archive", "Error while reading header from media '%s'"),
 						vol->media->name);
 					worker->nb_errors++;
@@ -248,7 +248,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			if (ptr != NULL) {
 				*ptr = '\0';
 				if (access(restore_to, R_OK | W_OK | X_OK) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Creating missing directories '%s' with permission 0777"),
 						restore_to);
 					so_file_mkdir(restore_to, 0777);
@@ -256,14 +256,14 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				*ptr = '/';
 			}
 
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 				dgettext("storiqone-job-restore-archive", "Starting restoring file '%s'"),
 				restore_to);
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
 				if (fd < 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-restore-archive", "Error while opening file '%s' for writing because %m"),
 						restore_to);
 					worker->nb_errors++;
@@ -273,7 +273,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 				if (header.position > 0) {
 					if (lseek(fd, header.position, SEEK_SET) != header.position) {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while seeking into file '%s' because %m"),
 							restore_to);
 						worker->nb_errors++;
@@ -291,7 +291,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					if (nb_write > 0)
 						worker->total_restored += nb_write;
 					else {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while writing to file '%s' because %m"),
 							restore_to);
 						worker->nb_errors++;
@@ -300,7 +300,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				}
 
 				if (nb_read < 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-restore-archive", "Error while reading from media '%s' because %m"),
 						vol->media->name);
 					worker->nb_errors++;
@@ -308,14 +308,14 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					break;
 				} else if (nb_write >= 0) {
 					if (fchown(fd, file->ownerid, file->groupid)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while restoring file owner (%s) because %m"),
 							restore_to);
 						worker->nb_warnings++;
 					}
 
 					if (fchmod(fd, file->perm)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while restoring file permissions '%s' because %m"),
 							restore_to);
 						worker->nb_warnings++;
@@ -326,7 +326,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 						{ file->modify_time, 0 },
 					};
 					if (futimes(fd, tv)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while setting file date and time '%s' because %m"),
 							restore_to);
 						worker->nb_warnings++;
@@ -340,26 +340,26 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				// do nothing because directory is already created
 			} else if (S_ISLNK(header.mode)) {
 				if (symlink(header.link, header.filename) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create symbolic link '%s' to '%s' because %m"),
 						restore_to, header.link);
 					worker->nb_errors++;
 				} else if (chmod(restore_to, file->perm & 0777) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to change permission of '%s' to '%03o' because %m"),
 						restore_to, file->perm & 0777);
 					worker->nb_warnings++;
 				}
 			} else if (S_ISFIFO(header.mode)) {
 				if (mknod(file->path, S_IFIFO, 0) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create fifo '%s' because %m"),
 						restore_to);
 					worker->nb_errors++;
 				}
 			} else if (S_ISCHR(header.mode)) {
 				if (mknod(file->path, S_IFCHR, header.dev) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create character device '%s' because %m"),
 						restore_to);
 					worker->nb_errors++;
@@ -367,7 +367,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			} else if (S_ISBLK(header.mode)) {
 				int failed = mknod(file->path, S_IFBLK, header.dev);
 				if (failed != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create block device '%s' because %m"),
 						restore_to);
 					worker->nb_errors++;
@@ -375,7 +375,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			}
 
 			if (chown(restore_to, file->ownerid, file->groupid) != 0) {
-				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 					dgettext("storiqone-job-restore-archive", "Failed to change owner and group of '%s' because %m"),
 					restore_to);
 				worker->nb_warnings++;
@@ -407,7 +407,7 @@ void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker 
 			name = "worker";
 		}
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-restore-archive", "Starting worker thread #%u"), i);
 
 		so_thread_pool_run(name, soj_restorearchive_data_worker_do, first_worker);

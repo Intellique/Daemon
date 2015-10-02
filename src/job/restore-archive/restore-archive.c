@@ -181,13 +181,13 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 static int soj_restorearchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	archive = db_connect->ops->get_archive_by_job(db_connect, job);
 	if (archive == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-storiqone-job-restore-archive", "Archive not found"));
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-storiqone-job-restore-archive", "Archive not found"));
 		return 1;
 	}
 
 	restore_path = db_connect->ops->get_restore_path(db_connect, job);
 	if (restore_path != NULL && restore_path[0] != '/') {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-storiqone-job-restore-archive", "Restore path should be absolute (starts with '/')"));
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-storiqone-job-restore-archive", "Restore path should be absolute (starts with '/')"));
 		return 2;
 	}
 

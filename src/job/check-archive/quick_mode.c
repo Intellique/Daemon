@@ -77,7 +77,7 @@ static void soj_checkarchive_quick_mode_do(void * arg);
 
 
 int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect) {
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Starting check archive (%s) in quick mode"), archive->name);
+	soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Starting check archive (%s) in quick mode"), archive->name);
 	job->done = 0.01;
 
 	struct soj_checkarchive_worker * workers = NULL;
@@ -130,7 +130,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 			name = "worker";
 		}
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-check-archive", "Starting worker #%u"),
 			i);
 
@@ -195,7 +195,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 			case alert_user:
 				worker->status = so_job_status_waiting;
 				if (!has_alert_user)
-					so_job_add_record(worker->job, worker->db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Media not found (named: %s)"), worker->media->name);
+					soj_job_add_record(worker->job, worker->db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Media not found (named: %s)"), worker->media->name);
 				has_alert_user = true;
 
 				sleep(15);
@@ -206,7 +206,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 				break;
 
 			case get_media:
-				so_job_add_record(worker->job, worker->db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Getting media (%s)"), worker->media->name);
+				soj_job_add_record(worker->job, worker->db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Getting media (%s)"), worker->media->name);
 				drive = slot->changer->ops->get_media(slot->changer, slot, false);
 				if (drive == NULL) {
 					worker->status = so_job_status_waiting;
@@ -221,7 +221,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 				break;
 
 			case look_for_media:
-				so_job_add_record(worker->job, worker->db_connect, so_log_level_debug, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Looking for media (%s)"), worker->media->name);
+				soj_job_add_record(worker->job, worker->db_connect, so_log_level_debug, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Looking for media (%s)"), worker->media->name);
 				slot = soj_changer_find_slot(worker->media);
 				state = slot != NULL ? reserve_media : alert_user;
 				break;

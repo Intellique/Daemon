@@ -110,7 +110,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 
 	data.src_drive = soj_media_find_and_load(media, false, 0, db_connect);
 	if (data.src_drive == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error,
+		soj_job_add_record(job, db_connect, so_log_level_error,
 			so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
 			media->name);
 		return 2;
@@ -138,23 +138,23 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	if (failed == 0) {
 		job->done = 0.99;
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Writing metadata of copy archive '%s'"),
 			data.src_archive->name);
 
 		failed = soj_copyarchive_util_write_meta(&data);
 
 		if (failed != 0)
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Error while writing metadata of copy archive '%s'"),
 				data.src_archive->name);
 		else
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Wrote sucessfully metadata of copy archive '%s'"),
 				data.src_archive->name);
 
 		if (failed == 0) {
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Synchronizing archive '%s' into database"),
 				data.src_archive->name);
 
@@ -169,7 +169,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 
 			failed = db_connect->ops->start_transaction(db_connect);
 			if (failed != 0) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Failed to start database transaction"));
 			} else {
 				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive, data.src_archive);
@@ -185,11 +185,11 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 			}
 
 			if (failed != 0)
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Failed to synchronize archive '%s' into database"),
 					data.copy_archive->name);
 			else {
-				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Archive '%s' synchronized into database"),
 					data.src_archive->name);
 				job->done = 1;
@@ -206,12 +206,12 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 static int soj_copyarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	data.src_archive = db_connect->ops->get_archive_by_job(db_connect, job);
 	if (data.src_archive == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Archive not found"));
 		return 1;
 	}
 	if (data.src_archive->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Trying to copy a deleted archive '%s'"),
 			data.src_archive->name);
 		return 1;
@@ -219,19 +219,19 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 
 	data.pool = db_connect->ops->get_pool(db_connect, NULL, job);
 	if (data.pool == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Pool not found"));
 		return 1;
 	}
 	if (data.pool->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Trying to copy an archive '%s' to a deleted pool '%s'"),
 			data.src_archive->name, data.pool->name);
 		return 1;
 	}
 
 	if (!soj_changer_has_apt_drive(data.pool->media_format, true)) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Failed to find a suitable drive to copy archive '%s'"),
 			data.src_archive->name);
 		return 1;
@@ -239,7 +239,7 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 
 	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, db_connect);
 	if (reserved < data.src_archive->size) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Error: not enought space available in pool '%s'"),
 			data.pool->name);
 		return 1;

@@ -103,13 +103,13 @@ static void job_worker(void * arg) {
 	if (db_connect == NULL)
 		goto error;
 
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
+	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
 		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, key: %s, name: %s)"),
 		j->type, j->key, j->name);
 
 	int failed = job_dr->simulate(j, db_connect);
 	if (failed != 0) {
-		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("libstoriqone-job", "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"),
 			j->type, j->key, j->name, failed);
 		job->exit_code = failed;
@@ -123,11 +123,11 @@ static void job_worker(void * arg) {
 		goto error;
 	}
 
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
+	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
 		dgettext("libstoriqone-job", "Starting job (type: %s, key: %s, name: %s)"),
 		j->type, j->key, j->name);
 	failed = job_dr->run(j, db_connect);
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
+	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
 		dgettext("libstoriqone-job", "Job exit (type: %s, key: %s, name: %s), exit code: %d"),
 		j->type, j->key, j->name, failed);
 

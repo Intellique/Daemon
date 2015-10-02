@@ -78,7 +78,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				slot = soj_changer_find_slot(worker->volume->media);
 				if (slot == NULL) {
 					if (!has_alert_user)
-						so_job_add_record(job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
+						soj_job_add_record(job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
 							dgettext("storiqone-job-check-backup-db", "Warning, media '%s' not found"),
 							worker->volume->media->name);
 					has_alert_user = true;
@@ -108,7 +108,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 			case open_file:
 				sr_dr = dr->ops->get_raw_reader(dr, worker->volume->position);
 				if (sr_dr == NULL) {
-					so_job_add_record(job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
+					soj_job_add_record(job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
 						dgettext("storiqone-job-check-backup-db", "Error, failed to open backup from media '%s'"),
 						worker->volume->media->name);
 

@@ -101,7 +101,7 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 	struct so_drive * drive = soj_media_find_and_load(soj_importarchives_media, false, 0, db_connect);
 	if (drive == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Failed to load media '%s'"),
 			soj_importarchives_media->name);
 		return 2;
@@ -115,14 +115,14 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 	if (job->stopped_by_user)
 		return 1;
 
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+	soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 		dgettext("storiqone-job-import-archives", "Counting archives"));
 
 	soj_importarchives_archives = so_value_new_linked_list();
 
 	unsigned int i, nb_archives = drive->ops->count_archives(drive);
 	for (i = 0; i < nb_archives && !job->stopped_by_user; i++) {
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-import-archives", "Parsing archive #%u"),
 			i);
 
@@ -214,35 +214,35 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 static int soj_importarchives_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	soj_importarchives_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
 	if (soj_importarchives_media == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Critical error: no media linked to current job"));
 		return 1;
 	}
 	if (soj_importarchives_media->type == so_media_type_cleaning) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Trying to import a cleaning media '%s'"),
 			soj_importarchives_media->name);
 		return 1;
 	}
 	if (soj_importarchives_media->pool != NULL) {
-		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Trying to import a media '%s' which is a member of pool '%s'"),
 			soj_importarchives_media->name, soj_importarchives_media->pool->name);
 		return 1;
 	}
 	if (soj_importarchives_media->status == so_media_status_error)
-		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Trying to import a media '%s' with error status"),
 			soj_importarchives_media->name);
 
 	soj_importarchives_pool = db_connect->ops->get_pool(db_connect, NULL, job);
 	if (soj_importarchives_pool == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Pool not found"));
 		return 1;
 	}
 	if (soj_importarchives_pool->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Trying to import to a deleted pool '%s'"),
 			soj_importarchives_pool->name);
 		return 1;
@@ -251,14 +251,14 @@ static int soj_importarchives_simulate(struct so_job * job, struct so_database_c
 	soj_importarchives_checksums = db_connect->ops->get_checksums_from_pool(db_connect, soj_importarchives_pool);
 
 	if (so_media_format_cmp(soj_importarchives_media->media_format, soj_importarchives_pool->media_format) != 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Trying to import archives from media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"),
 			soj_importarchives_media->name, soj_importarchives_media->media_format->name, soj_importarchives_pool->name, soj_importarchives_pool->media_format->name);
 		return 1;
 	}
 
 	if (!soj_changer_has_apt_drive(soj_importarchives_media->media_format, false)) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Failed to find a suitable drive to format media '%s'"),
 			soj_importarchives_media->name);
 		return 1;

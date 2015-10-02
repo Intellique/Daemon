@@ -24,14 +24,42 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+#define _GNU_SOURCE
+// va_end, va_start
+#include <stdarg.h>
+// vasprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+
+#include <libstoriqone/database.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone-job/job.h>
 
 #include "job.h"
 
 static struct so_job * soj_current_job = NULL;
 static struct so_job_driver * soj_driver = NULL;
 
+
+int soj_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
+	char * message = NULL;
+
+	va_list va;
+	va_start(va, format);
+	int size = vasprintf(&message, format, va);
+	va_end(va);
+
+	if (size < 0)
+		return -1;
+
+	so_log_write(level, "%s", message);
+	int failed = db_connect->ops->add_job_record(db_connect, job, level, notif, message);
+
+	free(message);
+
+	return failed;
+}
 
 struct so_job * soj_job_get() {
 	return soj_current_job;

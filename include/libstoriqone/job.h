@@ -81,7 +81,6 @@ struct so_job {
 	struct so_value * db_data;
 };
 
-int so_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 5, 6)));
 struct so_value * so_job_convert(struct so_job * job) __attribute__((warn_unused_result));
 void so_job_free(struct so_job * job);
 void so_job_free2(void * job);

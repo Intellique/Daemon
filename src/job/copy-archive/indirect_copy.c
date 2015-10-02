@@ -40,24 +40,24 @@
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
-#include <libstoriqone/job.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/drive.h>
+#include <libstoriqone-job/job.h>
 #include <libstoriqone-job/media.h>
 
 #include "common.h"
 
 int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self) {
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+	soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 		dgettext("storiqone-job-copy-archive", "Selected copy mode: indirect"));
 
 	soj_copyarchive_util_init(self->src_archive);
 
 	struct so_stream_writer * tmp_file_writer = so_io_tmp_writer();
 	if (tmp_file_writer == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Failed to create temporary file"));
 		return 1;
 	}
@@ -68,7 +68,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		so_file_convert_size_to_string(self->src_archive->size, buf_required, 16);
 		so_file_convert_size_to_string(available_size, buf_available, 16);
 
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Error, not enough disk space (required: %s, available: %s) to copy archive '%s'"),
 			buf_required, buf_available, self->src_archive->name);
 
@@ -91,7 +91,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		if (i > 0) {
 			self->src_drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
 			if (self->src_drive == NULL) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Failed to load media '%s'"),
 					vol->media->name);
 
@@ -109,7 +109,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			enum so_format_writer_status wrtr_status = tmp_frmt_writer->ops->add_file(tmp_frmt_writer, &file);
 
 			if (wrtr_status != so_format_writer_ok) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Error while writing file header '%s' to temporary file"),
 					file.filename);
 
@@ -128,7 +128,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 						if (nb_write >= 0)
 							nb_total_write += nb_write;
 						else {
-							so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+							soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 								dgettext("storiqone-job-copy-archive", "Error while writing file data '%s' to temporary file"),
 								file.filename);
 
@@ -149,7 +149,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 				}
 
 				if (nb_read < 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-copy-archive", "Error while reading from media '%s'"),
 						vol->media->name);
 
@@ -173,7 +173,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	if (tmp_frmt_reader == NULL) {
 		tmp_frmt_writer->ops->free(tmp_frmt_writer);
 
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Failed to reopen temporary file"));
 		return 1;
 	}
@@ -206,7 +206,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 		enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
 		if (wrtr_status != so_format_writer_ok) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Error while writing header of file '%s' into media '%s'"),
 				file.filename, media->name);
 			ok = false;
@@ -255,7 +255,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 					if (nb_write >= 0)
 						nb_total_write += nb_write;
 					else {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-copy-archive", "Error while writing data of file '%s' to media '%s'"),
 							file.filename, media->name);
 
@@ -275,7 +275,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			}
 
 			if (nb_read < 0) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Error while reading from temporary file"));
 				ok = false;
 				break;
