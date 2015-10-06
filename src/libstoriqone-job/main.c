@@ -104,14 +104,14 @@ static void job_worker(void * arg) {
 		goto error;
 
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
-		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, key: %s, name: %s)"),
-		j->type, j->key, j->name);
+		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, id: %s, name: %s)"),
+		j->type, j->id, j->name);
 
 	int failed = job_dr->simulate(j, db_connect);
 	if (failed != 0) {
 		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("libstoriqone-job", "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"),
-			j->type, j->key, j->name, failed);
+			dgettext("libstoriqone-job", "Simulation of job (type: %s, id: %s, name: %s) failed with code: %d"),
+			j->type, j->id, j->name, failed);
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;
@@ -124,12 +124,12 @@ static void job_worker(void * arg) {
 	}
 
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
-		dgettext("libstoriqone-job", "Starting job (type: %s, key: %s, name: %s)"),
-		j->type, j->key, j->name);
+		dgettext("libstoriqone-job", "Starting job (type: %s, id: %s, name: %s)"),
+		j->type, j->id, j->name);
 	failed = job_dr->run(j, db_connect);
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
-		dgettext("libstoriqone-job", "Job exit (type: %s, key: %s, name: %s), exit code: %d"),
-		j->type, j->key, j->name, failed);
+		dgettext("libstoriqone-job", "Job exit (type: %s, id: %s, name: %s), exit code: %d"),
+		j->type, j->id, j->name, failed);
 
 	if (failed != 0 && job->stopped_by_user)
 		goto error;
@@ -184,7 +184,6 @@ int main() {
 
 	so_log_configure(log_config, so_log_type_job);
 	so_database_load_config(db_config);
-	soj_changer_set_config(devices);
 
 	struct so_database * db_driver = so_database_get_default_driver();
 	if (db_driver == NULL)
@@ -208,6 +207,8 @@ int main() {
 
 	db_connect->ops->sync_job(db_connect, job);
 	db_connect->ops->start_job(db_connect, job);
+
+	soj_changer_set_config(devices);
 
 	so_thread_pool_run("job worker", job_worker, job);
 

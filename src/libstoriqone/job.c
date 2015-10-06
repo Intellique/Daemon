@@ -80,7 +80,7 @@ static void so_job_init(void) __attribute__((constructor));
 
 struct so_value * so_job_convert(struct so_job * job) {
 	return so_value_pack("{sssssssssIsIsIsIsfsssisbsOsO}",
-		"id", job->key,
+		"id", job->id,
 		"name", job->name,
 		"type", job->type,
 		"user", job->user,
@@ -105,7 +105,7 @@ void so_job_free(struct so_job * job) {
 	if (job == NULL)
 		return;
 
-	free(job->key);
+	free(job->id);
 	free(job->name);
 	free(job->type);
 	free(job->user);
@@ -190,20 +190,20 @@ enum so_job_status so_job_string_to_status(const char * status, bool translate) 
 }
 
 void so_job_sync(struct so_job * job, struct so_value * new_job) {
-	free(job->key);
+	free(job->id);
 	free(job->name);
 	free(job->type);
 	free(job->user);
 	so_value_free(job->meta);
 	so_value_free(job->option);
-	job->key = job->name = job->type = NULL;
+	job->id = job->name = job->type = NULL;
 	job->meta = job->option = NULL;
 
 	char * status = NULL;
 	double done = 0;
 
 	so_value_unpack(new_job, "{sssssssssisIsIsIsfsssisbsOsO}",
-		"id", &job->key,
+		"id", &job->id,
 		"name", &job->name,
 		"type", &job->type,
 		"user", &job->user,

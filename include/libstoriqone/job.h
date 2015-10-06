@@ -57,7 +57,7 @@ enum so_job_record_notif {
 };
 
 struct so_job {
-	char * key;
+	char * id;
 	char * name;
 	char * type;
 

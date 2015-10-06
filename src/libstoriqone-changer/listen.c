@@ -254,7 +254,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			}
 		}
 
-		drive->ops->lock(drive, peer->key);
+		drive->ops->lock(drive, peer->job_id);
 
 		lp->waiting = lp->peer->waiting = false;
 		sochgr_socket_remove_peer(lp->peer);
@@ -359,7 +359,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			} else
 				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"), changer->vendor, changer->model, drive->slot->volume_name, sl->index, drive->index);
 
-			drive->ops->lock(drive, peer->key);
+			drive->ops->lock(drive, peer->job_id);
 
 			struct so_value * response = so_value_pack("{sbsuso}",
 				"error", false,
@@ -390,19 +390,24 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 }
 
 
-static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
+static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer, struct so_value * request, int fd) {
+	free(peer->job_id);
+	peer->job_id = NULL;
+
+	so_value_unpack(request, "{s{ss}}",
+		"params",
+			"job key", &peer->job_id
+	);
+
 	so_json_encode_to_fd(sochgr_drive_get_configs(), fd, true);
 }
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	char * medium_serial_number = NULL;
 	bool no_wait = false;
-	free(peer->key);
-	peer->key = NULL;
 
-	so_value_unpack(request, "{s{sssssb}}",
+	so_value_unpack(request, "{s{sssb}}",
 		"params",
-			"job key", &peer->key,
 			"medium serial number", &medium_serial_number,
 			"no wait", &no_wait
 	);

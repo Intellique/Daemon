@@ -173,7 +173,7 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			 * so_process_new(&self->process, "valgrind", params, 10);
 			 */
 
-			const char * params[] = { job->key, job->name };
+			const char * params[] = { job->id, job->name };
 			so_process_new(&self->process, process_name, params, 2);
 
 			self->fd_in = -1;

@@ -2544,9 +2544,9 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	if (job->db_data == NULL) {
 		job->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
-		struct so_value * db = so_value_pack("{ss}", "id", job->key);
+		struct so_value * db = so_value_pack("{ss}", "id", job->id);
 		so_value_hashtable_put(job->db_data, key, false, db, true);
-		job_id = strdup(job->key);
+		job_id = strdup(job->id);
 	} else {
 		struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 		so_value_unpack(db, "{ssss}", "id", &job_id, "jobrun id", &jobrun_id);
@@ -2652,7 +2652,7 @@ static int so_database_postgresql_sync_jobs(struct so_database_connection * conn
 				job = malloc(sizeof(struct so_job));
 				bzero(job, sizeof(struct so_job));
 
-				so_database_postgresql_get_string_dup(result, i, 0, &job->key);
+				so_database_postgresql_get_string_dup(result, i, 0, &job->id);
 				so_database_postgresql_get_string_dup(result, i, 1, &job->name);
 				so_database_postgresql_get_string_dup(result, i, 2, &job->type);
 				so_database_postgresql_get_string_dup(result, i, 6, &job->user);
