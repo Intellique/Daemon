@@ -182,7 +182,7 @@ int so_socket_tcp6(struct so_value * config) {
 int so_socket_tcp_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_in addr_v4;
 	bzero(&addr_v4, sizeof(addr_v4));
-	socklen_t length;
+	socklen_t length = sizeof(addr_v4);
 
 	int new_fd = accept(fd, (struct sockaddr *) &addr_v4, &length);
 
@@ -194,7 +194,7 @@ int so_socket_tcp_accept_and_close(int fd, struct so_value * config) {
 int so_socket_tcp6_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_in6 addr_v6;
 	bzero(&addr_v6, sizeof(addr_v6));
-	socklen_t length;
+	socklen_t length = sizeof(addr_v6);
 
 	int new_fd = accept(fd, (struct sockaddr *) &addr_v6, &length);
 
@@ -612,12 +612,13 @@ static void so_socket_tcp_server_callback(int fd, short event __attribute__((unu
 	struct so_tcp_socket_server * self = data;
 
 	int new_fd = -1;
-	socklen_t length = 0;
+	socklen_t length;
 	struct so_value * client_info;
 
 	if (self->af == AF_INET) {
 		struct sockaddr_in addr_v4;
 		bzero(&addr_v4, sizeof(addr_v4));
+		length = sizeof(addr_v4);
 
 		new_fd = accept(fd, (struct sockaddr *) &addr_v4, &length);
 
@@ -629,6 +630,7 @@ static void so_socket_tcp_server_callback(int fd, short event __attribute__((unu
 	} else {
 		struct sockaddr_in6 addr_v6;
 		bzero(&addr_v6, sizeof(addr_v6));
+		length = sizeof(addr_v6);
 
 		new_fd = accept(fd, (struct sockaddr *) &addr_v6, &length);
 
