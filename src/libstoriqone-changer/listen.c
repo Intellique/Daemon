@@ -394,9 +394,11 @@ static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer, s
 	free(peer->job_id);
 	peer->job_id = NULL;
 
-	so_value_unpack(request, "{s{ss}}",
+	so_value_unpack(request, "{s{s{ss}}}",
 		"params",
-			"job key", &peer->job_id
+			"job",
+				"id", &peer->job_id,
+				"num run", &peer->job_num_run
 	);
 
 	so_json_encode_to_fd(sochgr_drive_get_configs(), fd, true);

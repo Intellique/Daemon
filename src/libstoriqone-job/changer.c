@@ -284,10 +284,12 @@ void soj_changer_set_config(struct so_value * config) {
 
 		pthread_mutexattr_destroy(&attr);
 
-		struct so_value * command = so_value_pack("{sss{ss}}",
+		struct so_value * command = so_value_pack("{sss{s{sssi}}}",
 			"command", "get drives config",
 			"params",
-				"job key", job->id
+				"job",
+					"id", job->id,
+					"num run", job->num_run
 		);
 		so_json_encode_to_fd(command, self->fd, true);
 		so_value_free(command);

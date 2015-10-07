@@ -27,9 +27,10 @@
 #ifndef __LIBSTORIQONE_CHANGER_LOG_H__
 #define __LIBSTORIQONE_CHANGER_LOG_H__
 
+#include <libstoriqone/job.h>
 #include <libstoriqone/log.h>
 
-int sochgr_log_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 5, 6)));
+int sochgr_log_add_record(const char * job_id, unsigned int num_run, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 7, 8)));
 
 #endif
 

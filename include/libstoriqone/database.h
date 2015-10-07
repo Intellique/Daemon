@@ -44,6 +44,7 @@ struct so_host;
 struct so_job;
 enum so_job_record_notif;
 enum so_log_level;
+enum so_job_status;
 struct so_media;
 struct so_media_format;
 enum so_media_format_mode;
@@ -155,6 +156,7 @@ struct so_database_connection {
 		int (*sync_media)(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
 		struct so_value * (*update_vtl)(struct so_database_connection * connect, struct so_changer * vtl);
 
+		int (*add_changer_record)(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status status, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 		int (*add_job_record)(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
 		char * (*get_restore_path)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
