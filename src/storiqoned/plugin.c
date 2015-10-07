@@ -92,7 +92,7 @@ int sod_plugin_sync_checksum_inner(void * arg) {
 
 void sod_plugin_sync_job(struct so_database_connection * connection) {
 	struct dirent ** files = NULL;
-	int nb_files = scandir(DAEMON_BIN_DIR, &files, sod_plugin_job_filter, alphasort);
+	int nb_files = scandir(DAEMON_JOB_DIR, &files, sod_plugin_job_filter, alphasort);
 	int i;
 	for (i = 0; i < nb_files; i++) {
 		connection->ops->sync_plugin_job(connection, files[i]->d_name + 4);
