@@ -103,7 +103,15 @@ static int soj_checkarchive_run(struct so_job * job, struct so_database_connecti
 static int soj_checkarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	archive = db_connect->ops->get_archive_by_job(db_connect, job);
 	if (archive == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Archive not found"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "Archive not found"));
+		return 1;
+	}
+
+	if (archive->deleted) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "No check for deleted archive '%s'"),
+			archive->name);
 		return 1;
 	}
 
