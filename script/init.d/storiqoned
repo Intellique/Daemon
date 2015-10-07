@@ -1,7 +1,7 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          stoned
-# Required-Start:    $remote_fs
+# Provides:          storiqoned
+# Required-Start:    $remote_fs $postgresql
 # Required-Stop:     $remote_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
@@ -9,12 +9,8 @@
 ### END INIT INFO
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/sbin/stoned
-NAME=stoned
-DESC="stoned daemon"
-PARAMETERS="-d"
-
-test -f $DAEMON || exit 0
+NAME=storiqoned
+DESC="storiq one daemon"
 
 case "$1" in
   start)
@@ -26,6 +22,7 @@ case "$1" in
 	echo "$NAME."
 	exit $STATUS
 	;;
+
   stop)
 	echo -n "Stopping $DESC: "
 
@@ -35,6 +32,7 @@ case "$1" in
 	echo "$NAME."
 	exit $STATUS
 	;;
+
   restart|force-reload)
 	echo -n "Restarting $DESC: "
 
@@ -54,6 +52,7 @@ case "$1" in
 	echo "$NAME."
 	exit $STATUS
 	;;
+
   restart-if-running)
 	set +e
 	echo -n "Restarting $DESC (if running): "
@@ -63,6 +62,7 @@ case "$1" in
 	fi
 	echo "$NAME."
 	;;
+
   *)
 	N=/etc/init.d/$NAME
 	echo "Usage: $N {start|stop|restart|force-reload}" >&2
