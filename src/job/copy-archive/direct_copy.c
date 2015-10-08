@@ -64,6 +64,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	vol->job = job;
 
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
+	vol->media_position = self->writer->ops->file_position(self->writer);
 
 	unsigned int i;
 	int failed = 0;
