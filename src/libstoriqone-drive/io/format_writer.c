@@ -185,11 +185,18 @@ static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so
 	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t eof = peer->format_writer->ops->end_of_file(peer->format_writer);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
-	ssize_t new_position = peer->format_writer->ops->position(peer->format_writer);
 
-	peer->nb_total_bytes += new_position - current_position;
+	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
+	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
-	struct so_value * response = so_value_pack("{szsi}", "returned", eof, "last errno", last_errno);
+	peer->nb_total_bytes += position - current_position;
+
+	struct so_value * response = so_value_pack("{szsiszsz}",
+		"returned", eof,
+		"last errno", last_errno,
+		"position", position,
+		"available size", available_size
+	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }

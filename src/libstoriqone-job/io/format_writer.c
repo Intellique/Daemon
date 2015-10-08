@@ -241,12 +241,12 @@ static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	ssize_t failed = -1;
+	ssize_t eof = -1;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
 	if (response != NULL) {
-		so_value_unpack(response, "{sz}", "returned", &failed);
+		so_value_unpack(response, "{sz}", "returned", &eof);
 
-		if (failed != 0)
+		if (eof < 0)
 			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 		else
 			so_value_unpack(response, "{sisi}",
@@ -256,7 +256,7 @@ static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 		so_value_free(response);
 	}
 
-	return failed;
+	return eof;
 }
 
 static int soj_format_writer_file_position(struct so_format_writer * fw) {
