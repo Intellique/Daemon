@@ -2346,14 +2346,17 @@ static int so_database_postgresql_add_changer_record(struct so_database_connecti
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	char str_num_run[8];
-	snprintf(str_num_run, 8, "%u", num_run);
+	char str_num_run[12];
+	snprintf(str_num_run, 12, "%u", num_run);
 
 	const char * query = "insert_new_jobrecord_by_job";
 	so_database_postgresql_prepare(self, query, "WITH jr AS (SELECT id FROM jobrun WHERE job = $1 AND numrun = $2 LIMIT 1) INSERT INTO jobrecord(jobrun, status, level, message, notif) SELECT id, $3, $4, $5, $6 FROM jr");
 
-	const char * param[] = { job_id, str_num_run, so_job_status_to_string(job_status, false), so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false) };
-	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
+	const char * param[] = {
+		job_id, str_num_run, so_job_status_to_string(job_status, false),
+		so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false)
+	};
+	PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)

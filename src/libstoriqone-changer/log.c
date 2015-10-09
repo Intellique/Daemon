@@ -35,7 +35,9 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone-changer/log.h>
 
-int sochgr_log_add_record(const char * job_id, unsigned int num_run, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
+#include "peer.h"
+
+int sochgr_log_add_record(const struct sochgr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
 	char * message = NULL;
 
 	va_list va;
@@ -47,7 +49,7 @@ int sochgr_log_add_record(const char * job_id, unsigned int num_run, enum so_job
 		return -1;
 
 	so_log_write(level, "%s", message);
-	int failed = db_connect->ops->add_changer_record(db_connect, job_id, num_run, status, level, notif, message);
+	int failed = db_connect->ops->add_changer_record(db_connect, peer->job_id, peer->job_num_run, status, level, notif, message);
 
 	free(message);
 

@@ -30,7 +30,9 @@
 #include <libstoriqone/job.h>
 #include <libstoriqone/log.h>
 
-int sochgr_log_add_record(const char * job_id, unsigned int num_run, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 7, 8)));
+struct sochgr_peer;
+
+int sochgr_log_add_record(const struct sochgr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 6, 7)));
 
 #endif
 

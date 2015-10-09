@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-10-07 09:25+0200\n"
+        "POT-Creation-Date: 2015-10-09 09:21+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -51,7 +51,7 @@ msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base d
 msgid   "PSQL: error while synchronizing changer slots with database"
 msgstr  "PSQL : erreur lors de la synchronisation des emplacements d’une librairie de bande avec la base de données"
 
-#: src/database/postgresql/connection.c:4430
+#: src/database/postgresql/connection.c:4433
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"
