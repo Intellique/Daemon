@@ -357,6 +357,23 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 	return new_file;
 }
 
+int soj_create_archive_worker_create_check_archive(struct so_job * job, bool quick_mode, struct so_database_connection * db_connect) {
+	int failed = 0;
+
+	if (primary_worker->state == soj_worker_status_finished)
+		failed = db_connect->ops->create_check_archive_job(db_connect, job, primary_worker->archive, quick_mode);
+
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (worker->state == soj_worker_status_finished)
+			failed += db_connect->ops->create_check_archive_job(db_connect, job, worker->archive, quick_mode);
+	}
+
+	return failed;
+}
+
 ssize_t soj_create_archive_worker_end_of_file() {
 	if (primary_worker->state == soj_worker_status_ready) {
 		ssize_t nb_write = primary_worker->writer->ops->end_of_file(primary_worker->writer);
