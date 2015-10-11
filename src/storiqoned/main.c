@@ -172,6 +172,7 @@ int main(int argc, char ** argv) {
 	struct so_host * host_info = so_host_get_info();
 
 	sod_plugin_sync_job(connection);
+	sod_plugin_sync_scripts(connection);
 
 	if (logger_config != NULL && db_configs != NULL)
 		sod_device_configure(log_file, db_configs, default_values, connection, false);
