@@ -163,6 +163,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		job->done = 0.01 + done * 0.98;
 	}
 
+	job->done = 0.99;
+
 	for (i = 0; i < archive->nb_volumes; i++)
 		db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
 
@@ -172,6 +174,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		free(ptr_worker);
 		ptr_worker = next;
 	}
+
+	job->done = 1;
 
 	return 0;
 }
