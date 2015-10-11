@@ -173,6 +173,7 @@ struct so_database_connection {
 
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume);
+		int (*create_check_archive_job)(struct so_database_connection * connect, struct so_job * current_job, struct so_archive * archive, bool quick_mode);
 		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
 		struct so_archive * (*get_archive_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
 		struct so_archive_format * (*get_archive_format_by_name)(struct so_database_connection * connect, const char * name) __attribute__((warn_unused_result));
