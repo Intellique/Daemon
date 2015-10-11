@@ -117,6 +117,7 @@ static char * so_database_postgresql_get_script(struct so_database_connection * 
 static bool so_database_postgresql_find_plugin_checksum(struct so_database_connection * connect, const char * checksum);
 static int so_database_postgresql_sync_plugin_checksum(struct so_database_connection * connect, struct so_checksum_driver * driver);
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
+static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_path);
 
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume);
@@ -196,6 +197,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.find_plugin_checksum = so_database_postgresql_find_plugin_checksum,
 	.sync_plugin_checksum = so_database_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
+	.sync_plugin_script   = so_database_postgresql_sync_plugin_script,
 
 	.check_archive_file             = so_database_postgresql_check_archive_file,
 	.check_archive_volume           = so_database_postgresql_check_archive_volume,
@@ -2817,6 +2819,43 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 
 	query = "insert_jobtype";
 	so_database_postgresql_prepare(self, query, "INSERT INTO jobtype(name) VALUES ($1)");
+
+	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
+}
+
+static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_path) {
+	if (connect == NULL || script_path == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+	const char * query = "select_script_by_path";
+	so_database_postgresql_prepare(self, query, "SELECT id FROM script WHERE path = $1 LIMIT 1");
+
+	const char * param[] = { script_path };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		found = true;
+
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	query = "insert_script";
+	so_database_postgresql_prepare(self, query, "INSERT INTO script(path) VALUES ($1)");
 
 	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	status = PQresultStatus(result);

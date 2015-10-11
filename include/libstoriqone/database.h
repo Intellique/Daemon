@@ -169,6 +169,7 @@ struct so_database_connection {
 		bool (*find_plugin_checksum)(struct so_database_connection * connect, const char * checksum);
 		int (*sync_plugin_checksum)(struct so_database_connection * connect, struct so_checksum_driver * driver);
 		int (*sync_plugin_job)(struct so_database_connection * connect, const char * job);
+		int (*sync_plugin_script)(struct so_database_connection * connect, const char * script_path);
 
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume);
