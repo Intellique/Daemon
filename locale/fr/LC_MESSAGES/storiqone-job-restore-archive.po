@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-10-05 10:37+0200\n"
+        "POT-Creation-Date: 2015-10-12 17:39+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -26,22 +26,23 @@ msgstr  "Pas de vérification de « %s » parce qu’il n’a pas d’empreint
 msgid   "Failed to open '%s' because %m"
 msgstr  "Échec à l’ouverture de « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:110
+#: src/job/restore-archive/data_worker.c:120
 #, c-format
 msgid   "Media not found (named: %s)"
 msgstr  "Média non trouvé (nommé : %s)"
 
-#: src/job/restore-archive/data_worker.c:123
+#: src/job/restore-archive/data_worker.c:133
 #, c-format
 msgid   "Getting media (%s)"
 msgstr  "Acquisition du média « %s »"
 
-#: src/job/restore-archive/data_worker.c:140
+#: src/job/restore-archive/data_worker.c:150
 #, c-format
 msgid   "Looking for media (%s)"
 msgstr  "Recherche du média « %s »"
 
-#: src/job/restore-archive/data_worker.c:185 src/job/restore-archive/data_worker.c:204 src/job/restore-archive/data_worker.c:221
+#: src/job/restore-archive/data_worker.c:185 src/job/restore-archive/data_worker.c:204
+#: src/job/restore-archive/data_worker.c:221
 #, c-format
 msgid   "Error while seeking to file '%s'"
 msgstr  "Erreur en se positionnant sur le fichier « %s »"
