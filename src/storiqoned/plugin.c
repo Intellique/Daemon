@@ -109,11 +109,13 @@ void sod_plugin_sync_scripts(struct so_database_connection * connection) {
 	int i;
 	for (i = 0; i < nb_files; i++) {
 		char * filename = NULL;
-		asprintf(&filename, SCRIPT_PATH "/%s", files[i]->d_name);
+		int size = asprintf(&filename, SCRIPT_PATH "/%s", files[i]->d_name);
 
-		connection->ops->sync_plugin_script(connection, filename);
+		if (size > 0) {
+			connection->ops->sync_plugin_script(connection, filename);
+			free(filename);
+		}
 
-		free(filename);
 		free(files[i]);
 	}
 	free(files);
