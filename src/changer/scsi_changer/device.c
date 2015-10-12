@@ -60,6 +60,7 @@
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
 #include <libstoriqone-changer/drive.h>
+#include <libstoriqone-changer/log.h>
 #include <libstoriqone-changer/media.h>
 
 #include "device.h"
@@ -68,15 +69,15 @@
 static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_init_worker(void * arg);
-static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
-static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive * to, bool reset_drive, struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_load_inner(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, bool reset_drive, struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_put_online(struct so_database_connection * db_connection);
 static char * sochgr_scsi_changer_read_fc_address(const char * path);
 static char * sochgr_scsi_changer_read_sas_address(const char * path);
 static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_connection);
-static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_unload(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_wait(void);
 
 static char * sochgr_scsi_changer_device = NULL;
@@ -154,7 +155,7 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 						diff),
 					sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, diff);
 
-				int failed = sochgr_scsi_changer_unload(dr, db_connection);
+				int failed = sochgr_scsi_changer_unload(NULL, dr, db_connection);
 				if (failed == 0)
 					so_log_write(so_log_level_notice,
 						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"),
@@ -346,7 +347,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 
 	pthread_mutex_lock(&sochgr_scsi_changer_lock);
 	if (dr->slot->media != NULL)
-		failed = sochgr_scsi_changer_unload(dr, NULL);
+		failed = sochgr_scsi_changer_unload(NULL, dr, NULL);
 
 	unsigned int i;
 	for (i = sochgr_scsi_changer.nb_drives; i < sochgr_scsi_changer.nb_slots; i++) {
@@ -360,7 +361,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u"),
 			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, dr->index);
 
-		failed = sochgr_scsi_changer_load_inner(sl, dr, false, NULL);
+		failed = sochgr_scsi_changer_load_inner(NULL, sl, dr, false, NULL);
 
 		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
@@ -417,7 +418,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 
-		failed = sochgr_scsi_changer_unload(dr, NULL);
+		failed = sochgr_scsi_changer_unload(NULL, dr, NULL);
 		if (failed == 0)
 			so_log_write(so_log_level_notice,
 				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = OK"),
@@ -438,11 +439,11 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
 }
 
-static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection) {
-	return sochgr_scsi_changer_load_inner(from, to, true, db_connection);
+static int sochgr_scsi_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection) {
+	return sochgr_scsi_changer_load_inner(peer, from, to, true, db_connection);
 }
 
-static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive * to, bool reset_drive, struct so_database_connection * db_connection) {
+static int sochgr_scsi_changer_load_inner(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, bool reset_drive, struct so_database_connection * db_connection) {
 	sochgr_scsi_changer_wait();
 
 	sochgr_scsi_changer.status = so_changer_status_loading;
@@ -484,7 +485,7 @@ static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive
 	if (reset_drive) {
 		failed = to->ops->reset(to);
 		if (failed != 0)
-			so_log_write(so_log_level_critical,
+			sochgr_log_add_record(peer, so_job_status_waiting, db_connection, so_log_level_critical, so_job_record_notif_important,
 				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to reset drive #%u %s %s"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, to->index, to->vendor, to->model);
 	}
@@ -588,7 +589,7 @@ retry:
 		dr->ops->update_status(dr);
 
 		if (!dr->is_empty)
-			sochgr_scsi_changer_unload(dr, db_connect);
+			sochgr_scsi_changer_unload(NULL, dr, db_connect);
 	}
 
 	sochgr_media_release(&sochgr_scsi_changer);
@@ -717,10 +718,10 @@ static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_conn
 	return 0;
 }
 
-static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database_connection * db_connection) {
+static int sochgr_scsi_changer_unload(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection) {
 	int failed = from->ops->update_status(from);
 	if (failed != 0) {
-		so_log_write(so_log_level_critical,
+		sochgr_log_add_record(peer, so_job_status_waiting, db_connection, so_log_level_critical, so_job_record_notif_important,
 			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%u %s %s"),
 			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, from->index, from->vendor, from->model);
 

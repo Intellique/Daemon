@@ -61,11 +61,11 @@ static char * sochgr_vtl_root_dir = NULL;
 
 static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_connection * db_connection);
-static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+static int sochgr_vtl_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_put_online(struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_shut_down(struct so_database_connection * db_connection);
-static int sochgr_vtl_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
+static int sochgr_vtl_changer_unload(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_unload_all_drives(struct so_database_connection * db_connection);
 
 struct so_changer_ops sochgr_vtl_changer_ops = {
@@ -457,7 +457,7 @@ init_error:
 	return 1;
 }
 
-static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection) {
+static int sochgr_vtl_changer_load(struct sochgr_peer * peer __attribute__((unused)), struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection) {
 	sochgr_vtl_changer.status = so_changer_status_loading;
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
 
@@ -593,7 +593,7 @@ static int sochgr_vtl_changer_shut_down(struct so_database_connection * db_conne
 			sleep(5);
 
 		if (dr->slot->full)
-			sochgr_vtl_changer_unload(dr, db_connection);
+			sochgr_vtl_changer_unload(NULL, dr, db_connection);
 	}
 
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
@@ -601,7 +601,7 @@ static int sochgr_vtl_changer_shut_down(struct so_database_connection * db_conne
 	return 0;
 }
 
-static int sochgr_vtl_changer_unload(struct so_drive * from, struct so_database_connection * db_connection) {
+static int sochgr_vtl_changer_unload(struct sochgr_peer * peer __attribute__((unused)), struct so_drive * from, struct so_database_connection * db_connection) {
 	sochgr_vtl_changer.status = so_changer_status_unloading;
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
 
@@ -653,7 +653,7 @@ static int sochgr_vtl_changer_unload_all_drives(struct so_database_connection * 
 			sleep(5);
 
 		if (dr->slot->full) {
-			int failed = sochgr_vtl_changer_unload(dr, db_connection);
+			int failed = sochgr_vtl_changer_unload(NULL, dr, db_connection);
 			if (failed != 0)
 				return failed;
 		}

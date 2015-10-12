@@ -238,7 +238,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 					dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"),
 					changer->vendor, changer->model, volume_name, drive->index);
 
-				int failed = changer->ops->unload(drive, sochgr_db);
+				int failed = changer->ops->unload(peer, drive, sochgr_db);
 				if (failed != 0) {
 					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_important,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
@@ -318,7 +318,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 					dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"),
 					changer->vendor, changer->model, volume_name, drive->index);
 
-				int failed = changer->ops->unload(drive, sochgr_db);
+				int failed = changer->ops->unload(peer, drive, sochgr_db);
 				if (failed != 0) {
 					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_normal,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
@@ -346,7 +346,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d"),
 				changer->vendor, changer->model, sl->volume_name, sl->index, drive->index);
 
-			int failed = changer->ops->load(sl, drive, sochgr_db);
+			int failed = changer->ops->load(peer, sl, drive, sochgr_db);
 			if (failed != 0) {
 				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_important,
 					dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"),

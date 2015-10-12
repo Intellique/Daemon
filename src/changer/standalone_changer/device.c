@@ -41,10 +41,10 @@
 
 static int sochgr_standalone_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection);
-static int sochgr_standalone_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+static int sochgr_standalone_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_remain_online(struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_shut_down(struct so_database_connection * db_connection);
-static int sochgr_standalone_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
+static int sochgr_standalone_changer_unload(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection);
 
 struct so_changer_ops sochgr_standalone_changer_ops = {
 	.check       = sochgr_standalone_changer_check,
@@ -144,7 +144,7 @@ static int sochgr_standalone_changer_init(struct so_value * config, struct so_da
 	return 0;
 }
 
-static int sochgr_standalone_changer_load(struct so_slot * from __attribute__((unused)), struct so_drive * to __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
+static int sochgr_standalone_changer_load(struct sochgr_peer * peer __attribute__((unused)), struct so_slot * from __attribute__((unused)), struct so_drive * to __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
 	return 1;
 }
 
@@ -160,7 +160,7 @@ static int sochgr_standalone_changer_shut_down(struct so_database_connection * d
 	return 0;
 }
 
-static int sochgr_standalone_changer_unload(struct so_drive * from __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
+static int sochgr_standalone_changer_unload(struct sochgr_peer * peer __attribute__((unused)), struct so_drive * from __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
 	return 1;
 }
 
