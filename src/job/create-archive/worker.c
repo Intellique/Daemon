@@ -94,7 +94,6 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
 static void soj_create_archive_worker_generate_report2(struct so_job * job, struct so_archive * archive, struct so_value * selected_path, struct so_database_connection * db_connect);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
-static void soj_create_archive_worker_prepare_medias3(struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 
@@ -574,11 +573,6 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 }
 
 void soj_create_archive_worker_prepare_medias2(struct so_database_connection * db_connect) {
-	soj_create_archive_worker_prepare_medias3(db_connect);
-	soj_create_archive_worker_prepare_medias3(db_connect);
-}
-
-static void soj_create_archive_worker_prepare_medias3(struct so_database_connection * db_connect) {
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
