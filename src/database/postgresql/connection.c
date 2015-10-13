@@ -1028,7 +1028,7 @@ static struct so_pool * so_database_postgresql_get_pool(struct so_database_conne
 	ExecStatusType status = PQresultStatus(result);
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1 && !PQgetisnull(result, 0, 0)) {
 		pool = malloc(sizeof(struct so_pool));
 		bzero(pool, sizeof(struct so_pool));
 
