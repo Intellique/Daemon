@@ -539,7 +539,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 			sochgr_media_add_writer(mp, peer, size_need);
 		} else if (10 * media->free_block >= media->total_block) {
 			result = media->free_block * media->block_size - mp->size_reserved;
-			sochgr_media_add_writer(mp, peer, size_need);
+			sochgr_media_add_writer(mp, peer, result);
 		}
 	}
 
