@@ -53,6 +53,7 @@
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/io.h>
 
@@ -121,6 +122,8 @@ struct so_format_reader * soj_io_filesystem_reader(const char * path) {
 	bzero(self, sizeof(struct soj_format_reader_filesystem_private));
 	self->path = strdup(path);
 	self->last_errno = 0;
+
+	so_string_rtrim(self->path, '/');
 
 	self->current = self->root = soj_format_reader_filesystem_node_new(strdup(path));
 	self->fetch = false;
