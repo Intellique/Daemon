@@ -123,8 +123,6 @@ struct so_format_reader * soj_io_filesystem_reader(const char * path) {
 	self->path = strdup(path);
 	self->last_errno = 0;
 
-	so_string_rtrim(self->path, '/');
-
 	self->current = self->root = soj_format_reader_filesystem_node_new(strdup(path));
 	self->fetch = false;
 
@@ -304,6 +302,8 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 		free(path);
 		return NULL;
 	}
+
+	so_string_delete_double_char(path, '/');
 
 	free(node->files[node->i_file]);
 	node->i_file++;
