@@ -161,6 +161,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 							break;
 						}
 
+						file.position += nb_read;
 						float done = 0.96 * soj_create_archive_progress();
 						job->done = 0.02 + done;
 					}
