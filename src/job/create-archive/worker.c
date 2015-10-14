@@ -62,6 +62,7 @@ struct soj_create_archive_worker {
 	struct so_value * checksums;
 
 	ssize_t total_done;
+	ssize_t partial_done;
 	ssize_t archive_size;
 
 	struct so_media * media;
@@ -193,7 +194,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 
 	soj_create_archive_add_file3(worker, file, position);
 
-	worker->total_done = worker->writer->ops->position(worker->writer);
+	worker->partial_done = worker->writer->ops->position(worker->writer);
 
 	return status;
 }
@@ -275,6 +276,9 @@ int soj_create_archive_worker_close(bool first_round) {
 
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round) {
 	worker->writer->ops->close(worker->writer);
+
+	worker->partial_done = 0;
+	worker->total_done += worker->writer->ops->position(worker->writer);
 
 	struct so_archive_volume * last_vol = worker->archive->volumes + (worker->archive->nb_volumes - 1);
 	last_vol->end_time = time(NULL);
@@ -497,7 +501,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 
 	worker->pool = pool;
 
-	worker->total_done = 0;
+	worker->total_done = worker->partial_done = 0;
 	worker->archive_size = 0;
 
 	worker->media = NULL;
@@ -595,7 +599,7 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 }
 
 float soj_create_archive_progress() {
-	ssize_t nb_done = primary_worker->total_done;
+	ssize_t nb_done = primary_worker->total_done + primary_worker->partial_done;
 	ssize_t nb_total = primary_worker->archive_size;
 
 	unsigned int i;
@@ -605,7 +609,7 @@ float soj_create_archive_progress() {
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		nb_done += worker->total_done;
+		nb_done += worker->total_done + worker->partial_done;
 		nb_total += worker->archive_size;
 	}
 
@@ -748,7 +752,7 @@ ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_
 	}
 
 	file->position = current_file_position;
-	worker->total_done = worker->writer->ops->position(worker->writer);
+	worker->partial_done = worker->writer->ops->position(worker->writer);
 
 	return nb_total_write;
 }
