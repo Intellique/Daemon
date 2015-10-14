@@ -230,7 +230,7 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 		worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
 
 		struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-		vol->media = worker->media;
+		vol->media = so_media_dup(worker->media);
 		vol->media_position = worker->writer->ops->file_position(worker->writer);
 		vol->job = soj_job_get();
 
@@ -524,7 +524,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		primary_worker->state = soj_worker_status_ready;
 
 		struct so_archive_volume * vol = so_archive_add_volume(primary_worker->archive);
-		vol->media = primary_worker->media;
+		vol->media = so_media_dup(primary_worker->media);
 		vol->media_position = primary_worker->writer->ops->file_position(primary_worker->writer);
 		vol->job = soj_job_get();
 
@@ -552,7 +552,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = worker->media;
+			vol->media = so_media_dup(worker->media);
 			vol->media_position = primary_worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
 		}
@@ -587,7 +587,7 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = worker->media;
+			vol->media = so_media_dup(worker->media);
 			vol->media_position = worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
 		}

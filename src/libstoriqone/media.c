@@ -244,6 +244,55 @@ struct so_value * so_media_convert(struct so_media * media) {
 	return md;
 }
 
+struct so_media * so_media_dup(struct so_media * media) {
+	struct so_media * new_media = malloc(sizeof(struct so_media));
+	bzero(new_media, sizeof(struct so_media));
+
+	strncpy(new_media->uuid, media->uuid, 37);
+	new_media->label = strdup(media->label);
+	new_media->medium_serial_number = strdup(media->medium_serial_number);
+	new_media->name = strdup(media->name);
+
+	new_media->status = media->status;
+
+	new_media->first_used = media->first_used;
+	new_media->use_before = media->use_before;
+	new_media->last_read = media->last_read;
+	new_media->last_write = media->last_write;
+
+	new_media->load_count = media->load_count;
+	new_media->read_count = media->read_count;
+	new_media->write_count = media->write_count;
+	new_media->operation_count = media->operation_count;
+
+	new_media->nb_total_read = media->nb_total_read;
+	new_media->nb_total_write = media->nb_total_write;
+
+	new_media->nb_read_errors = media->nb_read_errors;
+	new_media->nb_write_errors = media->nb_write_errors;
+
+	new_media->block_size = media->block_size;
+	new_media->free_block = media->free_block;
+	new_media->total_block = media->total_block;
+
+	new_media->nb_volumes = media->nb_volumes;
+	new_media->append = media->append;
+	new_media->type = media->type;
+	new_media->write_lock = media->write_lock;
+
+	if (media->archive_format != NULL)
+		new_media->archive_format = so_archive_format_dup(media->archive_format);
+	new_media->media_format = so_media_format_dup(media->media_format);
+	if (media->pool != NULL)
+		new_media->pool = so_pool_dup(media->pool);
+
+	new_media->private_data = NULL;
+	new_media->free_private_data = NULL;
+	new_media->db_data = so_value_share(media->db_data);
+
+	return new_media;
+}
+
 struct so_value * so_media_format_convert(struct so_media_format * format) {
 	return so_value_pack("{sssusssssIsIsIsIsIszszsbsb}",
 		"name", format->name,
@@ -425,6 +474,7 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	}
 }
 
+
 struct so_value * so_pool_convert(struct so_pool * pool) {
 	return so_value_pack("{sssssssbsssbsbsoso}",
 		"uuid", pool->uuid,
@@ -439,6 +489,27 @@ struct so_value * so_pool_convert(struct so_pool * pool) {
 		"archive format", so_archive_format_convert(pool->archive_format),
 		"media format", so_media_format_convert(pool->media_format)
 	);
+}
+
+struct so_pool * so_pool_dup(struct so_pool * pool) {
+	struct so_pool * new_pool = malloc(sizeof(struct so_pool));
+	bzero(new_pool, sizeof(struct so_pool));
+
+	strncpy(new_pool->uuid, pool->uuid, 37);
+	new_pool->name = strdup(pool->name);
+
+	new_pool->auto_check = pool->auto_check;
+	new_pool->growable = pool->growable;
+	new_pool->unbreakable_level = pool->unbreakable_level;
+	new_pool->rewritable = pool->rewritable;
+	new_pool->deleted = pool->deleted;
+
+	new_pool->archive_format = so_archive_format_dup(pool->archive_format);
+	new_pool->media_format = so_media_format_dup(pool->media_format);
+
+	new_pool->db_data = so_value_share(pool->db_data);
+
+	return new_pool;
 }
 
 void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) {

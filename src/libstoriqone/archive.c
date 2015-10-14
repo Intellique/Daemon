@@ -458,6 +458,18 @@ struct so_value * so_archive_format_convert(struct so_archive_format * archive_f
 	);
 }
 
+struct so_archive_format * so_archive_format_dup(struct so_archive_format * archive_format) {
+	struct so_archive_format * new_archive_format = malloc(sizeof(struct so_archive_format));
+	bzero(new_archive_format, sizeof(struct so_archive_format));
+
+	strncpy(new_archive_format->name, archive_format->name, 33);
+	new_archive_format->readable = archive_format->readable;
+	new_archive_format->writable = archive_format->writable;
+	new_archive_format->db_data = NULL;
+
+	return new_archive_format;
+}
+
 void so_archive_format_free(struct so_archive_format * archive_format) {
 	if (archive_format != NULL) {
 		so_value_free(archive_format->db_data);

@@ -170,11 +170,14 @@ struct so_pool {
 
 
 struct so_value * so_media_convert(struct so_media * media) __attribute__((warn_unused_result));
+struct so_media * so_media_dup(struct so_media * media) __attribute__((warn_unused_result));
 struct so_value * so_media_format_convert(struct so_media_format * format) __attribute__((warn_unused_result));
 void so_media_format_sync(struct so_media_format * format, struct so_value * new_format);
 struct so_media * so_media_new(struct so_value * media) __attribute__((warn_unused_result));
 void so_media_sync(struct so_media * media, struct so_value * new_media);
+
 struct so_value * so_pool_convert(struct so_pool * pool) __attribute__((warn_unused_result));
+struct so_pool * so_pool_dup(struct so_pool * pool) __attribute__((warn_unused_result));
 void so_pool_sync(struct so_pool * pool, struct so_value * new_pool);
 
 int so_media_format_cmp(struct so_media_format * f1, struct so_media_format * f2);
