@@ -87,7 +87,7 @@ static int so_format_tar_writer_file_position(struct so_format_writer * fw);
 static int so_format_tar_writer_last_errno(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_position(struct so_format_writer * fw);
 static struct so_format_reader * so_format_tar_writer_reopen(struct so_format_writer * fw);
-static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
+static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file);
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
 static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static enum so_format_writer_status so_format_tar_writer_write_header(struct so_format_tar_writer_private * f, void * data, ssize_t length);
@@ -476,7 +476,7 @@ static struct so_format_reader * so_format_tar_writer_reopen(struct so_format_wr
 	return so_format_tar_new_reader2(reader, format->has_cheksum);
 }
 
-static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {
+static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file) {
 	ssize_t block_size = 512;
 	struct so_format_tar * header = malloc(block_size);
 	struct so_format_tar * current_header = header;
@@ -484,15 +484,15 @@ static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_
 	struct so_format_tar_writer_private * format = fw->data;
 	bzero(current_header, 512);
 	strncpy(current_header->filename, file->filename, 100);
-	so_format_tar_writer_compute_size(current_header->size, file->size - position);
+	so_format_tar_writer_compute_size(current_header->size, file->size - file->position);
 	current_header->flag = 'M';
 	so_format_tar_writer_uid2name(header->uname, 32, file->uid);
 	so_format_tar_writer_gid2name(header->gname, 32, file->gid);
-	so_format_tar_writer_compute_size(current_header->position, position);
+	so_format_tar_writer_compute_size(current_header->position, file->position);
 
 	so_format_tar_writer_compute_checksum(current_header, current_header->checksum);
 
-	format->position = position;
+	format->position = file->position;
 	format->size = file->size;
 
 	if (block_size > format->io->ops->get_available_size(format->io)) {

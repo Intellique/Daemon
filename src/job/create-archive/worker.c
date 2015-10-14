@@ -717,13 +717,16 @@ ssize_t soj_create_archive_worker_write(struct so_job * job, struct so_format_fi
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect) {
 	ssize_t available = worker->writer->ops->get_available_size(worker->writer);
 	ssize_t nb_total_write = 0;
+	ssize_t current_file_position = file->position;
 	while (nb_total_write < length) {
 		if (available <= 0) {
 			int failed = soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect);
-			if (failed)
+			if (failed) {
+				file->position = current_file_position;
 				return -1;
+			}
 
-			worker->writer->ops->restart_file(worker->writer, file, worker->position);
+			worker->writer->ops->restart_file(worker->writer, file);
 
 			available = worker->writer->ops->get_available_size(worker->writer);
 		}
@@ -733,14 +736,18 @@ ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_
 			will_write = available;
 
 		ssize_t nb_write = worker->writer->ops->write(worker->writer, buffer + nb_total_write, will_write);
-		if (nb_write < 0)
+		if (nb_write < 0) {
+			file->position = current_file_position;
 			return nb_write;
+		}
 
+		file->position += nb_write;
 		nb_total_write += nb_write;
 		available -= nb_write;
 		worker->position += nb_write;
 	}
 
+	file->position = current_file_position;
 	worker->total_done = worker->writer->ops->position(worker->writer);
 
 	return nb_total_write;
