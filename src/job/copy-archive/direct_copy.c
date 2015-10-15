@@ -60,7 +60,8 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	struct so_media * media = vol->media = self->dest_drive->slot->media;
+	struct so_media * media = self->dest_drive->slot->media;
+	vol->media = so_media_dup(media);
 	vol->job = job;
 
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
@@ -145,9 +146,10 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 					ssize_t nb_total_write = 0;
 					while (nb_total_write < nb_read) {
 						ssize_t nb_write = self->writer->ops->write(self->writer, buffer + nb_total_write, nb_read - nb_total_write);
-						if (nb_write >= 0)
+						if (nb_write >= 0) {
 							nb_total_write += nb_write;
-						else {
+							file.position += nb_write;
+						} else {
 							so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 								dgettext("storiqone-job-copy-archive", "Error while writing file data '%s' to media '%s'"),
 								file.filename, media->name);

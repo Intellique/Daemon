@@ -44,9 +44,9 @@ struct so_slot;
 struct so_value;
 
 struct so_changer_ops {
-	struct so_drive * (*get_media)(struct so_changer * changer, struct so_slot * slot, bool no_wait);
-	int (*release_media)(struct so_changer * changer, struct so_slot * slot);
-	ssize_t (*reserve_media)(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
+	struct so_drive * (*get_media)(struct so_changer * changer, struct so_media * media, bool no_wait);
+	int (*release_media)(struct so_changer * changer, struct so_media * media);
+	ssize_t (*reserve_media)(struct so_changer * changer, struct so_media * media, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
 	int (*sync)(struct so_changer * changer);
 };
 
