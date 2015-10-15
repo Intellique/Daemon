@@ -49,13 +49,13 @@
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/log.h>
-#include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
+#include <libstoriqone-job/media.h>
 
 #include "common.h"
 
@@ -100,73 +100,10 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 		if (strcmp(vol->media->medium_serial_number, worker->media->medium_serial_number) != 0)
 			continue;
 
-		enum {
-			alert_user,
-			get_media,
-			look_for_media,
-			reserve_media,
-		} state = look_for_media;
-		bool stop = false, has_alert_user = false;
-		struct so_slot * slot = NULL;
-		ssize_t reserved_size = 0;
-		struct so_drive * drive = NULL;
-
-		while (!stop && !worker->stop_request) {
-			switch (state) {
-				case alert_user:
-					worker->status = so_job_status_waiting;
-					if (!has_alert_user)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-							dgettext("storiqone-job-restore-archive", "Media not found (named: %s)"),
-							worker->media->name);
-					has_alert_user = true;
-
-					sleep(15);
-
-					state = look_for_media;
-					worker->status = so_job_status_running;
-					soj_changer_sync_all();
-					break;
-
-				case get_media:
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-						dgettext("storiqone-job-restore-archive", "Getting media (%s)"),
-						worker->media->name);
-					drive = slot->changer->ops->get_media(slot->changer, slot, false);
-					if (drive == NULL) {
-						worker->status = so_job_status_waiting;
-
-						sleep(15);
-
-						state = look_for_media;
-						worker->status = so_job_status_running;
-						soj_changer_sync_all();
-					} else
-						stop = true;
-					break;
-
-				case look_for_media:
-					so_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_important,
-						dgettext("storiqone-job-restore-archive", "Looking for media (%s)"),
-						worker->media->name);
-					slot = soj_changer_find_slot(worker->media);
-					state = slot != NULL ? reserve_media : alert_user;
-					break;
-
-				case reserve_media:
-					reserved_size = slot->changer->ops->reserve_media(slot->changer, slot, 0, so_pool_unbreakable_level_none);
-					if (reserved_size < 0) {
-						worker->status = so_job_status_waiting;
-
-						sleep(15);
-
-						state = look_for_media;
-						worker->status = so_job_status_running;
-						soj_changer_sync_all();
-					} else
-						state = get_media;
-					break;
-			}
+		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
+		if (drive == NULL) {
+			// TODO: print error
+			break;
 		}
 
 		struct so_format_reader * reader = drive->ops->get_reader(drive, vol->media_position, NULL);
