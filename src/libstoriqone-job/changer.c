@@ -200,10 +200,10 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{su}}",
+	struct so_value * request = so_value_pack("{sss{ss}}",
 		"command", "release media",
 		"params",
-			"slot", slot->index
+			"medium serial number", slot->media->medium_serial_number
 	);
 
 	pthread_mutex_lock(&self->lock);
@@ -227,10 +227,10 @@ static int soj_changer_release_media(struct so_changer * changer, struct so_slot
 static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{suszss}}",
+	struct so_value * request = so_value_pack("{sss{ssszss}}",
 		"command", "reserve media",
 		"params",
-			"slot", slot->index,
+			"medium serial number", slot->media->medium_serial_number,
 			"size need", size_need,
 			"unbreakable level", so_pool_unbreakable_level_to_string(unbreakable_level, false)
 	);
