@@ -70,6 +70,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	unsigned int i;
 	int failed = 0;
 	bool ok = true;
+	ssize_t nb_total_read = 0;
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
 
@@ -129,7 +130,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 					}
 				}
 
-				ssize_t nb_read, nb_total_read = 0;
+				ssize_t nb_read;
 				static char buffer[65535];
 
 				ssize_t will_read = available_size < 65535 ? available_size : 65535;
@@ -183,6 +184,11 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 
 			so_format_file_free(&file);
 		}
+
+		nb_total_read += reader->ops->position(reader);
+
+		reader->ops->close(reader);
+		reader->ops->free(reader);
 	}
 
 	soj_copyarchive_util_close_media(job, db_connect, self);
