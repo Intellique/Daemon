@@ -65,7 +65,7 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->media = self->dest_drive->slot->media;
+	vol->media = so_media_dup(self->dest_drive->slot->media);
 	vol->media_position = self->writer->ops->file_position(self->writer);
 	vol->job = job;
 
