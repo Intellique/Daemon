@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-10-21 18:56+0200\n"
+        "POT-Creation-Date: 2015-10-22 23:56+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -87,17 +87,17 @@ msgstr  "Erreur : pas assez d’espace disponible dans le pool « %s »"
 msgid   "Selected copy mode: direct"
 msgstr  "Selection du mode de copie : direct"
 
-#: src/job/copy-archive/direct_copy.c:105
+#: src/job/copy-archive/direct_copy.c:106
 #, c-format
 msgid   "Error while writing file header '%s' to media '%s'"
 msgstr  "Erreur en écrivant l’entête du fichier « %s » sur le média « %s »"
 
-#: src/job/copy-archive/direct_copy.c:149
+#: src/job/copy-archive/direct_copy.c:151
 #, c-format
 msgid   "Error while writing file data '%s' to media '%s'"
 msgstr  "Erreur en écrivant les données du fichier « %s » sur le média « %s »"
 
-#: src/job/copy-archive/direct_copy.c:182 src/job/copy-archive/indirect_copy.c:153
+#: src/job/copy-archive/direct_copy.c:184 src/job/copy-archive/indirect_copy.c:153
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Erreur en lisant depuis le média « %s »"
