@@ -99,13 +99,15 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 				}
 			}
 
-			enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
-			if (wrtr_status != so_format_writer_ok) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-					dgettext("storiqone-job-copy-archive", "Error while writing file header '%s' to media '%s'"),
-					file.filename, media->name);
-				ok = false;
-				break;
+			if (file.position == 0) {
+				enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
+				if (wrtr_status != so_format_writer_ok) {
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						dgettext("storiqone-job-copy-archive", "Error while writing file header '%s' to media '%s'"),
+						file.filename, media->name);
+					ok = false;
+					break;
+				}
 			}
 
 			struct soj_copyarchive_files * ptr_file = malloc(sizeof(struct soj_copyarchive_files));
@@ -186,7 +188,8 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 					break;
 				}
 
-				self->writer->ops->end_of_file(self->writer);
+				if (file.position == file.size)
+					self->writer->ops->end_of_file(self->writer);
 			}
 
 			so_format_file_free(&file);

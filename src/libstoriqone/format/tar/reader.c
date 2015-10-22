@@ -361,9 +361,11 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 		file->group = strdup(raw_header->gname);
 
 		switch (raw_header->flag) {
+			case 'M':
+				file->size += file->position;
+
 			case '0':
 			case '1':
-			case 'M':
 				file->mode |= S_IFREG;
 				break;
 
@@ -395,6 +397,11 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 
 	if (file->size > 0 && file->size % 512)
 		self->skip_size = 512 + file->size - file->size % 512;
+
+	if (file->position > 0) {
+		self->file_size -= file->position;
+		self->skip_size -= file->position;
+	}
 
 	return so_format_reader_header_ok;
 }
