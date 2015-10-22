@@ -128,22 +128,16 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 						ok = false;
 						break;
 					}
+
+					self->writer->ops->restart_file(self->writer, &file);
+					available_size = self->writer->ops->get_available_size(self->writer);
 				}
 
 				ssize_t nb_read;
-				static char buffer[65535];
+				static char buffer[65536];
 
-				ssize_t will_read = available_size < 65535 ? available_size : 65535;
+				ssize_t will_read = available_size < 65536 ? available_size : 65536;
 				while (nb_read = reader->ops->read(reader, buffer, will_read), nb_read > 0) {
-					available_size = self->writer->ops->get_available_size(self->writer);
-					if (available_size == 0) {
-						failed = soj_copyarchive_util_change_media(job, db_connect, self);
-						if (failed != 0) {
-							ok = false;
-							break;
-						}
-					}
-
 					ssize_t nb_total_write = 0;
 					while (nb_total_write < nb_read) {
 						ssize_t nb_write = self->writer->ops->write(self->writer, buffer + nb_total_write, nb_read - nb_total_write);
@@ -159,6 +153,19 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 							return 1;
 						}
 					}
+
+					available_size = self->writer->ops->get_available_size(self->writer);
+					if (available_size == 0) {
+						failed = soj_copyarchive_util_change_media(job, db_connect, self);
+						if (failed != 0) {
+							ok = false;
+							break;
+						}
+
+						self->writer->ops->restart_file(self->writer, &file);
+						available_size = self->writer->ops->get_available_size(self->writer);
+					}
+					will_read = available_size < 65536 ? available_size : 65536;
 
 					time_t now = time(NULL);
 					if (now > last_update + 5) {
