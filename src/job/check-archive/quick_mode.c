@@ -208,7 +208,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		reader = so_io_checksum_reader_new(reader, checksums, true);
 		so_value_free(checksums);
 
-		static char buffer[16384];
+		char buffer[16384];
 		ssize_t nb_read;
 		while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0 && !worker->stop_request)
 			worker->nb_total_read += nb_read;
