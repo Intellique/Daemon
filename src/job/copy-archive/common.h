@@ -55,6 +55,7 @@ struct so_job;
 
 int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
 int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
+void soj_copyarchive_util_add_file(struct soj_copyarchive_private * self, struct so_format_file * file, ssize_t block_size);
 int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
 int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
 void soj_copyarchive_util_init(struct so_archive * archive);

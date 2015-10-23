@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-10-22 23:56+0200\n"
+        "POT-Creation-Date: 2015-10-23 09:20+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -87,17 +87,17 @@ msgstr  "Erreur : pas assez d’espace disponible dans le pool « %s »"
 msgid   "Selected copy mode: direct"
 msgstr  "Selection du mode de copie : direct"
 
-#: src/job/copy-archive/direct_copy.c:106
+#: src/job/copy-archive/direct_copy.c:108 src/job/copy-archive/direct_copy.c:130 src/job/copy-archive/direct_copy.c:174
 #, c-format
 msgid   "Error while writing file header '%s' to media '%s'"
 msgstr  "Erreur en écrivant l’entête du fichier « %s » sur le média « %s »"
 
-#: src/job/copy-archive/direct_copy.c:151
+#: src/job/copy-archive/direct_copy.c:152
 #, c-format
 msgid   "Error while writing file data '%s' to media '%s'"
 msgstr  "Erreur en écrivant les données du fichier « %s » sur le média « %s »"
 
-#: src/job/copy-archive/direct_copy.c:184 src/job/copy-archive/indirect_copy.c:153
+#: src/job/copy-archive/direct_copy.c:196 src/job/copy-archive/indirect_copy.c:153
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Erreur en lisant depuis le média « %s »"
@@ -125,7 +125,7 @@ msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le fichier t
 msgid   "Error while writing file data '%s' to temporary file"
 msgstr  "Erreur en écrivant des données du fichier « %s » dans le fichier temporaire"
 
-#: src/job/copy-archive/indirect_copy.c:177 src/job/copy-archive/util.c:79
+#: src/job/copy-archive/indirect_copy.c:177 src/job/copy-archive/util.c:93
 msgid   "Failed to reopen temporary file"
 msgstr  "Échec lors de la réouverture du fichier temporaire"
 
