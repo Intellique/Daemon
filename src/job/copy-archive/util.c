@@ -49,6 +49,20 @@
 
 static struct so_value * files = NULL;
 
+void soj_copyarchive_util_add_file(struct soj_copyarchive_private * self, struct so_format_file * file, ssize_t block_size) {
+	struct soj_copyarchive_files * ptr_file = malloc(sizeof(struct soj_copyarchive_files));
+	ptr_file->path = strdup(file->filename);
+	ptr_file->position = self->writer->ops->position(self->writer) / block_size;
+	ptr_file->archived_time = time(NULL);
+	ptr_file->next = NULL;
+	self->nb_files++;
+
+	if (self->first_files == NULL)
+		self->first_files = self->last_files = ptr_file;
+	else
+		self->last_files = self->last_files->next = ptr_file;
+}
+
 int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self) {
 	int failed = soj_copyarchive_util_close_media(job, db_connect, self);
 	if (failed != 0)

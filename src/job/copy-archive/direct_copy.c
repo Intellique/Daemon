@@ -70,7 +70,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	unsigned int i;
 	int failed = 0;
 	bool ok = true;
-	ssize_t nb_total_read = 0;
+	ssize_t nb_total_read = 0, block_size = self->writer->ops->get_block_size(self->writer);
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
 
@@ -100,6 +100,8 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 			}
 
 			if (file.position == 0) {
+				soj_copyarchive_util_add_file(self, &file, block_size);
+
 				enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
 				if (wrtr_status != so_format_writer_ok) {
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -110,18 +112,6 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 				}
 			}
 
-			struct soj_copyarchive_files * ptr_file = malloc(sizeof(struct soj_copyarchive_files));
-			ptr_file->path = strdup(file.filename);
-			ptr_file->position = self->writer->ops->position(self->writer);
-			ptr_file->archived_time = time(NULL);
-			ptr_file->next = NULL;
-			self->nb_files++;
-
-			if (self->first_files == NULL)
-				self->first_files = self->last_files = ptr_file;
-			else
-				self->last_files = self->last_files->next = ptr_file;
-
 			if (S_ISREG(file.mode)) {
 				available_size = self->writer->ops->get_available_size(self->writer);
 				if (available_size == 0) {
@@ -131,7 +121,18 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 						break;
 					}
 
-					self->writer->ops->restart_file(self->writer, &file);
+					block_size = self->writer->ops->get_block_size(self->writer);
+					soj_copyarchive_util_add_file(self, &file, block_size);
+
+					enum so_format_writer_status wrtr_status = self->writer->ops->restart_file(self->writer, &file);
+					if (wrtr_status != so_format_writer_ok) {
+						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+							dgettext("storiqone-job-copy-archive", "Error while writing file header '%s' to media '%s'"),
+							file.filename, media->name);
+						ok = false;
+						break;
+					}
+
 					available_size = self->writer->ops->get_available_size(self->writer);
 				}
 
@@ -164,7 +165,18 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 							break;
 						}
 
-						self->writer->ops->restart_file(self->writer, &file);
+						block_size = self->writer->ops->get_block_size(self->writer);
+						soj_copyarchive_util_add_file(self, &file, block_size);
+
+						enum so_format_writer_status wrtr_status = self->writer->ops->restart_file(self->writer, &file);
+						if (wrtr_status != so_format_writer_ok) {
+							so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+								dgettext("storiqone-job-copy-archive", "Error while writing file header '%s' to media '%s'"),
+								file.filename, media->name);
+							ok = false;
+							break;
+						}
+
 						available_size = self->writer->ops->get_available_size(self->writer);
 					}
 					will_read = available_size < 65536 ? available_size : 65536;
