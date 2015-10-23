@@ -82,24 +82,28 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		so_value_free(checksums);
 
 		enum so_format_reader_header_status status;
-		struct so_format_file file;
+		struct so_format_file file_in;
 		unsigned int j = 0;
 		static time_t last_update = 0;
 		last_update = time(NULL);
 
-		while (status = reader->ops->get_header(reader, &file), status == so_format_reader_header_ok) {
-			if (S_ISREG(file.mode)) {
+		while (status = reader->ops->get_header(reader, &file_in), status == so_format_reader_header_ok) {
+			if (S_ISREG(file_in.mode)) {
 				struct so_archive_files * ptr_file = vol->files + j;
 				struct so_archive_file * file = ptr_file->file;
 
-				struct so_value * checksums = so_value_hashtable_keys(file->digests);
-				if (so_value_list_get_length(checksums) > 0)
-					chcksum_writer = so_io_checksum_writer_new(NULL, checksums, true);
-				so_value_free(checksums);
+				if (file_in.position == 0) {
+					struct so_value * checksums = so_value_hashtable_keys(file->digests);
+					if (so_value_list_get_length(checksums) > 0)
+						chcksum_writer = so_io_checksum_writer_new(NULL, checksums, true);
+					so_value_free(checksums);
+				}
 
 				static char buffer[16384];
 				ssize_t nb_read;
 				while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0 && !job->stopped_by_user) {
+					file_in.position += nb_read;
+
 					if (chcksum_writer != NULL)
 						chcksum_writer->ops->write(chcksum_writer, buffer, nb_read);
 
@@ -126,7 +130,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 					// TODO: error while reading
 				}
 
-				if (chcksum_writer != NULL) {
+				if (chcksum_writer != NULL && file_in.position == file_in.size) {
 					chcksum_writer->ops->close(chcksum_writer);
 
 					struct so_value * digests = so_io_checksum_writer_get_checksums(chcksum_writer);
@@ -150,7 +154,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 				}
 			}
 
-			so_format_file_free(&file);
+			so_format_file_free(&file_in);
 
 			if (!ok)
 				break;
