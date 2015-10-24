@@ -139,11 +139,11 @@ msgstr  "Pas de restitution d’archive supprimée « %s »"
 msgid   "Restore path should be absolute (starts with '/')"
 msgstr  "Le chemin de restitution doit être absolu (commence par '/')"
 
-#~ msgid        "Looking for media (%s)"
-#~ msgstr       "Recherche du média « %s »"
+#~ msgid        "Media not found (named: %s)"
+#~ msgstr       "Média non trouvé (nommé : %s)"
 
 #~ msgid        "Getting media (%s)"
 #~ msgstr       "Acquisition du média « %s »"
 
-#~ msgid        "Media not found (named: %s)"
-#~ msgstr       "Média non trouvé (nommé : %s)"
+#~ msgid        "Looking for media (%s)"
+#~ msgstr       "Recherche du média « %s »"
