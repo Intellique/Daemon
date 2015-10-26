@@ -83,6 +83,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	struct so_format_file file;
 	static time_t last_update = 0;
 	last_update = time(NULL);
+	ssize_t nb_total_read = 0;
 
 	unsigned int i;
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
@@ -121,9 +122,9 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			}
 
 			if (S_ISREG(file.mode)) {
-				ssize_t nb_read, nb_total_read = 0;
-				static char buffer[65535];
-				while (nb_read = reader->ops->read(reader, buffer, 65535), nb_read > 0) {
+				ssize_t nb_read;
+				static char buffer[65536];
+				while (nb_read = reader->ops->read(reader, buffer, 65536), nb_read > 0) {
 					ssize_t nb_total_write = 0;
 					while (nb_total_write < nb_read) {
 						ssize_t nb_write = tmp_frmt_writer->ops->write(tmp_frmt_writer, buffer + nb_total_write, nb_read - nb_total_write);
@@ -166,6 +167,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			so_format_file_free(&file);
 		}
 
+		nb_total_read += reader->ops->position(reader);
 		reader->ops->free(reader);
 	}
 
@@ -189,7 +191,8 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	struct so_media * media = vol->media = self->dest_drive->slot->media;
+	struct so_media * media = self->dest_drive->slot->media;
+	vol->media = so_media_dup(media);
 	vol->job = job;
 
 	vol->media_position = self->writer->ops->file_position(self->writer);
@@ -244,10 +247,10 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 				available_size = self->writer->ops->get_available_size(self->writer);
 			}
 
-			ssize_t nb_read, nb_total_read = 0;
-			static char buffer[65535];
+			ssize_t nb_read;
+			static char buffer[65536];
 
-			ssize_t will_read = available_size < 65535 ? available_size : 65535;
+			ssize_t will_read = available_size < 65536 ? available_size : 65536;
 			while (nb_read = tmp_frmt_reader->ops->read(tmp_frmt_reader, buffer, will_read), nb_read > 0 && ok) {
 				ssize_t nb_total_write = 0;
 				while (nb_total_write < nb_read) {
@@ -293,9 +296,9 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 				if (now > last_update + 5) {
 					last_update = now;
 
-					float done = tmp_frmt_reader->ops->position(tmp_frmt_reader) + nb_total_read;
-					done *= 0.98;
-					job->done = 0.01 + done / self->src_archive->size;
+					float done = tmp_frmt_reader->ops->position(tmp_frmt_reader);
+					done *= 0.49;
+					job->done = 0.50 + done / nb_total_read;
 				}
 			}
 
