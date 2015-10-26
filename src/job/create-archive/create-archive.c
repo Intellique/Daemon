@@ -28,6 +28,8 @@
 #include <libintl.h>
 // calloc
 #include <stdlib.h>
+// strcmp
+#include <string.h>
 // S_*
 #include <sys/stat.h>
 // access
@@ -159,6 +161,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 							break;
 						}
 
+						file.position += nb_read;
 						float done = 0.96 * soj_create_archive_progress();
 						job->done = 0.02 + done;
 					}
@@ -186,7 +189,14 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
-		soj_create_archive_worker_sync_archives(job, db_connect);
+		failed = soj_create_archive_worker_sync_archives(job, db_connect);
+
+		if (failed != 0)
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while synchronizing archive with database"));
+		else
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-job-create-archive", "Archive synchronized with database"));
 
 		stop = soj_create_archive_worker_finished();
 		if (!stop) {
@@ -197,25 +207,27 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		}
 	}
 
-	struct so_value * vpool_mirrors = so_value_new_linked_list();
-	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * vpool = so_value_iterator_get_value(iter, false);
-		struct so_pool * pool = so_value_custom_get(vpool);
-
-		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
-	}
-	so_value_iterator_free(iter);
-
 	job->done = 0.99;
 
 	soj_create_archive_worker_generate_report(job, selected_path, db_connect);
 
-	if (failed != 0)
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-create-archive", "Error while synchronizing archive with database"));
-	else
-		job->done = 1;
+	bool check_archive = false;
+	so_value_unpack(job->option, "{sb}", "check_archive", &check_archive);
+
+	if (check_archive) {
+		char * mode = NULL;
+		so_value_unpack(job->option, "{ss}", "check_archive_mode", &mode);
+
+		bool quick_mode = true;
+		if (mode != NULL) {
+			quick_mode = strcmp(mode, "quick_mode") == 0;
+			free(mode);
+		}
+
+		soj_create_archive_worker_create_check_archive(job, quick_mode, db_connect);
+	}
+
+	job->done = 1;
 
 	return failed;
 }

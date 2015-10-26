@@ -46,13 +46,13 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
-#include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
+#include <libstoriqone-job/media.h>
 
 #include "common.h"
 
@@ -77,7 +77,9 @@ static void soj_checkarchive_quick_mode_do(void * arg);
 
 
 int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect) {
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Starting check archive (%s) in quick mode"), archive->name);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+		dgettext("storiqone-job-check-archive", "Starting check archive (%s) in quick mode"),
+		archive->name);
 	job->done = 0.01;
 
 	struct soj_checkarchive_worker * workers = NULL;
@@ -163,6 +165,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		job->done = 0.01 + done * 0.98;
 	}
 
+	job->done = 0.99;
+
 	for (i = 0; i < archive->nb_volumes; i++)
 		db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
 
@@ -173,74 +177,13 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		ptr_worker = next;
 	}
 
+	job->done = 1;
+
 	return 0;
 }
 
 static void soj_checkarchive_quick_mode_do(void * arg) {
 	struct soj_checkarchive_worker * worker = arg;
-
-	enum {
-		alert_user,
-		get_media,
-		look_for_media,
-		reserve_media,
-	} state = look_for_media;
-	bool stop = false, has_alert_user = false;
-	struct so_slot * slot = NULL;
-	ssize_t reserved_size = 0;
-	struct so_drive * drive = NULL;
-
-	while (!stop && !worker->stop_request) {
-		switch (state) {
-			case alert_user:
-				worker->status = so_job_status_waiting;
-				if (!has_alert_user)
-					so_job_add_record(worker->job, worker->db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Media not found (named: %s)"), worker->media->name);
-				has_alert_user = true;
-
-				sleep(15);
-
-				state = look_for_media;
-				worker->status = so_job_status_running;
-				soj_changer_sync_all();
-				break;
-
-			case get_media:
-				so_job_add_record(worker->job, worker->db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Getting media (%s)"), worker->media->name);
-				drive = slot->changer->ops->get_media(slot->changer, slot, false);
-				if (drive == NULL) {
-					worker->status = so_job_status_waiting;
-
-					sleep(15);
-
-					state = look_for_media;
-					worker->status = so_job_status_running;
-					soj_changer_sync_all();
-				} else
-					stop = true;
-				break;
-
-			case look_for_media:
-				so_job_add_record(worker->job, worker->db_connect, so_log_level_debug, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Looking for media (%s)"), worker->media->name);
-				slot = soj_changer_find_slot(worker->media);
-				state = slot != NULL ? reserve_media : alert_user;
-				break;
-
-			case reserve_media:
-				reserved_size = slot->changer->ops->reserve_media(slot->changer, slot, 0, so_pool_unbreakable_level_none);
-				if (reserved_size < 0) {
-					worker->status = so_job_status_waiting;
-
-					sleep(15);
-
-					state = look_for_media;
-					worker->status = so_job_status_running;
-					soj_changer_sync_all();
-				} else
-					state = get_media;
-				break;
-		}
-	}
 
 	unsigned int i;
 	for (i = 0; i < worker->archive->nb_volumes && !worker->stop_request; i++) {
@@ -248,6 +191,12 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 
 		if (strcmp(vol->media->medium_serial_number, worker->media->medium_serial_number) != 0)
 			continue;
+
+		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, worker->db_connect);
+		if (drive == NULL) {
+			// TODO: print error
+			break;
+		}
 
 		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
 		if (so_value_list_get_length(checksums) == 0) {
@@ -259,7 +208,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		reader = so_io_checksum_reader_new(reader, checksums, true);
 		so_value_free(checksums);
 
-		static char buffer[16384];
+		char buffer[16384];
 		ssize_t nb_read;
 		while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0 && !worker->stop_request)
 			worker->nb_total_read += nb_read;

@@ -53,6 +53,7 @@
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/io.h>
 
@@ -301,6 +302,8 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 		free(path);
 		return NULL;
 	}
+
+	so_string_delete_double_char(path, '/');
 
 	free(node->files[node->i_file]);
 	node->i_file++;

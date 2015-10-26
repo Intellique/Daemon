@@ -185,11 +185,18 @@ static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so
 	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t eof = peer->format_writer->ops->end_of_file(peer->format_writer);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
-	ssize_t new_position = peer->format_writer->ops->position(peer->format_writer);
 
-	peer->nb_total_bytes += new_position - current_position;
+	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
+	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
-	struct so_value * response = so_value_pack("{szsi}", "returned", eof, "last errno", last_errno);
+	peer->nb_total_bytes += position - current_position;
+
+	struct so_value * response = so_value_pack("{szsiszsz}",
+		"returned", eof,
+		"last errno", last_errno,
+		"position", position,
+		"available size", available_size
+	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }
@@ -234,15 +241,14 @@ static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_valu
 
 static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request) {
 	struct so_value * vfile = NULL;
-	ssize_t position = 0;
-	so_value_unpack(request, "{s{sosz}}", "params", "file", &vfile, "position", &position);
+	so_value_unpack(request, "{s{so}}", "params", "file", &vfile);
 
 	struct so_format_file file;
 	so_format_file_init(&file);
 	so_format_file_sync(&file, vfile);
 
 	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
-	enum so_format_writer_status status = peer->format_writer->ops->restart_file(peer->format_writer, &file, position);
+	enum so_format_writer_status status = peer->format_writer->ops->restart_file(peer->format_writer, &file);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t new_position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);

@@ -38,12 +38,12 @@
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
-#include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
+#include <libstoriqone-job/media.h>
 
 #include "common.h"
 
@@ -59,65 +59,10 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 	for (i = 0; ok && i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
 
-		enum {
-			alert_user,
-			get_media,
-			look_for_media,
-			reserve_media,
-		} state = look_for_media;
-		bool stop = false, has_alert_user = false;
-		struct so_slot * slot = NULL;
-		ssize_t reserved_size = 0;
-		struct so_drive * drive = NULL;
-
-		while (!stop && !job->stopped_by_user) {
-			switch (state) {
-				case alert_user:
-					job->status = so_job_status_waiting;
-					if (!has_alert_user)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Media not found (named: %s)"), vol->media->name);
-					has_alert_user = true;
-
-					sleep(15);
-
-					state = look_for_media;
-					job->status = so_job_status_running;
-					soj_changer_sync_all();
-					break;
-
-				case get_media:
-					drive = slot->changer->ops->get_media(slot->changer, slot, false);
-					if (drive == NULL) {
-						job->status = so_job_status_waiting;
-
-						sleep(15);
-
-						state = look_for_media;
-						job->status = so_job_status_running;
-						soj_changer_sync_all();
-					} else
-						stop = true;
-					break;
-
-				case look_for_media:
-					slot = soj_changer_find_slot(vol->media);
-					state = slot != NULL ? reserve_media : alert_user;
-					break;
-
-				case reserve_media:
-					reserved_size = slot->changer->ops->reserve_media(slot->changer, slot, 0, so_pool_unbreakable_level_none);
-					if (reserved_size < 0) {
-						job->status = so_job_status_waiting;
-
-						sleep(15);
-
-						state = look_for_media;
-						job->status = so_job_status_running;
-						soj_changer_sync_all();
-					} else
-						state = get_media;
-					break;
-			}
+		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
+		if (drive == NULL) {
+			// TODO: print error
+			break;
 		}
 
 		if (job->stopped_by_user) {
@@ -137,24 +82,28 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		so_value_free(checksums);
 
 		enum so_format_reader_header_status status;
-		struct so_format_file file;
+		struct so_format_file file_in;
 		unsigned int j = 0;
 		static time_t last_update = 0;
 		last_update = time(NULL);
 
-		while (status = reader->ops->get_header(reader, &file), status == so_format_reader_header_ok) {
-			if (S_ISREG(file.mode)) {
+		while (status = reader->ops->get_header(reader, &file_in), status == so_format_reader_header_ok) {
+			if (S_ISREG(file_in.mode)) {
 				struct so_archive_files * ptr_file = vol->files + j;
 				struct so_archive_file * file = ptr_file->file;
 
-				struct so_value * checksums = so_value_hashtable_keys(file->digests);
-				if (so_value_list_get_length(checksums) > 0)
-					chcksum_writer = so_io_checksum_writer_new(NULL, checksums, true);
-				so_value_free(checksums);
+				if (file_in.position == 0) {
+					struct so_value * checksums = so_value_hashtable_keys(file->digests);
+					if (so_value_list_get_length(checksums) > 0)
+						chcksum_writer = so_io_checksum_writer_new(NULL, checksums, true);
+					so_value_free(checksums);
+				}
 
 				static char buffer[16384];
 				ssize_t nb_read;
 				while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0 && !job->stopped_by_user) {
+					file_in.position += nb_read;
+
 					if (chcksum_writer != NULL)
 						chcksum_writer->ops->write(chcksum_writer, buffer, nb_read);
 
@@ -181,7 +130,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 					// TODO: error while reading
 				}
 
-				if (chcksum_writer != NULL) {
+				if (chcksum_writer != NULL && file_in.position == file_in.size) {
 					chcksum_writer->ops->close(chcksum_writer);
 
 					struct so_value * digests = so_io_checksum_writer_get_checksums(chcksum_writer);
@@ -205,7 +154,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 				}
 			}
 
-			so_format_file_free(&file);
+			so_format_file_free(&file_in);
 
 			if (!ok)
 				break;

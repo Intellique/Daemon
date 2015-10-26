@@ -24,13 +24,14 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // scandir
 #include <dirent.h>
 // fnmatch
 #include <fnmatch.h>
 // glob, globfree
 #include <glob.h>
-// sscanf
+// asprintf, sscanf
 #include <stdio.h>
 // free
 #include <stdlib.h>
@@ -39,6 +40,7 @@
 
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/database.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/process.h>
 
 #include "plugin.h"
@@ -92,10 +94,28 @@ int sod_plugin_sync_checksum_inner(void * arg) {
 
 void sod_plugin_sync_job(struct so_database_connection * connection) {
 	struct dirent ** files = NULL;
-	int nb_files = scandir(DAEMON_BIN_DIR, &files, sod_plugin_job_filter, alphasort);
+	int nb_files = scandir(DAEMON_JOB_DIR, &files, sod_plugin_job_filter, alphasort);
 	int i;
 	for (i = 0; i < nb_files; i++) {
 		connection->ops->sync_plugin_job(connection, files[i]->d_name + 4);
+		free(files[i]);
+	}
+	free(files);
+}
+
+void sod_plugin_sync_scripts(struct so_database_connection * connection) {
+	struct dirent ** files = NULL;
+	int nb_files = scandir(SCRIPT_PATH, &files, so_file_basic_scandir_filter, alphasort);
+	int i;
+	for (i = 0; i < nb_files; i++) {
+		char * filename = NULL;
+		int size = asprintf(&filename, SCRIPT_PATH "/%s", files[i]->d_name);
+
+		if (size > 0) {
+			connection->ops->sync_plugin_script(connection, filename);
+			free(filename);
+		}
+
 		free(files[i]);
 	}
 	free(files);
