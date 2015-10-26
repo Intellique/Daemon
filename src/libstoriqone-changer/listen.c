@@ -54,6 +54,7 @@ static struct sochgr_peer * first_peer = NULL, * last_peer = NULL;
 static unsigned int sochgr_nb_clients = 0;
 
 static void sochgr_socket_accept(int fd_server, int fd_client, struct so_value * client);
+static struct so_slot * sochgr_socket_find_slot_by_media(const char * medium_serial_number);
 static void sochgr_socket_message(int fd, short event, void * data);
 static void sochgr_socket_remove_peer(struct sochgr_peer * peer);
 
@@ -103,6 +104,24 @@ static void sochgr_socket_accept(int fd_server __attribute__((unused)), int fd_c
 
 	so_poll_register(fd_client, POLLIN | POLLHUP, sochgr_socket_message, peer, NULL);
 	sochgr_nb_clients++;
+}
+
+static struct so_slot * sochgr_socket_find_slot_by_media(const char * medium_serial_number) {
+	if (medium_serial_number == NULL)
+		return NULL;
+
+	struct so_changer_driver * driver = sochgr_changer_get();
+	struct so_changer * changer = driver->device;
+
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct so_slot * sl = changer->slots + i;
+
+		if (sl->full && strcmp(medium_serial_number, sl->media->medium_serial_number) == 0)
+			return sl;
+	}
+
+	return NULL;
 }
 
 static void sochgr_socket_message(int fd, short event, void * data) {
@@ -420,23 +439,8 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 			"no wait", &no_wait
 	);
 
-	struct so_changer_driver * driver = sochgr_changer_get();
-	struct so_changer * changer = driver->device;
-
-	unsigned int i;
-	struct so_slot * sl = NULL;
-	if (medium_serial_number != NULL) {
-		for (i = 0; i < changer->nb_slots; i++) {
-			struct so_slot * sl2 = changer->slots + i;
-
-			if (sl2->full && strcmp(medium_serial_number, sl2->media->medium_serial_number) == 0) {
-				sl = sl2;
-				break;
-			}
-		}
-
-		free(medium_serial_number);
-	}
+	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
+	free(medium_serial_number);
 
 	struct so_media * media = sl != NULL ? sl->media : NULL;
 	if (media == NULL) {
@@ -472,21 +476,20 @@ error:
 }
 
 static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	int slot = -1;
-	so_value_unpack(request, "{s{si}}", "params", "slot", &slot);
+	char * medium_serial_number = NULL;
+	so_value_unpack(request, "{s{si}}", "params", "medium serial number", &medium_serial_number);
 
-	if (slot < 0) {
+	if (medium_serial_number == NULL) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
 	}
 
-	struct so_changer_driver * driver = sochgr_changer_get();
-	struct so_changer * changer = driver->device;
-	struct so_slot * sl = changer->slots + slot;
+	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
+	free(medium_serial_number);
 
-	if (sl->media == NULL) {
+	if (sl == NULL || sl->media == NULL) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
@@ -502,13 +505,13 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 }
 
 static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	unsigned int slot;
+	char * medium_serial_number = NULL;
 	size_t size_need = 0;
 	char * str_unbreakable_level;
 
-	int nb_parsed = so_value_unpack(request, "{s{siszss}}",
+	int nb_parsed = so_value_unpack(request, "{s{ssszss}}",
 		"params",
-			"slot", &slot,
+			"medium serial number", &medium_serial_number,
 			"size need", &size_need,
 			"unbreakable level", &str_unbreakable_level
 	);
@@ -520,12 +523,12 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		free(medium_serial_number);
 		return;
 	}
 
-	struct so_changer_driver * driver = sochgr_changer_get();
-	struct so_changer * changer = driver->device;
-	struct so_slot * sl = changer->slots + slot;
+	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
+	free(medium_serial_number);
 
 	if (sl->media == NULL) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
@@ -552,7 +555,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 			sochgr_media_add_writer(mp, peer, size_need);
 		} else if (10 * media->free_block >= media->total_block) {
 			result = media->free_block * media->block_size - mp->size_reserved;
-			sochgr_media_add_writer(mp, peer, size_need);
+			sochgr_media_add_writer(mp, peer, result);
 		}
 	}
 

@@ -70,7 +70,7 @@ static int soj_format_writer_file_position(struct so_format_writer * fw);
 static int soj_format_writer_last_errno(struct so_format_writer * fw);
 static ssize_t soj_format_writer_position(struct so_format_writer * fw);
 static struct so_format_reader * soj_format_writer_reopen(struct so_format_writer * fw);
-static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
+static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
@@ -241,12 +241,12 @@ static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	ssize_t failed = -1;
+	ssize_t eof = -1;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
 	if (response != NULL) {
-		so_value_unpack(response, "{sz}", "returned", &failed);
+		so_value_unpack(response, "{sz}", "returned", &eof);
 
-		if (failed != 0)
+		if (eof < 0)
 			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 		else
 			so_value_unpack(response, "{sisi}",
@@ -256,7 +256,7 @@ static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 		so_value_free(response);
 	}
 
-	return failed;
+	return eof;
 }
 
 static int soj_format_writer_file_position(struct so_format_writer * fw) {
@@ -327,14 +327,13 @@ static struct so_format_reader * soj_format_writer_reopen(struct so_format_write
 	return reader;
 }
 
-static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {
+static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{sss{sosz}}",
+	struct so_value * request = so_value_pack("{sss{so}}",
 		"command", "restart file",
 		"params",
-			"file", so_format_file_convert(file),
-			"position", position
+			"file", so_format_file_convert(file)
 	);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);

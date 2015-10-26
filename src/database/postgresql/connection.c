@@ -118,9 +118,11 @@ static char * so_database_postgresql_get_script(struct so_database_connection * 
 static bool so_database_postgresql_find_plugin_checksum(struct so_database_connection * connect, const char * checksum);
 static int so_database_postgresql_sync_plugin_checksum(struct so_database_connection * connect, struct so_checksum_driver * driver);
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
+static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_path);
 
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume);
+static int so_database_postgresql_create_check_archive_job(struct so_database_connection * connect, struct so_job * current_job, struct so_archive * archive, bool quick_mode);
 static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(struct so_database_connection * connect, struct so_archive * archive);
 static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id);
 static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
@@ -198,9 +200,11 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.find_plugin_checksum = so_database_postgresql_find_plugin_checksum,
 	.sync_plugin_checksum = so_database_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
+	.sync_plugin_script   = so_database_postgresql_sync_plugin_script,
 
 	.check_archive_file             = so_database_postgresql_check_archive_file,
 	.check_archive_volume           = so_database_postgresql_check_archive_volume,
+	.create_check_archive_job       = so_database_postgresql_create_check_archive_job,
 	.get_archives_by_archive_mirror = so_database_postgresql_get_archives_by_archive_mirror,
 	.get_archive_by_job             = so_database_postgresql_get_archive_by_job,
 	.get_archive_format_by_name     = so_database_postgresql_get_archive_format_by_name,
@@ -728,10 +732,10 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 
 	if (online) {
 		query = "select_online_medias";
-		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id IN (SELECT media FROM changerslot) AND m.status IN ('new', 'foreign') AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
 	} else {
 		query = "select_offline_medias";
-		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id NOT IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id NOT IN (SELECT media FROM changerslot) AND m.status IN ('new', 'foreign') AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
 	}
 
 	char * density_code;
@@ -1026,7 +1030,7 @@ static struct so_pool * so_database_postgresql_get_pool(struct so_database_conne
 	ExecStatusType status = PQresultStatus(result);
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1 && !PQgetisnull(result, 0, 0)) {
 		pool = malloc(sizeof(struct so_pool));
 		bzero(pool, sizeof(struct so_pool));
 
@@ -1798,6 +1802,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 				so_database_postgresql_get_string_dup(result, 0, 4, &pool_id);
 				so_value_hashtable_put2(db, "pool id", so_value_new_string(pool_id), true);
 				free(pool_id);
+				pool_id = NULL;
 			}
 		}
 
@@ -2859,6 +2864,43 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 	return status == PGRES_FATAL_ERROR;
 }
 
+static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_path) {
+	if (connect == NULL || script_path == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+	const char * query = "select_script_by_path";
+	so_database_postgresql_prepare(self, query, "SELECT id FROM script WHERE path = $1 LIMIT 1");
+
+	const char * param[] = { script_path };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		found = true;
+
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	query = "insert_script";
+	so_database_postgresql_prepare(self, query, "INSERT INTO script(path) VALUES ($1)");
+
+	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
+}
+
 
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) {
 	if (connect == NULL || archive == NULL || file == NULL)
@@ -2917,6 +2959,53 @@ static int so_database_postgresql_check_archive_volume(struct so_database_connec
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
+}
+
+static int so_database_postgresql_create_check_archive_job(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, bool quick_mode) {
+	if (connect == NULL || archive == NULL)
+		return -1;
+
+	char * job_name = NULL;
+	int size = asprintf(&job_name,
+		dgettext("libstoriqone-database-postgresql", "Checking '%s'"), archive->name);
+	if (size < 0)
+		return -2;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+
+	char * job_id = NULL;
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &job_id);
+
+	char * archive_id = NULL;
+	db = so_value_hashtable_get(archive->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &archive_id);
+
+	so_value_free(key);
+
+	struct so_value * option = so_value_pack("{sb}", "quick_mode", quick_mode);
+	char * str_option = so_json_encode_to_string(option);
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "create_check_archive";
+	so_database_postgresql_prepare(self, query, "WITH type AS (SELECT id FROM jobtype WHERE name = 'check-archive'), job AS (SELECT host, login FROM job WHERE id = $1) INSERT INTO job(name, type, archive, host, login, options) SELECT $2, t.id, $3, j.host, j.login, $4 FROM type t, job j");
+
+	const char * param[] = { job_id, job_name, archive_id, str_option };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(str_option);
+	so_value_free(option);
+	free(archive_id);
+	free(job_id);
+	free(job_name);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -4430,7 +4519,9 @@ static void so_database_postgresql_prepare(struct so_database_postgresql_connect
 		ExecStatusType status = PQresultStatus(prepare);
 		if (status == PGRES_FATAL_ERROR) {
 			so_database_postgresql_get_error(prepare, statement_name);
-			so_log_write2(status == PGRES_COMMAND_OK ? so_log_level_debug : so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: new query prepared (%s) => {%s}, status: %s"), statement_name, query, PQresStatus(status));
+			so_log_write2(status == PGRES_COMMAND_OK ? so_log_level_debug : so_log_level_error, so_log_type_plugin_db,
+				dgettext("libstoriqone-database-postgresql", "PSQL: new query prepared (%s) => {%s}, status: %s"),
+				statement_name, query, PQresStatus(status));
 		} else
 			so_value_hashtable_put2(self->cached_query, statement_name, so_value_new_string(query), true);
 		PQclear(prepare);

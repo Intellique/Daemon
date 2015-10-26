@@ -58,9 +58,9 @@ struct soj_changer {
 static struct so_changer * soj_changers = NULL;
 static unsigned int soj_nb_changers = 0;
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot, bool no_wait);
-static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
-static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot);
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait);
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
+static int soj_changer_release_media(struct so_changer * changer, struct so_media * media);
 static int soj_changer_sync(struct so_changer * changer);
 
 static struct so_changer_ops soj_changer_ops = {
@@ -119,14 +119,28 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 	return NULL;
 }
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot, bool no_wait) {
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait) {
 	struct soj_changer * self = changer->data;
 	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sss{sssb}}",
+	struct so_slot * slot = NULL;
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct so_slot * sl = changer->slots + i;
+		if (sl->media == NULL)
+			continue;
+
+		if (!strcmp(sl->media->medium_serial_number, media->medium_serial_number)) {
+			slot = sl;
+			break;
+		}
+	}
+
+	struct so_value * request = so_value_pack("{sss{sssssb}}",
 		"command", "get media",
 		"params",
-			"medium serial number", slot->media->medium_serial_number,
+			"job key", job->id,
+			"medium serial number", media->medium_serial_number,
 			"no wait", no_wait
 	);
 
@@ -196,13 +210,13 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 	return false;
 }
 
-static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot) {
+static int soj_changer_release_media(struct so_changer * changer, struct so_media * media) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{su}}",
+	struct so_value * request = so_value_pack("{sss{ss}}",
 		"command", "release media",
 		"params",
-			"slot", slot->index
+			"medium serial number", media->medium_serial_number
 	);
 
 	pthread_mutex_lock(&self->lock);
@@ -223,13 +237,13 @@ static int soj_changer_release_media(struct so_changer * changer, struct so_slot
 	return ok ? 0 : 1;
 }
 
-static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level) {
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, enum so_pool_unbreakable_level unbreakable_level) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{suszss}}",
+	struct so_value * request = so_value_pack("{sss{ssszss}}",
 		"command", "reserve media",
 		"params",
-			"slot", slot->index,
+			"medium serial number", media->medium_serial_number,
 			"size need", size_need,
 			"unbreakable level", so_pool_unbreakable_level_to_string(unbreakable_level, false)
 	);

@@ -36,6 +36,10 @@
 #include "media.h"
 
 void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * peer) {
+	struct sochgr_peer_list * lp = sochgr_media_find_peer(media, peer);
+	if (lp != NULL)
+		return;
+
 	struct sochgr_peer_list * pl = malloc(sizeof(struct sochgr_peer_list));
 	bzero(pl, sizeof(struct sochgr_peer_list));
 
