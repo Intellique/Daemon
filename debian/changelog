@@ -1,3 +1,16 @@
+storiqone (1.2.3-1) polisher; urgency=low
+
+  * Bug fix release
+    - init.d script
+    - jobtype and script are correctly synchronized with database
+    - restoring multiple file sequentially
+    - create archive : can create verify task
+    - copy archive
+    - various fixes about tar format
+    - new media was seen as foreign media
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 26 Oct 2015 15:44:05 +0100
+
 storiqone (1.2.2-1) polisher; urgency=low
 
   * Bug fix release
