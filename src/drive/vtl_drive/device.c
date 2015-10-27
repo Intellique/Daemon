@@ -68,7 +68,7 @@ static bool sodr_vtl_drive_check_support(struct so_media_format * format, bool f
 static unsigned int sodr_vtl_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
 static bool sodr_vtl_drive_erase_file(const char * path);
 static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connection * db);
-static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
+static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_value * option, struct so_database_connection * db);
 static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db);
 static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
@@ -261,7 +261,10 @@ static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connec
 	return ok ? 0 : 1;
 }
 
-static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db) {
+static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
+	ssize_t block_size = 0;
+	so_value_unpack(option, "{sz}", "block size", &block_size);
+
 	if (block_size < 0)
 		return 1;
 

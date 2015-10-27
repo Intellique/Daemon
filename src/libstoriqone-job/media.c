@@ -211,7 +211,7 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 					dgettext("libstoriqone-job", "Automatic formatting media '%s'"),
 					media->name);
 
-				int failed = drive->ops->format_media(drive, 0, pool);
+				int failed = drive->ops->format_media(drive, pool, NULL);
 				if (failed != 0) {
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("libstoriqone-job", "Failed to format media"));

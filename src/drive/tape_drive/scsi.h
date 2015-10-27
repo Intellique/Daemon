@@ -45,6 +45,16 @@ bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path
 bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path);
 int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode);
 /**
+ * \brief SCSI command to format medium
+ * \pre The current logical position of tape should be bottom of partition in partition 0.
+ * \param path : path of generic scsi device
+ * \param parition_size : size of second partition. Zero means format into one partition.
+ * \param two_times : if partition_size is greater than zero, the drive will format into one partition then
+ * into two partition
+ * \return 0 if succeed
+ */
+int sodr_tape_drive_scsi_format_medium(const char * path, size_t partition_size, bool two_times);
+/**
  * \brief Set position on tape
  * \remark Require LTO-4 drive at least
  */

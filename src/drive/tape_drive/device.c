@@ -78,7 +78,7 @@ static bool sodr_tape_drive_check_support(struct so_media_format * format, bool 
 static unsigned int sodr_tape_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
 static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db);
-static int sodr_tape_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
+static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_value * option, struct so_database_connection * db);
 static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db);
 static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
@@ -311,8 +311,13 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 	return failed;
 }
 
-static int sodr_tape_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db) {
-	return sodr_tape_drive_format_storiqone_format_media(&sodr_tape_drive, fd_nst, pool, block_size, db);
+static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
+	if (strcmp(pool->archive_format->name, "Storiq One") == 0)
+		return sodr_tape_drive_format_storiqone_format_media(&sodr_tape_drive, fd_nst, pool, option, db);
+	else if (strcmp(pool->archive_format->name, "LTFS") == 0)
+		return sodr_tape_drive_format_ltfs_format_media(&sodr_tape_drive, fd_nst, pool, option, db);
+	else
+		return -1;
 }
 
 ssize_t sodr_tape_drive_get_block_size() {

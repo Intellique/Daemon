@@ -386,6 +386,158 @@ int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
 	return status;
 }
 
+int sodr_tape_drive_scsi_format_medium(const char * path, size_t partition_size, bool two_times) {
+	int fd = open(path, O_RDWR);
+	if (fd < 0)
+		return 1;
+
+	// SET CAPACITY (0xB)
+	struct {
+		unsigned char op_code;
+		bool immed:1;
+		unsigned char reserved0:7;
+		unsigned char reserved1;
+		short proportion_value;
+		unsigned char control;
+	} __attribute__((packed)) command_set_capacity = {
+		.op_code = 0x0B, // SET CAPACITY
+		.immed = false,
+		.reserved0 = 0,
+		.reserved1 = 0,
+		.proportion_value = 0xFFFF,
+		.control = 0
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_set_capacity);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command_set_capacity;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = NULL;
+	header.timeout = 960000; // 16 minutes
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status != 0) {
+		close(fd);
+		return 1;
+	}
+
+
+	// MEDIUM PARTITION PAGE
+	struct medium_partition_page {
+		unsigned char page_code:6;
+		bool subpage_format:1;
+		bool parameter_saveable:1;
+		unsigned char page_length;
+		unsigned char maximum_additional_partitions;
+		unsigned char additional_partitiions_defined;
+		bool adding_partitions:1;
+		bool parition_clearing:1;
+		bool partition_on_format_medium:1;
+		unsigned char partition_size_unit_of_measure:2; // 3 => MB
+		bool initiator_defined_partitions:1;
+		bool select_data_partitions:1;
+		bool fixed_data_partitions:1;
+		unsigned char medium_format_recognition;
+		unsigned char partition_units:4;
+		unsigned char paritioning_type:4;
+		unsigned char reserved;
+		unsigned short partition_size[4];
+	} __attribute__((packed)) medium_partition_page;
+
+
+	// MODE SENSE - read partition definition
+	struct {
+		unsigned char op_code;
+		unsigned char reserved0:3;
+		bool disable_block_descriptors:1;
+		unsigned char reserved1:1;
+		unsigned char lun:3; // obsolete
+		unsigned char page_code:6;
+		enum {
+			page_control_max_value = 0x0,
+			page_control_current_value = 0x1,
+			page_control_max_value2 = 0x2, // same as page_control_max_value ?
+			page_control_power_on_value = 0x3,
+		} page_control:2;
+		unsigned char subpage_code;
+		unsigned char reserved2[3];
+		unsigned short allocation_length;
+		unsigned char control;
+	} __attribute__((packed)) command_mode_sense = {
+		.op_code = 0x5A, // MODE SENSE (10)
+		.reserved0 = 0,
+		.disable_block_descriptors = false,
+		.reserved1 = 0,
+		.lun = 0,
+		.page_code = 0x11, // medium partition
+		.page_control = page_control_current_value,
+		.subpage_code = 0x0,
+		.reserved2 = { 0, 0, 0 },
+		.allocation_length = htobe16(sizeof(medium_partition_page)),
+		.control = 0
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_mode_sense);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(medium_partition_page);
+	header.cmdp = (unsigned char *) &command_mode_sense;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &medium_partition_page;
+	header.timeout = 960000; // 16 minutes
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+
+
+
+
+
+
+
+
+	ssize_t partition_size_mb = partition_size >> 20;
+	enum format_format {
+		default_format = 0x0,
+		partition_volume = 0x1,
+		default_format_then_partition = 0x2,
+		// 0x3-0x7: reserved
+		// 0x8-0xF: vendor specific
+	} format = default_format;
+	if (partition_size > 0)
+		format = two_times ? default_format_then_partition : partition_volume;
+
+	struct {
+		unsigned char op_code;
+		bool immed:1;
+		bool verify:1;
+		unsigned char reserved0:6;
+		enum format_format format:4;
+		unsigned char reserved1:4;
+
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x04, // FORMAT MEDIUM
+		.immed = false,
+		.verify = false,
+		.reserved0 = 0,
+		.format = format,
+		.reserved1 = 0,
+
+		.control = 0
+	};
+}
+
 int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position) {
 	struct {
 		unsigned char op_code;

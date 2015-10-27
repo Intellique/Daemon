@@ -122,8 +122,8 @@ struct sodr_socket_params_erase_media {
 
 struct sodr_socket_params_format_media {
 	struct sodr_peer * peer;
-	ssize_t block_size;
 	struct so_pool * pool;
+	struct so_value * option;
 };
 
 struct sodr_socket_params_parse_archive {
@@ -368,22 +368,22 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 
 	free(job_key);
 
-	ssize_t block_size = -1;
 	struct so_value * vpool = NULL;
-	so_value_unpack(request, "{s{szso}}",
+	struct so_value * option = NULL;
+	so_value_unpack(request, "{s{sosO}}",
 		"params",
-			"block size", &block_size,
-			"pool", &vpool
+			"pool", &vpool,
+			"option", &option
 	);
 
 	struct sodr_socket_params_format_media * params = malloc(sizeof(struct sodr_socket_params_format_media));
 	bzero(params, sizeof(struct sodr_socket_params_format_media));
 
 	params->peer = peer;
-	params->block_size = block_size;
 	params->pool = malloc(sizeof(struct so_pool));
 	bzero(params->pool, sizeof(struct so_pool));
 	so_pool_sync(params->pool, vpool);
+	params->option = option;
 
 	peer->owned = true;
 	so_thread_pool_run("format media", sodr_worker_command_format_media, params);
@@ -830,7 +830,7 @@ static void sodr_worker_command_format_media(void * data) {
 
 	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
-	int failed = drive->ops->format_media(params->pool, params->block_size, db_connect);
+	int failed = drive->ops->format_media(params->pool, params->option, db_connect);
 	struct so_value * response = so_value_pack("{si}", "returned", failed);
 	so_json_encode_to_fd(response, params->peer->fd, true);
 	so_value_free(response);
@@ -849,6 +849,9 @@ static void sodr_worker_command_format_media(void * data) {
 
 	free(media_name);
 	db_connect->ops->free(db_connect);
+
+	so_pool_free(params->pool);
+	so_value_free(params->option);
 	free(params);
 }
 

@@ -44,6 +44,7 @@
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/time.h>
+#include <libstoriqone/value.h>
 #include <libstoriqone-drive/media.h>
 #include <libstoriqone-drive/time.h>
 
@@ -151,7 +152,10 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_d
 	return current_block_size;
 }
 
-int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int fd, struct so_pool * pool, ssize_t block_size, struct so_database_connection * db) {
+int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int fd, struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
+	ssize_t block_size = 0;
+	so_value_unpack(option, "{sz}", "block size", &block_size);
+
 	if (block_size < 0)
 		return 1;
 
