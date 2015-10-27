@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-21 16:26+0200\n"
+        "POT-Creation-Date: 2015-10-14 18:11+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-job/io/filesystem_reader.c:379
+#: src/libstoriqone-job/io/filesystem_reader.c:382
 #, c-format
 msgid   "Failed to read link of file '%s' because %m"
 msgstr  "Échec lors de la lecture du lien symbolique du fichier « %s » parce que %m"

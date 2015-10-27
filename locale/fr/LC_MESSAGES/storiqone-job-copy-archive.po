@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-23 13:24+0200\n"
+        "POT-Creation-Date: 2015-10-26 07:55+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/job/copy-archive/copy-archive.c:114 src/job/copy-archive/direct_copy.c:78 src/job/copy-archive/indirect_copy.c:95
+#: src/job/copy-archive/copy-archive.c:114 src/job/copy-archive/direct_copy.c:81 src/job/copy-archive/indirect_copy.c:96
 #, c-format
 msgid   "Failed to load media '%s'"
 msgstr  "Échec lors du chargement du média « %s »"
@@ -87,17 +87,18 @@ msgstr  "Erreur : pas assez d’espace disponible dans le pool « %s »"
 msgid   "Selected copy mode: direct"
 msgstr  "Selection du mode de copie : direct"
 
-#: src/job/copy-archive/direct_copy.c:102
+#: src/job/copy-archive/direct_copy.c:108 src/job/copy-archive/direct_copy.c:130 src/job/copy-archive/direct_copy.c:174
+#: src/job/copy-archive/indirect_copy.c:241 src/job/copy-archive/indirect_copy.c:285
 #, c-format
 msgid   "Error while writing file header '%s' to media '%s'"
 msgstr  "Erreur en écrivant l’entête du fichier « %s » sur le média « %s »"
 
-#: src/job/copy-archive/direct_copy.c:151
+#: src/job/copy-archive/direct_copy.c:152 src/job/copy-archive/indirect_copy.c:263
 #, c-format
 msgid   "Error while writing file data '%s' to media '%s'"
 msgstr  "Erreur en écrivant les données du fichier « %s » sur le média « %s »"
 
-#: src/job/copy-archive/direct_copy.c:171 src/job/copy-archive/indirect_copy.c:153
+#: src/job/copy-archive/direct_copy.c:196 src/job/copy-archive/indirect_copy.c:156
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Erreur en lisant depuis le média « %s »"
@@ -115,30 +116,28 @@ msgstr  "Échec lors de la création du fichier temporaire"
 msgid   "Error, not enough disk space (required: %s, available: %s) to copy archive '%s'"
 msgstr  "Erreur, espace disque insuffisant (requis : %s, disponible : %s) pour copier l’archive « %s »"
 
-#: src/job/copy-archive/indirect_copy.c:113
+#: src/job/copy-archive/indirect_copy.c:115
 #, c-format
 msgid   "Error while writing file header '%s' to temporary file"
 msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le fichier temporaire"
 
-#: src/job/copy-archive/indirect_copy.c:132
+#: src/job/copy-archive/indirect_copy.c:135
 #, c-format
 msgid   "Error while writing file data '%s' to temporary file"
 msgstr  "Erreur en écrivant des données du fichier « %s » dans le fichier temporaire"
 
-#: src/job/copy-archive/indirect_copy.c:177 src/job/copy-archive/util.c:79
+#: src/job/copy-archive/indirect_copy.c:181 src/job/copy-archive/util.c:93
 msgid   "Failed to reopen temporary file"
 msgstr  "Échec lors de la réouverture du fichier temporaire"
 
-#: src/job/copy-archive/indirect_copy.c:210
+#: src/job/copy-archive/indirect_copy.c:218
 #, c-format
 msgid   "Error while writing header of file '%s' into media '%s'"
 msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le média « %s »"
 
-#: src/job/copy-archive/indirect_copy.c:259
-#, c-format
-msgid   "Error while writing data of file '%s' to media '%s'"
-msgstr  "Erreur en écrivant des données du fichier « %s » dans le média « %s »"
-
-#: src/job/copy-archive/indirect_copy.c:279
+#: src/job/copy-archive/indirect_copy.c:307
 msgid   "Error while reading from temporary file"
 msgstr  "Erreur en lisant depuis un fichier temporaire"
+
+#~ msgid        "Error while writing data of file '%s' to media '%s'"
+#~ msgstr       "Erreur en écrivant des données du fichier « %s » dans le média « %s »"

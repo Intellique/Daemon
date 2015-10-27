@@ -1800,11 +1800,11 @@ struct so_value * so_value_list_shift(struct so_value * list) {
 		}
 	} else {
 		struct so_value_linked_list * linked = so_value_get(list);
-		struct so_value_linked_list_node * node = linked->last;
+		struct so_value_linked_list_node * node = linked->first;
 		if (node != NULL) {
-			linked->last = node->previous;
-			if (linked->last == NULL)
-				linked->first = NULL;
+			linked->first = node->next;
+			if (linked->first == NULL)
+				linked->last = NULL;
 
 			ret = node->value;
 			linked->nb_vals--;

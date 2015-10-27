@@ -100,7 +100,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 				break;
 
 			case get_media:
-				drive = slot->changer->ops->get_media(slot->changer, slot, no_wait);
+				drive = slot->changer->ops->get_media(slot->changer, media, no_wait);
 				if (drive == NULL) {
 					job->status = so_job_status_waiting;
 
@@ -119,7 +119,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 				break;
 
 			case reserve_media:
-				reserved_size = slot->changer->ops->reserve_media(slot->changer, slot, size_need, so_pool_unbreakable_level_none);
+				reserved_size = slot->changer->ops->reserve_media(slot->changer, media, size_need, so_pool_unbreakable_level_none);
 				if (reserved_size < 0) {
 					job->status = so_job_status_waiting;
 
@@ -176,7 +176,7 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 					break;
 
 				case get_media:
-					drive = slot->changer->ops->get_media(slot->changer, slot, no_wait);
+					drive = slot->changer->ops->get_media(slot->changer, media, no_wait);
 
 					if (drive != NULL || no_wait)
 						stop = true;
@@ -284,7 +284,7 @@ ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_
 			continue;
 
 		if (total_reserved_size < size_needed) {
-			ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, sl, size_needed - total_reserved_size, pool->unbreakable_level);
+			ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed - total_reserved_size, pool->unbreakable_level);
 			if (reserved_size > 0) {
 				total_reserved_size += reserved_size;
 				so_value_list_push(reserved_medias, vmedia, false);
@@ -307,7 +307,7 @@ ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_
 				continue;
 
 			if (total_reserved_size < size_needed) {
-				ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, sl, size_needed - total_reserved_size, pool->unbreakable_level);
+				ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed - total_reserved_size, pool->unbreakable_level);
 				if (reserved_size > 0) {
 					total_reserved_size += reserved_size;
 					so_value_list_push(reserved_medias, vmedia, false);
@@ -367,7 +367,7 @@ void soj_media_release_all_medias(struct so_pool * pool) {
 		struct so_value * vmedia = so_value_iterator_get_value(iter, false);
 		struct so_media * media = so_value_custom_get(vmedia);
 		struct so_slot * sl = soj_changer_find_slot(media);
-		sl->changer->ops->release_media(sl->changer, sl);
+		sl->changer->ops->release_media(sl->changer, media);
 	}
 	so_value_iterator_free(iter);
 }

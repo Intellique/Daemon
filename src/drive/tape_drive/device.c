@@ -239,10 +239,27 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
 	media->media_format = db->ops->get_media_format(db, (unsigned char) density_code, so_media_format_mode_linear);
 
-	media->status = so_media_status_foreign;
+	sodr_tape_drive.status = so_drive_status_rewinding;
+
+	static struct mtop rewind = { MTREW, 1 };
+	sodr_time_start();
+	ioctl(fd_nst, MTIOCTOP, &rewind);
+	sodr_time_stop(&sodr_tape_drive);
+
+	sodr_tape_drive.status = so_drive_status_loaded_idle;
+
+	static char buffer[1048576];
+	ssize_t nb_read = read(fd_nst, buffer, 1048576);
+
+	if (nb_read > 0) {
+		media->status = so_media_status_foreign;
+		media->append = false;
+	} else {
+		media->status = so_media_status_new;
+		media->append = true;
+	}
 	media->first_used = time(NULL);
 	media->use_before = media->first_used + media->media_format->life_span;
-	media->append = false;
 
 	media->load_count = 1;
 

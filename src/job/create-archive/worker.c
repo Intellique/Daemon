@@ -62,6 +62,7 @@ struct soj_create_archive_worker {
 	struct so_value * checksums;
 
 	ssize_t total_done;
+	ssize_t partial_done;
 	ssize_t archive_size;
 
 	struct so_media * media;
@@ -94,7 +95,6 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
 static void soj_create_archive_worker_generate_report2(struct so_job * job, struct so_archive * archive, struct so_value * selected_path, struct so_database_connection * db_connect);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
-static void soj_create_archive_worker_prepare_medias3(struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 
@@ -194,7 +194,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 
 	soj_create_archive_add_file3(worker, file, position);
 
-	worker->total_done = worker->writer->ops->position(worker->writer);
+	worker->partial_done = worker->writer->ops->position(worker->writer);
 
 	return status;
 }
@@ -231,7 +231,7 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 		worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
 
 		struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-		vol->media = worker->media;
+		vol->media = so_media_dup(worker->media);
 		vol->media_position = worker->writer->ops->file_position(worker->writer);
 		vol->job = soj_job_get();
 
@@ -276,6 +276,9 @@ int soj_create_archive_worker_close(bool first_round) {
 
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round) {
 	worker->writer->ops->close(worker->writer);
+
+	worker->partial_done = 0;
+	worker->total_done += worker->writer->ops->position(worker->writer);
 
 	struct so_archive_volume * last_vol = worker->archive->volumes + (worker->archive->nb_volumes - 1);
 	last_vol->end_time = time(NULL);
@@ -355,6 +358,23 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 	new_file->db_data = NULL;
 
 	return new_file;
+}
+
+int soj_create_archive_worker_create_check_archive(struct so_job * job, bool quick_mode, struct so_database_connection * db_connect) {
+	int failed = 0;
+
+	if (primary_worker->state == soj_worker_status_finished)
+		failed = db_connect->ops->create_check_archive_job(db_connect, job, primary_worker->archive, quick_mode);
+
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (worker->state == soj_worker_status_finished)
+			failed += db_connect->ops->create_check_archive_job(db_connect, job, worker->archive, quick_mode);
+	}
+
+	return failed;
 }
 
 ssize_t soj_create_archive_worker_end_of_file() {
@@ -481,7 +501,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 
 	worker->pool = pool;
 
-	worker->total_done = 0;
+	worker->total_done = worker->partial_done = 0;
 	worker->archive_size = 0;
 
 	worker->media = NULL;
@@ -508,7 +528,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		primary_worker->state = soj_worker_status_ready;
 
 		struct so_archive_volume * vol = so_archive_add_volume(primary_worker->archive);
-		vol->media = primary_worker->media;
+		vol->media = so_media_dup(primary_worker->media);
 		vol->media_position = primary_worker->writer->ops->file_position(primary_worker->writer);
 		vol->job = soj_job_get();
 
@@ -536,7 +556,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = worker->media;
+			vol->media = so_media_dup(worker->media);
 			vol->media_position = primary_worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
 		}
@@ -557,11 +577,6 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 }
 
 void soj_create_archive_worker_prepare_medias2(struct so_database_connection * db_connect) {
-	soj_create_archive_worker_prepare_medias3(db_connect);
-	soj_create_archive_worker_prepare_medias3(db_connect);
-}
-
-static void soj_create_archive_worker_prepare_medias3(struct so_database_connection * db_connect) {
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
@@ -576,7 +591,7 @@ static void soj_create_archive_worker_prepare_medias3(struct so_database_connect
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = worker->media;
+			vol->media = so_media_dup(worker->media);
 			vol->media_position = worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
 		}
@@ -584,7 +599,7 @@ static void soj_create_archive_worker_prepare_medias3(struct so_database_connect
 }
 
 float soj_create_archive_progress() {
-	ssize_t nb_done = primary_worker->total_done;
+	ssize_t nb_done = primary_worker->total_done + primary_worker->partial_done;
 	ssize_t nb_total = primary_worker->archive_size;
 
 	unsigned int i;
@@ -594,7 +609,7 @@ float soj_create_archive_progress() {
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		nb_done += worker->total_done;
+		nb_done += worker->total_done + worker->partial_done;
 		nb_total += worker->archive_size;
 	}
 
@@ -706,13 +721,16 @@ ssize_t soj_create_archive_worker_write(struct so_job * job, struct so_format_fi
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect) {
 	ssize_t available = worker->writer->ops->get_available_size(worker->writer);
 	ssize_t nb_total_write = 0;
+	ssize_t current_file_position = file->position;
 	while (nb_total_write < length) {
 		if (available <= 0) {
 			int failed = soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect);
-			if (failed)
+			if (failed) {
+				file->position = current_file_position;
 				return -1;
+			}
 
-			worker->writer->ops->restart_file(worker->writer, file, worker->position);
+			worker->writer->ops->restart_file(worker->writer, file);
 
 			available = worker->writer->ops->get_available_size(worker->writer);
 		}
@@ -722,15 +740,19 @@ ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_
 			will_write = available;
 
 		ssize_t nb_write = worker->writer->ops->write(worker->writer, buffer + nb_total_write, will_write);
-		if (nb_write < 0)
+		if (nb_write < 0) {
+			file->position = current_file_position;
 			return nb_write;
+		}
 
+		file->position += nb_write;
 		nb_total_write += nb_write;
 		available -= nb_write;
 		worker->position += nb_write;
 	}
 
-	worker->total_done = worker->writer->ops->position(worker->writer);
+	file->position = current_file_position;
+	worker->partial_done = worker->writer->ops->position(worker->writer);
 
 	return nb_total_write;
 }

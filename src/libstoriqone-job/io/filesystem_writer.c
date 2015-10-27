@@ -72,7 +72,6 @@ static ssize_t soj_format_writer_filesystem_get_block_size(struct so_format_writ
 static struct so_value * soj_format_writer_filesystem_get_digests(struct so_format_writer * fw);
 static int soj_format_writer_filesystem_last_errno(struct so_format_writer * fw);
 static ssize_t soj_format_writer_filesystem_position(struct so_format_writer * fw);
-static enum so_format_writer_status soj_format_writer_filesystem_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
 static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
 static struct so_format_writer_ops soj_format_writer_filesystem_ops = {
@@ -88,7 +87,7 @@ static struct so_format_writer_ops soj_format_writer_filesystem_ops = {
 	.get_digests          = soj_format_writer_filesystem_get_digests,
 	.last_errno           = soj_format_writer_filesystem_last_errno,
 	.position             = soj_format_writer_filesystem_position,
-	.restart_file         = soj_format_writer_filesystem_restart_file,
+	.restart_file         = soj_format_writer_filesystem_add_file,
 	.write                = soj_format_writer_filesystem_write,
 };
 
@@ -229,13 +228,6 @@ static int soj_format_writer_filesystem_last_errno(struct so_format_writer * fw)
 
 static ssize_t soj_format_writer_filesystem_position(struct so_format_writer * fw __attribute__((unused))) {
 	return -1;
-}
-
-static enum so_format_writer_status soj_format_writer_filesystem_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {
-	struct so_format_file tmp_file = *file;
-	tmp_file.position = position;
-
-	return soj_format_writer_filesystem_add_file(fw, &tmp_file);
 }
 
 static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {

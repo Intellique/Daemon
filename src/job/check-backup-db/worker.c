@@ -96,7 +96,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				break;
 
 			case get_media:
-				dr = slot->changer->ops->get_media(slot->changer, slot, false);
+				dr = slot->changer->ops->get_media(slot->changer, worker->volume->media, false);
 				if (dr == NULL) {
 					state = find_media;
 					sleep(5);
@@ -118,7 +118,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				break;
 
 			case reserve_media:
-				slot->changer->ops->reserve_media(slot->changer, slot, 0, so_pool_unbreakable_level_none);
+				slot->changer->ops->reserve_media(slot->changer, worker->volume->media, 0, so_pool_unbreakable_level_none);
 				state = get_media;
 				break;
 		}
@@ -146,7 +146,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 	ck_dr->ops->free(ck_dr);
 	so_value_free(checksums);
 
-	slot->changer->ops->release_media(slot->changer, slot);
+	slot->changer->ops->release_media(slot->changer, worker->volume->media);
 
 	worker->working = false;
 
