@@ -278,6 +278,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 		lp->waiting = lp->peer->waiting = false;
 		sochgr_socket_remove_peer(lp->peer);
 
+		sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
+			dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) gets media '%s'"),
+			changer->vendor, changer->model, peer->job_id, sl->media->name);
+
 		struct so_value * response = so_value_pack("{sbsuso}",
 			"error", false,
 			"index", drive->index,
@@ -291,6 +295,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 	if (nb_free_drives == 0) {
 		if (current_peer != NULL && no_wait) {
+			sochgr_log_add_record(current_peer, so_job_status_waiting, sochgr_db, so_log_level_warning, so_job_record_notif_important,
+				dgettext("libstoriqone-changer", "[%s | %s]: no free drive available"),
+				changer->vendor, changer->model);
+
 			struct so_value * response = so_value_pack("{sbso}",
 				"error", true,
 				"changer", so_changer_convert(changer)
@@ -397,6 +405,11 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			lp->waiting = lp->peer->waiting = false;
 			sochgr_socket_remove_peer(lp->peer);
 			nb_free_drives--;
+
+			sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
+				dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) gets media '%s'"),
+				changer->vendor, changer->model, peer->job_id, media->name);
+
 
 			return true;
 		}
