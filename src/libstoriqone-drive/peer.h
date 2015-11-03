@@ -36,7 +36,8 @@
 
 struct sodr_peer {
 	int fd;
-	char * job_key;
+	char * job_id;
+	unsigned int job_num_run;
 
 	struct so_stream_reader * stream_reader;
 	struct so_stream_writer * stream_writer;

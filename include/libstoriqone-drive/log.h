@@ -24,24 +24,15 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_DRIVE_LISTEN_H__
-#define __LIBSTORIQONE_DRIVE_LISTEN_H__
+#ifndef __LIBSTORIQONE_DRIVE_LOG_H__
+#define __LIBSTORIQONE_DRIVE_LOG_H__
 
-// bool
-#include <stdbool.h>
+#include <libstoriqone/job.h>
+#include <libstoriqone/log.h>
 
-struct so_database_connection;
 struct sodr_peer;
-struct so_value;
 
-void sodr_listen_configure(struct so_value * config);
-struct so_value * sodr_listen_get_socket_config(void);
-bool sodr_listen_is_locked(void);
-unsigned int sodr_listen_nb_clients(void);
-void sodr_listen_remove_peer(struct sodr_peer * peer);
-void sodr_listen_reset_peer(void);
-void sodr_listen_set_db_connection(struct so_database_connection * db);
-void sodr_listen_set_peer_id(const char * id);
+int sodr_log_add_record(const struct sodr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 6, 7)));
 
 #endif
 

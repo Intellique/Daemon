@@ -139,7 +139,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 	struct so_value * request = so_value_pack("{sss{sssssb}}",
 		"command", "get media",
 		"params",
-			"job key", job->id,
+			"job id", job->id,
 			"medium serial number", media->medium_serial_number,
 			"no wait", no_wait
 	);

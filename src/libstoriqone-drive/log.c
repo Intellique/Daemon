@@ -24,24 +24,39 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_DRIVE_LISTEN_H__
-#define __LIBSTORIQONE_DRIVE_LISTEN_H__
+#define _GNU_SOURCE
+// va_end, va_start
+#include <stdarg.h>
+// vasprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
 
-// bool
-#include <stdbool.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone-drive/log.h>
 
-struct so_database_connection;
-struct sodr_peer;
-struct so_value;
+#include "peer.h"
 
-void sodr_listen_configure(struct so_value * config);
-struct so_value * sodr_listen_get_socket_config(void);
-bool sodr_listen_is_locked(void);
-unsigned int sodr_listen_nb_clients(void);
-void sodr_listen_remove_peer(struct sodr_peer * peer);
-void sodr_listen_reset_peer(void);
-void sodr_listen_set_db_connection(struct so_database_connection * db);
-void sodr_listen_set_peer_id(const char * id);
+int sodr_log_add_record(const struct sodr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
+	char * message = NULL;
 
-#endif
+	va_list va;
+	va_start(va, format);
+	int size = vasprintf(&message, format, va);
+	va_end(va);
+
+	if (size < 0)
+		return -1;
+
+	so_log_write(level, "%s", message);
+
+	int failed = 0;
+
+	// if (peer != NULL)
+	//	failed = db_connect->ops->add_changer_record(db_connect, peer->job_id, peer->job_num_run, status, level, notif, message);
+
+	free(message);
+
+	return failed;
+}
 

@@ -45,7 +45,7 @@ static bool sochgr_drive_check_support(struct so_drive * drive, struct so_media_
 static void sochgr_drive_free(struct so_drive * drive);
 static bool sochgr_drive_is_free(struct so_drive * drive);
 static int sochgr_drive_load_media(struct so_drive * drive, struct so_media * media);
-static int sochgr_drive_lock(struct so_drive * drive, const char * job_key);
+static int sochgr_drive_lock(struct so_drive * drive, const char * job_id);
 static int sochgr_drive_reset(struct so_drive * drive);
 static int sochgr_drive_stop(struct so_drive * drive);
 static int sochgr_drive_update_status(struct so_drive * drive);
@@ -148,7 +148,7 @@ static int sochgr_drive_load_media(struct so_drive * drive, struct so_media * me
 	return status;
 }
 
-static int sochgr_drive_lock(struct so_drive * drive, const char * job_key) {
+static int sochgr_drive_lock(struct so_drive * drive, const char * job_id) {
 	if (!drive->enable)
 		return -1;
 
@@ -157,7 +157,7 @@ static int sochgr_drive_lock(struct so_drive * drive, const char * job_key) {
 	struct so_value * command = so_value_pack("{sss{ss}}",
 		"command", "lock",
 		"params",
-			"job key", job_key
+			"job id", job_id
 	);
 	so_json_encode_to_fd(command, self->fd_in, true);
 	so_value_free(command);
