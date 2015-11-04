@@ -103,8 +103,8 @@ static int so_database_postgresql_sync_pool(struct so_database_connection * conn
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
 static struct so_value * so_database_postgresql_update_vtl(struct so_database_connection * connect, struct so_changer * vtl);
 
-static int so_database_postgresql_add_changer_record(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status status, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
+static int so_database_postgresql_add_job_record2(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status status, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
 static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
@@ -185,14 +185,14 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_media              = so_database_postgresql_sync_media,
 	.update_vtl              = so_database_postgresql_update_vtl,
 
-	.add_changer_record = so_database_postgresql_add_changer_record,
-	.add_job_record     = so_database_postgresql_add_job_record,
-	.add_report         = so_database_postgresql_add_report,
-	.get_restore_path   = so_database_postgresql_get_restore_path,
-	.start_job          = so_database_postgresql_start_job,
-	.stop_job           = so_database_postgresql_stop_job,
-	.sync_job           = so_database_postgresql_sync_job,
-	.sync_jobs          = so_database_postgresql_sync_jobs,
+	.add_job_record   = so_database_postgresql_add_job_record,
+	.add_job_record2  = so_database_postgresql_add_job_record2,
+	.add_report       = so_database_postgresql_add_report,
+	.get_restore_path = so_database_postgresql_get_restore_path,
+	.start_job        = so_database_postgresql_start_job,
+	.stop_job         = so_database_postgresql_stop_job,
+	.sync_job         = so_database_postgresql_sync_job,
+	.sync_jobs        = so_database_postgresql_sync_jobs,
 
 	.get_nb_scripts = so_database_postgresql_get_nb_scripts,
 	.get_script     = so_database_postgresql_get_script,
@@ -2345,33 +2345,6 @@ static struct so_value * so_database_postgresql_update_vtl(struct so_database_co
 }
 
 
-static int so_database_postgresql_add_changer_record(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status job_status, enum so_log_level level, enum so_job_record_notif notif, const char * message) {
-	if (connect == NULL || job_id == NULL || message == NULL)
-		return 1;
-
-	struct so_database_postgresql_connection_private * self = connect->data;
-
-	char str_num_run[12];
-	snprintf(str_num_run, 12, "%u", num_run);
-
-	const char * query = "insert_new_jobrecord_by_job";
-	so_database_postgresql_prepare(self, query, "WITH jr AS (SELECT id FROM jobrun WHERE job = $1 AND numrun = $2 LIMIT 1) INSERT INTO jobrecord(jobrun, status, level, message, notif) SELECT id, $3, $4, $5, $6 FROM jr");
-
-	const char * param[] = {
-		job_id, str_num_run, so_job_status_to_string(job_status, false),
-		so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false)
-	};
-	PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
-	ExecStatusType status = PQresultStatus(result);
-
-	if (status == PGRES_FATAL_ERROR)
-		so_database_postgresql_get_error(result, query);
-
-	PQclear(result);
-
-	return status != PGRES_TUPLES_OK;
-}
-
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message) {
 	if (connect == NULL || job == NULL || message == NULL)
 		return 1;
@@ -2397,6 +2370,33 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 
 	PQclear(result);
 	free(jobrun_id);
+
+	return status != PGRES_TUPLES_OK;
+}
+
+static int so_database_postgresql_add_job_record2(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status job_status, enum so_log_level level, enum so_job_record_notif notif, const char * message) {
+	if (connect == NULL || job_id == NULL || message == NULL)
+		return 1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char str_num_run[12];
+	snprintf(str_num_run, 12, "%u", num_run);
+
+	const char * query = "insert_new_jobrecord_by_job";
+	so_database_postgresql_prepare(self, query, "WITH jr AS (SELECT id FROM jobrun WHERE job = $1 AND numrun = $2 LIMIT 1) INSERT INTO jobrecord(jobrun, status, level, message, notif) SELECT id, $3, $4, $5, $6 FROM jr");
+
+	const char * param[] = {
+		job_id, str_num_run, so_job_status_to_string(job_status, false),
+		so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false)
+	};
+	PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
 
 	return status != PGRES_TUPLES_OK;
 }

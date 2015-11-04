@@ -53,7 +53,7 @@ int sochgr_log_add_record(const struct sochgr_peer * peer, enum so_job_status st
 	int failed = 0;
 
 	if (peer != NULL)
-		failed = db_connect->ops->add_changer_record(db_connect, peer->job_id, peer->job_num_run, status, level, notif, message);
+		failed = db_connect->ops->add_job_record2(db_connect, peer->job_id, peer->job_num_run, status, level, notif, message);
 
 	free(message);
 
