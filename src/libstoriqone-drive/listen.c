@@ -58,6 +58,7 @@
 #include <libstoriqone/string.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-drive/log.h>
 
 #include "drive.h"
 #include "io/io.h"
@@ -274,7 +275,7 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: checking header of media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
@@ -420,7 +421,7 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
 		drive->vendor, drive->model, drive->index, media_name, position);
 
@@ -487,7 +488,7 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
 		drive->vendor, drive->model, drive->index, media_name);
 
@@ -561,7 +562,7 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
 		drive->vendor, drive->model, drive->index, media_name, position);
 
@@ -632,7 +633,7 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
 		drive->vendor, drive->model, drive->index, media_name);
 
@@ -681,6 +682,13 @@ static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_val
 	struct so_value * response = so_value_pack("{sb}", "returned", true);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: New connection from job (id: %s, num runs: %u)"),
+		drive->vendor, drive->model, drive->index, peer->job_id, peer->job_num_run);
 }
 
 static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -761,11 +769,11 @@ static void sodr_worker_command_count_archives(void * arg) {
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: counting archives from media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
-
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
 	unsigned int nb_archives = drive->ops->count_archives(&peer->disconnected, db_connect);
 
@@ -790,12 +798,12 @@ static void sodr_worker_command_erase_media(void * arg) {
 	if (media != NULL)
 		media_name = strdup(media->name);
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: Erasing media '%s' (mode: %s)"),
 		drive->vendor, drive->model, drive->index, media_name,
 		params->quick_mode ? dgettext("libstoriqone-drive", "quick") : dgettext("libstoriqone-drive", "long"));
-
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
 	int failed = drive->ops->erase_media(params->quick_mode, db_connect);
 	struct so_value * response = so_value_pack("{si}", "returned", failed);
@@ -830,11 +838,11 @@ static void sodr_worker_command_format_media(void * data) {
 	if (media != NULL)
 		media_name = strdup(media->name);
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: formatting media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
-
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
 	int failed = drive->ops->format_media(params->pool, params->block_size, db_connect);
 	struct so_value * response = so_value_pack("{si}", "returned", failed);
@@ -869,11 +877,11 @@ static void sodr_worker_command_parse_archive(void * data) {
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: Parsing archive from media '%s' at position #%u"),
 		drive->vendor, drive->model, drive->index, media_name, params->archive_position);
-
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
 	struct so_archive * archive = drive->ops->parse_archive(&params->peer->disconnected, params->archive_position, params->checksums, db_connect);
 

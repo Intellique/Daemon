@@ -2398,7 +2398,7 @@ static int so_database_postgresql_add_job_record2(struct so_database_connection 
 
 	PQclear(result);
 
-	return status != PGRES_TUPLES_OK;
+	return status != PGRES_COMMAND_OK;
 }
 
 static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data) {
@@ -2505,7 +2505,6 @@ static int so_database_postgresql_start_job(struct so_database_connection * conn
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		char * jobrun_id = PQgetvalue(result, 0, 0);
 		so_value_hashtable_put2(db, "jobrun id", so_value_new_string(jobrun_id), true);
-		so_database_postgresql_get_uint(result, 0, 0, &job->num_run);
 	}
 
 	PQclear(result);

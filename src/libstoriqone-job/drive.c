@@ -401,12 +401,12 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 
 
 	struct so_job * job = soj_job_get();
-	struct so_value * request = so_value_pack("{sss{s{sssu}}}",
+	struct so_value * request = so_value_pack("{sss{s{sssI}}}",
 		"command", "init peer",
 		"params",
 			"job",
 				"id", job->id,
-				"num run", job->num_run
+				"num run", job->num_runs
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
