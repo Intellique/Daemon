@@ -192,6 +192,13 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		"wwn", &sochgr_scsi_changer.wwn
 	);
 
+	if (!sochgr_scsi_changer.enable) {
+		so_log_write(so_log_level_critical,
+			dgettext("storiqone-changer-scsi", "Critical, scsi changer %s %s (serial: %s) is not enabled"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
+		return 1;
+	}
+
 	glob_t gl;
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
 
@@ -261,6 +268,13 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 	}
 	globfree(&gl);
 
+	if (!found) {
+		so_log_write(so_log_level_critical,
+			dgettext("storiqone-changer-scsi", "Critical, scsi changer %s %s (serial: %s) was not found"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
+		return 1;
+	}
+
 	struct so_value * available_drives = so_value_new_hashtable2();
 	struct so_value * drives = NULL;
 	so_value_unpack(config, "{so}", "drives", &drives);
@@ -296,22 +310,23 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		so_value_iterator_free(iter);
 	}
 
-	if (found && sochgr_scsi_changer.enable && sochgr_scsi_changer.is_online) {
+	if (sochgr_scsi_changer.is_online) {
 		sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, false);
 		sochgr_scsi_changer_scsi_new_status(&sochgr_scsi_changer, sochgr_scsi_changer_device, available_drives, &sochgr_scsi_changer_transport_address);
-	}
+	} else
+		so_log_write(so_log_level_warning,
+			dgettext("storiqone-changer-scsi", "Warning, scsi changer %s %s (serial: %s) is offline"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
 
 	so_value_free(available_drives);
 
-	if (found) {
-		sochgr_scsi_changer.status = so_changer_status_idle;
+	sochgr_scsi_changer.status = so_changer_status_idle;
 
-		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_id_only);
+	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_id_only);
 
-		int failed = sochgr_scsi_changer_parse_media(db_connection);
-		if (failed != 0)
-			return failed;
-	}
+	int failed = sochgr_scsi_changer_parse_media(db_connection);
+	if (failed != 0)
+		return failed;
 
 	return found ? 0 : 1;
 }
