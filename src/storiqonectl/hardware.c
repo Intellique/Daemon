@@ -232,6 +232,7 @@ struct so_value * soctl_detect_hardware() {
 		changer->is_online = true;
 		changer->enable = true;
 
+		dr->changer = changer;
 		changer->drives = dr;
 		changer->nb_drives = 1;
 
