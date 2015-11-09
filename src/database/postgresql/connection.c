@@ -1689,7 +1689,10 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			db = so_value_hashtable_get(drive->db_data, key, false, false);
 
 			char * changer_id = NULL;
-			so_value_unpack(db, "{ss}", "changer id", &changer_id);
+			if (so_value_unpack(db, "{ss}", "changer id", &changer_id) < 1 && drive->changer != NULL) {
+				db = so_value_hashtable_get(drive->changer->db_data, key, false, false);
+				so_value_unpack(db, "{ss}", "changer id", &changer_id);
+			}
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
