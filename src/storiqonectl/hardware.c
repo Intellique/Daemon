@@ -133,11 +133,10 @@ struct so_value * soctl_detect_hardware() {
 		if (size < 0)
 			continue;
 
-		// struct so_value * drive = so_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
 		struct so_drive * drive = malloc(sizeof(struct so_drive));
 		bzero(drive, sizeof(struct so_drive));
 		drive->status = so_drive_status_unknown;
-		// drive->mode
+		drive->enable = true;
 
 		soctl_scsi_tapeinfo(scsi_device, drive);
 
@@ -213,7 +212,7 @@ struct so_value * soctl_detect_hardware() {
 	globfree(&gl);
 
 	struct so_value_iterator * iter = so_value_hashtable_get_iterator(drives);
-	while (so_value_iterator_has_next(iter)) {
+	for (i = 0; so_value_iterator_has_next(iter); i++) {
 		struct so_value * vdrive = so_value_iterator_get_value(iter, false);
 		so_value_iterator_detach_previous(iter);
 		struct so_drive * dr = so_value_custom_get(vdrive);
@@ -247,6 +246,8 @@ struct so_value * soctl_detect_hardware() {
 		so_value_list_push(changers, so_value_new_custom(changer, so_changer_free2), true);
 	}
 	so_value_iterator_free(iter);
+
+	printf(ngettext("storiqonectl: Found %u standalong drive\n", "storiqonectl: Found %u standalong drives\n", i), i);
 
 	so_value_free(drives);
 
