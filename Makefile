@@ -16,7 +16,7 @@ STRIP		:= ${TARGET}strip
 # variable
 NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
-VERSION		:= v1.2.3
+VERSION		:= v1.2.4
 
 
 GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar.gz
@@ -154,14 +154,13 @@ $(1)_DEPEND_DIR	:= $$(patsubst test/%,${DEPEND_DIR}/%,$${$(1)_SRC_DIR})
 $(1)_SRC_FILES	:= $$(sort $$(shell test -d $${$(1)_SRC_DIR} && find $${$(1)_SRC_DIR} -name '*.c'))
 $(1)_HEAD_FILES	:= $$(sort $$(shell test -d $${$(1)_SRC_DIR} && find $${$(1)_SRC_DIR} -name '*.h'))
 $(1)_OBJ_FILES	:= $$(sort $$(patsubst test/%.c,${BUILD_DIR}/%.o,$${$(1)_SRC_FILES}))
-$(1)_DEP_FILES	:= $$(sort $$(shell test -d $${$(1)_DEPEND_DIR} && find $${$(1)_DEPEND_DIR} -name '*.d'))
+$(1)_DEP_FILES  := $$(sort $$(patsubst test/%.c,${DEPEND_DIR}/%.d,$${$(1)_SRC_FILES}))
 
-prepare_$(1): ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}
+$(1)_OBJ_DIRS := $$(sort $$(dir $${$(1)_OBJ_FILES}))
+$(1)_DEP_DIRS := $$(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,$${$(1)_OBJ_DIRS})
 
-${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}: $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES}
-	@echo " CHCKSUM    $$@"
-	@./script/checksum.pl $(1) ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE} $$(sort $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES})
 
+$(1)_BIN_DIR := $$(dir $$($(1)_BIN))
 $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD         $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
@@ -170,9 +169,18 @@ $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 #	@${OBJCOPY} --add-gnu-debuglink=$$@.debug $$@
 #	@chmod -x $$@.debug
 
-$$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
+$${$(1)_BUILD_DIR}/%.o: $${$(1)_SRC_DIR}/%.c | $${$(1)_OBJ_DIRS} $${$(1)_DEP_DIRS}
 	@echo " CC         $$@"
-	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$<
+	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$(firstword $$<)
+
+${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}: $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES} | ${CHCKSUM_DIR}
+	@echo " CHCKSUM    $$@"
+	@./script/checksum.pl $(1) ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE} $$(sort $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES})
+
+$${$(1)_DEP_DIRS} $${$(1)_OBJ_DIRS}:
+	@echo " MKDIR      $$@"
+	@mkdir -p $$@
+
 
 TEST_BINS		+= $$($(1)_BIN) $$($(1)_LIB)
 TEST_SRC_FILES	+= $$($(1)_SRC_FILES)
@@ -244,7 +252,7 @@ stat-extra:
 
 tar: ${NAME}.tar.bz2
 
-test: prepare $(sort ${TEST_BINS})
+test: $(sort ${TEST_BINS})
 	@./${CUNIT_BIN}
 
 
