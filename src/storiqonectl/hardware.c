@@ -50,6 +50,7 @@
 #include <libstoriqone/drive.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/slot.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
@@ -132,11 +133,10 @@ struct so_value * soctl_detect_hardware() {
 		if (size < 0)
 			continue;
 
-		// struct so_value * drive = so_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
 		struct so_drive * drive = malloc(sizeof(struct so_drive));
 		bzero(drive, sizeof(struct so_drive));
 		drive->status = so_drive_status_unknown;
-		// drive->mode
+		drive->enable = true;
 
 		soctl_scsi_tapeinfo(scsi_device, drive);
 
@@ -196,6 +196,8 @@ struct so_value * soctl_detect_hardware() {
 		struct so_changer * changer = malloc(sizeof(struct so_changer));
 		bzero(changer, sizeof(struct so_changer));
 		changer->status = so_changer_status_unknown;
+		changer->next_action = so_changer_action_none;
+		changer->is_online = true;
 		changer->enable = true;
 
 		changer->wwn = soctl_read_sas_address(gl.gl_pathv[i]);
@@ -208,6 +210,45 @@ struct so_value * soctl_detect_hardware() {
 		so_value_list_push(changers, so_value_new_custom(changer, so_changer_free2), true);
 	}
 	globfree(&gl);
+
+	struct so_value_iterator * iter = so_value_hashtable_get_iterator(drives);
+	for (i = 0; so_value_iterator_has_next(iter); i++) {
+		struct so_value * vdrive = so_value_iterator_get_value(iter, false);
+		so_value_iterator_detach_previous(iter);
+		struct so_drive * dr = so_value_custom_get(vdrive);
+
+		struct so_changer * changer = malloc(sizeof(struct so_changer));
+		bzero(changer, sizeof(struct so_changer));
+
+		changer->model = strdup(dr->model);
+		changer->vendor = strdup(dr->vendor);
+		changer->revision = strdup(dr->revision);
+		changer->serial_number = strdup(dr->serial_number);
+		changer->wwn = NULL;
+		changer->barcode = false;
+
+		changer->status = so_changer_status_unknown;
+		changer->next_action = so_changer_action_none;
+		changer->is_online = true;
+		changer->enable = true;
+
+		dr->changer = changer;
+		changer->drives = dr;
+		changer->nb_drives = 1;
+
+		struct so_slot * sl = malloc(sizeof(struct so_slot));
+		bzero(sl, sizeof(struct so_slot));
+
+		sl->changer = changer;
+		sl->drive = dr;
+		changer->slots = dr->slot = sl;
+		changer->nb_slots = 1;
+
+		so_value_list_push(changers, so_value_new_custom(changer, so_changer_free2), true);
+	}
+	so_value_iterator_free(iter);
+
+	printf(ngettext("storiqonectl: Found %u standalong drive\n", "storiqonectl: Found %u standalong drives\n", i), i);
 
 	so_value_free(drives);
 
