@@ -24,6 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dngettext
+#include <libintl.h>
 // malloc
 #include <stdlib.h>
 // bzero
@@ -31,6 +33,7 @@
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
@@ -113,6 +116,13 @@ static int sochgr_standalone_changer_init(struct so_value * config, struct so_da
 		"enable", &sochgr_standalone_changer.enable,
 		"is online", &sochgr_standalone_changer.is_online
 	);
+
+	if (!sochgr_standalone_changer.enable) {
+		so_log_write(so_log_level_critical,
+			dgettext("storiqone-changer-standalone", "Critical, standalone drive %s %s (serial: %s) is not enabled"),
+			sochgr_standalone_changer.vendor, sochgr_standalone_changer.model, sochgr_standalone_changer.serial_number);
+		return 1;
+	}
 
 	struct so_drive * dr = sochgr_standalone_changer.drives = malloc(sizeof(struct so_drive));
 	bzero(dr, sizeof(struct so_drive));
