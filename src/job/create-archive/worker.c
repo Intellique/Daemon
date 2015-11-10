@@ -168,10 +168,12 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 		ssize_t available_size = worker->writer->ops->get_available_size(worker->writer);
 		ssize_t file_size = worker->writer->ops->compute_size_of_file(worker->writer, file);
 
-		if (available_size < file_size && soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect) != 0)
-			return so_format_writer_error;
+		if (available_size < file_size) {
+			if (soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect) != 0)
+				return so_format_writer_error;
 
-		position = 0;
+			position = 0;
+		}
 	}
 
 	int failed = 0;
