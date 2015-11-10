@@ -1,3 +1,12 @@
+storiqone (1.2.4-1) polisher; urgency=low
+
+  * Bug fix release
+    - detection of standalone drive
+    - generation proxies script
+    - bug when archiving into pool which unbreakablelevel is defined to 'file'
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 10 Nov 2015 16:56:26 +0100
+
 storiqone (1.2.3-1) polisher; urgency=low
 
   * Bug fix release
