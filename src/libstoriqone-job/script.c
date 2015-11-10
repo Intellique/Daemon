@@ -28,6 +28,8 @@
 #include <libintl.h>
 // free
 #include <stdlib.h>
+// close
+#include <unistd.h>
 
 #include <libstoriqone/json.h>
 #include <libstoriqone/database.h>
@@ -68,6 +70,7 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 
 		so_process_start(&process, 1);
 		so_json_encode_to_fd(data, fd_write, true);
+		close(fd_write);
 
 		struct so_value * returned = so_json_parse_fd(fd_read, -1);
 
