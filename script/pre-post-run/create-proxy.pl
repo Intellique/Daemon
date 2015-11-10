@@ -11,7 +11,7 @@ use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
 
 my $nb_cpu     = cpu_count();
-my $output_dir = '/var/www/stone/cache/movies/proxy';
+my $output_dir = '/usr/share/storiqone/cache/movies/proxy';
 
 my $param = shift;
 
@@ -87,13 +87,13 @@ sub process {
 
         my @params = ( '-v', 'quiet', '-i', encode_utf8($input), '-t', '0:0:30' );
 
-        push @params, '-c:v', $format->{video}->{codec};
+        push @params, '-vcodec', $format->{video}->{codec};
         push @params, '-b:v', $format->{video}->{bitrate};
         push @params, '-s',   'cif';
         push @params, @{ $format->{video}->{extra} }
             if scalar( @{ $format->{video}->{extra} } ) > 0;
 
-        push @params, '-c:a', $format->{audio}->{codec};
+        push @params, '-acodec', $format->{audio}->{codec};
         push @params, '-b:a', $format->{audio}->{bitrate};
         push @params, '-ac',  '2', '-ar', '44100';
         push @params, @{ $format->{audio}->{extra} }
