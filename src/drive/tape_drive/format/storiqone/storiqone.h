@@ -34,7 +34,7 @@ struct so_database_connection;
 struct so_drive;
 struct so_pool;
 
-int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int fd, struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
+int sodr_tape_drive_format_storiqone_format_media(struct sodr_peer * peer, struct so_drive * drive, int fd, struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
 
 #endif
 

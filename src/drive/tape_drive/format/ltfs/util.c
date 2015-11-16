@@ -166,11 +166,11 @@ static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * inde
 	return elt;
 }
 
-struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db) {
+struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, struct sodr_peer * peer, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db) {
 	struct so_media * media = drive->slot->media;
 	struct sodr_tape_drive_media * mp = media->private_data;
 
-	struct so_format_reader * reader = drive->ops->get_reader(0, NULL, db);
+	struct so_format_reader * reader = drive->ops->get_reader(peer, 0, NULL, db);
 	if (reader == NULL)
 		return NULL;
 
