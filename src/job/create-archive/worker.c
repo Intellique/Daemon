@@ -169,7 +169,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 		ssize_t file_size = worker->writer->ops->compute_size_of_file(worker->writer, file);
 
 		if (available_size < file_size) {
-			if (soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect) != 0)
+			if (soj_create_archive_worker_change_volume(job, worker, NULL, first_round, db_connect) != 0)
 				return so_format_writer_error;
 
 			position = 0;
@@ -232,12 +232,14 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 
 		worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
 
-		struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-		vol->media = so_media_dup(worker->media);
-		vol->media_position = worker->writer->ops->file_position(worker->writer);
-		vol->job = soj_job_get();
+		if (file != NULL) {
+			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
+			vol->media = so_media_dup(worker->media);
+			vol->media_position = worker->writer->ops->file_position(worker->writer);
+			vol->job = soj_job_get();
 
-		soj_create_archive_add_file3(worker, file, 0);
+			soj_create_archive_add_file3(worker, file, 0);
+		}
 	}
 
 	return 0;
