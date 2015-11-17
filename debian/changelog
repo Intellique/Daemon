@@ -1,3 +1,11 @@
+storiqone (1.2.5-1) polisher; urgency=low
+
+  * Bug fix release
+    - Create archive: bug when archiving into pool which unbreakablelevel is
+      defined to 'file' (again)
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 17 Nov 2015 13:56:00 +0100
+
 storiqone (1.2.4-1) polisher; urgency=low
 
   * Bug fix release
