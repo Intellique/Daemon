@@ -238,6 +238,7 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 			vol->media_position = worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
 
+		if (file != NULL)
 			soj_create_archive_add_file3(worker, file, 0);
 		}
 	}
