@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-18 00:15+0100\n"
+        "POT-Creation-Date: 2015-11-18 10:26+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -25,30 +25,80 @@ msgstr  "Archive non trouvée"
 msgid   "No check for deleted archive '%s'"
 msgstr  "Pas de vérification d’archive supprimée « %s »"
 
-#: src/job/check-archive/quick_mode.c:81
+#: src/job/check-archive/quick_mode.c:82
 #, c-format
 msgid   "Starting check archive (%s) in quick mode"
 msgstr  "Démarrage de la vérification de l’archive (%s) en mode rapide"
 
-#: src/job/check-archive/quick_mode.c:129
+#: src/job/check-archive/quick_mode.c:131
 msgid   "Failed to set worker thread name"
 msgstr  "Échec lors de la définition du nom du fil d’exécution"
 
-#: src/job/check-archive/quick_mode.c:136
+#: src/job/check-archive/quick_mode.c:138
 #, c-format
 msgid   "Starting worker #%u"
 msgstr  "Démarrage du fil d’exécution #%u"
 
-#: src/job/check-archive/thorough_mode.c:51
+#: src/job/check-archive/quick_mode.c:184
+#, c-format
+msgid   "Worker #%u has finished with %s and %s"
+msgstr  "Travailler n°%u a fini avec %s et %s"
+
+#: src/job/check-archive/quick_mode.c:185
+#, c-format
+msgid   "%u warning"
+msgid_plural    "%u warnings"
+msgstr[0]       "%u avertissement"
+msgstr[1]       "%u avertissements"
+
+#: src/job/check-archive/quick_mode.c:186
+#, c-format
+msgid   "%u error"
+msgid_plural    "%u errors"
+msgstr[0]       "%u erreur"
+msgstr[1]       "%u erreurs"
+
+#: src/job/check-archive/quick_mode.c:236
+#, c-format
+msgid   "Worker #%u : error while reading from media '%s'"
+msgstr  "Travailler n°%u : erreur en lisant depuis le média « %s »"
+
+#: src/job/check-archive/quick_mode.c:257
+#, c-format
+msgid   "Worker #%u : data integrity of volume '%s' is correct"
+msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » est correcte"
+
+#: src/job/check-archive/quick_mode.c:261
+#, c-format
+msgid   "Worker #%u : data integrity of volume '%s' is not correct"
+msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » n’est pas correcte"
+
+#: src/job/check-archive/thorough_mode.c:52
 #, c-format
 msgid   "Starting check archive (%s) in thorough mode"
 msgstr  "Démarrage de la vérification de l’archive (%s) en mode minutieux"
 
-#~ msgid        "Media not found (named: %s)"
-#~ msgstr       "Média non trouvé (nom: %s)"
+#: src/job/check-archive/thorough_mode.c:134
+#, c-format
+msgid   "Error while reading from media '%s'"
+msgstr  "Erreur en lisant depuis le média « %s »"
 
-#~ msgid        "Looking for media (%s)"
-#~ msgstr       "Recherche du média (%s)"
+#: src/job/check-archive/thorough_mode.c:153
+#, c-format
+msgid   "Data integrity of file '%s' is correct"
+msgstr  "L’intégrité des données du fichier « %s » est correcte"
 
-#~ msgid        "Getting media (%s)"
-#~ msgstr       "Accès au média (%s)"
+#: src/job/check-archive/thorough_mode.c:157
+#, c-format
+msgid   "Data integrity of file '%s' is not correct"
+msgstr  "L’intégrité des données du fichier « %s » n’est pas correcte"
+
+#: src/job/check-archive/thorough_mode.c:194
+#, c-format
+msgid   "Data integrity of volume '%s' is correct"
+msgstr  "L’intégrité des données du volume « %s » est correcte"
+
+#: src/job/check-archive/thorough_mode.c:198
+#, c-format
+msgid   "Data integrity of volume '%s' is not correct"
+msgstr  "L’intégrité des données du volume « %s » n’est pas correcte"

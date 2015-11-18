@@ -57,6 +57,7 @@
 #include "common.h"
 
 struct soj_checkarchive_worker {
+	unsigned int i_worker;
 	struct so_job * job;
 	struct so_database_connection * db_connect;
 
@@ -104,6 +105,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 		struct soj_checkarchive_worker * new_worker = malloc(sizeof(struct soj_checkarchive_worker));
 		bzero(new_worker, sizeof(struct soj_checkarchive_worker));
+		new_worker->i_worker = i;
 		new_worker->archive = archive;
 		new_worker->media = vol->media;
 		new_worker->db_connect = db_connect->config->ops->connect(db_connect->config);
@@ -170,14 +172,28 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 	for (i = 0; i < archive->nb_volumes; i++)
 		db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
 
+	unsigned int nb_errors = 0;
 	ptr_worker = workers;
-	while (ptr_worker != NULL) {
+	for (i = 0; ptr_worker != NULL; i++) {
 		struct soj_checkarchive_worker * next = ptr_worker->next;
+
+		if (ptr_worker->nb_errors > 0)
+			nb_errors++;
+
+		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), i,
+			dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", ptr_worker->nb_warnings),
+			dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors)
+		);
+
 		free(ptr_worker);
 		ptr_worker = next;
 	}
 
 	job->done = 1;
+
+	if (nb_errors > 0)
+		job->status = so_job_status_error;
 
 	return 0;
 }
@@ -216,6 +232,10 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		reader->ops->close(reader);
 
 		if (nb_read < 0) {
+			soj_job_add_record(worker->job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Worker #%u : error while reading from media '%s'"),
+				worker->i_worker, vol->media->name);
+
 			reader->ops->free(reader);
 			worker->status = so_job_status_error;
 			return;
@@ -231,6 +251,15 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		vol->check_ok = so_value_equals(vol->digests, digests);
 		vol->check_time = time(NULL);
 		so_value_free(digests);
+
+		if (vol->check_ok)
+			soj_job_add_record(worker->job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume '%s' is correct"),
+				worker->i_worker, vol->media->name);
+		else
+			soj_job_add_record(worker->job, worker->db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume '%s' is not correct"),
+				worker->i_worker, vol->media->name);
 
 		reader->ops->free(reader);
 	}
