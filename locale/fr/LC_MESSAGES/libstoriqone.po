@@ -177,6 +177,11 @@ msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
 msgstr  "so_checksum_salt_password : paramètre invalide (password : %p, salt : %p)"
 
+#: src/libstoriqone/crash.c:62
+#, c-format
+msgid   "Oops!!!, programs '%s' catch signal: %s"
+msgstr  "Oops!!!, le programme « %s » a reçu le signale : %s"
+
 #: src/libstoriqone/database.c:61
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
 msgstr  "so_database_get_driver : paramètre invalide, « driver » ne doit pas être « NULL »"
