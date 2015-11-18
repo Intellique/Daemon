@@ -212,6 +212,10 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			block_size = self->writer->ops->get_block_size(self->writer);
 		}
 
+		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
+			dgettext("storiqone-job-copy-archive", "Add file '%s' to archive"),
+			file.filename);
+
 		enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
 		if (wrtr_status != so_format_writer_ok) {
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
