@@ -39,6 +39,7 @@
 // sleep
 #include <unistd.h>
 
+#include <libstoriqone/crash.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/json.h>
@@ -150,8 +151,10 @@ error:
 	pthread_mutex_unlock(&lock);
 }
 
-int main() {
+int main(int argc __attribute__((unused)), char ** argv) {
 	bindtextdomain("libstoriqone-job", LOCALE_DIR);
+
+	so_crash_init(*argv);
 
 	struct so_job_driver * job_dr = soj_job_get_driver();
 	if (job_dr == NULL)

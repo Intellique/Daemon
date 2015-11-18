@@ -24,49 +24,53 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#define _GNU_SOURCE
-// pthread_sigmask, sigaddset, sigemptyset
-#include <signal.h>
-// asprintf
+// snprintf
 #include <stdio.h>
-// free, getenv, setenv
-#include <stdlib.h>
-// strstr
-#include <string.h>
-// access
+// signal
+#include <signal.h>
+// getpid, waitpid
+#include <sys/types.h>
+// waitpid
+#include <sys/wait.h>
+// close, execlp, fork, getpid
 #include <unistd.h>
 
-#include <libstoriqone/file.h>
-
-#include "env.h"
+#include <libstoriqone/crash.h>
 
 #include "config.h"
 
-bool sod_env_setup() {
-	if (!access(DAEMON_SOCKET_DIR, F_OK))
-		so_file_rm(DAEMON_SOCKET_DIR);
+static pid_t so_crash_pid = -1;
+static char so_crash_prog_name[256];
 
-	if (so_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
-		return false;
+static void so_crash(int signal);
 
-	if (!access(DAEMON_SOCKET_DIR, F_OK))
-		so_file_mkdir(DAEMON_CRASH_DIR, 0700);
 
-	char * path = getenv("PATH");
-	char * new_path = NULL;
-	int size = asprintf(&new_path, DAEMON_BIN_DIR ":" DAEMON_JOB_DIR ":%s", path);
-	if (size < 0)
-		return false;
+static void so_crash(int signal __attribute__((unused))) {
+	pid_t child = fork();
 
-	setenv("PATH", new_path, true);
-	free(new_path);
+	if (child == 0) {
+		char str_pid[8];
+		snprintf(str_pid, 8, "%d", so_crash_pid);
 
-	// ignore SIGPIPE
-	sigset_t set;
-	sigemptyset(&set);
-	sigaddset(&set, SIGPIPE);
-	pthread_sigmask(SIG_BLOCK, &set, NULL);
+		close(1);
+		close(2);
 
-	return true;
+		execlp("gcore", "gcore", "-o", so_crash_prog_name, str_pid, NULL);
+
+		_exit(0);
+	}
+
+	int status = 0;
+	waitpid(child, &status, 0);
+
+	_exit(0);
+}
+
+void so_crash_init(const char * prog_name) {
+	so_crash_pid = getpid();
+	snprintf(so_crash_prog_name, 256, DAEMON_CRASH_DIR "/%s", prog_name);
+
+	signal(SIGSEGV, so_crash);
+	signal(SIGABRT, so_crash);
 }
 

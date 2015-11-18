@@ -24,49 +24,10 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#define _GNU_SOURCE
-// pthread_sigmask, sigaddset, sigemptyset
-#include <signal.h>
-// asprintf
-#include <stdio.h>
-// free, getenv, setenv
-#include <stdlib.h>
-// strstr
-#include <string.h>
-// access
-#include <unistd.h>
+#ifndef __LIBSTORIQONE_CRASH_H__
+#define __LIBSTORIQONE_CRASH_H__
 
-#include <libstoriqone/file.h>
+void so_crash_init(const char * prog_name);
 
-#include "env.h"
-
-#include "config.h"
-
-bool sod_env_setup() {
-	if (!access(DAEMON_SOCKET_DIR, F_OK))
-		so_file_rm(DAEMON_SOCKET_DIR);
-
-	if (so_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
-		return false;
-
-	if (!access(DAEMON_SOCKET_DIR, F_OK))
-		so_file_mkdir(DAEMON_CRASH_DIR, 0700);
-
-	char * path = getenv("PATH");
-	char * new_path = NULL;
-	int size = asprintf(&new_path, DAEMON_BIN_DIR ":" DAEMON_JOB_DIR ":%s", path);
-	if (size < 0)
-		return false;
-
-	setenv("PATH", new_path, true);
-	free(new_path);
-
-	// ignore SIGPIPE
-	sigset_t set;
-	sigemptyset(&set);
-	sigaddset(&set, SIGPIPE);
-	pthread_sigmask(SIG_BLOCK, &set, NULL);
-
-	return true;
-}
+#endif
 

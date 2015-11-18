@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-13 10:08+0100\n"
+        "POT-Creation-Date: 2015-11-18 22:41+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -94,22 +94,22 @@ msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
 msgid   "[%s %s #%u]: Parsing archive from media '%s' at position #%u"
 msgstr  "[ %s %s #%u ] : Analyse de l’archive depuis le média « %s » à la position n°%u"
 
-#: src/libstoriqone-drive/main.c:72
+#: src/libstoriqone-drive/main.c:75
 #, c-format
 msgid   "Starting drive (type: %s)"
 msgstr  "Démarrage du lecteur (type : %s)"
 
-#: src/libstoriqone-drive/main.c:115
+#: src/libstoriqone-drive/main.c:118
 #, c-format
 msgid   "Initializing drive (type: %s)"
 msgstr  "Initialisation du lecteur (type : %s)"
 
-#: src/libstoriqone-drive/main.c:122
+#: src/libstoriqone-drive/main.c:125
 #, c-format
 msgid   "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"
 msgstr  "Démarrage du lecteur (type : %s, fabricant : %s, modèle : %s, numéro de série : %s)"
 
-#: src/libstoriqone-drive/main.c:136
+#: src/libstoriqone-drive/main.c:139
 #, c-format
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
