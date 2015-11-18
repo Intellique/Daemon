@@ -232,15 +232,13 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 
 		worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
 
-		if (file != NULL) {
-			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = so_media_dup(worker->media);
-			vol->media_position = worker->writer->ops->file_position(worker->writer);
-			vol->job = soj_job_get();
+		struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
+		vol->media = so_media_dup(worker->media);
+		vol->media_position = worker->writer->ops->file_position(worker->writer);
+		vol->job = soj_job_get();
 
 		if (file != NULL)
 			soj_create_archive_add_file3(worker, file, 0);
-		}
 	}
 
 	return 0;
