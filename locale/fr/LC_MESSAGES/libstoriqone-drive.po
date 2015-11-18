@@ -109,22 +109,22 @@ msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
 msgid   "[%s %s #%u]: failed to format media '%s'"
 msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
 
-#: src/libstoriqone-drive/main.c:72
+#: src/libstoriqone-drive/main.c:75
 #, c-format
 msgid   "Starting drive (type: %s)"
 msgstr  "Démarrage du lecteur (type : %s)"
 
-#: src/libstoriqone-drive/main.c:115
+#: src/libstoriqone-drive/main.c:118
 #, c-format
 msgid   "Initializing drive (type: %s)"
 msgstr  "Initialisation du lecteur (type : %s)"
 
-#: src/libstoriqone-drive/main.c:122
+#: src/libstoriqone-drive/main.c:125
 #, c-format
 msgid   "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"
 msgstr  "Démarrage du lecteur (type : %s, fabricant : %s, modèle : %s, numéro de série : %s)"
 
-#: src/libstoriqone-drive/main.c:136
+#: src/libstoriqone-drive/main.c:139
 #, c-format
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
