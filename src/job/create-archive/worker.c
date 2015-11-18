@@ -127,7 +127,7 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_job * 
 	if (primary_worker->state == soj_worker_status_ready) {
 		enum so_format_writer_status status = soj_create_archive_worker_add_file2(job, primary_worker, file, first_round, db_connect);
 		if (status != so_format_writer_ok) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
 				file->filename, primary_worker->pool->name);
 			primary_worker->state = soj_worker_status_error;
@@ -144,7 +144,7 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_job * 
 
 		enum so_format_writer_status status = soj_create_archive_worker_add_file2(job, worker, file, first_round, db_connect);
 		if (status != so_format_writer_ok) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
 				file->filename, worker->pool->name);
 			worker->state = soj_worker_status_error;
@@ -169,7 +169,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 		ssize_t file_size = worker->writer->ops->compute_size_of_file(worker->writer, file);
 
 		if (available_size < file_size) {
-			if (soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect) != 0)
+			if (soj_create_archive_worker_change_volume(job, worker, NULL, first_round, db_connect) != 0)
 				return so_format_writer_error;
 
 			position = 0;
@@ -226,7 +226,7 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 		worker->drive->ops->sync(worker->drive);
 		worker->media = worker->drive->slot->media;
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-create-archive", "Archive continue on media (%s)"),
 			worker->media->name);
 
@@ -237,7 +237,8 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 		vol->media_position = worker->writer->ops->file_position(worker->writer);
 		vol->job = soj_job_get();
 
-		soj_create_archive_add_file3(worker, file, 0);
+		if (file != NULL)
+			soj_create_archive_add_file3(worker, file, 0);
 	}
 
 	return 0;
@@ -640,7 +641,7 @@ void soj_create_archive_worker_reserve_medias(struct so_job * job, ssize_t archi
 			so_file_convert_size_to_string(reserved, str_reserved, 12);
 			so_file_convert_size_to_string(archive_size, str_archive_size, 12);
 
-			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Warning, not archiving to pool '%s': not enough space (space reserved: %s, space required: %s)"),
 				worker->pool->name, str_reserved, str_archive_size);
 		}
@@ -650,7 +651,7 @@ void soj_create_archive_worker_reserve_medias(struct so_job * job, ssize_t archi
 int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_database_connection * db_connect) {
 	int failed = db_connect->ops->start_transaction(db_connect);
 	if (failed != 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-create-archive", "Failed to start database transaction"));
 		return 1;
 	}

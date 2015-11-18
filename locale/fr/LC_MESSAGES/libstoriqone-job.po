@@ -27,30 +27,30 @@ msgstr  "Le démon a inopinément quitté"
 
 #: src/libstoriqone-job/main.c:107
 #, c-format
-msgid   "Starting simulation of job (type: %s, key: %s, name: %s)"
-msgstr  "Démarrage de la simulation de la tâche (type : %s, clef : %s, nom : %s)"
+msgid   "Starting simulation of job (type: %s, id: %s, name: %s)"
+msgstr  "Démarrage de la simulation de la tâche (type : %s, id : %s, nom : %s)"
 
 #: src/libstoriqone-job/main.c:113
 #, c-format
-msgid   "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
-msgstr  "La simulation de la tâche (type : %s, clef : %s, nom : %s) a échoué avec le code : %d"
+msgid   "Simulation of job (type: %s, id: %s, name: %s) failed with code: %d"
+msgstr  "La simulation de la tâche (type : %s, id : %s, nom : %s) a échoué avec le code : %d"
 
 #: src/libstoriqone-job/main.c:127
 #, c-format
-msgid   "Starting job (type: %s, key: %s, name: %s)"
-msgstr  "Démarrage de la tâche (type : %s, clef : %s, nom : %s)"
+msgid   "Starting job (type: %s, id: %s, name: %s)"
+msgstr  "Démarrage de la tâche (type : %s, id : %s, nom : %s)"
 
 #: src/libstoriqone-job/main.c:131
 #, c-format
-msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
-msgstr  "Fin de la tâche (type : %s, clef : %s, nom : %s), code de sortie : %d"
+msgid   "Job exit (type: %s, id: %s, name: %s), exit code: %d"
+msgstr  "Fin de la tâche (type : %s, id : %s, nom : %s), code de sortie : %d"
 
 #: src/libstoriqone-job/main.c:175
 #, c-format
 msgid   "Starting job (type: %s)"
 msgstr  "Démarrage de la tâche (type : %s)"
 
-#: src/libstoriqone-job/main.c:206
+#: src/libstoriqone-job/main.c:205
 #, c-format
 msgid   "Initializing job (type: %s)"
 msgstr  "Initialisation de la tâche (type : %s)"

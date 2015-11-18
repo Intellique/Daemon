@@ -37,7 +37,7 @@
 #include "peer.h"
 
 void sodr_peer_free(struct sodr_peer * peer) {
-	free(peer->job_key);
+	free(peer->job_id);
 
 	if (peer->stream_reader != NULL) {
 		peer->stream_reader->ops->close(peer->stream_reader);
@@ -75,7 +75,8 @@ struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous) {
 	bzero(peer, sizeof(struct sodr_peer));
 
 	peer->fd = fd;
-	peer->job_key = NULL;
+	peer->job_id = NULL;
+	peer->job_num_run = 0;
 
 	peer->stream_reader = NULL;
 	peer->stream_writer = NULL;

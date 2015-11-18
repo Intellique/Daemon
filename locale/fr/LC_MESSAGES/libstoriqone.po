@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-29 12:21+0200\n"
+        "POT-Creation-Date: 2015-10-01 09:10+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -64,7 +64,7 @@ msgstr  "mettre en ligne"
 msgid   "unknown action"
 msgstr  "action inconnue"
 
-#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:52 src/libstoriqone/media.c:85
+#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:50 src/libstoriqone/media.c:85
 msgid   "error"
 msgstr  "erreur"
 
@@ -100,7 +100,7 @@ msgstr  "hors ligne"
 msgid   "unloading"
 msgstr  "déchargement"
 
-#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:60
+#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:58
 msgid   "unknown status"
 msgstr  "statut inconnu"
 
@@ -384,47 +384,47 @@ msgstr  "so_file_rm : échec lors de obtention des informations de « %s » p
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
 msgstr  "so_io_tmp_writer: n’a pas pu créé de fichier temporaire dans le répertoire « %s » parce que %m"
 
-#: src/libstoriqone/job.c:51
+#: src/libstoriqone/job.c:49
 msgid   "disabled"
 msgstr  "désactivé"
 
-#: src/libstoriqone/job.c:53
+#: src/libstoriqone/job.c:51
 msgid   "finished"
 msgstr  "terminée"
 
-#: src/libstoriqone/job.c:54
+#: src/libstoriqone/job.c:52
 msgid   "paused"
 msgstr  "en pause"
 
-#: src/libstoriqone/job.c:55
+#: src/libstoriqone/job.c:53
 msgid   "running"
 msgstr  "en exécution"
 
-#: src/libstoriqone/job.c:56
+#: src/libstoriqone/job.c:54
 msgid   "scheduled"
 msgstr  "programmée"
 
-#: src/libstoriqone/job.c:57
+#: src/libstoriqone/job.c:55
 msgid   "stopped"
 msgstr  "arêtée"
 
-#: src/libstoriqone/job.c:58
+#: src/libstoriqone/job.c:56
 msgid   "waiting"
 msgstr  "en attente"
 
-#: src/libstoriqone/job.c:72
+#: src/libstoriqone/job.c:70
 msgid   "normal"
 msgstr  "normal"
 
-#: src/libstoriqone/job.c:73
+#: src/libstoriqone/job.c:71
 msgid   "important"
 msgstr  "important"
 
-#: src/libstoriqone/job.c:74
+#: src/libstoriqone/job.c:72
 msgid   "read"
 msgstr  "lu"
 
-#: src/libstoriqone/job.c:76
+#: src/libstoriqone/job.c:74
 msgid   "unknown notification"
 msgstr  "notification inconnue"
 

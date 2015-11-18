@@ -24,39 +24,39 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-// bzero
-#include <strings.h>
-// free, malloc
+#define _GNU_SOURCE
+// va_end, va_start
+#include <stdarg.h>
+// vasprintf
+#include <stdio.h>
+// free
 #include <stdlib.h>
 
-#include <libstoriqone/value.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone-drive/log.h>
 
 #include "peer.h"
 
-void sochgr_peer_free(struct sochgr_peer * peer) {
-	free(peer->job_id);
+int sodr_log_add_record(const struct sodr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
+	char * message = NULL;
 
-	if (peer->request != NULL)
-		so_value_free(peer->request);
+	va_list va;
+	va_start(va, format);
+	int size = vasprintf(&message, format, va);
+	va_end(va);
 
-	free(peer);
-}
+	if (size < 0)
+		return -1;
 
-struct sochgr_peer * sochgr_peer_new(int fd, bool defer) {
-	struct sochgr_peer * peer = malloc(sizeof(struct sochgr_peer));
-	bzero(peer, sizeof(struct sochgr_peer));
+	so_log_write(level, "%s", message);
 
-	peer->fd = fd;
-	peer->job_id = NULL;
-	peer->job_num_run = 0;
-	peer->waiting = false;
+	int failed = 0;
 
-	peer->defer = defer;
-	peer->request = NULL;
-	peer->command = NULL;
+	if (peer != NULL)
+		failed = db_connect->ops->add_job_record2(db_connect, peer->job_id, peer->job_num_run, status, level, notif, message);
 
-	peer->next = NULL;
+	free(message);
 
-	return peer;
+	return failed;
 }
 

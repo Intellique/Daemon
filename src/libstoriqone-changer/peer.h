@@ -32,7 +32,8 @@
 
 struct sochgr_peer {
 	int fd;
-	char * key;
+	char * job_id;
+	unsigned int job_num_run;
 	bool waiting;
 
 	bool defer;

@@ -29,8 +29,6 @@
 #include <libintl.h>
 // free
 #include <stdlib.h>
-// vasprintf
-#include <stdio.h>
 
 #define gettext_noop(String) String
 
@@ -80,28 +78,9 @@ static const unsigned int so_job_record_notif2 = sizeof(so_job_record_notifs) / 
 static void so_job_init(void) __attribute__((constructor));
 
 
-int so_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
-	char * message = NULL;
-
-	va_list va;
-	va_start(va, format);
-	int size = vasprintf(&message, format, va);
-	va_end(va);
-
-	if (size < 0)
-		return -1;
-
-	so_log_write(level, "%s", message);
-	int failed = db_connect->ops->add_job_record(db_connect, job, level, notif, message);
-
-	free(message);
-
-	return failed;
-}
-
 struct so_value * so_job_convert(struct so_job * job) {
 	return so_value_pack("{sssssssssIsIsIsIsfsssisbsOsO}",
-		"id", job->key,
+		"id", job->id,
 		"name", job->name,
 		"type", job->type,
 		"user", job->user,
@@ -126,7 +105,7 @@ void so_job_free(struct so_job * job) {
 	if (job == NULL)
 		return;
 
-	free(job->key);
+	free(job->id);
 	free(job->name);
 	free(job->type);
 	free(job->user);
@@ -211,20 +190,20 @@ enum so_job_status so_job_string_to_status(const char * status, bool translate) 
 }
 
 void so_job_sync(struct so_job * job, struct so_value * new_job) {
-	free(job->key);
+	free(job->id);
 	free(job->name);
 	free(job->type);
 	free(job->user);
 	so_value_free(job->meta);
 	so_value_free(job->option);
-	job->key = job->name = job->type = NULL;
+	job->id = job->name = job->type = NULL;
 	job->meta = job->option = NULL;
 
 	char * status = NULL;
 	double done = 0;
 
 	so_value_unpack(new_job, "{sssssssssisIsIsIsfsssisbsOsO}",
-		"id", &job->key,
+		"id", &job->id,
 		"name", &job->name,
 		"type", &job->type,
 		"user", &job->user,

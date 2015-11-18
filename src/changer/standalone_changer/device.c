@@ -24,6 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dngettext
+#include <libintl.h>
 // malloc
 #include <stdlib.h>
 // bzero
@@ -31,6 +33,7 @@
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
@@ -41,10 +44,10 @@
 
 static int sochgr_standalone_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection);
-static int sochgr_standalone_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+static int sochgr_standalone_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_remain_online(struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_shut_down(struct so_database_connection * db_connection);
-static int sochgr_standalone_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
+static int sochgr_standalone_changer_unload(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection);
 
 struct so_changer_ops sochgr_standalone_changer_ops = {
 	.check       = sochgr_standalone_changer_check,
@@ -114,6 +117,13 @@ static int sochgr_standalone_changer_init(struct so_value * config, struct so_da
 		"is online", &sochgr_standalone_changer.is_online
 	);
 
+	if (!sochgr_standalone_changer.enable) {
+		so_log_write(so_log_level_critical,
+			dgettext("storiqone-changer-standalone", "Critical, standalone drive %s %s (serial: %s) is not enabled"),
+			sochgr_standalone_changer.vendor, sochgr_standalone_changer.model, sochgr_standalone_changer.serial_number);
+		return 1;
+	}
+
 	struct so_drive * dr = sochgr_standalone_changer.drives = malloc(sizeof(struct so_drive));
 	bzero(dr, sizeof(struct so_drive));
 
@@ -144,7 +154,7 @@ static int sochgr_standalone_changer_init(struct so_value * config, struct so_da
 	return 0;
 }
 
-static int sochgr_standalone_changer_load(struct so_slot * from __attribute__((unused)), struct so_drive * to __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
+static int sochgr_standalone_changer_load(struct sochgr_peer * peer __attribute__((unused)), struct so_slot * from __attribute__((unused)), struct so_drive * to __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
 	return 1;
 }
 
@@ -160,7 +170,7 @@ static int sochgr_standalone_changer_shut_down(struct so_database_connection * d
 	return 0;
 }
 
-static int sochgr_standalone_changer_unload(struct so_drive * from __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
+static int sochgr_standalone_changer_unload(struct sochgr_peer * peer __attribute__((unused)), struct so_drive * from __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
 	return 1;
 }
 

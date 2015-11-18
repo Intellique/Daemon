@@ -84,7 +84,7 @@ static bool soj_drive_check_header(struct so_drive * drive) {
 	struct so_value * request = so_value_pack("{sss{ss}}",
 		"command", "check header",
 		"params",
-			"job key", job->key
+			"job id", job->id
 	);
 
 	pthread_mutex_lock(&self->lock);
@@ -140,7 +140,7 @@ static unsigned int soj_drive_count_archives(struct so_drive * drive) {
 	struct so_value * request = so_value_pack("{sss{ss}}",
 		"command", "count archives",
 		"params",
-			"job key", job->key
+			"job id", job->id
 	);
 
 	pthread_mutex_lock(&self->lock);
@@ -174,7 +174,7 @@ static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {
 	struct so_value * request = so_value_pack("{sss{sssb}}",
 		"command", "erase media",
 		"params",
-			"job key", job->key,
+			"job id", job->id,
 			"quick mode", quick_mode
 	);
 
@@ -203,7 +203,7 @@ static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool
 	struct so_value * request = so_value_pack("{sss{sssosO}}",
 		"command", "format media",
 		"params",
-			"job key", job->key,
+			"job id", job->id,
 			"pool", so_pool_convert(pool),
 			"option", option
 	);
@@ -233,7 +233,7 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 	struct so_value * request = so_value_pack("{sss{sssi}}",
 		"command", "get raw reader",
 		"params",
-			"job key", job->key,
+			"job id", job->id,
 			"file position", file_position
 	);
 
@@ -269,7 +269,7 @@ static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * driv
 	struct so_value * request = so_value_pack("{sss{ss}}",
 		"command", "get raw writer",
 		"params",
-			"job key", job->key
+			"job id", job->id
 	);
 
 	pthread_mutex_lock(&self->lock);
@@ -310,7 +310,7 @@ static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, i
 	struct so_value * request = so_value_pack("{sss{sssiso}}",
 		"command", "get reader",
 		"params",
-			"job key", job->key,
+			"job id", job->id,
 			"file position", file_position,
 			"checksums", tmp_checksums
 	);
@@ -353,7 +353,7 @@ static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, s
 	struct so_value * request = so_value_pack("{sss{ssso}}",
 		"command", "get writer",
 		"params",
-			"job key", job->key,
+			"job id", job->id,
 			"checksums", tmp_checksums
 	);
 
@@ -401,10 +401,12 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 
 
 	struct so_job * job = soj_job_get();
-	struct so_value * request = so_value_pack("{sss{ss}}",
+	struct so_value * request = so_value_pack("{sss{s{sssI}}}",
 		"command", "init peer",
 		"params",
-			"job key", job->key
+			"job",
+				"id", job->id,
+				"num run", job->num_runs
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
@@ -420,7 +422,7 @@ static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int 
 	struct so_value * request = so_value_pack("{sss{sssisO}}",
 		"command", "parse archive",
 		"params",
-			"job key", job->key,
+			"job id", job->id,
 			"archive position", archive_position,
 			"checksums", checksums
 	);

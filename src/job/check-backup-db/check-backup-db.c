@@ -144,10 +144,10 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 		bool checksum_ok = true;
 		for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
 			if (ptr->volume->checksum_ok)
-				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 					dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: success"), i);
 			else {
-				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 					dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: failed"), i);
 				checksum_ok = false;
 			}
@@ -156,10 +156,10 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 		}
 
 		if (checksum_ok)
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 				dgettext("storiqone-job-check-backup-db", "Checking backup: success"));
 		else
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 				dgettext("storiqone-job-check-backup-db", "Checking backup: failed"));
 	}
 
@@ -173,7 +173,7 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	soj_checkbackupdb_backup = db_connect->ops->get_backup(db_connect, job);
 	if (soj_checkbackupdb_backup == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-check-backup-db", "Backup not found"));
 		return 1;
 	}
@@ -187,12 +187,12 @@ static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_co
 			soj_checkbackupdb_pool = vol->media->pool;
 
 		if (vol->media == NULL) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-check-backup-db", "BUG: media should not be empty"));
 			return 1;
 		}
 		if (vol->media->status == so_media_status_error)
-			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+			soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 				dgettext("storiqone-job-check-backup-db", "Try to read a media with error status"));
 	}
 

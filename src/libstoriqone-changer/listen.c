@@ -36,12 +36,12 @@
 #include <unistd.h>
 
 #include <libstoriqone/json.h>
-#include <libstoriqone/log.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/socket.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-changer/log.h>
 
 #include "changer.h"
 #include "drive.h"
@@ -253,30 +253,34 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			if (changer->nb_drives < changer->nb_slots) {
 				const char * volume_name = sl->volume_name;
 
-				so_log_write(so_log_level_notice,
+				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 					dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"),
 					changer->vendor, changer->model, volume_name, drive->index);
 
-				int failed = changer->ops->unload(drive, sochgr_db);
+				int failed = changer->ops->unload(peer, drive, sochgr_db);
 				if (failed != 0) {
-					so_log_write(so_log_level_error,
+					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_important,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
 						changer->vendor, changer->model, volume_name, drive->index, failed);
 				} else
-					so_log_write(so_log_level_notice,
+					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"),
 						changer->vendor, changer->model, volume_name, drive->index);
 			} else {
-				so_log_write(so_log_level_error,
+				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_important,
 					dgettext("libstoriqone-changer", "[%s | %s]: the drive (%s#%u) doesn't support media format (%s)"),
 					changer->vendor, changer->model, drive->model, drive->index, sl->media->media_format->name);
 			}
 		}
 
-		drive->ops->lock(drive, peer->key);
+		drive->ops->lock(drive, peer->job_id);
 
 		lp->waiting = lp->peer->waiting = false;
 		sochgr_socket_remove_peer(lp->peer);
+
+		sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
+			dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) gets media '%s'"),
+			changer->vendor, changer->model, peer->job_id, sl->media->name);
 
 		struct so_value * response = so_value_pack("{sbsuso}",
 			"error", false,
@@ -291,6 +295,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 	if (nb_free_drives == 0) {
 		if (current_peer != NULL && no_wait) {
+			sochgr_log_add_record(current_peer, so_job_status_waiting, sochgr_db, so_log_level_warning, so_job_record_notif_important,
+				dgettext("libstoriqone-changer", "[%s | %s]: no free drive available"),
+				changer->vendor, changer->model);
+
 			struct so_value * response = so_value_pack("{sbso}",
 				"error", true,
 				"changer", so_changer_convert(changer)
@@ -333,13 +341,13 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			if (drive->slot->full) {
 				char * volume_name = strdup(drive->slot->volume_name);
 
-				so_log_write(so_log_level_notice,
+				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 					dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"),
 					changer->vendor, changer->model, volume_name, drive->index);
 
-				int failed = changer->ops->unload(drive, sochgr_db);
+				int failed = changer->ops->unload(peer, drive, sochgr_db);
 				if (failed != 0) {
-					so_log_write(so_log_level_error,
+					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_normal,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
 						changer->vendor, changer->model, volume_name, drive->index, failed);
 
@@ -354,18 +362,22 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 					return false;
 				} else
-					so_log_write(so_log_level_notice,
+					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"),
 						changer->vendor, changer->model, volume_name, drive->index);
 
 				free(volume_name);
 			}
 
-			so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d"), changer->vendor, changer->model, sl->volume_name, sl->index, drive->index);
+			sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
+				dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d"),
+				changer->vendor, changer->model, sl->volume_name, sl->index, drive->index);
 
-			int failed = changer->ops->load(sl, drive, sochgr_db);
+			int failed = changer->ops->load(peer, sl, drive, sochgr_db);
 			if (failed != 0) {
-				so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"), changer->vendor, changer->model, sl->volume_name, sl->index, drive->index, failed);
+				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_important,
+					dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"),
+					changer->vendor, changer->model, sl->volume_name, sl->index, drive->index, failed);
 
 				struct so_value * response = so_value_pack("{sbso}",
 					"error", true,
@@ -376,9 +388,11 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 				return false;
 			} else
-				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"), changer->vendor, changer->model, drive->slot->volume_name, sl->index, drive->index);
+				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
+					dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"),
+					changer->vendor, changer->model, drive->slot->volume_name, sl->index, drive->index);
 
-			drive->ops->lock(drive, peer->key);
+			drive->ops->lock(drive, peer->job_id);
 
 			struct so_value * response = so_value_pack("{sbsuso}",
 				"error", false,
@@ -391,6 +405,11 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			lp->waiting = lp->peer->waiting = false;
 			sochgr_socket_remove_peer(lp->peer);
 			nb_free_drives--;
+
+			sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
+				dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) gets media '%s'"),
+				changer->vendor, changer->model, peer->job_id, media->name);
+
 
 			return true;
 		}
@@ -409,19 +428,26 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 }
 
 
-static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
+static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer, struct so_value * request, int fd) {
+	free(peer->job_id);
+	peer->job_id = NULL;
+
+	so_value_unpack(request, "{s{s{sssi}}}",
+		"params",
+			"job",
+				"id", &peer->job_id,
+				"num run", &peer->job_num_run
+	);
+
 	so_json_encode_to_fd(sochgr_drive_get_configs(), fd, true);
 }
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	char * medium_serial_number = NULL;
 	bool no_wait = false;
-	free(peer->key);
-	peer->key = NULL;
 
-	so_value_unpack(request, "{s{sssssb}}",
+	so_value_unpack(request, "{s{sssb}}",
 		"params",
-			"job key", &peer->key,
 			"medium serial number", &medium_serial_number,
 			"no wait", &no_wait
 	);

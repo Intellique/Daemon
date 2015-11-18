@@ -43,6 +43,7 @@ struct so_job_driver {
 	bool (*script_pre_run)(struct so_job * job, struct so_database_connection * db_connect);
 };
 
+int soj_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 5, 6)));
 struct so_job * soj_job_get(void);
 void soj_job_register(struct so_job_driver * driver);
 

@@ -189,10 +189,10 @@ static void sodr_changer_process_lock(struct so_value * request, struct so_datab
 		return;
 	}
 
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
-	sodr_listen_set_peer_key(job_key);
-	free(job_key);
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	sodr_listen_set_peer_id(job_id);
+	free(job_id);
 
 	struct so_value * returned = so_value_pack("{sb}", "returned", true);
 	so_json_encode_to_fd(returned, 1, true);

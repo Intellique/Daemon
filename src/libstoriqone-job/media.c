@@ -88,7 +88,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 			case alert_user:
 				job->status = so_job_status_waiting;
 				if (!has_alert_user)
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 						dgettext("libstoriqone-job", "Media not found (named: %s)"), media->name);
 				has_alert_user = true;
 
@@ -164,7 +164,7 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 				case alert_user:
 					job->status = so_job_status_waiting;
 					if (!has_alert_user)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 							dgettext("libstoriqone-job", "Media not found (named: %s)"), media->name);
 					has_alert_user = true;
 
@@ -207,13 +207,13 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 
 			media = drive->slot->media;
 			if (media->status == so_media_status_new) {
-				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 					dgettext("libstoriqone-job", "Automatic formatting media '%s'"),
 					media->name);
 
 				int failed = drive->ops->format_media(drive, pool, NULL);
 				if (failed != 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("libstoriqone-job", "Failed to format media"));
 
 					drive->ops->release(drive);
@@ -222,11 +222,11 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 				}
 
 				if (drive->ops->check_header(drive)) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 						dgettext("libstoriqone-job", "Checking media header '%s' was successful"),
 						media->name);
 				} else {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-format-media", "Checking media header '%s': failed"),
 						media->name);
 

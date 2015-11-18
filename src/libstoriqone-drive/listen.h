@@ -41,7 +41,7 @@ unsigned int sodr_listen_nb_clients(void);
 void sodr_listen_remove_peer(struct sodr_peer * peer);
 void sodr_listen_reset_peer(void);
 void sodr_listen_set_db_connection(struct so_database_connection * db);
-void sodr_listen_set_peer_key(const char * key);
+void sodr_listen_set_peer_id(const char * id);
 
 #endif
 

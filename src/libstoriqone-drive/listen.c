@@ -58,6 +58,7 @@
 #include <libstoriqone/string.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-drive/log.h>
 
 #include "drive.h"
 #include "io/io.h"
@@ -69,7 +70,7 @@ static struct so_value * sodr_config = NULL;
 static unsigned int sodr_nb_clients = 0;
 static struct sodr_peer * sodr_current_peer = NULL;
 static struct sodr_peer * first_peer = NULL, * last_peer = NULL;
-static char * sodr_current_key = NULL;
+static char * sodr_current_id = NULL;
 
 static void sodr_socket_accept(int fd_server, int fd_client, struct so_value * client);
 static void sodr_socket_message(int fd, short event, void * data);
@@ -181,8 +182,8 @@ void sodr_listen_remove_peer(struct sodr_peer * peer) {
 }
 
 void sodr_listen_reset_peer() {
-	free(sodr_current_key);
-	sodr_current_key = NULL;
+	free(sodr_current_id);
+	sodr_current_id = NULL;
 	sodr_current_peer = NULL;
 }
 
@@ -190,13 +191,13 @@ void sodr_listen_set_db_connection(struct so_database_connection * db) {
 	sodr_db = db;
 }
 
-void sodr_listen_set_peer_key(const char * key) {
-	free(sodr_current_key);
-	sodr_current_key = strdup(key);
+void sodr_listen_set_peer_id(const char * id) {
+	free(sodr_current_id);
+	sodr_current_id = strdup(id);
 
 	struct sodr_peer * peer;
 	for (peer = first_peer; peer != NULL; peer = peer->next)
-		if (strcmp(key, peer->job_key) == 0) {
+		if (strcmp(id, peer->job_id) == 0) {
 			sodr_current_peer = peer;
 			break;
 		}
@@ -253,18 +254,18 @@ static void sodr_socket_message(int fd, short event, void * data) {
 }
 
 
-static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+static void sodr_socket_command_check_header(struct sodr_peer * peer, struct so_value * request, int fd) {
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
 
-	if (strcmp(sodr_current_key, job_key) != 0) {
+	if (strcmp(sodr_current_id, job_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "returned", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -274,11 +275,11 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: checking header of media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	bool ok = drive->ops->check_header(sodr_db);
+	bool ok = drive->ops->check_header(peer, sodr_db);
 	struct so_value * response = so_value_pack("{sb}", "returned", ok);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
@@ -311,36 +312,36 @@ static void sodr_socket_command_check_support(struct sodr_peer * peer __attribut
 }
 
 static void sodr_socket_command_count_archives(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
 
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
+	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{si}", "returned", 0);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_key);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	peer->owned = true;
 	so_thread_pool_run("count archives", sodr_worker_command_count_archives, peer);
 }
 
 static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
 
-	if (strcmp(sodr_current_key, job_key) != 0) {
+	if (strcmp(sodr_current_id, job_id) != 0) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_key);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	struct sodr_socket_params_erase_media * params = malloc(sizeof(struct sodr_socket_params_erase_media));
 	bzero(params, sizeof(struct sodr_socket_params_erase_media));
@@ -355,18 +356,18 @@ static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_v
 }
 
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
 
-	if (strcmp(sodr_current_key, job_key) != 0) {
+	if (strcmp(sodr_current_id, job_id) != 0) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_key);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	struct so_value * vpool = NULL;
 	struct so_value * option = NULL;
@@ -391,17 +392,18 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
 	int position = -1;
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{sssi}}", "params", "job key", &job_key, "file position", &position);
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{sssi}}", "params", "job id", &job_id, "file position", &position);
 
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
+	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -419,11 +421,11 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
 		drive->vendor, drive->model, drive->index, media_name, position);
 
-	peer->stream_reader = drive->ops->get_raw_reader(position, sodr_db);
+	peer->stream_reader = drive->ops->get_raw_reader(peer, position, sodr_db);
 
 	peer->buffer_length = 16384;
 	peer->buffer = malloc(peer->buffer_length);
@@ -457,17 +459,18 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 }
 
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
 
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
+	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -485,11 +488,11 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	peer->stream_writer = drive->ops->get_raw_writer(sodr_db);
+	peer->stream_writer = drive->ops->get_raw_writer(peer, sodr_db);
 
 	peer->buffer_length = 16384;
 	peer->buffer = malloc(peer->buffer_length);
@@ -524,23 +527,24 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 
 static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
 	int position = -1;
-	char * job_key = NULL;
+	char * job_id = NULL;
 	struct so_value * checksums = NULL;
 	so_value_unpack(request, "{s{sssiso}}",
 		"params",
-			"job key", &job_key,
+			"job id", &job_id,
 			"file position", &position,
 			"checksums", &checksums
 	);
 
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
+	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -558,11 +562,11 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
 		drive->vendor, drive->model, drive->index, media_name, position);
 
-	peer->format_reader = drive->ops->get_reader(position, checksums, sodr_db);
+	peer->format_reader = drive->ops->get_reader(peer, position, checksums, sodr_db);
 
 	peer->buffer_length = 16384;
 	peer->buffer = malloc(peer->buffer_length);
@@ -595,22 +599,23 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 }
 
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
+	char * job_id = NULL;
 	struct so_value * checksums = NULL;
 	so_value_unpack(request, "{s{ssso}}",
 		"params",
-			"job key", &job_key,
+			"job id", &job_id,
 			"checksums", &checksums
 	);
 
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
+	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -628,11 +633,11 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	peer->format_writer = drive->ops->get_writer(checksums, sodr_db);
+	peer->format_writer = drive->ops->get_writer(peer, checksums, sodr_db);
 
 	peer->buffer_length = 16384;
 	peer->buffer = malloc(peer->buffer_length);
@@ -667,29 +672,38 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 }
 
 static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd) {
-	so_value_unpack(request, "{s{ss}}",
+	so_value_unpack(request, "{s{s{sssu}}}",
 		"params",
-			"job key", &peer->job_key
+			"job",
+				"id", &peer->job_id,
+				"num run", &peer->job_num_run
 	);
 
 	struct so_value * response = so_value_pack("{sb}", "returned", true);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: New connection from job (id: %s, num runs: %u)"),
+		drive->vendor, drive->model, drive->index, peer->job_id, peer->job_num_run);
 }
 
 static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+	char * job_id = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
 
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
+	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sn}", "returned");
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_key);
+		free(job_id);
 		return;
 	}
 
-	free(job_key);
+	free(job_id);
 
 	int archive_position = -1;
 	struct so_value * checksums = NULL;
@@ -755,13 +769,13 @@ static void sodr_worker_command_count_archives(void * arg) {
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: counting archives from media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
-
-	unsigned int nb_archives = drive->ops->count_archives(&peer->disconnected, db_connect);
+	unsigned int nb_archives = drive->ops->count_archives(peer, &peer->disconnected, db_connect);
 
 	struct so_value * response = so_value_pack("{su}", "returned", nb_archives);
 	so_json_encode_to_fd(response, peer->fd, true);
@@ -784,24 +798,24 @@ static void sodr_worker_command_erase_media(void * arg) {
 	if (media != NULL)
 		media_name = strdup(media->name);
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: Erasing media '%s' (mode: %s)"),
 		drive->vendor, drive->model, drive->index, media_name,
 		params->quick_mode ? dgettext("libstoriqone-drive", "quick") : dgettext("libstoriqone-drive", "long"));
 
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
-
-	int failed = drive->ops->erase_media(params->quick_mode, db_connect);
+	int failed = drive->ops->erase_media(params->peer, params->quick_mode, db_connect);
 	struct so_value * response = so_value_pack("{si}", "returned", failed);
 	so_json_encode_to_fd(response, params->peer->fd, true);
 	so_value_free(response);
 
 	if (failed == 0)
-		so_log_write(so_log_level_notice,
+		sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 			dgettext("libstoriqone-drive", "[%s %s #%u]: media '%s' erased successfully"),
 			drive->vendor, drive->model, drive->index, media_name);
 	else
-		so_log_write(so_log_level_error,
+		sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to erase media '%s'"),
 			drive->vendor, drive->model, drive->index, media_name);
 
@@ -824,13 +838,13 @@ static void sodr_worker_command_format_media(void * data) {
 	if (media != NULL)
 		media_name = strdup(media->name);
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: formatting media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
-
-	int failed = drive->ops->format_media(params->pool, params->option, db_connect);
+	int failed = drive->ops->format_media(params->peer, params->pool, params->option, db_connect);
 	struct so_value * response = so_value_pack("{si}", "returned", failed);
 	so_json_encode_to_fd(response, params->peer->fd, true);
 	so_value_free(response);
@@ -866,13 +880,13 @@ static void sodr_worker_command_parse_archive(void * data) {
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice,
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	sodr_log_add_record(params->peer, so_job_status_running, db_connect, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: Parsing archive from media '%s' at position #%u"),
 		drive->vendor, drive->model, drive->index, media_name, params->archive_position);
 
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
-
-	struct so_archive * archive = drive->ops->parse_archive(&params->peer->disconnected, params->archive_position, params->checksums, db_connect);
+	struct so_archive * archive = drive->ops->parse_archive(params->peer, &params->peer->disconnected, params->archive_position, params->checksums, db_connect);
 
 	struct so_value * response = so_value_pack("{so}", "returned", so_archive_convert(archive));
 	so_json_encode_to_fd(response, params->peer->fd, true);

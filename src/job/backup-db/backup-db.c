@@ -94,14 +94,14 @@ static void soj_backupdb_init() {
 static int soj_backupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
 	struct so_stream_reader * db_reader = db_connect->config->ops->backup_db(db_connect->config);
 	if (db_reader == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-backup-db", "Failed to get database handle"));
 		return 1;
 	}
 
 	struct so_stream_writer * tmp_writer = so_io_tmp_writer();
 	if (tmp_writer == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-backup-db", "Failed to create temporary file"));
 		goto tmp_writer;
 	}
@@ -122,7 +122,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 		while (nb_total_write < nb_read) {
 			ssize_t nb_write = tmp_writer->ops->write(tmp_writer, buffer + nb_total_write, nb_read - nb_total_write);
 			if (nb_write < 0) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-backup-db", "Error while writting into temporary file because %m"));
 				goto tmp_writer;
 			} else {
@@ -135,7 +135,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 	}
 
 	if (nb_read < 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-backup-db", "Error while reading from database because %m"));
 		goto tmp_writer;
 	}
@@ -177,7 +177,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 						while (nb_total_write < nb_read) {
 							ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
 							if (nb_write < 0) {
-								so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+								soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 									dgettext("storiqone-job-backup-db", "Error while writing to drive because %m"));
 							} else {
 								nb_total_write += nb_write;
@@ -192,7 +192,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 					}
 
 					if (nb_read < 0) {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-backup-db", "Error while reading from temporary file because %m"));
 					}
 
@@ -223,7 +223,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 					stop = true;
 					job->status = so_job_status_error;
 
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-backup-db", "No media found, aborting database backup"));
 
 					goto tmp_reader;
@@ -235,7 +235,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, db_connect);
 
 				if (size_available < backup_size)
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 						dgettext("storiqone-job-backup-db", "Not enough space available to complete backup"));
 
 				state = get_media;
@@ -276,19 +276,19 @@ tmp_reader:
 static int soj_backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	soj_backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
 	if (soj_backupdb_pool == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-backup-db", "Pool (Storiq one database backup) not found"));
 		return 1;
 	}
 	if (soj_backupdb_pool->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-backup-db", "Trying to back up database to a deleted pool"));
 		return 1;
 	}
 
 	soj_backupdb_medias = db_connect->ops->get_medias_of_pool(db_connect, soj_backupdb_pool);
 	if (!soj_backupdb_pool->growable && so_value_list_get_length(soj_backupdb_medias) == 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-backup-db", "Trying to back up database to a pool which is not growable and without any media"));
 		return 1;
 	}

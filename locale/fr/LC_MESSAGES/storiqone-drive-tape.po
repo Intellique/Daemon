@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-10-27 10:12+0100\n"
+        "POT-Creation-Date: 2015-11-18 20:31+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -144,22 +144,22 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  ""
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:62
+#: src/drive/tape_drive/format/storiqone/storiqone.c:63
 #, c-format
 msgid   "[%s | %s | #%u]: Finding best block size"
 msgstr  "[ %s | %s | n°%u ] : Recheche de la meilleure taille de bloc"
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:87
+#: src/drive/tape_drive/format/storiqone/storiqone.c:88
 #, c-format
 msgid   "[%s | %s | #%u]: Test (block size: %s)"
 msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s)"
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:128
+#: src/drive/tape_drive/format/storiqone/storiqone.c:129
 #, c-format
 msgid   "[%s | %s | #%u]: Test (block size: %s), throughput: %s/s"
 msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s), débit : %s/s"
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:146
+#: src/drive/tape_drive/format/storiqone/storiqone.c:147
 #, c-format
 msgid   "[%s | %s | #%u]: Found best block size: %s"
 msgstr  "[ %s | %s | n°%u ] : Meilleure taille de bloc trouvé : %s"

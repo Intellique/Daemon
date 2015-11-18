@@ -24,39 +24,15 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-// bzero
-#include <strings.h>
-// free, malloc
-#include <stdlib.h>
+#ifndef __LIBSTORIQONE_DRIVE_LOG_H__
+#define __LIBSTORIQONE_DRIVE_LOG_H__
 
-#include <libstoriqone/value.h>
+#include <libstoriqone/job.h>
+#include <libstoriqone/log.h>
 
-#include "peer.h"
+struct sodr_peer;
 
-void sochgr_peer_free(struct sochgr_peer * peer) {
-	free(peer->job_id);
+int sodr_log_add_record(const struct sodr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 6, 7)));
 
-	if (peer->request != NULL)
-		so_value_free(peer->request);
-
-	free(peer);
-}
-
-struct sochgr_peer * sochgr_peer_new(int fd, bool defer) {
-	struct sochgr_peer * peer = malloc(sizeof(struct sochgr_peer));
-	bzero(peer, sizeof(struct sochgr_peer));
-
-	peer->fd = fd;
-	peer->job_id = NULL;
-	peer->job_num_run = 0;
-	peer->waiting = false;
-
-	peer->defer = defer;
-	peer->request = NULL;
-	peer->command = NULL;
-
-	peer->next = NULL;
-
-	return peer;
-}
+#endif
 

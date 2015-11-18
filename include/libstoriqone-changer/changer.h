@@ -32,6 +32,7 @@
 struct so_database_connection;
 struct so_media;
 struct so_value;
+struct sochgr_peer;
 
 struct so_changer_driver {
 	const char * name;
@@ -46,11 +47,11 @@ struct so_changer_driver {
 struct so_changer_ops {
 	int (*check)(unsigned int nb_clients, struct so_database_connection * db_connection);
 	int (*init)(struct so_value * config, struct so_database_connection * db_connection);
-	int (*load)(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+	int (*load)(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 	int (*put_offline)(struct so_database_connection * db_connection);
 	int (*put_online)(struct so_database_connection * db_connection);
 	int (*shut_down)(struct so_database_connection * db_connection);
-	int (*unload)(struct so_drive * from, struct so_database_connection * db_connection);
+	int (*unload)(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection);
 };
 
 void sochgr_changer_register(struct so_changer_driver * chngr);

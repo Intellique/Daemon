@@ -139,7 +139,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 	struct so_value * request = so_value_pack("{sss{sssssb}}",
 		"command", "get media",
 		"params",
-			"job key", job->key,
+			"job id", job->id,
 			"medium serial number", media->medium_serial_number,
 			"no wait", no_wait
 	);
@@ -267,6 +267,8 @@ static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_
 }
 
 void soj_changer_set_config(struct so_value * config) {
+	struct so_job * job = soj_job_get();
+
 	soj_nb_changers = so_value_list_get_length(config);
 	soj_changers = calloc(soj_nb_changers, sizeof(struct so_changer));
 
@@ -296,7 +298,13 @@ void soj_changer_set_config(struct so_value * config) {
 
 		pthread_mutexattr_destroy(&attr);
 
-		struct so_value * command = so_value_pack("{ss}", "command", "get drives config");
+		struct so_value * command = so_value_pack("{sss{s{sssI}}}",
+			"command", "get drives config",
+			"params",
+				"job",
+					"id", job->id,
+					"num run", job->num_runs
+		);
 		so_json_encode_to_fd(command, self->fd, true);
 		so_value_free(command);
 

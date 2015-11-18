@@ -37,12 +37,12 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
-#include <libstoriqone/job.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/drive.h>
+#include <libstoriqone-job/job.h>
 #include <libstoriqone-job/media.h>
 
 #include "common.h"
@@ -89,7 +89,7 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self) {
 	int failed = self->writer->ops->close(self->writer);
 	if (failed != 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Failed to reopen temporary file"));
 		return 1;
 	}
