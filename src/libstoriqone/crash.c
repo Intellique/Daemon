@@ -24,10 +24,14 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dgettext
+#include <libintl.h>
 // snprintf
 #include <stdio.h>
 // signal
 #include <signal.h>
+// strrchr
+#include <string.h>
 // getpid, waitpid
 #include <sys/types.h>
 // waitpid
@@ -36,6 +40,8 @@
 #include <unistd.h>
 
 #include <libstoriqone/crash.h>
+#include <libstoriqone/debug.h>
+#include <libstoriqone/log.h>
 
 #include "config.h"
 
@@ -45,7 +51,19 @@ static char so_crash_prog_name[256];
 static void so_crash(int signal);
 
 
-static void so_crash(int signal __attribute__((unused))) {
+static void so_crash(int signal) {
+	const char * prog = strrchr(so_crash_prog_name, '/');
+	if (prog != NULL)
+		prog++;
+	else
+		prog = so_crash_prog_name;
+
+	so_log_write(so_log_level_error,
+		dgettext("libstoriqone", "Oops!!!, programs '%s' catch signal: %s"),
+		prog, strsignal(signal));
+
+	so_debug_log_stack(32);
+
 	pid_t child = fork();
 
 	if (child == 0) {
