@@ -35,6 +35,7 @@
 // getpid, getsid
 #include <unistd.h>
 
+#include <libstoriqone/crash.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/json.h>
@@ -60,6 +61,8 @@ static void sod_show_help(void);
 int main(int argc, char ** argv) {
 	bindtextdomain("storiqoned", LOCALE_DIR);
 	textdomain("storiqoned");
+
+	so_crash_init(*argv);
 
 	so_log_write2(so_log_level_notice, so_log_type_daemon, gettext("storiqone, version: %s, build: %s %s"), STORIQONE_VERSION, __DATE__, __TIME__);
 	so_log_write2(so_log_level_notice, so_log_type_daemon, gettext("storiqone (pid: %d, sid: %d)"), getpid(), getsid(0));

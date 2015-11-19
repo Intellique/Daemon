@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-10-01 09:10+0200\n"
+        "POT-Creation-Date: 2015-11-19 00:01+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -176,6 +176,11 @@ msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s
 #, c-format
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
 msgstr  "so_checksum_salt_password : paramètre invalide (password : %p, salt : %p)"
+
+#: src/libstoriqone/crash.c:62
+#, c-format
+msgid   "Oops!!!, programs '%s' catch signal: %s"
+msgstr  "Oops!!!, le programme « %s » a reçu le signale : %s"
 
 #: src/libstoriqone/database.c:61
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
