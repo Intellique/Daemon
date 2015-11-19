@@ -58,7 +58,7 @@ static void so_crash(int signal) {
 	else
 		prog = so_crash_prog_name;
 
-	so_log_write(so_log_level_error,
+	so_log_write(so_log_level_alert,
 		dgettext("libstoriqone", "Oops!!!, programs '%s' catch signal: %s"),
 		prog, strsignal(signal));
 
