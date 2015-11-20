@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-17 23:33+0100\n"
+        "POT-Creation-Date: 2015-11-18 15:52+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -18,8 +18,8 @@ msgstr  "Project-Id-Version: job-create-archive v1.2\n"
 
 #: src/job/create-archive/create-archive.c:140
 #, c-format
-msgid   "Adding %s to archive"
-msgstr  "Ajout %s à l’archive"
+msgid   "Adding file '%s' to archive"
+msgstr  "Ajout du fichier « %s » à l’archive"
 
 #: src/job/create-archive/create-archive.c:149
 #, c-format
