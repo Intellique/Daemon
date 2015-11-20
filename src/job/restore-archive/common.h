@@ -64,6 +64,7 @@ void soj_restorearchive_check_worker_add(struct so_archive * archive, struct so_
 void soj_restorearchive_check_worker_start(struct so_database_config * db_config);
 void soj_restorearchive_check_worker_stop(void);
 
+void soj_restorearchive_data_worker_add_files(struct soj_restorearchive_data_worker * worker, struct so_archive_volume * vol);
 struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_archive_volume * vol, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker);
 void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect);
 
