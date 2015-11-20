@@ -115,8 +115,10 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 
 		struct soj_restorearchive_data_worker * ptr;
 		for (ptr = workers; !found && ptr != NULL; ptr = ptr->next)
-			if (strcmp(ptr->media->medium_serial_number, vol->media->medium_serial_number) == 0)
+			if (strcmp(ptr->media->medium_serial_number, vol->media->medium_serial_number) == 0) {
+				soj_restorearchive_data_worker_add_files(ptr, vol);
 				found = true;
+			}
 
 		if (!found) {
 			last_worker = soj_restorearchive_data_worker_new(archive, vol, db_connect->config, last_worker);
