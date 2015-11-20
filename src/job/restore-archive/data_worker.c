@@ -147,6 +147,9 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			so_string_delete_double_char(header.filename, '/');
 			so_string_rtrim(header.filename, '/');
 
+			so_string_delete_double_char(file->path, '/');
+			so_string_rtrim(file->path, '/');
+
 			while (strcmp(header.filename, file->path) != 0) {
 				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-restore-archive", "Skipping file '%s'"),
