@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-17 01:18+0100\n"
+        "POT-Creation-Date: 2015-11-20 15:55+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -35,7 +35,7 @@ msgstr  "Erreur en se positionnant sur le fichier « %s »"
 #: src/job/restore-archive/data_worker.c:152
 #, c-format
 msgid   "Skipping file '%s'"
-msgstr  "Fichier « %s » ignoré"
+msgstr  "Le fichier « %s » est ignoré"
 
 #: src/job/restore-archive/data_worker.c:167
 #, c-format
@@ -138,12 +138,3 @@ msgstr  "Pas de restitution d’archive supprimée « %s »"
 #: src/job/restore-archive/restore-archive.c:198
 msgid   "Restore path should be absolute (starts with '/')"
 msgstr  "Le chemin de restitution doit être absolu (commence par '/')"
-
-#~ msgid        "Media not found (named: %s)"
-#~ msgstr       "Média non trouvé (nommé : %s)"
-
-#~ msgid        "Getting media (%s)"
-#~ msgstr       "Acquisition du média « %s »"
-
-#~ msgid        "Looking for media (%s)"
-#~ msgstr       "Recherche du média « %s »"
