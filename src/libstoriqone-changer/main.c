@@ -193,7 +193,7 @@ int main(int argc __attribute__((unused)), char ** argv) {
 		}
 
 		unsigned int nb_clients = sochgr_listen_nb_clients();
-		if (nb_free_drives < nb_new_free_drives && nb_clients > 1)
+		if (nb_free_drives < nb_new_free_drives && nb_clients > 0)
 			sochgr_socket_unlock(NULL, false);
 		nb_free_drives = nb_new_free_drives;
 
