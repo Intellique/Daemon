@@ -143,6 +143,3 @@ msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le média «
 #: src/job/copy-archive/indirect_copy.c:311
 msgid   "Error while reading from temporary file"
 msgstr  "Erreur en lisant depuis un fichier temporaire"
-
-#~ msgid        "Error while writing data of file '%s' to media '%s'"
-#~ msgstr       "Erreur en écrivant des données du fichier « %s » dans le média « %s »"
