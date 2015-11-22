@@ -77,16 +77,23 @@ const char * soj_restorearchive_path_get(const char * path, const char * parent,
 
 	if (!so_value_hashtable_has_key2(path_files, path)) {
 		const char * ppath = path;
-		if (path_root_length > 0)
-			ppath += strlen(parent);
+		if (path_root_length > 0) {
+			ppath += strlen(parent) - 1;
+
+			while (*ppath == '/')
+				ppath--;
+
+			while (*ppath != '/')
+				ppath--;
+
+			ppath++;
+		}
 
 		char * restore_path = NULL;
 		int size = asprintf(&restore_path, "%s/%s", path_root, ppath);
 
 		if (size < 0) {
 			pthread_mutex_unlock(&path_lock);
-
-			free(restore_path);
 
 			return NULL;
 		}

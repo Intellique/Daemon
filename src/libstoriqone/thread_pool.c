@@ -243,9 +243,11 @@ static void * so_thread_pool_work(void * arg) {
 	do {
 		setpriority(PRIO_PROCESS, tid, th->nice);
 
-		if (th->name != NULL)
+		if (th->name != NULL) {
 			so_thread_pool_set_name2(tid, th->name);
-		else {
+			free(th->name);
+			th->name = NULL;
+		} else {
 			char buffer[16];
 			snprintf(buffer, 16, "thread %p", th->function);
 			so_thread_pool_set_name2(tid, buffer);
@@ -254,9 +256,6 @@ static void * so_thread_pool_work(void * arg) {
 		th->function(th->arg);
 
 		so_thread_pool_set_name2(tid, "idle");
-
-		free(th->name);
-		th->name = NULL;
 
 		so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"), th->thread, tid);
 
