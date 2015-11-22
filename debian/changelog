@@ -1,3 +1,14 @@
+storiqone (1.2.6-1) polisher; urgency=low
+
+  * Bug fix release
+    - Create archive: bug when archiving into pool which unbreakablelevel is
+      defined to 'file' (final fix)
+    - Restore archive: job could block if there is more than one volume in same
+      media.
+    - Update translation
+
+ -- guillaume clercin <gclercin@intellique.com>  Sun, 22 Nov 2015 18:35:00 +0100
+
 storiqone (1.2.5-1) polisher; urgency=low
 
   * Bug fix release
