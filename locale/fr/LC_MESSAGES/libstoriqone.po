@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-19 00:01+0100\n"
+        "POT-Creation-Date: 2015-11-21 11:27+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -635,17 +635,17 @@ msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p
 msgstr  "so_thread_pool_work : démarrage d’un nouveau fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme "
         "paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:261
+#: src/libstoriqone/thread_pool.c:260
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld (pid : %d) est mis en attente"
 
-#: src/libstoriqone/thread_pool.c:281
+#: src/libstoriqone/thread_pool.c:280
 #, c-format
 msgid   "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work : redémarrage du fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:285
+#: src/libstoriqone/thread_pool.c:284
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld terminated"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld terminé"

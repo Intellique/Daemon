@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-18 14:41+0100\n"
+        "POT-Creation-Date: 2015-11-22 22:36+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -143,6 +143,3 @@ msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le média «
 #: src/job/copy-archive/indirect_copy.c:311
 msgid   "Error while reading from temporary file"
 msgstr  "Erreur en lisant depuis un fichier temporaire"
-
-#~ msgid        "Error while writing data of file '%s' to media '%s'"
-#~ msgstr       "Erreur en écrivant des données du fichier « %s » dans le média « %s »"

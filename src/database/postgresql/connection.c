@@ -1263,6 +1263,9 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 		}
 	}
 
+	PQclear(result);
+	free(host_id);
+
 	return changers;
 }
 

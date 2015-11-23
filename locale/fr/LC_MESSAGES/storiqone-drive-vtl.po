@@ -89,7 +89,7 @@ msgstr  "[ %s %s %d ] Erreur en lisant le fichier depuis le média « %s » 
 #: src/drive/vtl_drive/writer.c:112 src/drive/vtl_drive/writer.c:365
 #, c-format
 msgid   "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"
-msgstr  ""
+msgstr  "[ %s %s %d ] Erreur en écrivant dans le fichier depuis le média « %s » à la position « %d » parce que %m"
 
 #: src/drive/vtl_drive/writer.c:154 src/drive/vtl_drive/writer.c:282 src/drive/vtl_drive/writer.c:340
 #, c-format

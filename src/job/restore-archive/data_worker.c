@@ -62,6 +62,15 @@
 static void soj_restorearchive_data_worker_do(void * arg);
 
 
+void soj_restorearchive_data_worker_add_files(struct soj_restorearchive_data_worker * worker, struct so_archive_volume * vol) {
+	unsigned int j;
+	for (j = 0; j < vol->nb_files; j++) {
+		struct so_archive_files * ptr_file = vol->files + j;
+		if (soj_restorearchive_path_filter(ptr_file->file->path))
+			worker->nb_total_files++;
+	}
+}
+
 struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_archive_volume * vol, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker) {
 	struct soj_restorearchive_data_worker * worker = malloc(sizeof(struct soj_restorearchive_data_worker));
 	bzero(worker, sizeof(struct soj_restorearchive_data_worker));
@@ -71,12 +80,7 @@ struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struc
 	worker->db_config = db_config;
 	worker->status = so_job_status_running;
 
-	unsigned int j;
-	for (j = 0; j < vol->nb_files; j++) {
-		struct so_archive_files * ptr_file = vol->files + j;
-		if (soj_restorearchive_path_filter(ptr_file->file->path))
-			worker->nb_total_files++;
-	}
+	soj_restorearchive_data_worker_add_files(worker, vol);
 
 	if (previous_worker != NULL)
 		previous_worker->next = worker;
@@ -146,6 +150,9 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 			so_string_delete_double_char(header.filename, '/');
 			so_string_rtrim(header.filename, '/');
+
+			so_string_delete_double_char(file->path, '/');
+			so_string_rtrim(file->path, '/');
 
 			while (strcmp(header.filename, file->path) != 0) {
 				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
