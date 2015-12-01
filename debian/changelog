@@ -1,3 +1,10 @@
+storiqone (1.2.6-2) polisher; urgency=low
+
+  * Add configuration file
+  * fix default path in configuration files
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 01 Dec 2015 17:51:42 +0100
+
 storiqone (1.2.6-1) polisher; urgency=low
 
   * Bug fix release

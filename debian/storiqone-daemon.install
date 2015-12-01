@@ -1,5 +1,6 @@
 debian/tmp/etc/init.d/storiqoned
 debian/tmp/etc/logrotate.d/storiqoned
+debian/tmp/etc/storiq/storiqone.conf
 
 bin/job_* usr/lib/storiqone/1.2/job
 bin/logger usr/lib/storiqone/1.2/bin

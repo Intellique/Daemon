@@ -1,10 +1,11 @@
 bin/
-include/									usr
+include/					usr
 lib/
-locale/*/LC_MESSAGES/*.mo					usr/share/locale									locale
-script/init.d/								etc
-script/logrotate.d/							etc
-script/pre-post-run/create-proxy.pl						usr/lib/storiqone/1.2/scripts
-script/sql/psql/create_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
-script/sql/psql/delete_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
+locale/*/LC_MESSAGES/*.mo			usr/share/locale									locale
+script/init.d/					etc
+script/logrotate.d/				etc
+script/pre-post-run/create-proxy.pl		usr/lib/storiqone/1.2/scripts
+script/sql/psql/create_database.sql		usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql/delete_database.sql		usr/share/storiqone-plugin-db-postgresql/scripts
 script/sql/psql/insert_initial_data.sql		usr/share/storiqone-plugin-db-postgresql/scripts
+storiqone.conf					etc/storiq
