@@ -27,6 +27,8 @@
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
 // pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_lock
 #include <pthread.h>
+// bool
+#include <stdbool.h>
 // calloc, free, malloc
 #include <stdlib.h>
 // memcpy
@@ -55,9 +57,8 @@ struct so_io_stream_checksum_backend_private {
 
 struct so_io_stream_checksum_threaded_backend_private {
 	struct so_io_linked_list_block {
-		unsigned char * data;
 		ssize_t block_length, data_length;
-		struct so_io_linked_list_block * next;
+		struct so_io_linked_list_block * previous, * next;
 	} * volatile first_block, * volatile last_block, * free_block;
 
 	volatile unsigned long used;
@@ -80,6 +81,7 @@ static void so_io_stream_checksum_backend_free(struct so_io_stream_checksum_back
 static void so_io_stream_checksum_backend_reset(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 
+static void * so_io_stream_checksum_threaded_backend_cast(struct so_io_linked_list_block * block, bool base_addr);
 static struct so_value * so_io_stream_checksum_threaded_backend_digest(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_threaded_backend_finish(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_threaded_backend_free(struct so_io_stream_checksum_backend * worker);
@@ -184,6 +186,14 @@ static void so_io_stream_checksum_backend_update(struct so_io_stream_checksum_ba
 }
 
 
+static void * so_io_stream_checksum_threaded_backend_cast(struct so_io_linked_list_block * block, bool base_addr) {
+	unsigned char * ptr = (unsigned char *) (block + 1);
+	if (base_addr)
+		return ptr;
+	else
+		return ptr + block->data_length;
+}
+
 static struct so_value * so_io_stream_checksum_threaded_backend_digest(struct so_io_stream_checksum_backend * worker) {
 	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
 	return self->backend->ops->digest(self->backend);
@@ -260,7 +270,7 @@ static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_ch
 
 	pthread_mutex_lock(&self->lock);
 
-	if (self->used > 0 && self->used + length > self->limit)
+	while (self->used > 0 && self->used + length > self->limit)
 		pthread_cond_wait(&self->wait, &self->lock);
 
 	struct so_io_linked_list_block * block = self->last_block;
@@ -269,28 +279,42 @@ static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_ch
 
 	if (block == NULL) {
 		if (self->free_block != NULL) {
-			block = self->free_block;
-			self->free_block = block->next;
-			block->next = NULL;
-		} else {
+			for (block = self->free_block; block != NULL; block = block->next)
+				if (block->block_length >= length) {
+					if (block == self->free_block) {
+						self->free_block = block->next;
+						block->next = NULL;
+						if (self->free_block != NULL)
+							self->free_block->previous = NULL;
+					} else {
+						block->previous->next = block->next;
+						block->next->previous = block->previous;
+						block->previous = block->next = NULL;
+					}
+					break;
+				}
+		}
+
+		if (block == NULL) {
 			ssize_t block_size = 1048576;
 			while (block_size < length)
 				block_size += 1048576;
 
 			block = mmap(NULL, block_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-			block->data = (unsigned char *) (block + 1);
 			block->block_length = block_size - sizeof(struct so_io_linked_list_block);
 			block->data_length = 0;
-			block->next = NULL;
+			block->previous = block->next = NULL;
 		}
 
 		if (self->first_block == NULL)
 			self->first_block = self->last_block = block;
-		else
+		else {
+			block->previous = self->last_block;
 			self->last_block = self->last_block->next = block;
+		}
 	}
 
-	memcpy(block->data + block->data_length, buffer, length);
+	memcpy(so_io_stream_checksum_threaded_backend_cast(block, false), buffer, length);
 	block->data_length += length;
 	self->used += length;
 
@@ -322,22 +346,37 @@ static void so_io_stream_checksum_threaded_backend_work(void * arg) {
 
 		struct so_io_linked_list_block * block = self->first_block;
 		self->first_block = block->next;
-		block->next = NULL;
+		block->previous = block->next = NULL;
 
 		if (self->first_block == NULL)
 			self->last_block = NULL;
+		else
+			self->first_block->previous = NULL;
 
 		pthread_mutex_unlock(&self->lock);
 
-		self->backend->ops->update(self->backend, block->data, block->data_length);
+		self->backend->ops->update(self->backend, so_io_stream_checksum_threaded_backend_cast(block, true), block->data_length);
 
 		pthread_mutex_lock(&self->lock);
 
 		self->used -= block->data_length;
 		block->data_length = 0;
 
-		block->next = self->free_block;
-		self->free_block = block;
+		if (self->free_block == NULL || block->block_length <= self->free_block->block_length) {
+			block->next = self->free_block;
+			self->free_block = block;
+		} else {
+			struct so_io_linked_list_block * ptr;
+			for (ptr = self->free_block; ptr->next != NULL; ptr = ptr->next)
+				if (block->block_length <= ptr->next->block_length)
+					break;
+
+			block->next = ptr->next;
+			block->previous = ptr;
+			ptr->next = block;
+			if (block->next != NULL)
+				block->next->previous = block;
+		}
 	}
 
 	self->backend->ops->finish(self->backend);
