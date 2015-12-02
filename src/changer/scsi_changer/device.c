@@ -79,6 +79,7 @@ static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_conn
 static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_wait(void);
 
+static struct so_value * sochgr_scsi_changer_available_drives = NULL;
 static char * sochgr_scsi_changer_device = NULL;
 static int sochgr_scsi_changer_transport_address = -1;
 static pthread_mutex_t sochgr_scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -181,14 +182,16 @@ struct so_changer * sochgr_scsi_changer_get_device() {
 }
 
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
-	so_value_unpack(config, "{sssssssbsbsbss}",
+	char * next_action = NULL;
+	so_value_unpack(config, "{sssssssbsbsbssss}",
 		"model", &sochgr_scsi_changer.model,
 		"vendor", &sochgr_scsi_changer.vendor,
 		"serial number", &sochgr_scsi_changer.serial_number,
 		"barcode", &sochgr_scsi_changer.barcode,
 		"enable", &sochgr_scsi_changer.enable,
 		"is online", &sochgr_scsi_changer.is_online,
-		"wwn", &sochgr_scsi_changer.wwn
+		"wwn", &sochgr_scsi_changer.wwn,
+		"action", &next_action
 	);
 
 	glob_t gl;
@@ -260,7 +263,7 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 	}
 	globfree(&gl);
 
-	struct so_value * available_drives = so_value_new_hashtable2();
+	sochgr_scsi_changer_available_drives = so_value_new_hashtable2();
 	struct so_value * drives = NULL;
 	so_value_unpack(config, "{so}", "drives", &drives);
 
@@ -286,7 +289,7 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 			dev[23] = ' ';
 			strcpy(dev + 24, serial_number);
 
-			so_value_hashtable_put2(available_drives, dev, dr, false);
+			so_value_hashtable_put2(sochgr_scsi_changer_available_drives, dev, dr, false);
 
 			free(vendor);
 			free(model);
@@ -295,12 +298,29 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		so_value_iterator_free(iter);
 	}
 
-	if (found && sochgr_scsi_changer.enable && sochgr_scsi_changer.is_online) {
-		sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, false);
-		sochgr_scsi_changer_scsi_new_status(&sochgr_scsi_changer, sochgr_scsi_changer_device, available_drives, &sochgr_scsi_changer_transport_address);
+	if (sochgr_scsi_changer.status != so_changer_status_idle)
+		sochgr_scsi_changer.status = so_changer_status_idle;
+
+	sochgr_scsi_changer.next_action = so_changer_string_to_action(next_action, false);
+	if (sochgr_scsi_changer.next_action == so_changer_action_unknown)
+		sochgr_scsi_changer.next_action = so_changer_action_none;
+	free(next_action);
+
+	if (sochgr_scsi_changer.is_online && sochgr_scsi_changer.next_action == so_changer_action_put_offline) {
+		sochgr_scsi_changer.is_online = false;
+		sochgr_scsi_changer.next_action = so_changer_action_none;
+	} else if (!sochgr_scsi_changer.is_online && sochgr_scsi_changer.next_action == so_changer_action_put_online) {
+		sochgr_scsi_changer.is_online = true;
+		sochgr_scsi_changer.next_action = so_changer_action_none;
 	}
 
-	so_value_free(available_drives);
+	if (found && sochgr_scsi_changer.enable && sochgr_scsi_changer.is_online) {
+		sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, false);
+		sochgr_scsi_changer_scsi_new_status(&sochgr_scsi_changer, sochgr_scsi_changer_device, sochgr_scsi_changer_available_drives, &sochgr_scsi_changer_transport_address);
+		so_value_free(sochgr_scsi_changer_available_drives);
+		sochgr_scsi_changer_available_drives = NULL;
+	}
+
 
 	if (found) {
 		sochgr_scsi_changer.status = so_changer_status_idle;
@@ -624,7 +644,12 @@ static int sochgr_scsi_changer_put_online(struct so_database_connection * db_con
 
 	sochgr_scsi_changer_scsi_loader_ready(sochgr_scsi_changer_device);
 
-	sochgr_scsi_changer_scsi_update_status(&sochgr_scsi_changer, sochgr_scsi_changer_device);
+	if (sochgr_scsi_changer_available_drives != NULL) {
+		sochgr_scsi_changer_scsi_new_status(&sochgr_scsi_changer, sochgr_scsi_changer_device, sochgr_scsi_changer_available_drives, &sochgr_scsi_changer_transport_address);
+		so_value_free(sochgr_scsi_changer_available_drives);
+		sochgr_scsi_changer_available_drives = NULL;
+	} else
+		sochgr_scsi_changer_scsi_update_status(&sochgr_scsi_changer, sochgr_scsi_changer_device);
 
 	int failed = sochgr_scsi_changer_parse_media(db_connection);
 
