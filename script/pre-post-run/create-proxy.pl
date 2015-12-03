@@ -123,6 +123,7 @@ foreach my $vol ( @{ $data->{archive}->{main}->{volumes} } ) {
         next if defined $file_done{ $file->{path} };
         $file_done{ $file->{path} } = $file;
 
+        next unless -e $file->{path};
         next if $file->{type} eq 'directory';
 
         my $foo_info = new Mediainfo("filename" => $file->{path});
