@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-21 11:27+0100\n"
+        "POT-Creation-Date: 2015-12-03 18:17+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -610,32 +610,32 @@ msgstr  "post tâche"
 msgid   "pre job"
 msgstr  "pré tâche"
 
-#: src/libstoriqone/thread_pool.c:171
+#: src/libstoriqone/thread_pool.c:178
 msgid   "so_thread_pool_run2: error, not enough memory to start new thread"
 msgstr  "so_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau fil d’exécution"
 
-#: src/libstoriqone/thread_pool.c:226
+#: src/libstoriqone/thread_pool.c:233
 #, c-format
 msgid   "Failed while setting the name of thread '%s' because %m"
 msgstr  "Échec lors de la définition du nom du fil d’exécution « %s » parce que %m"
 
-#: src/libstoriqone/thread_pool.c:240
+#: src/libstoriqone/thread_pool.c:247
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work : démarrage d’un nouveau fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme "
         "paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:260
+#: src/libstoriqone/thread_pool.c:274
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld (pid : %d) est mis en attente"
 
-#: src/libstoriqone/thread_pool.c:280
+#: src/libstoriqone/thread_pool.c:296
 #, c-format
 msgid   "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work : redémarrage du fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:284
+#: src/libstoriqone/thread_pool.c:302
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld terminated"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld terminé"
