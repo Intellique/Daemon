@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-scsi v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-09 09:01+0100\n"
+        "POT-Creation-Date: 2015-12-03 12:00+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: storiqone-changer-scsi v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/changer/scsi_changer/device.c:153
+#: src/changer/scsi_changer/device.c:154
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minute"
 msgid_plural    "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minutes"
@@ -25,112 +25,112 @@ msgstr[0]       "[ %s | %s ] : déchargement du média « %s » depuis le
 msgstr[1]       "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%d parce que le média n’est plus utilisé "
         "depuis %lld minutes"
 
-#: src/changer/scsi_changer/device.c:161
+#: src/changer/scsi_changer/device.c:162
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%d terminé avec le code = OK"
 
-#: src/changer/scsi_changer/device.c:165
+#: src/changer/scsi_changer/device.c:166
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%d terminé avec le code = %d"
 
-#: src/changer/scsi_changer/device.c:197
+#: src/changer/scsi_changer/device.c:200
 #, c-format
 msgid   "Critical, scsi changer %s %s (serial: %s) is not enabled"
 msgstr  "Critique, l’échangeur scsi %s %s (numéro de série : %s) n’est pas actif"
 
-#: src/changer/scsi_changer/device.c:212 src/changer/scsi_changer/device.c:231
+#: src/changer/scsi_changer/device.c:215 src/changer/scsi_changer/device.c:234
 #, c-format
 msgid   "Failed while reading link of file '%s' because %m"
 msgstr  "Échec en lisant le lien symbolique du fichier « %s » parce que %m"
 
-#: src/changer/scsi_changer/device.c:264
+#: src/changer/scsi_changer/device.c:267
 #, c-format
 msgid   "Found scsi changer %s %s, serial: %s"
 msgstr  "Trouvé un échangeur scsi %s %s, numéro de série : %s"
 
-#: src/changer/scsi_changer/device.c:273
+#: src/changer/scsi_changer/device.c:276
 #, c-format
 msgid   "Critical, scsi changer %s %s (serial: %s) was not found"
 msgstr  "Critique, l’échangeur scsi %s %s (numéro de série : %s) n’a pas été trouvé"
 
-#: src/changer/scsi_changer/device.c:318
+#: src/changer/scsi_changer/device.c:339
 #, c-format
 msgid   "Warning, scsi changer %s %s (serial: %s) is offline"
 msgstr  "Attention, l’échangeur scsi %s %s (numéro de série : %s) est hors ligne"
 
-#: src/changer/scsi_changer/device.c:338
+#: src/changer/scsi_changer/device.c:358
 #, c-format
 msgid   "[%s | %s]: starting check media with drive #%u"
 msgstr  "[ %s | %s ] : démarrage de la vérification de média avec le lecteur n°%u"
 
-#: src/changer/scsi_changer/device.c:349 src/changer/scsi_changer/device.c:415 src/changer/scsi_changer/device.c:740
+#: src/changer/scsi_changer/device.c:369 src/changer/scsi_changer/device.c:435 src/changer/scsi_changer/device.c:765
 #, c-format
 msgid   "[%s | %s]: failed to get status from drive #%u %s %s"
 msgstr  "[ %s | %s ] : échec lors de la réinitialisation du lecteur n°%u %s %s"
 
-#: src/changer/scsi_changer/device.c:357 src/changer/scsi_changer/device.c:404 src/changer/scsi_changer/device.c:423
-#: src/changer/scsi_changer/device.c:453
+#: src/changer/scsi_changer/device.c:377 src/changer/scsi_changer/device.c:424 src/changer/scsi_changer/device.c:443
+#: src/changer/scsi_changer/device.c:473
 #, c-format
 msgid   "[%s | %s]: checking media with drive #%u completed"
 msgstr  "[ %s | %s ] : vérification du média avec le lecteur n°%u terminée"
 
-#: src/changer/scsi_changer/device.c:376
+#: src/changer/scsi_changer/device.c:396
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%u"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement n°%u vers le lecteur n°%u"
 
-#: src/changer/scsi_changer/device.c:385
+#: src/changer/scsi_changer/device.c:405
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%u completed with code = OK"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement n°%u vers le lecteur n°%u terminé avec le code = OK"
 
-#: src/changer/scsi_changer/device.c:389
+#: src/changer/scsi_changer/device.c:409
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%u completed with code = %d"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement n°%u vers le lecteur n°%u terminé avec le code = %d"
 
-#: src/changer/scsi_changer/device.c:396 src/changer/scsi_changer/device.c:504
+#: src/changer/scsi_changer/device.c:416 src/changer/scsi_changer/device.c:524
 #, c-format
 msgid   "[%s | %s]: failed to reset drive #%u %s %s"
 msgstr  "[ %s | %s ] : échec lors de la réinitialisation du lecteur n°%u %s %s"
 
-#: src/changer/scsi_changer/device.c:431
+#: src/changer/scsi_changer/device.c:451
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%u vers l’emplacement n°%u"
 
-#: src/changer/scsi_changer/device.c:439
+#: src/changer/scsi_changer/device.c:459
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = OK"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%u vers l’emplacement n°%u terminé avec le code = OK"
 
-#: src/changer/scsi_changer/device.c:443
+#: src/changer/scsi_changer/device.c:463
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = %d"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%u vers l’emplacement n°%u terminé avec le code = %d"
 
-#: src/changer/scsi_changer/device.c:536
+#: src/changer/scsi_changer/device.c:556
 #, c-format
 msgid   "Found %u unknown media"
 msgid_plural    "Found %u unknown medias"
 msgstr[0]       "A trouvé %u média inconnu"
 msgstr[1]       "A trouvé %u médias inconnus"
 
-#: src/changer/scsi_changer/device.c:539
+#: src/changer/scsi_changer/device.c:559
 #, c-format
 msgid   "Found #%u enabled drive"
 msgid_plural    "Found #%u enabled drives"
 msgstr[0]       "A trouvé n°%u lecteur actif"
 msgstr[1]       "A trouvé n°%u lecteurs actifs"
 
-#: src/changer/scsi_changer/device.c:566
+#: src/changer/scsi_changer/device.c:586
 #, c-format
 msgid   "This changer (%s %s %s) seems to be misconfigured, exiting now"
 msgstr  "Cette librairie (%s %s %s) semble être mal configurée, va quitter maintenant"
 
-#: src/changer/scsi_changer/device.c:820
+#: src/changer/scsi_changer/device.c:845
 #, c-format
 msgid   "[%s | %s]: waiting for device to be ready"
 msgstr  "[ %s | %s ] : attente que le périphérique soit prêt"
