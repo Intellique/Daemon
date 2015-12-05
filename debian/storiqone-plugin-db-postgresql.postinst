@@ -17,21 +17,15 @@ set -e
 
 old_version=$2
 
-_DEBUG="off"	# DEBUG enabled using 'on' value
-
-DEBUG() {
-    if [ "$_DEBUG" = "on" ] ; then
-        $@
-    fi
-}
-
 dbc_first_version="1.2.6"
 
+. /usr/share/debconf/confmodule
+. /usr/share/dbconfig-common/dpkg/postinst.pgsql
+
+dbc_go storiqone-plugin-db-postgresql $@
 
 case "$1" in
     configure)
-        . /usr/share/debconf/confmodule
-        . /usr/share/dbconfig-common/dpkg/postinst
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
