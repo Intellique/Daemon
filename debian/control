@@ -32,8 +32,8 @@ Description: Storiq one daemon
 Package: storiqone-plugin-db-postgresql
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: postgresql (>= 9.4)
+Depends: ${shlibs:Depends}, ${misc:Depends}, dbconfig-common, postgresql-client
+Recommends: postgresql (>= 9.4)
 Provides: storiqone-plugin-db
 Description: Storiq one posgresql connector (db-plugin)
  Contains plugin to connect to postresql database

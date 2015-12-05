@@ -5,3 +5,5 @@ script/sql/psql/insert_initial_data.sql usr/share/storiqone-plugin-db-postgresql
 script/sql/psql/delete_database.sql usr/share/storiqone-plugin-db-postgresql/scripts
 
 usr/share/locale/fr/LC_MESSAGES/libstoriqone-database-postgresql.mo
+
+debian/sql/pgsql.install usr/
