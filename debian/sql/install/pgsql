@@ -1,2 +1,8 @@
+-- Create database
+BEGIN;
+
 \i /usr/share/storiqone-plugin-db-postgresql/scripts/create_database.sql
 \i /usr/share/storiqone-plugin-db-postgresql/scripts/insert_initial_data.sql
+
+COMMIT;
+
