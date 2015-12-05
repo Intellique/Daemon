@@ -6,4 +6,4 @@ script/sql/psql/delete_database.sql usr/share/storiqone-plugin-db-postgresql/scr
 
 usr/share/locale/fr/LC_MESSAGES/libstoriqone-database-postgresql.mo
 
-debian/sql/pgsql.install usr/
+debian/sql/pgsql.install usr/share/dbconfig-common/data/storiqone-plugin-db-postgresql/install
