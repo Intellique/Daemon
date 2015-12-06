@@ -34,6 +34,8 @@
 // pthread_create, pthread_join, pthread_mutex_init, pthread_mutex_lock
 // pthread_mutex_unlock
 #include <pthread.h>
+// bool
+#include <stdbool.h>
 // free, malloc, realloc
 #include <stdlib.h>
 // asprintf
@@ -78,6 +80,7 @@ static struct so_thread_pool_thread ** so_thread_pool_threads = NULL;
 static unsigned int so_thread_pool_nb_threads = 0;
 static pthread_mutex_t so_thread_pool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pid_t so_thread_pool_pid = -1;
+static volatile bool so_thread_pool_exit_now = false;
 
 static void so_thread_pool_exit(void) __attribute__((destructor));
 static void so_thread_pool_init(void) __attribute__((constructor));
@@ -86,6 +89,10 @@ static void * so_thread_pool_work(void * arg);
 
 
 static void so_thread_pool_exit() {
+	pthread_mutex_lock(&so_thread_pool_lock);
+	so_thread_pool_exit_now = true;
+	pthread_mutex_unlock(&so_thread_pool_lock);
+
 	unsigned int i;
 	for (i = 0; i < so_thread_pool_nb_threads; i++) {
 		struct so_thread_pool_thread * th = so_thread_pool_threads[i];
@@ -255,9 +262,17 @@ static void * so_thread_pool_work(void * arg) {
 
 		th->function(th->arg);
 
+		pthread_mutex_lock(&so_thread_pool_lock);
+		bool exit_now = so_thread_pool_exit_now;
+		pthread_mutex_unlock(&so_thread_pool_lock);
+		if (exit_now)
+			return NULL;
+
 		so_thread_pool_set_name2(tid, "idle");
 
-		so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"), th->thread, tid);
+		so_log_write(so_log_level_debug,
+			dgettext("libstoriqone", "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"),
+			th->thread, tid);
 
 		pthread_mutex_lock(&th->lock);
 
@@ -267,7 +282,7 @@ static void * so_thread_pool_work(void * arg) {
 
 		struct timespec timeout;
 		clock_gettime(CLOCK_REALTIME, &timeout);
-		timeout.tv_sec +=300;
+		timeout.tv_sec += 300;
 
 		pthread_cond_timedwait(&th->wait, &th->lock, &timeout);
 
@@ -277,11 +292,15 @@ static void * so_thread_pool_work(void * arg) {
 		pthread_mutex_unlock(&th->lock);
 
 		if (th->state == so_thread_pool_state_running)
-			so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
+			so_log_write(so_log_level_debug,
+				dgettext("libstoriqone", "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"),
+				th->thread, tid, th->function, th->arg);
 
 	} while (th->state == so_thread_pool_state_running);
 
-	so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: thread #%ld terminated"), th->thread);
+	so_log_write(so_log_level_debug,
+		dgettext("libstoriqone", "so_thread_pool_work: thread #%ld terminated"),
+		th->thread);
 
 	return NULL;
 }

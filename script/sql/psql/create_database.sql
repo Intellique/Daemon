@@ -284,8 +284,8 @@ CREATE TABLE Media (
 
     nbFiles INTEGER NOT NULL DEFAULT 0 CHECK (nbFiles >= 0),
     blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
-    freeBlock INTEGER NOT NULL CHECK (freeblock >= 0),
-    totalBlock INTEGER NOT NULL CHECK (totalBlock >= 0),
+    freeBlock BIGINT NOT NULL CHECK (freeblock >= 0),
+    totalBlock BIGINT NOT NULL CHECK (totalBlock >= 0),
 
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
     append BOOLEAN NOT NULL DEFAULT TRUE,

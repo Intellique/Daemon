@@ -215,8 +215,8 @@ int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int f
 		media->nb_total_write++;
 
 		media->block_size = block_size;
-		media->free_block = media->total_block - 1;
 		media->total_block = media->media_format->capacity / block_size;
+		media->free_block = media->total_block - 1;
 
 		media->nb_volumes = 1;
 

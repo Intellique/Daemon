@@ -227,6 +227,12 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		soj_create_archive_worker_create_check_archive(job, quick_mode, db_connect);
 	}
 
+	/**
+	 * if primary_pool is NULL, then no error / post script will be executed
+	 */
+	if (primary_pool == NULL)
+		primary_pool = so_pool_dup(primary_archive->volumes->media->pool);
+
 	job->done = 1;
 
 	return failed;
