@@ -9,3 +9,4 @@ usr/share/locale/fr/LC_MESSAGES/libstoriqone-database-postgresql.mo
 debian/etc/dbconfig-common/storiqone-plugin-db-postgresql.conf etc/dbconfig-common
 debian/sql/install/pgsql usr/share/dbconfig-common/data/storiqone-plugin-db-postgresql/install
 debian/sql/install-dbadmin/pgsql usr/share/dbconfig-common/data/storiqone-plugin-db-postgresql/install-dbadmin
+debian/sql/upgrade/pgsql/1.2.7 usr/share/dbconfig-common/data/storiqone-plugin-db-postgresql/upgrade/pgsql

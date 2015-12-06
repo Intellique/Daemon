@@ -1,3 +1,16 @@
+storiqone (1.2.7-1) polisher; urgency=low
+
+  * Memory leaks (daemon)
+  * Upgrade database: freeblock & totalblock are now bigint instead of integer
+  * Improve scsi changer start up
+  * Fix a bug in create archive, there is no post script executed when adding file
+    into existing archive
+  * Fix a race condition in thread_pool, at the end of process, thread should exit
+    more quickly
+  * Fix a programming error in tape_drive, we can have LTO6 with 72TB of capacity.
+
+ -- guillaume clercin <gclercin@intellique.com>  Sun, 06 Dec 2015 23:45:46 +0100
+
 storiqone (1.2.6-3) polisher; urgency=low
 
   * Add dbconfig to create database
