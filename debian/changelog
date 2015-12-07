@@ -1,3 +1,9 @@
+storiqone (1.2.7-2) polisher; urgency=low
+
+  * Bug fix: when reading tar if the length path in tar header is equal to 100 bytes
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 07 Dec 2015 14:42:54 +0100
+
 storiqone (1.2.7-1) polisher; urgency=low
 
   * Memory leaks (daemon)
