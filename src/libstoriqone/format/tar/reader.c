@@ -28,7 +28,7 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// memset, strdup, strlen, strncpy
+// memset, strdup, strlen, strncpy, strndup
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -350,7 +350,7 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 		}
 
 		if (file->filename == NULL)
-			file->filename = strdup(raw_header->filename);
+			file->filename = strndup(raw_header->filename, 100);
 
 		file->size = so_format_tar_reader_convert_size(raw_header->size);
 		sscanf(raw_header->filemode, "%o", &file->mode);
