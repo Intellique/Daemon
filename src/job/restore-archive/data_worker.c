@@ -281,7 +281,13 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 				soj_restorearchive_check_worker_add(worker->archive, file);
 			} else if (S_ISDIR(header.mode)) {
-				// do nothing because directory is already created
+				int failed = so_file_mkdir(restore_to, file->perm & 07777);
+				if (failed != 0) {
+					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+						dgettext("storiqone-job-restore-archive", "Failed to create directory '%s' because %m"),
+						restore_to);
+					worker->nb_errors++;
+				}
 			} else if (S_ISLNK(header.mode)) {
 				if (symlink(header.link, header.filename) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
