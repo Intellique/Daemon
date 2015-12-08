@@ -1,3 +1,11 @@
+storiqone (1.2.8-1) polisher; urgency=low
+
+  * Bug fix:
+    - restore-archive: restore also empty directories
+    - restore-archive: special care about path without leading slash '/'
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 08 Dec 2015 10:24:08 +0100
+
 storiqone (1.2.7-2) polisher; urgency=low
 
   * Bug fix: when reading tar if the length path in tar header is equal to 100 bytes
