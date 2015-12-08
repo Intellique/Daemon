@@ -154,7 +154,11 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			so_string_delete_double_char(file->path, '/');
 			so_string_rtrim(file->path, '/');
 
-			while (strcmp(header.filename, file->path) != 0) {
+			const char * ptr_file_filename = file->path;
+			if (header.filename[0] != '/')
+				ptr_file_filename++;
+
+			while (strcmp(header.filename, ptr_file_filename) != 0) {
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-restore-archive", "Skipping file '%s'"),
 					header.filename);
@@ -179,6 +183,10 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 				so_string_delete_double_char(header.filename, '/');
 				so_string_rtrim(header.filename, '/');
+
+				ptr_file_filename = file->path;
+				if (header.filename[0] != '/')
+					ptr_file_filename++;
 			}
 
 			if (status != so_format_reader_header_ok)
@@ -281,7 +289,13 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 				soj_restorearchive_check_worker_add(worker->archive, file);
 			} else if (S_ISDIR(header.mode)) {
-				// do nothing because directory is already created
+				int failed = so_file_mkdir(restore_to, file->perm & 07777);
+				if (failed != 0) {
+					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+						dgettext("storiqone-job-restore-archive", "Failed to create directory '%s' because %m"),
+						restore_to);
+					worker->nb_errors++;
+				}
 			} else if (S_ISLNK(header.mode)) {
 				if (symlink(header.link, header.filename) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
