@@ -184,7 +184,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				so_string_delete_double_char(header.filename, '/');
 				so_string_rtrim(header.filename, '/');
 
-				const char * ptr_file_filename = file->path;
+				ptr_file_filename = file->path;
 				if (header.filename[0] != '/')
 					ptr_file_filename++;
 			}
