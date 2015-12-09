@@ -1,3 +1,10 @@
+storiqone (1.2.8-2) polisher; urgency=low
+
+  * Bug fix:
+    - so_file_gid2name & so_file_uid2name: programming error
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 09 Dec 2015 12:54:06 +0100
+
 storiqone (1.2.8-1) polisher; urgency=low
 
   * Bug fix:
