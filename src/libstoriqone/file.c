@@ -45,6 +45,8 @@
 #include <stdlib.h>
 // memmove, strchr, strcpy, strdup, strlen, strrchr, strstr
 #include <string.h>
+// bzero
+#include <strings.h>
 // fstat, lstat, mkdir, open
 #include <sys/stat.h>
 // fstat, lstat, mkdir, mkfifo, mknod, open
@@ -442,12 +444,14 @@ int so_file_cp(const char * src, const char * dst) {
 }
 
 char * so_file_gid2name(gid_t gid) {
-	char buffer[128];
+	char buffer[256];
 
 	struct group gr;
-	struct group * tmp_gr;
+	struct group * tmp_gr = NULL;
 
-	if (!getgrgid_r(gid, &gr, buffer, 512, &tmp_gr))
+	bzero(&gr, sizeof(gr));
+
+	if (!getgrgid_r(gid, &gr, buffer, 256, &tmp_gr))
 		return strdup(buffer);
 	else {
 		char * name = NULL;
@@ -736,12 +740,14 @@ int so_file_rm(const char * path) {
 }
 
 char * so_file_uid2name(uid_t uid) {
-	char buffer[128];
+	char buffer[256];
 
 	struct passwd pw;
-	struct passwd * tmp_pw;
+	struct passwd * tmp_pw = NULL;
 
-	if (!getpwuid_r(uid, &pw, buffer, 512, &tmp_pw))
+	bzero(&pw, sizeof(pw));
+
+	if (!getpwuid_r(uid, &pw, buffer, 256, &tmp_pw))
 		return strdup(buffer);
 	else {
 		char * name = NULL;
