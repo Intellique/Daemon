@@ -540,7 +540,7 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 			nb_drive_enabled++;
 	}
 
-	for (i = sochgr_scsi_changer.nb_drives; i < sochgr_scsi_changer.nb_slots; i++) {
+	for (i = 0; i < sochgr_scsi_changer.nb_slots; i++) {
 		struct so_slot * sl = sochgr_scsi_changer.slots + i;
 
 		if (!sl->enable || !sl->full)
