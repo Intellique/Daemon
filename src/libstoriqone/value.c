@@ -86,8 +86,8 @@ struct so_value_iterator_hashtable {
 
 struct so_value_iterator_linked_list {
 	struct so_value_linked_list * linked_list;
+	bool previous_detached;
 	struct so_value_linked_list_node * previous;
-	struct so_value_linked_list_node * current;
 	struct so_value_linked_list_node * next;
 };
 
@@ -1633,8 +1633,9 @@ static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * 
 		iter = malloc(sizeof(struct so_value_iterator) + sizeof(struct so_value_iterator_linked_list));
 		struct so_value_iterator_linked_list * iter_linked_list = (struct so_value_iterator_linked_list *) (iter + 1);
 
+		iter_linked_list->linked_list = value_linked_list;
+		iter_linked_list->previous_detached = false;
 		iter_linked_list->previous = NULL;
-		iter_linked_list->current = NULL;
 		iter_linked_list->next = value_linked_list->first;
 	}
 
@@ -2123,21 +2124,16 @@ bool so_value_iterator_detach_previous(struct so_value_iterator * iter) {
 				struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
 
 				struct so_value_linked_list_node * old = iter_list->previous;
-				if (old == NULL)
-					return false;
-
 				if (old->previous != NULL)
 					old->previous->next = old->next;
 				else
 					iter_list->linked_list->first = old->next;
-
 				if (old->next != NULL)
 					old->next->previous = old->previous;
 				else
 					iter_list->linked_list->last = old->previous;
 
-				free(old);
-
+				iter_list->previous_detached = true;
 				iter_list->linked_list->nb_vals--;
 
 				return true;
@@ -2152,6 +2148,13 @@ bool so_value_iterator_detach_previous(struct so_value_iterator * iter) {
 void so_value_iterator_free(struct so_value_iterator * iter) {
 	if (iter == NULL)
 		return;
+
+	if (iter->value->type == so_value_linked_list) {
+		struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
+
+		if (iter_list->previous_detached)
+			free(iter_list->previous);
+	}
 
 	if (iter->value != NULL && !iter->weak_ref)
 		so_value_free(iter->value);
@@ -2234,12 +2237,17 @@ struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, b
 
 		case so_value_linked_list: {
 				struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
-				iter_list->previous = iter_list->current;
-				iter_list->current = iter_list->next;
-				if (iter_list->current != NULL) {
-					ret = iter_list->current->value;
-					iter_list->next = iter_list->next->next;
+
+				if (iter_list->previous_detached) {
+					free(iter_list->previous);
+					iter_list->previous_detached = false;
 				}
+
+				iter_list->previous = iter_list->next;
+				ret = iter_list->next->value;
+
+				if (iter_list->next != NULL)
+					iter_list->next = iter_list->next->next;
 			}
 			break;
 
@@ -2272,17 +2280,7 @@ bool so_value_iterator_has_next(struct so_value_iterator * iter) {
 
 		case so_value_linked_list: {
 				struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
-				if (iter_list->next != NULL)
-					return true;
-				if (iter_list->current == NULL)
-					return false;
-
-				/**
-				 * \note Special case, curent->next != NULL && next = NULL
-				 * This case occure when we fetch the last element, then we push new
-				 * value to the list and check if iterator has next element
-				 */
-				return iter_list->current->next != NULL;
+				return iter_list->next != NULL;
 			}
 
 		default:
