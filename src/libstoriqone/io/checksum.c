@@ -236,7 +236,7 @@ struct so_io_stream_checksum_backend * so_io_stream_checksum_threaded_backend_ne
 	struct so_io_stream_checksum_threaded_backend_private * self = malloc(sizeof(struct so_io_stream_checksum_threaded_backend_private));
 	self->first_block = self->last_block = self->free_block = NULL;
 	self->used = 0;
-	self->limit = info.totalram >> 5;
+	self->limit = info.totalram >> 6;
 
 	self->should_reset = false;
 
@@ -274,26 +274,36 @@ static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_ch
 		pthread_cond_wait(&self->wait, &self->lock);
 
 	struct so_io_linked_list_block * block = self->last_block;
-	if (block != NULL && block->block_length - block->data_length < length)
-		block = NULL;
+	if (block != NULL) {
+		if (block->block_length - block->data_length < length)
+			block = NULL;
+		else if (block == self->first_block)
+			self->first_block = self->last_block = NULL;
+		else {
+			self->last_block = block->previous;
+			self->last_block->next = NULL;
+			block->previous = NULL;
+		}
+	}
 
 	if (block == NULL) {
-		if (self->free_block != NULL) {
-			for (block = self->free_block; block != NULL; block = block->next)
-				if (block->block_length >= length) {
-					if (block == self->free_block) {
-						self->free_block = block->next;
-						block->next = NULL;
-						if (self->free_block != NULL)
-							self->free_block->previous = NULL;
-					} else {
-						block->previous->next = block->next;
+		for (block = self->free_block; block != NULL; block = block->next)
+			if (block->block_length >= length) {
+				if (block == self->free_block) {
+					self->free_block = block->next;
+					block->next = NULL;
+					if (self->free_block != NULL)
+						self->free_block->previous = NULL;
+				} else {
+					block->previous->next = block->next;
+					if (block->next != NULL)
 						block->next->previous = block->previous;
-						block->previous = block->next = NULL;
-					}
-					break;
+					block->previous = block->next = NULL;
 				}
-		}
+				break;
+			}
+
+		pthread_mutex_unlock(&self->lock);
 
 		if (block == NULL) {
 			ssize_t block_size = 1048576;
@@ -305,18 +315,22 @@ static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_ch
 			block->data_length = 0;
 			block->previous = block->next = NULL;
 		}
-
-		if (self->first_block == NULL)
-			self->first_block = self->last_block = block;
-		else {
-			block->previous = self->last_block;
-			self->last_block = self->last_block->next = block;
-		}
-	}
+	} else
+		pthread_mutex_unlock(&self->lock);
 
 	memcpy(so_io_stream_checksum_threaded_backend_cast(block, false), buffer, length);
 	block->data_length += length;
+
+	pthread_mutex_lock(&self->lock);
+
 	self->used += length;
+
+	if (self->first_block == NULL)
+		self->first_block = self->last_block = block;
+	else {
+		block->previous = self->last_block;
+		self->last_block = self->last_block->next = block;
+	}
 
 	pthread_cond_signal(&self->wait);
 	pthread_mutex_unlock(&self->lock);
@@ -341,41 +355,54 @@ static void so_io_stream_checksum_threaded_backend_work(void * arg) {
 		if (self->first_block == NULL)
 			pthread_cond_wait(&self->wait, &self->lock);
 
-		if (self->stop && self->first_block == NULL)
-			break;
+		struct so_io_linked_list_block * blocks = self->first_block;
+		if (blocks == NULL)
+			continue;
 
-		struct so_io_linked_list_block * block = self->first_block;
-		self->first_block = block->next;
-		block->previous = block->next = NULL;
-
-		if (self->first_block == NULL)
-			self->last_block = NULL;
-		else
-			self->first_block->previous = NULL;
+		self->first_block = self->last_block = NULL;
 
 		pthread_mutex_unlock(&self->lock);
 
-		self->backend->ops->update(self->backend, so_io_stream_checksum_threaded_backend_cast(block, true), block->data_length);
+		struct so_io_linked_list_block * ptr;
+		unsigned int nb_blocks;
+		for (ptr = blocks, nb_blocks = 0; ptr != NULL; ptr = ptr->next, nb_blocks++)
+			self->backend->ops->update(self->backend, so_io_stream_checksum_threaded_backend_cast(ptr, true), ptr->data_length);
+
+		if (nb_blocks > 1) {
+			// sort blocks
+		}
 
 		pthread_mutex_lock(&self->lock);
 
-		self->used -= block->data_length;
-		block->data_length = 0;
+		for (ptr = blocks; ptr != NULL; ptr = ptr->next) {
+			self->used -= ptr->data_length;
+			ptr->data_length = 0;
+		}
 
-		if (self->free_block == NULL || block->block_length <= self->free_block->block_length) {
-			block->next = self->free_block;
-			self->free_block = block;
-		} else {
-			struct so_io_linked_list_block * ptr;
-			for (ptr = self->free_block; ptr->next != NULL; ptr = ptr->next)
-				if (block->block_length <= ptr->next->block_length)
-					break;
+		for (ptr = self->free_block; blocks != NULL; ptr = ptr->next) {
+			if (blocks->data_length <= ptr->data_length) {
+				struct so_io_linked_list_block * end = blocks;
+				while (end->next != NULL && end->next->data_length <= ptr->data_length)
+					end = end->next;
 
-			block->next = ptr->next;
-			block->previous = ptr;
-			ptr->next = block;
-			if (block->next != NULL)
-				block->next->previous = block;
+				struct so_io_linked_list_block * begin = blocks;
+				blocks = end->next;
+
+				end->next = ptr;
+				begin->previous = ptr->previous;
+				if (begin->previous != NULL)
+					begin->previous->next = begin;
+				ptr->previous = end;
+
+				if (ptr == self->free_block)
+					self->free_block = begin;
+				if (blocks != NULL)
+					blocks->previous = NULL;
+			} else if (ptr->next == NULL) {
+				ptr->next = blocks;
+				blocks->previous = ptr;
+				break;
+			}
 		}
 	}
 
