@@ -60,7 +60,6 @@ struct so_value_hashtable {
 	unsigned int size_node;
 
 	bool allow_rehash;
-	bool weak_ref;
 
 	so_value_hashtable_compupte_hash_f compute_hash;
 };
@@ -92,10 +91,18 @@ struct so_value_iterator_linked_list {
 	struct so_value_linked_list_node * next;
 };
 
-static bool so_value_count_ref(struct so_value * base);
-static void so_value_count_ref2(struct so_value * elt, struct so_value * found);
+struct so_value_count {
+	unsigned int nb_refs;
+
+	struct so_value_count_list {
+		struct so_value * elt;
+		struct so_value_count_list * next;
+	} * first;
+};
+
+static bool so_value_count_ref(struct so_value * ref);
+static void so_value_count_ref2(struct so_value * ref, struct so_value * elt);
 static struct so_value * so_value_new(enum so_value_type type, size_t extra);
-static struct so_value * so_value_new_hashtable3(so_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) __attribute__((warn_unused_result));
 static struct so_value * so_value_pack_inner(const char ** format, va_list params);
 static int so_value_unpack_inner(struct so_value * root, const char ** format, va_list params);
 static bool so_value_valid_inner(struct so_value * value, const char ** format, va_list params);
@@ -103,11 +110,9 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_value * hash, bool weak_ref) __attribute__((warn_unused_result));
 static void so_value_hashtable_put_inner(struct so_value_hashtable * hash, unsigned int index, struct so_value_hashtable_node * new_node);
 static void so_value_hashtable_rehash(struct so_value_hashtable * hash);
-static void so_value_hashtable_release_node(struct so_value_hashtable_node * node, bool weak_ref);
+static void so_value_hashtable_release_node(struct so_value_hashtable_node * node);
 
 static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * list, bool weak_ref) __attribute__((warn_unused_result));
-
-static unsigned long long so_value_compute_addr(const struct so_value * key);
 
 static struct so_value null_value = {
 	.type = so_value_null,
@@ -414,67 +419,78 @@ struct so_value * so_value_copy(struct so_value * val, bool deep_copy) {
 	return ret;
 }
 
-static bool so_value_count_ref(struct so_value * base) {
-	switch (base->type) {
+static bool so_value_count_ref(struct so_value * ref) {
+	struct so_value_count count_ref = { 1, NULL };
+	ref->data = &count_ref;
+
+	switch (ref->type) {
 		case so_value_array:
 		case so_value_linked_list: {
-				struct so_value * found = so_value_new_hashtable3(so_value_compute_addr, true);
-				so_value_hashtable_put(found, base, true, so_value_new_integer(base->shared - 1), true);
-
-				struct so_value_iterator * iter = so_value_list_get_iterator2(base, true);
+				struct so_value_iterator * iter = so_value_list_get_iterator2(ref, true);
 				while (so_value_iterator_has_next(iter)) {
 					struct so_value * elt = so_value_iterator_get_value(iter, false);
-					so_value_count_ref2(elt, found);
+					so_value_count_ref2(ref, elt);
 				}
 				so_value_iterator_free(iter);
 
-				long long nb_shared = -1;
-				struct so_value * vshared = so_value_hashtable_get(found, base, false, false);
-				so_value_unpack(vshared, "I", &nb_shared);
-
-				so_value_free(found);
-				return nb_shared < 1;
+				break;
 			}
 
 		case so_value_hashtable: {
-				struct so_value * found = so_value_new_hashtable3(so_value_compute_addr, true);
-				so_value_hashtable_put(found, base, true, so_value_new_integer(base->shared - 1), true);
-
-				struct so_value_iterator * iter = so_value_hashtable_get_iterator2(base, true);
+				struct so_value_iterator * iter = so_value_hashtable_get_iterator2(ref, true);
 				while (so_value_iterator_has_next(iter)) {
 					struct so_value * key = so_value_iterator_get_key(iter, false, false);
-					so_value_count_ref2(key, found);
+					so_value_count_ref2(ref, key);
 
 					struct so_value * elt = so_value_iterator_get_value(iter, false);
-					so_value_count_ref2(elt, found);
+					so_value_count_ref2(ref, elt);
 				}
 				so_value_iterator_free(iter);
 
-				long long nb_shared = -1;
-				struct so_value * vshared = so_value_hashtable_get(found, base, false, false);
-				so_value_unpack(vshared, "I", &nb_shared);
-
-				so_value_free(found);
-				return nb_shared < 1;
+				break;
 			}
 
 		default:
-			return false;
+			break;
 	}
+
+	while (count_ref.first != NULL) {
+		struct so_value_count_list * ptr = count_ref.first;
+		count_ref.first = ptr->next;
+
+		free(ptr->elt->data);
+		ptr->elt->data = NULL;
+
+		free(ptr);
+	}
+
+	ref->data = NULL;
+	return count_ref.nb_refs == ref->shared;
 }
 
-static void so_value_count_ref2(struct so_value * elt, struct so_value * found) {
+static void so_value_count_ref2(struct so_value * ref, struct so_value * elt) {
 	if (elt->shared == 0)
 		return;
 
-	if (so_value_hashtable_has_key(found, elt)) {
-		struct so_value * vshared = so_value_hashtable_get(found, elt, false, false);
-		long long int * nb_shared = so_value_get(vshared);
-		(*nb_shared)--;
+	if (elt->data != NULL) {
+		struct so_value_count * count_ref = elt->data;
+		count_ref->nb_refs++;
 		return;
 	}
 
-	so_value_hashtable_put(found, elt, true, so_value_new_integer(elt->shared - 1), true);
+	struct so_value_count count_elt = { 1, NULL };
+	if (elt->shared > 1) {
+		struct so_value_count * count_elt = elt->data = malloc(sizeof(struct so_value_count));
+		count_elt->nb_refs = 1;
+		count_elt->first = NULL;
+
+		struct so_value_count * count_ref = ref->data;
+		struct so_value_count_list * list_ref = malloc(sizeof(struct so_value_count_list));
+		list_ref->elt = elt;
+		list_ref->next = count_ref->first;
+		count_ref->first = list_ref;
+	} else
+		elt->data = &count_elt;
 
 	switch (elt->type) {
 		case so_value_array:
@@ -482,7 +498,7 @@ static void so_value_count_ref2(struct so_value * elt, struct so_value * found) 
 				struct so_value_iterator * iter = so_value_list_get_iterator2(elt, true);
 				while (so_value_iterator_has_next(iter)) {
 					struct so_value * lst_elt = so_value_iterator_get_value(iter, false);
-					so_value_count_ref2(lst_elt, found);
+					so_value_count_ref2(ref, lst_elt);
 				}
 				so_value_iterator_free(iter);
 				break;
@@ -492,10 +508,10 @@ static void so_value_count_ref2(struct so_value * elt, struct so_value * found) 
 				struct so_value_iterator * iter = so_value_hashtable_get_iterator2(elt, true);
 				while (so_value_iterator_has_next(iter)) {
 					struct so_value * key = so_value_iterator_get_key(iter, false, false);
-					so_value_count_ref2(key, found);
+					so_value_count_ref2(ref, key);
 
 					struct so_value * hsh_elt = so_value_iterator_get_value(iter, false);
-					so_value_count_ref2(hsh_elt, found);
+					so_value_count_ref2(ref, hsh_elt);
 				}
 				so_value_iterator_free(iter);
 				break;
@@ -504,6 +520,9 @@ static void so_value_count_ref2(struct so_value * elt, struct so_value * found) 
 		default:
 			break;
 	}
+
+	if (elt->shared == 1)
+		elt->data = NULL;
 }
 
 bool so_value_equals(struct so_value * a, struct so_value * b) {
@@ -733,23 +752,18 @@ struct so_value * so_value_new_float(double value) {
 }
 
 struct so_value * so_value_new_hashtable(so_value_hashtable_compupte_hash_f compute_hash) {
-	return so_value_new_hashtable3(compute_hash, false);
-}
-
-struct so_value * so_value_new_hashtable2() {
-	return so_value_new_hashtable(so_string_compute_hash);
-}
-
-static struct so_value * so_value_new_hashtable3(so_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) {
 	struct so_value * val = so_value_new(so_value_hashtable, sizeof(struct so_value_hashtable));
 	struct so_value_hashtable * hashtable = so_value_get(val);
 	hashtable->nodes = calloc(16, sizeof(struct so_value_hashtable_node *));
 	hashtable->nb_elements = 0;
 	hashtable->size_node = 16;
 	hashtable->allow_rehash = true;
-	hashtable->weak_ref = weak_ref;
 	hashtable->compute_hash = compute_hash;
 	return val;
+}
+
+struct so_value * so_value_new_hashtable2() {
+	return so_value_new_hashtable(so_string_compute_hash);
 }
 
 struct so_value * so_value_new_integer(long long int value) {
@@ -1253,7 +1267,7 @@ void so_value_hashtable_clear(struct so_value * hash) {
 			struct so_value_hashtable_node * tmp = node;
 			node = node->next;
 
-			so_value_hashtable_release_node(tmp, hashtable->weak_ref);
+			so_value_hashtable_release_node(tmp);
 		}
 	}
 
@@ -1377,9 +1391,9 @@ void so_value_hashtable_put(struct so_value * hash, struct so_value * key, bool 
 	unsigned long long h = hashtable->compute_hash(key);
 	unsigned int index = h % hashtable->size_node;
 
-	if (!hashtable->weak_ref && !new_key)
+	if (!new_key)
 		key = so_value_share(key);
-	if (!hashtable->weak_ref && !new_value)
+	if (!new_value)
 		value = so_value_share(value);
 
 	struct so_value_hashtable_node * node = malloc(sizeof(struct so_value_hashtable_node));
@@ -1405,7 +1419,7 @@ static void so_value_hashtable_put_inner(struct so_value_hashtable * hashtable, 
 			hashtable->nodes[index] = new_node;
 			new_node->next = node->next;
 
-			so_value_hashtable_release_node(node, hashtable->weak_ref);
+			so_value_hashtable_release_node(node);
 			hashtable->nb_elements--;
 		} else {
 			short nb_elt = 1;
@@ -1415,7 +1429,7 @@ static void so_value_hashtable_put_inner(struct so_value_hashtable * hashtable, 
 					node->next = new_node;
 					new_node->next = old->next;
 
-					so_value_hashtable_release_node(old, hashtable->weak_ref);
+					so_value_hashtable_release_node(old);
 					hashtable->nb_elements--;
 					return;
 				}
@@ -1460,9 +1474,8 @@ static void so_value_hashtable_rehash(struct so_value_hashtable * hashtable) {
 	free(old_nodes);
 }
 
-static void so_value_hashtable_release_node(struct so_value_hashtable_node * node, bool weak_ref) {
-	if (!weak_ref)
-		so_value_free(node->key);
+static void so_value_hashtable_release_node(struct so_value_hashtable_node * node) {
+	so_value_free(node->key);
 	so_value_free(node->value);
 	free(node);
 }
@@ -1482,7 +1495,7 @@ void so_value_hashtable_remove(struct so_value * hash, struct so_value * key) {
 	if (node->hash == h) {
 		hashtable->nodes[index] = node->next;
 
-		so_value_hashtable_release_node(node, hashtable->weak_ref);
+		so_value_hashtable_release_node(node);
 		hashtable->nb_elements--;
 
 		return;
@@ -1495,7 +1508,7 @@ void so_value_hashtable_remove(struct so_value * hash, struct so_value * key) {
 		struct so_value_hashtable_node * tmp = node->next;
 		node->next = tmp->next;
 
-		so_value_hashtable_release_node(tmp, hashtable->weak_ref);
+		so_value_hashtable_release_node(tmp);
 		hashtable->nb_elements--;
 	}
 }
@@ -2275,10 +2288,5 @@ bool so_value_iterator_has_next(struct so_value_iterator * iter) {
 		default:
 			return false;
 	}
-}
-
-
-static unsigned long long so_value_compute_addr(const struct so_value * key) {
-	return (unsigned long int) key;
 }
 
