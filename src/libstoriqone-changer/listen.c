@@ -553,17 +553,18 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	ssize_t result = -1L;
 	struct so_media * media = sl->media;
 	struct sochgr_media * mp = media->private_data;
+	ssize_t reserved_space = (media->total_block * media->block_size) >> 8;
 
 	if (size_need == 0) {
 		result = 0;
 		sochgr_media_add_reader(mp, peer);
 	} else if (unbreakable_level == so_pool_unbreakable_level_archive) {
-		if (media->free_block * media->block_size - mp->size_reserved >= size_need) {
+		if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
 			result = size_need;
 			sochgr_media_add_writer(mp, peer, size_need);
 		}
 	} else {
-		if (media->free_block * media->block_size - mp->size_reserved >= size_need) {
+		if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
 			result = size_need;
 			sochgr_media_add_writer(mp, peer, size_need);
 		} else if (10 * media->free_block >= media->total_block) {

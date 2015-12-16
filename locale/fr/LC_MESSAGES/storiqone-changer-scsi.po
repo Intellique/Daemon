@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-scsi v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-03 12:00+0100\n"
+        "POT-Creation-Date: 2015-12-16 22:37+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -65,7 +65,7 @@ msgstr  "Attention, l’échangeur scsi %s %s (numéro de série : %s) est hors
 msgid   "[%s | %s]: starting check media with drive #%u"
 msgstr  "[ %s | %s ] : démarrage de la vérification de média avec le lecteur n°%u"
 
-#: src/changer/scsi_changer/device.c:369 src/changer/scsi_changer/device.c:435 src/changer/scsi_changer/device.c:765
+#: src/changer/scsi_changer/device.c:369 src/changer/scsi_changer/device.c:435 src/changer/scsi_changer/device.c:782
 #, c-format
 msgid   "[%s | %s]: failed to get status from drive #%u %s %s"
 msgstr  "[ %s | %s ] : échec lors de la réinitialisation du lecteur n°%u %s %s"
@@ -125,12 +125,12 @@ msgid_plural    "Found #%u enabled drives"
 msgstr[0]       "A trouvé n°%u lecteur actif"
 msgstr[1]       "A trouvé n°%u lecteurs actifs"
 
-#: src/changer/scsi_changer/device.c:586
+#: src/changer/scsi_changer/device.c:587
 #, c-format
 msgid   "This changer (%s %s %s) seems to be misconfigured, exiting now"
 msgstr  "Cette librairie (%s %s %s) semble être mal configurée, va quitter maintenant"
 
-#: src/changer/scsi_changer/device.c:845
+#: src/changer/scsi_changer/device.c:862
 #, c-format
 msgid   "[%s | %s]: waiting for device to be ready"
 msgstr  "[ %s | %s ] : attente que le périphérique soit prêt"
