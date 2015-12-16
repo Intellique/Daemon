@@ -551,13 +551,14 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 			need_init++;
 	}
 
-	if (need_init > 0)
+	if (need_init > 0) {
 		so_log_write(so_log_level_notice,
 			dngettext("storiqone-changer-scsi", "Found %u unknown media", "Found %u unknown medias", need_init),
 			need_init);
 		so_log_write(so_log_level_notice,
 			dngettext("storiqone-changer-scsi", "Found #%u enabled drive", "Found #%u enabled drives", nb_drive_enabled),
 			nb_drive_enabled);
+	}
 
 	if (need_init > 1 && nb_drive_enabled > 1) {
 		for (i = 0; i < sochgr_scsi_changer.nb_drives; i++)
@@ -668,6 +669,22 @@ static int sochgr_scsi_changer_put_online(struct so_database_connection * db_con
 		sochgr_scsi_changer_scsi_update_status(&sochgr_scsi_changer, sochgr_scsi_changer_device);
 
 	int failed = sochgr_scsi_changer_parse_media(db_connection);
+	if (failed == 0) {
+		unsigned int i;
+		for (i = 0; i < sochgr_scsi_changer.nb_slots; i++)
+			sochgr_media_init_slot(sochgr_scsi_changer.slots + i);
+
+		for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
+			struct so_slot * sl = sochgr_scsi_changer.slots + i;
+			if (!sl->full)
+				continue;
+
+			struct so_drive * dr = sochgr_scsi_changer.drives + i;
+			failed = dr->ops->reset(dr);
+			if (failed != 0)
+				break;
+		}
+	}
 
 	sochgr_scsi_changer.status = failed == 0 ? so_changer_status_idle : so_changer_status_error;
 	sochgr_scsi_changer.is_online = failed == 0;
