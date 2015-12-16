@@ -1,3 +1,14 @@
+storiqone (1.2.9-1) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - Improve initialize of scsi changer. Can initialize with a tape into a
+      tape drive.
+    - Improve the speed of generation of json.
+    - Improve archiving at the end of media.
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 16 Dec 2015 18:00:35 +0100
+
 storiqone (1.2.8-2) polisher; urgency=low
 
   * Bug fix:
