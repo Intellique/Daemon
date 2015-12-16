@@ -60,8 +60,6 @@ struct sodr_tape_drive_writer {
 	ssize_t position;
 	int file_position;
 
-	bool eof_reached;
-
 	int last_errno;
 
 	struct so_drive * drive;
@@ -254,7 +252,6 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive 
 	self->block_size = block_size;
 	self->position = 0;
 	self->file_position = file_position;
-	self->eof_reached = false;
 	self->last_errno = 0;
 
 	self->drive = drive;
@@ -315,9 +312,6 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 	if (nb_write < 0) {
 		switch (errno) {
 			case ENOSPC:
-				self->media->free_block = self->eof_reached ? 0 : 1;
-				self->eof_reached = true;
-
 				sodr_time_start();
 				nb_write = write(self->fd, self->buffer, self->block_size);
 				sodr_time_stop(self->drive);
@@ -348,9 +342,6 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 		if (nb_write < 0) {
 			switch (errno) {
 				case ENOSPC:
-					self->drive->slot->media->free_block = self->eof_reached ? 0 : 1;
-					self->eof_reached = true;
-
 					sodr_time_start();
 					nb_write = write(self->fd, self->buffer, self->block_size);
 					sodr_time_stop(self->drive);
