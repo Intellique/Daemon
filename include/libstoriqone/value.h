@@ -88,6 +88,7 @@ struct so_value {
 		 * \attention Should not be modify
 		 */
 		unsigned int shared;
+		void * data;
 } __attribute__((packed));
 
 /**
