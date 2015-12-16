@@ -87,6 +87,7 @@ static void so_io_stream_checksum_threaded_backend_finish(struct so_io_stream_ch
 static void so_io_stream_checksum_threaded_backend_free(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 static void so_io_stream_checksum_threaded_backend_reset(struct so_io_stream_checksum_backend * worker);
+static struct so_io_linked_list_block * so_io_stream_checksum_threaded_backend_sort(struct so_io_linked_list_block * blocks, unsigned int nb_elts);
 static void so_io_stream_checksum_threaded_backend_work(void * arg);
 
 static struct so_io_stream_checksum_backend_ops so_io_stream_checksum_backend_ops = {
@@ -265,6 +266,80 @@ static void so_io_stream_checksum_threaded_backend_reset(struct so_io_stream_che
 	pthread_mutex_unlock(&self->lock);
 }
 
+static struct so_io_linked_list_block * so_io_stream_checksum_threaded_backend_sort(struct so_io_linked_list_block * blocks, unsigned int nb_elts) {
+	if (nb_elts < 2)
+		return blocks;
+
+	if (nb_elts == 2) {
+		struct so_io_linked_list_block * next = blocks->next;
+		if (blocks->block_length > next->block_length) {
+			next->next = blocks;
+			blocks->previous = next;
+			next->previous = blocks->next = NULL;
+			return next;
+		}
+		return blocks;
+	}
+
+	unsigned int i, middle = nb_elts >> 1;
+	struct so_io_linked_list_block * list_b = blocks;
+	for (i = 0; i < middle; i++)
+		list_b = list_b->next;
+	list_b->previous = list_b->previous->next = NULL;
+
+	struct so_io_linked_list_block * list_a = so_io_stream_checksum_threaded_backend_sort(blocks, middle);
+	list_b = so_io_stream_checksum_threaded_backend_sort(list_b, nb_elts - middle);
+
+	struct so_io_linked_list_block * first = NULL, * last = NULL;
+	while (list_a != NULL && list_b != NULL) {
+		if (list_a->block_length <= list_b->block_length) {
+			struct so_io_linked_list_block * end = list_a;
+			while (end->next != NULL && end->next->block_length <= list_b->block_length)
+				end = end->next;
+
+			if (first == NULL)
+				first = list_a;
+			else {
+				last->next = list_a;
+				list_a->previous = last;
+			}
+			last = end;
+
+			list_a = end->next;
+			end->next = NULL;
+			if (list_a != NULL)
+				list_a->previous = NULL;
+		} else {
+			struct so_io_linked_list_block * end = list_b;
+			while (end->next != NULL && end->next->block_length <= list_a->block_length)
+				end = end->next;
+
+			if (first == NULL)
+				first = list_b;
+			else {
+				last->next = list_b;
+				list_b->previous = last;
+			}
+			last = end;
+
+			list_b = end->next;
+			end->next = NULL;
+			if (list_b != NULL)
+				list_b->previous = NULL;
+		}
+	}
+
+	if (list_a != NULL) {
+		last->next = list_a;
+		list_a->previous = last;
+	} else {
+		last->next = list_b;
+		list_b->previous = last;
+	}
+
+	return first;
+}
+
 static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length) {
 	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
 
@@ -368,9 +443,9 @@ static void so_io_stream_checksum_threaded_backend_work(void * arg) {
 		for (ptr = blocks, nb_blocks = 0; ptr != NULL; ptr = ptr->next, nb_blocks++)
 			self->backend->ops->update(self->backend, so_io_stream_checksum_threaded_backend_cast(ptr, true), ptr->data_length);
 
-		if (nb_blocks > 1) {
-			// sort blocks
-		}
+		// sort blocks
+		if (nb_blocks > 1)
+			blocks = so_io_stream_checksum_threaded_backend_sort(blocks, nb_blocks);
 
 		pthread_mutex_lock(&self->lock);
 
