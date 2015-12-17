@@ -454,31 +454,34 @@ static void so_io_stream_checksum_threaded_backend_work(void * arg) {
 			ptr->data_length = 0;
 		}
 
-		for (ptr = self->free_block; blocks != NULL; ptr = ptr->next) {
-			if (blocks->data_length <= ptr->data_length) {
-				struct so_io_linked_list_block * end = blocks;
-				while (end->next != NULL && end->next->data_length <= ptr->data_length)
-					end = end->next;
+		if (self->free_block == NULL)
+			self->free_block = blocks;
+		else
+			for (ptr = self->free_block; blocks != NULL; ptr = ptr->next) {
+				if (blocks->data_length <= ptr->data_length) {
+					struct so_io_linked_list_block * end = blocks;
+					while (end->next != NULL && end->next->data_length <= ptr->data_length)
+						end = end->next;
 
-				struct so_io_linked_list_block * begin = blocks;
-				blocks = end->next;
+					struct so_io_linked_list_block * begin = blocks;
+					blocks = end->next;
 
-				end->next = ptr;
-				begin->previous = ptr->previous;
-				if (begin->previous != NULL)
-					begin->previous->next = begin;
-				ptr->previous = end;
+					end->next = ptr;
+					begin->previous = ptr->previous;
+					if (begin->previous != NULL)
+						begin->previous->next = begin;
+					ptr->previous = end;
 
-				if (ptr == self->free_block)
-					self->free_block = begin;
-				if (blocks != NULL)
-					blocks->previous = NULL;
-			} else if (ptr->next == NULL) {
-				ptr->next = blocks;
-				blocks->previous = ptr;
-				break;
+					if (ptr == self->free_block)
+						self->free_block = begin;
+					if (blocks != NULL)
+						blocks->previous = NULL;
+				} else if (ptr->next == NULL) {
+					ptr->next = blocks;
+					blocks->previous = ptr;
+					break;
+				}
 			}
-		}
 	}
 
 	self->backend->ops->finish(self->backend);
