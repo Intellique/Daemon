@@ -499,8 +499,21 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 		worker->archive->name = strdup(job->name);
 		worker->archive->creator = strdup(job->user);
 		worker->archive->owner = strdup(job->user);
+		worker->archive->metadata = so_value_new_hashtable2();
 	} else
 		worker->archive = archive;
+
+	struct so_value * metadata = NULL;
+	so_value_unpack(job->meta, "{so}", "archive", &metadata);
+	if (metadata != NULL) {
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(metadata);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_key(iter, false, true);
+			struct so_value * value = so_value_iterator_get_value(iter, true);
+			so_value_hashtable_put(worker->archive->metadata, key, true, value, true);
+		}
+		so_value_iterator_free(iter);
+	}
 
 	worker->pool = pool;
 

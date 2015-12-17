@@ -3648,9 +3648,58 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 		PQclear(result);
 	}
 
-	if (archive_id == NULL) {
-		free(archive_id);
+	if (archive_id == NULL)
 		return 1;
+
+	/**
+	 * Update metadata of archive
+	 */
+	if (archive->metadata != NULL) {
+		const char * query_select = "select_archive_metadata";
+		so_database_postgresql_prepare(self, query_select, "SELECT id FROM metadata WHERE id = $1 AND type = 'archive' AND key = $2 LIMIT 1");
+
+		const char * query_update = "update_archive_metadata";
+		so_database_postgresql_prepare(self, query_update, "UPDATE metadata SET value = $3 WHERE id = $1 AND type = 'archive' AND key = $2");
+
+		const char * query_insert = "insert_archive_metadata";
+		so_database_postgresql_prepare(self, query_insert, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata SELECT $1, 'archive', $2, $3, owner FROM a");
+
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(archive->metadata);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_key(iter, false, false);
+			struct so_value * value = so_value_iterator_get_value(iter, false);
+
+			const char * str_key = so_value_string_get(key);
+			char * str_value = so_json_encode_to_string(value);
+
+			const char * param[] = { archive_id, str_key, str_value };
+			PGresult * result_select = PQexecPrepared(self->connect, query_select, 2, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result_select);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result_select, query_select);
+			else if (PQntuples(result_select) > 0) {
+				PGresult * result_update = PQexecPrepared(self->connect, query_update, 3, param, NULL, NULL, 0);
+				status = PQresultStatus(result_update);
+
+				if (status == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result_update, query_update);
+
+				PQclear(result_update);
+			} else {
+				PGresult * result_insert = PQexecPrepared(self->connect, query_insert, 3, param, NULL, NULL, 0);
+				status = PQresultStatus(result_insert);
+
+				if (status == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result_insert, query_insert);
+
+				PQclear(result_insert);
+			}
+
+			PQclear(result_select);
+			free(str_value);
+		}
+		so_value_iterator_free(iter);
 	}
 
 	int failed = 0;
