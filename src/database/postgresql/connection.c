@@ -136,7 +136,7 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
 static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
-static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
+static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id);
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files);
 static int so_database_postgresql_update_link_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job);
 
@@ -3741,7 +3741,7 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 	return failed;
 }
 
-static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id) {
+static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id) {
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = NULL;
 
@@ -3845,6 +3845,31 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 		free(digest_id);
 	}
 	so_value_iterator_free(iter);
+
+	if (file->metadata != NULL) {
+		const char * query_meta = "insert_archivefile_metadata";
+		so_database_postgresql_prepare(self, query_meta, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata SELECT $2, 'archivefile', $3, $4, owner FROM a");
+
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->metadata);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_key(iter, false, false);
+			struct so_value * value = so_value_iterator_get_value(iter, false);
+
+			const char * str_key = so_value_string_get(key);
+			char * str_value = so_json_encode_to_string(value);
+
+			const char * param[] = { archive_id, *file_id, str_key, str_value };
+			PGresult * result = PQexecPrepared(self->connect, query_meta, 4, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, query_meta);
+
+			PQclear(result);
+			free(str_value);
+		}
+		so_value_iterator_free(iter);
+	}
 
 	return status != PGRES_TUPLES_OK;
 }
@@ -4008,7 +4033,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 			so_value_unpack(files, "{ss}", file->path, &file_id);
 
 			if (file_id == NULL) {
-				so_database_postgresql_sync_archive_file(connect, file, &file_id);
+				so_database_postgresql_sync_archive_file(connect, archive_id, file, &file_id);
 				so_value_hashtable_put2(files, file->path, so_value_new_string(file_id), true);
 			}
 
