@@ -65,6 +65,8 @@ struct so_archive {
 	char * creator;
 	char * owner;
 
+	struct so_value * metadata;
+
 	bool can_append;
 	bool deleted;
 

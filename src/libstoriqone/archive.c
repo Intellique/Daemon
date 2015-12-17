@@ -106,7 +106,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		so_value_list_push(volumes, so_archive_volume_convert(vol), true);
 	}
 
-	return so_value_pack("{ssssszsosssssbsb}",
+	return so_value_pack("{ssssszsosssssOsbsb}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
@@ -116,6 +116,8 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 
 		"creator", archive->creator,
 		"owner", archive->owner,
+
+		"metadata", archive->metadata,
 
 		"can append", archive->can_append,
 		"deleted", archive->deleted
@@ -135,6 +137,8 @@ void so_archive_free(struct so_archive * archive) {
 
 	free(archive->creator);
 	free(archive->owner);
+
+	so_value_free(archive->metadata);
 
 	so_value_free(archive->db_data);
 	free(archive);
@@ -164,11 +168,13 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 	free(archive->name);
 	free(archive->creator);
 	free(archive->owner);
+	so_value_free(archive->metadata);
 
 	struct so_value * uuid = NULL;
 	struct so_value * volumes = NULL;
+	archive->metadata = NULL;
 
-	so_value_unpack(new_archive, "{sossszsosssssbsb}",
+	so_value_unpack(new_archive, "{sossszsosssssOsbsb}",
 		"uuid", &uuid,
 		"name", &archive->name,
 
@@ -178,6 +184,8 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 
 		"creator", &archive->creator,
 		"owner", &archive->owner,
+
+		"metadata", &archive->metadata,
 
 		"can append", &archive->can_append,
 		"deleted", &archive->deleted
