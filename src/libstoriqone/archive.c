@@ -302,7 +302,7 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 	else
 		checksums = so_value_share(file->digests);
 
-	return so_value_pack("{szsIs{sssssusssusssusssIsIsbsIsoszssss}}",
+	return so_value_pack("{szsIs{sssssusssusssusssIsIsbsIsoszsOssss}}",
 		"position", ptr_file->position,
 		"archived time", (long long) ptr_file->archived_time,
 		"file",
@@ -325,6 +325,7 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 
 			"size", file->size,
 
+			"metadata", file->metadata,
 			"mime type", file->mime_type,
 			"selected path", file->selected_path
 	);
@@ -336,6 +337,7 @@ static void so_archive_file_free(struct so_archive_files * files) {
 	free(file->restored_to);
 	free(file->owner);
 	free(file->group);
+	so_value_free(file->metadata);
 	free(file->mime_type);
 	free(file->selected_path);
 	so_value_free(file->digests);
@@ -361,13 +363,14 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 		free(files->file->group);
 		so_value_free(files->file->digests);
 		files->file->digests = NULL;
+		so_value_free(files->file->metadata),
 		free(files->file->mime_type);
 		free(files->file->selected_path);
 	}
 
 	struct so_archive_file * file = files->file;
 
-	so_value_unpack(new_file, "{szsis{sssssusssusssusssisisbsisOszssss}}",
+	so_value_unpack(new_file, "{szsis{sssssusssusssusssisisbsisOszsOssss}}",
 		"position", &files->position,
 		"archived time", &archived_time,
 		"file",
@@ -390,6 +393,7 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 			"size", &file->size,
 
+			"metadata", &file->metadata,
 			"mime type", &file->mime_type,
 			"selected path", &file->selected_path
 	);
