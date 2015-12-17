@@ -3080,6 +3080,8 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 		so_database_postgresql_get_bool(result, 0, 4, &archive->can_append);
 		so_database_postgresql_get_bool(result, 0, 5, &archive->deleted);
 
+		archive->metadata = so_value_new_hashtable2();
+
 		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 		struct so_value * db = so_value_new_hashtable2();
 		so_value_hashtable_put(archive->db_data, key, false, db, true);
@@ -3194,6 +3196,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 					so_database_postgresql_get_ssize(result3, j, 15, &file->size);
 					so_database_postgresql_get_string_dup(result3, j, 16, &file->selected_path);
 					file->digests = so_value_new_hashtable2();
+					file->metadata = so_value_new_hashtable2();
 
 					file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 					struct so_value * db = so_value_new_hashtable2();
@@ -3207,7 +3210,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 
 					const char * param4[] = { file_id };
 					PGresult * result4 = PQexecPrepared(self->connect, query4, 1, param4, NULL, NULL, 0);
-					ExecStatusType status4 = PQresultStatus(result);
+					ExecStatusType status4 = PQresultStatus(result4);
 					int nb_result4 = PQntuples(result4);
 
 					if (status4 == PGRES_FATAL_ERROR)
@@ -3219,10 +3222,52 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 					}
 
 					PQclear(result4);
+
+					const char * query5 = "select_metadata_by_archivefile";
+					so_database_postgresql_prepare(self, query5, "SELECT key, value FROM metadata WHERE id = $1 AND type = 'archivefile'");
+
+					PGresult * result5 = PQexecPrepared(self->connect, query5, 1, param4, NULL, NULL, 0);
+					ExecStatusType status5 = PQresultStatus(result5);
+					int nb_result5 = PQntuples(result5);
+
+					if (status5 == PGRES_FATAL_ERROR)
+						so_database_postgresql_get_error(result5, query5);
+					else if (status5 == PGRES_TUPLES_OK && nb_result5 > 0) {
+						int i;
+						for (i = 0; i < nb_result5; i++) {
+							const char * key = PQgetvalue(result5, i, 0);
+							const char * value = PQgetvalue(result5, i, 1);
+
+							so_value_hashtable_put2(file->metadata, key, so_json_parse_string(value), true);
+						}
+					}
+
+					PQclear(result5);
 				}
 			}
 
 			PQclear(result3);
+		}
+	}
+
+	PQclear(result);
+
+	query = "select_metadata_by_archive";
+	so_database_postgresql_prepare(self, query, "SELECT key, value FROM metadata WHERE id = $1 AND type = 'archive'");
+
+	result = PQexecPrepared(self->connect, query, 1, param2, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			const char * key = PQgetvalue(result, i, 0);
+			const char * value = PQgetvalue(result, i, 1);
+
+			so_value_hashtable_put2(archive->metadata, key, so_json_parse_string(value), true);
 		}
 	}
 
