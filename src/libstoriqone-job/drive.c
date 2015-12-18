@@ -55,25 +55,25 @@ static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode);
 static int soj_drive_format_media(struct so_drive * drive, ssize_t block_size, struct so_pool * pool);
 static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position);
 static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive);
-static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, int file_position, struct so_value * checksums);
 static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, struct so_value * checksums);
+static struct so_format_reader * soj_drive_open_archive_volume(struct so_drive * drive, struct so_archive_volume * volume, struct so_value * checksums);
 static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int archive_position, struct so_value * checksums);
 static void soj_drive_release(struct so_drive * drive);
 static int soj_drive_sync(struct so_drive * drive);
 
 static struct so_drive_ops soj_drive_ops = {
-	.check_header   = soj_drive_check_header,
-	.check_support  = soj_drive_check_support,
-	.count_archives = soj_drive_count_archives,
-	.erase_media    = soj_drive_erase_media,
-	.format_media   = soj_drive_format_media,
-	.get_raw_reader = soj_drive_get_raw_reader,
-	.get_raw_writer = soj_drive_get_raw_writer,
-	.get_reader     = soj_drive_get_reader,
-	.get_writer     = soj_drive_get_writer,
-	.parse_archive  = soj_drive_parse_archive,
-	.release        = soj_drive_release,
-	.sync           = soj_drive_sync,
+	.check_header        = soj_drive_check_header,
+	.check_support       = soj_drive_check_support,
+	.count_archives      = soj_drive_count_archives,
+	.erase_media         = soj_drive_erase_media,
+	.format_media        = soj_drive_format_media,
+	.get_raw_reader      = soj_drive_get_raw_reader,
+	.get_raw_writer      = soj_drive_get_raw_writer,
+	.get_writer          = soj_drive_get_writer,
+	.open_archive_volume = soj_drive_open_archive_volume,
+	.parse_archive       = soj_drive_parse_archive,
+	.release             = soj_drive_release,
+	.sync                = soj_drive_sync,
 };
 
 
@@ -297,49 +297,6 @@ static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * driv
 	return writer;
 }
 
-static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, int file_position, struct so_value * checksums) {
-	struct soj_drive * self = drive->data;
-	struct so_job * job = soj_job_get();
-
-	struct so_value * tmp_checksums = NULL;
-	if (checksums != NULL)
-		tmp_checksums = so_value_share(checksums);
-	else
-		tmp_checksums = so_value_new_linked_list();
-
-	struct so_value * request = so_value_pack("{sss{sssiso}}",
-		"command", "get reader",
-		"params",
-			"job id", job->id,
-			"file position", file_position,
-			"checksums", tmp_checksums
-	);
-
-	pthread_mutex_lock(&self->lock);
-
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-
-	pthread_mutex_unlock(&self->lock);
-
-	if (response == NULL)
-		return NULL;
-
-	bool ok = false;
-	so_value_unpack(response, "{sb}", "status", &ok);
-
-	if (!ok) {
-		so_value_free(response);
-		return NULL;
-	}
-
-	struct so_format_reader * reader = soj_format_new_reader(drive, response);
-	so_value_free(response);
-	return reader;
-}
-
 static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, struct so_value * checksums) {
 	struct soj_drive * self = drive->data;
 	struct so_job * job = soj_job_get();
@@ -380,6 +337,49 @@ static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, s
 	struct so_format_writer * writer = soj_format_new_writer(drive, response);
 	so_value_free(response);
 	return writer;
+}
+
+static struct so_format_reader * soj_drive_open_archive_volume(struct so_drive * drive, struct so_archive_volume * volume, struct so_value * checksums) {
+	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
+
+	struct so_value * tmp_checksums = NULL;
+	if (checksums != NULL)
+		tmp_checksums = so_value_share(checksums);
+	else
+		tmp_checksums = so_value_new_linked_list();
+
+	struct so_value * request = so_value_pack("{sss{sssoso}}",
+		"command", "open archive volume",
+		"params",
+			"job id", job->id,
+			"archive volume", so_archive_volume_convert(volume),
+			"checksums", tmp_checksums
+	);
+
+	pthread_mutex_lock(&self->lock);
+
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
+	if (response == NULL)
+		return NULL;
+
+	bool ok = false;
+	so_value_unpack(response, "{sb}", "status", &ok);
+
+	if (!ok) {
+		so_value_free(response);
+		return NULL;
+	}
+
+	struct so_format_reader * reader = soj_format_new_reader(drive, response);
+	so_value_free(response);
+	return reader;
 }
 
 void soj_drive_init(struct so_drive * drive, struct so_value * config) {

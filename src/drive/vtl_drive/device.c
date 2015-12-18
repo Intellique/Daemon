@@ -75,6 +75,7 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct sodr_peer 
 static struct so_format_reader * sodr_vtl_drive_get_reader(struct sodr_peer * peer, int file_position, struct so_value * checksums, struct so_database_connection * db);
 static struct so_format_writer * sodr_vtl_drive_get_writer(struct sodr_peer * peer, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_vtl_drive_init(struct so_value * config, struct so_database_connection * db_connect);
+static struct so_format_reader * sodr_vtl_drive_open_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 static struct so_archive * sodr_vtl_drive_parse_archive(struct sodr_peer * peer, const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_vtl_drive_reset(struct so_database_connection * db);
 static int sodr_vtl_drive_update_status(struct so_database_connection * db);
@@ -83,19 +84,20 @@ static char * sodr_vtl_media_dir = NULL;
 static struct so_media_format * sodr_vtl_media_format = NULL;
 
 static struct so_drive_ops sodr_vtl_drive_ops = {
-	.check_header   = sodr_vtl_drive_check_header,
-	.check_support  = sodr_vtl_drive_check_support,
-	.count_archives = sodr_vtl_drive_count_archives,
-	.erase_media    = sodr_vtl_drive_erase_media,
-	.format_media   = sodr_vtl_drive_format_media,
-	.get_raw_reader = sodr_vtl_drive_get_raw_reader,
-	.get_raw_writer = sodr_vtl_drive_get_raw_writer,
-	.get_reader     = sodr_vtl_drive_get_reader,
-	.get_writer     = sodr_vtl_drive_get_writer,
-	.init           = sodr_vtl_drive_init,
-	.parse_archive  = sodr_vtl_drive_parse_archive,
-	.reset          = sodr_vtl_drive_reset,
-	.update_status  = sodr_vtl_drive_update_status,
+	.check_header        = sodr_vtl_drive_check_header,
+	.check_support       = sodr_vtl_drive_check_support,
+	.count_archives      = sodr_vtl_drive_count_archives,
+	.erase_media         = sodr_vtl_drive_erase_media,
+	.format_media        = sodr_vtl_drive_format_media,
+	.get_raw_reader      = sodr_vtl_drive_get_raw_reader,
+	.get_raw_writer      = sodr_vtl_drive_get_raw_writer,
+	.get_reader          = sodr_vtl_drive_get_reader,
+	.get_writer          = sodr_vtl_drive_get_writer,
+	.init                = sodr_vtl_drive_init,
+	.open_archive_volume = sodr_vtl_drive_open_archive_volume,
+	.parse_archive       = sodr_vtl_drive_parse_archive,
+	.reset               = sodr_vtl_drive_reset,
+	.update_status       = sodr_vtl_drive_update_status,
 };
 
 static struct so_drive sodr_vtl_drive = {
@@ -488,6 +490,14 @@ static int sodr_vtl_drive_init(struct so_value * config, struct so_database_conn
 	sodr_archive_format_sync(NULL, 0, db_connect);
 
 	return 0;
+}
+
+static struct so_format_reader * sodr_vtl_drive_open_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_reader * raw_reader = sodr_vtl_drive_get_raw_reader(peer, volume->media_position, db);
+	if (raw_reader == NULL)
+		return NULL;
+
+	return so_format_tar_new_reader(raw_reader, checksums);
 }
 
 static struct so_archive * sodr_vtl_drive_parse_archive(struct sodr_peer * peer, const bool * const disconnected, unsigned int archive_position, struct so_value * checksums __attribute__((unused)), struct so_database_connection * db) {

@@ -32,6 +32,7 @@
 
 #include <libstoriqone/drive.h>
 
+struct so_archive_volume;
 struct so_database_connection;
 struct so_format_reader;
 struct so_format_writer;
@@ -61,6 +62,7 @@ struct so_drive_ops {
 	struct so_format_reader * (*get_reader)(struct sodr_peer * peer, int file_position, struct so_value * checksums, struct so_database_connection * db);
 	struct so_format_writer * (*get_writer)(struct sodr_peer * peer, struct so_value * checksums, struct so_database_connection * db);
 	int (*init)(struct so_value * config, struct so_database_connection * db_connect);
+	struct so_format_reader * (*open_archive_volume)(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 	struct so_archive * (*parse_archive)(struct sodr_peer * peer, const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 	int (*reset)(struct so_database_connection * db);
 	int (*update_status)(struct so_database_connection * db);

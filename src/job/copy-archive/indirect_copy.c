@@ -104,7 +104,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			}
 		}
 
-		struct so_format_reader * reader = self->src_drive->ops->get_reader(self->src_drive, vol->media_position, NULL);
+		struct so_format_reader * reader = self->src_drive->ops->open_archive_volume(self->src_drive, vol, NULL);
 
 		while (rdr_status = reader->ops->get_header(reader, &file), rdr_status == so_format_reader_header_ok) {
 			if (file.position == 0) {

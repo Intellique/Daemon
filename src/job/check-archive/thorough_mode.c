@@ -80,7 +80,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		drive->ops->sync(drive);
 
 		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
-		struct so_format_reader * reader = drive->ops->get_reader(drive, vol->media_position, checksums);
+		struct so_format_reader * reader = drive->ops->open_archive_volume(drive, vol, checksums);
 		so_value_free(checksums);
 
 		enum so_format_reader_header_status status;
