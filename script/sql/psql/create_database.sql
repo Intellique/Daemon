@@ -582,7 +582,7 @@ CREATE TABLE Metadata (
     type MetaType NOT NULL,
 
     key TEXT NOT NULL,
-    value JSON NOT NULL,
+    value JSONB NOT NULL,
 
     login INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
@@ -773,8 +773,7 @@ CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
     BEGIN
         IF TG_OP = 'UPDATE' AND OLD.type != NEW.type THEN
             RAISE EXCEPTION 'type of metadata should not be modified' USING ERRCODE = '09000';
-        END IF;
-        IF TG_OP = 'DELETE' OR OLD != NEW THEN
+        ELSIF TG_OP = 'DELETE' OR OLD != NEW THEN
             INSERT INTO MetadataLog(id, type, key, value, login, updated)
                 VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, TG_OP != 'UPDATE');
         END IF;
