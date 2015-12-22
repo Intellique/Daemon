@@ -76,12 +76,10 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
-	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
-
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->media = so_media_dup(self->dest_drive->slot->media);
-	vol->media_position = self->writer->ops->file_position(self->writer);
 	vol->job = job;
+
+	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
 
 	return 0;
 }

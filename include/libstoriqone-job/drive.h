@@ -36,6 +36,7 @@ struct so_value;
 struct so_drive_ops {
 	bool (*check_header)(struct so_drive * drive);
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+	struct so_format_writer * (*create_archive_volume)(struct so_drive * drive, struct so_archive_volume * volume, struct so_value * checksums);
 	unsigned int (*count_archives)(struct so_drive * drive);
 	int (*erase_media)(struct so_drive * drive, bool quick_mode);
 	int (*format_media)(struct so_drive * drive, ssize_t block_size, struct so_pool * pool);

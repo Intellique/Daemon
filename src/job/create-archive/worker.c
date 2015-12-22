@@ -231,12 +231,11 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 			dgettext("storiqone-job-create-archive", "Archive continue on media (%s)"),
 			worker->media->name);
 
-		worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
-
 		struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-		vol->media = so_media_dup(worker->media);
-		vol->media_position = worker->writer->ops->file_position(worker->writer);
 		vol->job = soj_job_get();
+
+		worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
+
 
 		if (file != NULL)
 			soj_create_archive_add_file3(worker, file, 0);
@@ -550,14 +549,14 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 
 	if (primary_worker->drive != NULL) {
 		primary_worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, primary_worker->pool);
-		primary_worker->writer = primary_worker->drive->ops->get_writer(primary_worker->drive, primary_worker->checksums);
-		primary_worker->media = primary_worker->drive->slot->media;
-		primary_worker->state = soj_worker_status_ready;
 
 		struct so_archive_volume * vol = so_archive_add_volume(primary_worker->archive);
-		vol->media = so_media_dup(primary_worker->media);
-		vol->media_position = primary_worker->writer->ops->file_position(primary_worker->writer);
 		vol->job = soj_job_get();
+
+		primary_worker->writer = primary_worker->drive->ops->create_archive_volume(primary_worker->drive, vol, primary_worker->checksums);
+
+		primary_worker->media = primary_worker->drive->slot->media;
+		primary_worker->state = soj_worker_status_ready;
 
 		struct so_value_iterator * iter = so_value_list_get_iterator(primary_worker->checksums);
 		while (so_value_iterator_has_next(iter)) {
@@ -579,13 +578,12 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->pool);
 
 		if (worker->drive != NULL) {
-			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = so_media_dup(worker->media);
-			vol->media_position = primary_worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
+
+			worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
 		}
 
 		struct so_value_iterator * iter = so_value_list_get_iterator(worker->checksums);
@@ -614,13 +612,11 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 		worker->drive = soj_media_find_and_load_next(worker->pool, false, db_connect);
 
 		if (worker->drive != NULL) {
-			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
-			worker->state = soj_worker_status_ready;
-
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = so_media_dup(worker->media);
-			vol->media_position = worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
+
+			worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
+			worker->state = soj_worker_status_ready;
 		}
 	}
 }

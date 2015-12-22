@@ -187,6 +187,9 @@ static void so_media_init(void) {
 
 struct so_value * so_media_convert(struct so_media * media) {
 	struct so_value * pool = so_value_new_null();
+	if (media == NULL)
+		return pool;
+
 	if (media->pool != NULL)
 		pool = so_pool_convert(media->pool);
 

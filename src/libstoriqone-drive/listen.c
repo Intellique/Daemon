@@ -78,6 +78,7 @@ static void sodr_socket_message(int fd, short event, void * data);
 static void sodr_socket_command_check_header(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_check_support(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_count_archives(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_create_archive_volume(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd);
@@ -99,19 +100,20 @@ static struct sodr_socket_command {
 	char * name;
 	void (*function)(struct sodr_peer * peer, struct so_value * request, int fd);
 } commands[] = {
-	{ 0, "check header",        sodr_socket_command_check_header },
-	{ 0, "check support",       sodr_socket_command_check_support },
-	{ 0, "count archives",      sodr_socket_command_count_archives },
-	{ 0, "erase media",         sodr_socket_command_erase_media },
-	{ 0, "format media",        sodr_socket_command_format_media },
-	{ 0, "get raw reader",      sodr_socket_command_get_raw_reader },
-	{ 0, "get raw writer",      sodr_socket_command_get_raw_writer },
-	{ 0, "get writer",          sodr_socket_command_get_writer },
-	{ 0, "init peer",           sodr_socket_command_init_peer },
-	{ 0, "open archive volume", sodr_socket_command_open_archive_volume },
-	{ 0, "parse archive",       sodr_socket_command_parse_archive },
-	{ 0, "release",             sodr_socket_command_release },
-	{ 0, "sync",                sodr_socket_command_sync },
+	{ 0, "check header",          sodr_socket_command_check_header },
+	{ 0, "check support",         sodr_socket_command_check_support },
+	{ 0, "count archives",        sodr_socket_command_count_archives },
+	{ 0, "create archive volume", sodr_socket_command_create_archive_volume },
+	{ 0, "erase media",           sodr_socket_command_erase_media },
+	{ 0, "format media",          sodr_socket_command_format_media },
+	{ 0, "get raw reader",        sodr_socket_command_get_raw_reader },
+	{ 0, "get raw writer",        sodr_socket_command_get_raw_writer },
+	{ 0, "get writer",            sodr_socket_command_get_writer },
+	{ 0, "init peer",             sodr_socket_command_init_peer },
+	{ 0, "open archive volume",   sodr_socket_command_open_archive_volume },
+	{ 0, "parse archive",         sodr_socket_command_parse_archive },
+	{ 0, "release",               sodr_socket_command_release },
+	{ 0, "sync",                  sodr_socket_command_sync },
 
 	{ 0, NULL, NULL }
 };
@@ -327,6 +329,93 @@ static void sodr_socket_command_count_archives(struct sodr_peer * peer, struct s
 
 	peer->owned = true;
 	so_thread_pool_run("count archives", sodr_worker_command_count_archives, peer);
+}
+
+static void sodr_socket_command_create_archive_volume(struct sodr_peer * peer, struct so_value * request, int fd) {
+	char * job_id = NULL;
+	struct so_value * checksums = NULL;
+	so_value_unpack(request, "{s{ssso}}",
+		"params",
+			"job id", &job_id,
+			"checksums", &checksums
+	);
+
+	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
+		struct so_value * response = so_value_pack("{sb}", "status", false);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+		free(job_id);
+		return;
+	}
+
+	free(job_id);
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	if (drive->slot->media == NULL) {
+		struct so_value * response = so_value_pack("{sb}", "status", false);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+		return;
+	}
+
+	struct so_value * varchive_volume = NULL;
+	so_value_unpack(request, "{s{so}}",
+		"params",
+			"archive volume", &varchive_volume
+	);
+
+	struct so_archive_volume vol;
+	bzero(&vol, sizeof(vol));
+	so_archive_volume_sync(&vol, varchive_volume);
+
+	struct so_media * media = drive->slot->media;
+
+	const char * media_name = NULL;
+	if (media != NULL)
+		media_name = media->name;
+
+	sodr_log_add_record(peer, so_job_status_running, sodr_db, so_log_level_notice, so_job_record_notif_normal,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	peer->format_writer = drive->ops->create_archive_volume(peer, &vol, checksums, sodr_db);
+
+	peer->buffer_length = 16384;
+	peer->buffer = malloc(peer->buffer_length);
+	peer->has_checksums = so_value_list_get_length(checksums) > 0;
+
+	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
+	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
+
+	int cmd_socket = so_socket_server_temp(socket_cmd_config);
+	int data_socket = so_socket_server_temp(socket_data_config);
+
+	struct so_value * response = so_value_pack("{sbs{sOsO}szsiszso}",
+		"status", true,
+		"socket",
+			"command", socket_cmd_config,
+			"data", socket_data_config,
+		"block size", peer->format_writer->ops->get_block_size(peer->format_writer),
+		"file position", peer->format_writer->ops->file_position(peer->format_writer),
+		"available size", peer->format_writer->ops->get_available_size(peer->format_writer),
+		"archive volume", so_archive_volume_convert(&vol)
+	);
+	so_json_encode_to_fd(response, fd, true);
+	so_value_free(response);
+
+	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
+	peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
+
+	so_value_free(socket_cmd_config);
+	so_value_free(socket_data_config);
+
+	peer->owned = true;
+	so_thread_pool_run("format writer", sodr_io_format_writer, peer);
+
+	vol.media = NULL;
+	so_archive_volume_free(&vol);
 }
 
 static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd) {

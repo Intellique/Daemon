@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-17 22:11+0100\n"
+        "POT-Creation-Date: 2015-12-18 18:58+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -120,12 +120,12 @@ msgstr  "Erreur en ajoutant un fichier (%s) au pool %s"
 msgid   "Archive continue on media (%s)"
 msgstr  "L’archive continue sur le média (%s)"
 
-#: src/job/create-archive/worker.c:669
+#: src/job/create-archive/worker.c:665
 #, c-format
 msgid   "Warning, not archiving to pool '%s': not enough space (space reserved: %s, space required: %s)"
 msgstr  "Attention, impossible d’archiver dans le pool « %s » : pas assez d’espace dans celui-ci (espace réservé : %s, espace "
         "requis : %s)"
 
-#: src/job/create-archive/worker.c:679
+#: src/job/create-archive/worker.c:675
 msgid   "Failed to start database transaction"
 msgstr  "Échec lors du démarrage d’une nouvelle transaction de base de données"

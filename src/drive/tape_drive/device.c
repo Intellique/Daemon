@@ -76,6 +76,7 @@
 static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
 static unsigned int sodr_tape_drive_count_archives(struct sodr_peer * peer, const bool * const disconnected, struct so_database_connection * db);
+static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
 static int sodr_tape_drive_erase_media(struct sodr_peer * peer, bool quick_mode, struct so_database_connection * db);
 static int sodr_tape_drive_format_media(struct sodr_peer * peer, struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
@@ -98,20 +99,21 @@ static struct mtget status;
 
 
 static struct so_drive_ops sodr_tape_drive_ops = {
-	.check_header        = sodr_tape_drive_check_header,
-	.check_support       = sodr_tape_drive_check_support,
-	.count_archives      = sodr_tape_drive_count_archives,
-	.erase_media         = sodr_tape_drive_erase_media,
-	.format_media        = sodr_tape_drive_format_media,
-	.get_raw_reader      = sodr_tape_drive_get_raw_reader,
-	.get_raw_writer      = sodr_tape_drive_get_raw_writer,
-	.get_reader          = sodr_tape_drive_get_reader,
-	.get_writer          = sodr_tape_drive_get_writer,
-	.init                = sodr_tape_drive_init,
-	.open_archive_volume = sodr_tape_drive_open_archive_volume,
-	.parse_archive       = sodr_tape_drive_parse_archive,
-	.reset               = sodr_tape_drive_reset,
-	.update_status       = sodr_tape_drive_update_status,
+	.check_header          = sodr_tape_drive_check_header,
+	.check_support         = sodr_tape_drive_check_support,
+	.count_archives        = sodr_tape_drive_count_archives,
+	.create_archive_volume = sodr_tape_drive_create_archive_volume,
+	.erase_media           = sodr_tape_drive_erase_media,
+	.format_media          = sodr_tape_drive_format_media,
+	.get_raw_reader        = sodr_tape_drive_get_raw_reader,
+	.get_raw_writer        = sodr_tape_drive_get_raw_writer,
+	.get_reader            = sodr_tape_drive_get_reader,
+	.get_writer            = sodr_tape_drive_get_writer,
+	.init                  = sodr_tape_drive_init,
+	.open_archive_volume   = sodr_tape_drive_open_archive_volume,
+	.parse_archive         = sodr_tape_drive_parse_archive,
+	.reset                 = sodr_tape_drive_reset,
+	.update_status         = sodr_tape_drive_update_status,
 };
 
 static struct so_drive sodr_tape_drive = {
@@ -226,6 +228,17 @@ static unsigned int sodr_tape_drive_count_archives(struct sodr_peer * peer, cons
 		default:
 			return 0;
 	}
+}
+
+static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_writer * writer = sodr_tape_drive_get_raw_writer(peer, db);
+	if (writer == NULL)
+		return NULL;
+
+	volume->media = sodr_tape_drive.slot->media;
+	volume->media_position = writer->ops->file_position(writer);
+
+	return so_format_tar_new_writer(writer, checksums);
 }
 
 static void sodr_tape_drive_create_media(struct so_database_connection * db) {
