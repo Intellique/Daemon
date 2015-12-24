@@ -73,6 +73,7 @@ static struct so_format_reader * soj_format_writer_reopen(struct so_format_write
 static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
+static ssize_t soj_format_writer_write_metadata(struct so_format_writer * fw, struct so_value * metadata);
 
 static struct so_format_writer_ops soj_format_writer_ops = {
 	.add_file             = soj_format_writer_add_file,
@@ -90,6 +91,7 @@ static struct so_format_writer_ops soj_format_writer_ops = {
 	.reopen               = soj_format_writer_reopen,
 	.restart_file         = soj_format_writer_restart_file,
 	.write                = soj_format_writer_write,
+	.write_metadata       = soj_format_writer_write_metadata,
 };
 
 
@@ -193,9 +195,6 @@ static int soj_format_writer_close(struct so_format_writer * fw) {
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	close(self->data_fd);
-	self->data_fd = -1;
-
 	int failed = -1;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
 	if (response != NULL) {
@@ -269,6 +268,13 @@ static void soj_format_writer_free(struct so_format_writer * fw) {
 
 	if (self->data_fd > -1)
 		soj_format_writer_close(fw);
+
+	struct so_value * request = so_value_pack("{ss}", "command", "free");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	close(self->data_fd);
+	self->data_fd = -1;
 
 	so_value_free(self->digest);
 	free(self);
@@ -368,6 +374,28 @@ static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void 
 	ssize_t nb_write = 0;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
 	so_value_unpack(response, "{si}", "returned", &nb_write);
+	if (nb_write < 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		so_value_unpack(response, "{szsz}",
+			"position", &self->position,
+			"available size", &self->available_size
+		);
+	so_value_free(response);
+
+	return nb_write;
+}
+
+static ssize_t soj_format_writer_write_metadata(struct so_format_writer * fw, struct so_value * metadata) {
+	struct soj_format_writer_private * self = fw->data;
+
+	struct so_value * request = so_value_pack("{sss{sO}}", "command", "write metadata", "params", "metadata", metadata);
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	ssize_t nb_write = 0;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	so_value_unpack(response, "{sz}", "returned", &nb_write);
 	if (nb_write < 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else

@@ -55,6 +55,7 @@
 
 static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw);
+static int sodr_vtl_drive_writer_create_new_file(struct so_stream_writer * sw);
 static int sodr_vtl_drive_writer_file_position(struct so_stream_writer * sw);
 static void sodr_vtl_drive_writer_free(struct so_stream_writer * sw);
 static ssize_t sodr_vtl_drive_writer_get_available_size(struct so_stream_writer * sw);
@@ -67,6 +68,7 @@ static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const v
 static struct so_stream_writer_ops sodr_vtl_drive_writer_ops = {
 	.before_close       = sodr_vtl_drive_writer_before_close,
 	.close              = sodr_vtl_drive_writer_close,
+	.create_new_file    = sodr_vtl_drive_writer_create_new_file,
 	.file_position      = sodr_vtl_drive_writer_file_position,
 	.free               = sodr_vtl_drive_writer_free,
 	.get_available_size = sodr_vtl_drive_writer_get_available_size,
@@ -177,6 +179,37 @@ static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw) {
 
 		return failed;
 	}
+
+	return 0;
+}
+
+static int sodr_vtl_drive_writer_create_new_file(struct so_stream_writer * sw) {
+	struct so_drive * drive = sodr_vtl_drive_get_device();
+	char * filename = sodr_vtl_drive_get_next_filename();
+
+	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0640);
+	free(filename);
+
+	if (fd < 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while opening file '%s' because %m"),
+			drive->vendor, drive->model, drive->index, filename);
+
+		return -1;
+	}
+
+	struct sodr_vtl_drive_io * self = sw->data;
+	self->fd = fd;
+	self->buffer_used = 0;
+	self->position = 0;
+	self->file_position++;
+	self->last_errno = 0;
+
+	struct so_media * media = self->media;
+	media->nb_volumes++;
+	media->last_write = time(NULL);
+	media->write_count++;
+	media->operation_count++;
 
 	return 0;
 }

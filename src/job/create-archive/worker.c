@@ -288,8 +288,6 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 	last_vol->size = worker->writer->ops->position(worker->writer);
 
 	last_vol->digests = worker->writer->ops->get_digests(worker->writer);
-	worker->writer->ops->free(worker->writer);
-	worker->writer = NULL;
 
 	if (first_round)
 		soj_create_archive_meta_worker_wait(false);
@@ -782,17 +780,9 @@ ssize_t soj_create_archive_worker_write2(struct soj_create_archive_worker * work
 
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker) {
 	struct so_value * archive = so_archive_convert(worker->archive);
-	char * json_archive = so_json_encode_to_string(archive);
-	ssize_t length = strlen(json_archive);
-
-	struct so_stream_writer * writer = worker->drive->ops->get_raw_writer(worker->drive);
-	writer->ops->write(writer, json_archive, length);
-	writer->ops->close(writer);
-	writer->ops->free(writer);
-
-	free(json_archive);
+	ssize_t nb_write = worker->writer->ops->write_metadata(worker->writer, archive);
 	so_value_free(archive);
 
-	return true;
+	return nb_write <= 0;
 }
 

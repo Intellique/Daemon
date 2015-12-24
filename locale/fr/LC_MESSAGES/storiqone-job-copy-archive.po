@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-18 18:56+0100\n"
+        "POT-Creation-Date: 2015-12-24 14:07+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -131,7 +131,7 @@ msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le fichier t
 msgid   "Error while writing file data '%s' to temporary file"
 msgstr  "Erreur en écrivant des données du fichier « %s » dans le fichier temporaire"
 
-#: src/job/copy-archive/indirect_copy.c:181 src/job/copy-archive/util.c:91
+#: src/job/copy-archive/indirect_copy.c:181 src/job/copy-archive/util.c:90
 msgid   "Failed to reopen temporary file"
 msgstr  "Échec lors de la réouverture du fichier temporaire"
 

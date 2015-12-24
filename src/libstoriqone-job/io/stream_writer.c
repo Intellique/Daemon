@@ -57,6 +57,7 @@ struct soj_stream_writer {
 
 static ssize_t soj_stream_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int soj_stream_writer_close(struct so_stream_writer * sw);
+static int soj_stream_writer_create_new_file(struct so_stream_writer * sw);
 static int soj_stream_writer_file_position(struct so_stream_writer * sw);
 static void soj_stream_writer_free(struct so_stream_writer * sw);
 static ssize_t soj_stream_writer_get_available_size(struct so_stream_writer * sw);
@@ -69,6 +70,7 @@ static ssize_t soj_stream_writer_write(struct so_stream_writer * sw, const void 
 static struct so_stream_writer_ops soj_writer_ops = {
 	.before_close       = soj_stream_writer_before_close,
 	.close              = soj_stream_writer_close,
+	.create_new_file    = soj_stream_writer_create_new_file,
 	.file_position      = soj_stream_writer_file_position,
 	.free               = soj_stream_writer_free,
 	.get_available_size = soj_stream_writer_get_available_size,
@@ -168,6 +170,27 @@ static int soj_stream_writer_close(struct so_stream_writer * sw) {
 			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 		so_value_free(response);
 	}
+
+	return failed;
+}
+
+static int soj_stream_writer_create_new_file(struct so_stream_writer * sw) {
+	struct soj_stream_writer * self = sw->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "create new file");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	int failed = -1;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	so_value_unpack(response, "{si}", "returned", &failed);
+	if (failed != 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else {
+		so_value_unpack(response, "{sz}", "available size", &self->available_size);
+		self->position = 0;
+	}
+	so_value_free(response);
 
 	return failed;
 }

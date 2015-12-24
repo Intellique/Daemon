@@ -45,15 +45,17 @@
 
 static void sodr_io_raw_writer_before_close(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_writer_close(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_raw_writer_create_new_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_writer_init(void) __attribute__((constructor));
 static void sodr_io_raw_writer_reopen(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_writer_write(struct sodr_peer * peer, struct so_value * request);
 
 static struct sodr_command commands[] = {
-	{ 0, "before close", sodr_io_raw_writer_before_close },
-	{ 0, "close",        sodr_io_raw_writer_close },
-	{ 0, "reopen",       sodr_io_raw_writer_reopen },
-	{ 0, "write",        sodr_io_raw_writer_write },
+	{ 0, "before close",    sodr_io_raw_writer_before_close },
+	{ 0, "close",           sodr_io_raw_writer_close },
+	{ 0, "create new file", sodr_io_raw_writer_create_new_file },
+	{ 0, "reopen",          sodr_io_raw_writer_reopen },
+	{ 0, "write",           sodr_io_raw_writer_write },
 
 	{ 0, NULL, NULL },
 };
@@ -115,6 +117,24 @@ static void sodr_io_raw_writer_close(struct sodr_peer * peer, struct so_value * 
 
 	close(peer->fd_cmd);
 	peer->fd_cmd = -1;
+}
+
+static void sodr_io_raw_writer_create_new_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	int failed = peer->stream_writer->ops->create_new_file(peer->stream_writer);
+
+	int last_errno = 0;
+	if (failed != 0)
+		last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
+
+	ssize_t available_size = peer->stream_writer->ops->get_available_size(peer->stream_writer);
+
+	struct so_value * response = so_value_pack("{sisisz}",
+		"returned", failed,
+		"last errno", last_errno,
+		"available size", available_size
+	);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
 }
 
 static void sodr_io_raw_writer_reopen(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {

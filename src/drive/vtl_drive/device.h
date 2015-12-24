@@ -27,7 +27,11 @@
 #ifndef __STORIQONE_CHANGER_VTL_DEVICE_H__
 #define __STORIQONE_CHANGER_VTL_DEVICE_H__
 
+struct so_database_connection;
+struct sodr_peer;
+
 struct so_drive * sodr_vtl_drive_get_device(void);
+char * sodr_vtl_drive_get_next_filename(void);
 
 #endif
 

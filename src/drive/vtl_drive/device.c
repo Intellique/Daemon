@@ -394,6 +394,29 @@ struct so_drive * sodr_vtl_drive_get_device() {
 	return &sodr_vtl_drive;
 }
 
+char * sodr_vtl_drive_get_next_filename() {
+	char * files;
+	int size = asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
+	if (size < 0)
+		return NULL;
+
+	glob_t gl;
+	int ret = glob(files, 0, NULL, &gl);
+	if (ret != 0)
+		return NULL;
+
+	int nb_files = gl.gl_pathc;
+	globfree(&gl);
+	free(files);
+
+	char * filename = NULL;
+	size = asprintf(&filename, "%s/file_%d", sodr_vtl_media_dir, nb_files);
+	if (size < 0)
+		return NULL;
+
+	return filename;
+}
+
 static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(struct sodr_peer * peer, int file_position, struct so_database_connection * db) {
 	char * filename;
 	int size = asprintf(&filename, "%s/file_%d", sodr_vtl_media_dir, file_position);

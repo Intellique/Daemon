@@ -65,8 +65,9 @@ struct so_io_stream_checksum_threaded_backend_private {
 	volatile unsigned long limit;
 
 	volatile bool should_reset;
-
 	volatile bool stop;
+
+	struct so_value * checksums;
 
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
@@ -240,8 +241,9 @@ struct so_io_stream_checksum_backend * so_io_stream_checksum_threaded_backend_ne
 	self->limit = info.totalram >> 6;
 
 	self->should_reset = false;
-
 	self->stop = false;
+
+	self->checksums = so_value_share(checksums);
 
 	pthread_mutex_init(&self->lock, NULL);
 	pthread_cond_init(&self->wait, NULL);
@@ -261,7 +263,15 @@ static void so_io_stream_checksum_threaded_backend_reset(struct so_io_stream_che
 	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
 
 	pthread_mutex_lock(&self->lock);
-	self->should_reset = true;
+
+	if (self->stop) {
+		self->stop = false;
+
+		so_thread_pool_run2("checksum worker", so_io_stream_checksum_threaded_backend_work, self, 8);
+	} else {
+		self->should_reset = true;
+	}
+
 	pthread_cond_signal(&self->wait);
 	pthread_mutex_unlock(&self->lock);
 }

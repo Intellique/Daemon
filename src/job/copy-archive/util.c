@@ -37,7 +37,6 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
-#include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
@@ -145,24 +144,9 @@ void soj_copyarchive_util_init(struct so_archive * archive) {
 
 int soj_copyarchive_util_write_meta(struct soj_copyarchive_private * self) {
 	struct so_value * archive = so_archive_convert(self->copy_archive);
-	char * json_archive = so_json_encode_to_string(archive);
-	ssize_t length = strlen(json_archive);
-
-	int failed = 0;
-	struct so_stream_writer * writer = self->dest_drive->ops->get_raw_writer(self->dest_drive);
-	if (writer != NULL) {
-		ssize_t nb_write = writer->ops->write(writer, json_archive, length);
-		writer->ops->close(writer);
-		writer->ops->free(writer);
-
-		if (nb_write < 0)
-			failed = 1;
-	} else
-		failed = 2;
-
-	free(json_archive);
+	ssize_t nb_write = self->writer->ops->write_metadata(self->writer, archive);
 	so_value_free(archive);
 
-	return failed;
+	return nb_write <= 0;
 }
 

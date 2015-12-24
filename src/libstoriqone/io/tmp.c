@@ -65,6 +65,7 @@ static int so_io_tmp_reader_rewind(struct so_stream_reader * sr);
 
 static ssize_t so_io_tmp_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int so_io_tmp_writer_close(struct so_stream_writer * sw);
+static int so_io_tmp_writer_create_new_file(struct so_stream_writer * sw);
 static int so_io_tmp_writer_file_position(struct so_stream_writer * sw);
 static void so_io_tmp_writer_free(struct so_stream_writer * sw);
 static ssize_t so_io_tmp_writer_get_available_size(struct so_stream_writer * sw);
@@ -89,6 +90,7 @@ static struct so_stream_reader_ops so_io_tmp_reader_ops = {
 static struct so_stream_writer_ops so_io_tmp_writer_ops = {
 	.before_close       = so_io_tmp_writer_before_close,
 	.close              = so_io_tmp_writer_close,
+	.create_new_file    = so_io_tmp_writer_create_new_file,
 	.file_position      = so_io_tmp_writer_file_position,
 	.free               = so_io_tmp_writer_free,
 	.get_available_size = so_io_tmp_writer_get_available_size,
@@ -252,6 +254,10 @@ static ssize_t so_io_tmp_writer_before_close(struct so_stream_writer * sw, void 
 
 static int so_io_tmp_writer_close(struct so_stream_writer * sw) {
 	return so_io_tmp_close(sw->data);
+}
+
+static int so_io_tmp_writer_create_new_file(struct so_stream_writer * sw __attribute__((unused))) {
+	return -1;
 }
 
 static int so_io_tmp_writer_file_position(struct so_stream_writer * sw __attribute__((unused))) {
