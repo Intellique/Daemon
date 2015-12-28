@@ -50,6 +50,7 @@
 
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/value.h>
 
@@ -62,6 +63,8 @@ struct so_format_tar_writer_private {
 	ssize_t size;
 
 	int last_errno;
+
+	struct so_value * digests;
 
 	// multi volume
 	void * remain_header;
@@ -91,6 +94,7 @@ static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
 static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static enum so_format_writer_status so_format_tar_writer_write_header(struct so_format_tar_writer_private * f, void * data, ssize_t length);
+static ssize_t so_format_tar_writer_write_metadata(struct so_format_writer * fw, struct so_value * metadata);
 
 static struct so_format_writer_ops so_format_tar_writer_ops = {
 	.add_file             = so_format_tar_writer_add_file,
@@ -108,6 +112,7 @@ static struct so_format_writer_ops so_format_tar_writer_ops = {
 	.reopen               = so_format_tar_writer_reopen,
 	.restart_file         = so_format_tar_writer_restart_file,
 	.write                = so_format_tar_writer_write,
+	.write_metadata       = so_format_tar_writer_write_metadata,
 };
 
 
@@ -121,6 +126,7 @@ struct so_format_writer * so_format_tar_new_writer(struct so_stream_writer * wri
 	else
 		self->io = writer;
 
+	self->digests = NULL;
 	self->position = 0;
 	self->size = 0;
 	self->last_errno = 0;
@@ -428,8 +434,15 @@ static ssize_t so_format_tar_writer_get_block_size(struct so_format_writer * fw)
 
 static struct so_value * so_format_tar_writer_get_digests(struct so_format_writer * fw) {
 	struct so_format_tar_writer_private * format = fw->data;
-	if (format->has_cheksum)
-		return so_io_checksum_writer_get_checksums(format->io);
+
+	if (format->digests != NULL)
+		return so_value_share(format->digests);
+
+	if (format->has_cheksum) {
+		format->digests = so_io_checksum_writer_get_checksums(format->io);
+		return so_value_share(format->digests);
+	}
+
 	return so_value_new_linked_list();
 }
 
@@ -580,5 +593,27 @@ static enum so_format_writer_status so_format_tar_writer_write_header(struct so_
 	free(data);
 
 	return so_format_writer_ok;
+}
+
+static ssize_t so_format_tar_writer_write_metadata(struct so_format_writer * fw, struct so_value * metadata) {
+	struct so_format_tar_writer_private * format = fw->data;
+
+	int failed = format->io->ops->create_new_file(format->io);
+	if (failed != 0)
+		return -2;
+
+	char * json_metadata = so_json_encode_to_string(metadata);
+	ssize_t length = strlen(json_metadata);
+
+	ssize_t nb_write = format->io->ops->write(format->io, json_metadata, length);
+
+	free(json_metadata);
+
+	if (nb_write < 0)
+		return nb_write;
+
+	failed = format->io->ops->close(format->io);
+
+	return failed != 0 ? -1 : nb_write;
 }
 

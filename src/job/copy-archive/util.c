@@ -37,7 +37,6 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
-#include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
@@ -68,7 +67,8 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	if (failed != 0)
 		return failed;
 
-	self->dest_drive->ops->release(self->dest_drive);
+	self->writer->ops->free(self->writer);
+	self->writer = NULL;
 
 	self->dest_drive = soj_media_find_and_load_next(self->pool, false, db_connect);
 	if (self->dest_drive == NULL)
@@ -76,12 +76,10 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
-	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
-
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->media = so_media_dup(self->dest_drive->slot->media);
-	vol->media_position = self->writer->ops->file_position(self->writer);
 	vol->job = job;
+
+	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
 
 	return 0;
 }
@@ -147,24 +145,9 @@ void soj_copyarchive_util_init(struct so_archive * archive) {
 
 int soj_copyarchive_util_write_meta(struct soj_copyarchive_private * self) {
 	struct so_value * archive = so_archive_convert(self->copy_archive);
-	char * json_archive = so_json_encode_to_string(archive);
-	ssize_t length = strlen(json_archive);
-
-	int failed = 0;
-	struct so_stream_writer * writer = self->dest_drive->ops->get_raw_writer(self->dest_drive);
-	if (writer != NULL) {
-		ssize_t nb_write = writer->ops->write(writer, json_archive, length);
-		writer->ops->close(writer);
-		writer->ops->free(writer);
-
-		if (nb_write < 0)
-			failed = 1;
-	} else
-		failed = 2;
-
-	free(json_archive);
+	ssize_t nb_write = self->writer->ops->write_metadata(self->writer, archive);
 	so_value_free(archive);
 
-	return failed;
+	return nb_write <= 0;
 }
 

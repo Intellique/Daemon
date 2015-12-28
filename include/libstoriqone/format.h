@@ -108,6 +108,7 @@ struct so_format_writer {
 		struct so_format_reader * (*reopen)(struct so_format_writer * fw);
 		enum so_format_writer_status (*restart_file)(struct so_format_writer * fw, const struct so_format_file * file);
 		ssize_t (*write)(struct so_format_writer * fw, const void * buffer, ssize_t length);
+		ssize_t (*write_metadata)(struct so_format_writer * fw, struct so_value * metadata);
 	} * ops;
 	void * data;
 };

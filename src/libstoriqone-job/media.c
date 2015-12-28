@@ -216,8 +216,6 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("libstoriqone-job", "Failed to format media"));
 
-					drive->ops->release(drive);
-
 					return NULL;
 				}
 
@@ -229,8 +227,6 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-format-media", "Checking media header '%s': failed"),
 						media->name);
-
-					drive->ops->release(drive);
 
 					return NULL;
 				}

@@ -60,17 +60,15 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	struct so_media * media = self->dest_drive->slot->media;
-	vol->media = so_media_dup(media);
 	vol->job = job;
 
-	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
-	vol->media_position = self->writer->ops->file_position(self->writer);
+	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
 
 	unsigned int i;
 	int failed = 0;
 	bool ok = true;
 	ssize_t nb_total_read = 0, block_size = self->writer->ops->get_block_size(self->writer);
+	struct so_media * media = self->dest_drive->slot->media;
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
 
@@ -87,7 +85,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 			}
 		}
 
-		struct so_format_reader * reader = self->src_drive->ops->get_reader(self->src_drive, vol->media_position, NULL);
+		struct so_format_reader * reader = self->src_drive->ops->open_archive_volume(self->src_drive, vol, NULL);
 
 		while (rdr_status = reader->ops->get_header(reader, &file), rdr_status == so_format_reader_header_ok) {
 			ssize_t available_size = self->writer->ops->get_available_size(self->writer);

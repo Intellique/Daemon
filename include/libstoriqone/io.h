@@ -106,6 +106,7 @@ struct so_stream_writer {
 	struct so_stream_writer_ops {
 		ssize_t (*before_close)(struct so_stream_writer * sw, void * buffer, ssize_t length);
 		int (*close)(struct so_stream_writer * sw);
+		int (*create_new_file)(struct so_stream_writer * sw);
 		int (*file_position)(struct so_stream_writer * sw);
 		void (*free)(struct so_stream_writer * sw);
 		ssize_t (*get_available_size)(struct so_stream_writer * sw);

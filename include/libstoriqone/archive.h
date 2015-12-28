@@ -156,5 +156,9 @@ struct so_archive_format * so_archive_format_dup(struct so_archive_format * arch
 void so_archive_format_free(struct so_archive_format * archive_format);
 void so_archive_format_sync(struct so_archive_format * archive_format, struct so_value * new_archive_format);
 
+struct so_value * so_archive_volume_convert(struct so_archive_volume * volume);
+void so_archive_volume_free(struct so_archive_volume * volume);
+void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value * new_volume);
+
 #endif
 

@@ -53,10 +53,12 @@ static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_v
 static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_format_writer_free(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_init(void) __attribute__((constructor));
 static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_format_writer_write_metadata(struct sodr_peer * peer, struct so_value * request);
 
 static struct sodr_command commands[] = {
 	{ 0, "add file",             sodr_io_format_writer_add_file },
@@ -64,9 +66,11 @@ static struct sodr_command commands[] = {
 	{ 0, "close",                sodr_io_format_writer_close },
 	{ 0, "compute size of file", sodr_io_format_writer_compute_size_of_file },
 	{ 0, "end of file",          sodr_io_format_writer_end_of_file },
+	{ 0, "free",                 sodr_io_format_writer_free },
 	{ 0, "reopen",               sodr_io_format_writer_reopen },
 	{ 0, "restart file",         sodr_io_format_writer_restart_file },
 	{ 0, "write",                sodr_io_format_writer_write },
+	{ 0, "write metadata",       sodr_io_format_writer_write_metadata },
 
 	{ 0, NULL, NULL },
 };
@@ -139,29 +143,13 @@ static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value
 
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
 
-	if (failed == 0) {
-		if (peer->has_checksums) {
-			struct so_value * digests = peer->format_writer->ops->get_digests(peer->format_writer);
-			so_value_hashtable_put2(response, "digests", digests, true);
-		}
-
-		peer->format_writer->ops->free(peer->format_writer);
-		peer->format_writer = NULL;
-		close(peer->fd_data);
-		peer->fd_data = -1;
-		free(peer->buffer);
-		peer->buffer = NULL;
-		peer->buffer_length = 0;
-		peer->has_checksums = false;
+	if (failed == 0 && peer->has_checksums) {
+		struct so_value * digests = peer->format_writer->ops->get_digests(peer->format_writer);
+		so_value_hashtable_put2(response, "digests", digests, true);
 	}
-
-	sodr_io_print_throughtput(peer);
 
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
-
-	close(peer->fd_cmd);
-	peer->fd_cmd = -1;
 }
 
 static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, struct so_value * request) {
@@ -199,6 +187,22 @@ static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so
 	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
+}
+
+static void sodr_io_format_writer_free(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	sodr_io_print_throughtput(peer);
+
+	peer->format_writer->ops->free(peer->format_writer);
+	peer->format_writer = NULL;
+	close(peer->fd_data);
+	peer->fd_data = -1;
+	free(peer->buffer);
+	peer->buffer = NULL;
+	peer->buffer_length = 0;
+	peer->has_checksums = false;
+
+	close(peer->fd_cmd);
+	peer->fd_cmd = -1;
 }
 
 static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
@@ -305,6 +309,29 @@ static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value
 	struct so_value * response = so_value_pack("{szsiszsz}",
 		"returned", nb_total_write,
 		"last errno", 0,
+		"position", position,
+		"available size", available_size
+	);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+}
+
+static void sodr_io_format_writer_write_metadata(struct sodr_peer * peer, struct so_value * request) {
+	struct so_value * metadata = NULL;
+	so_value_unpack(request, "{s{so}}", "params", "metadata", &metadata);
+
+	ssize_t nb_write = peer->format_writer->ops->write_metadata(peer->format_writer, metadata);
+
+	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
+	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
+
+	int last_errno = 0;
+	if (nb_write < 0)
+		last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+
+	struct so_value * response = so_value_pack("{szsiszsz}",
+		"returned", nb_write,
+		"last errno", last_errno,
 		"position", position,
 		"available size", available_size
 	);

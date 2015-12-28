@@ -69,9 +69,6 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * file)
 static void so_archive_file_free(struct so_archive_files * file);
 static void so_archive_file_sync(struct so_archive_files * file, struct so_value * new_file);
 static void so_archive_init(void) __attribute__((constructor));
-static struct so_value * so_archive_volume_convert(struct so_archive_volume * volume);
-static void so_archive_volume_free(struct so_archive_volume * volume);
-static void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value * new_volume);
 
 
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
@@ -504,7 +501,7 @@ void so_archive_format_sync(struct so_archive_format * archive_format, struct so
 }
 
 
-static struct so_value * so_archive_volume_convert(struct so_archive_volume * vol) {
+struct so_value * so_archive_volume_convert(struct so_archive_volume * vol) {
 	unsigned int i;
 	struct so_value * files = so_value_new_array(vol->nb_files);
 	for (i = 0; i < vol->nb_files; i++)
@@ -534,7 +531,7 @@ static struct so_value * so_archive_volume_convert(struct so_archive_volume * vo
 	);
 }
 
-static void so_archive_volume_free(struct so_archive_volume * vol) {
+void so_archive_volume_free(struct so_archive_volume * vol) {
 	so_value_free(vol->digests);
 
 	unsigned int i;
@@ -544,7 +541,7 @@ static void so_archive_volume_free(struct so_archive_volume * vol) {
 	so_value_free(vol->db_data);
 }
 
-static void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value * new_volume) {
+void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value * new_volume) {
 	struct so_value * media = NULL;
 	struct so_value * files = NULL;
 

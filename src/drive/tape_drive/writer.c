@@ -28,6 +28,8 @@
 #include <errno.h>
 // dgettext
 #include <libintl.h>
+// bool
+#include <stdbool.h>
 // free, malloc
 #include <stdlib.h>
 // memcpy
@@ -53,6 +55,7 @@
 
 struct sodr_tape_drive_writer {
 	int fd;
+	bool closed;
 
 	char * buffer;
 	ssize_t buffer_used;
@@ -68,6 +71,7 @@ struct sodr_tape_drive_writer {
 
 static ssize_t sodr_tape_drive_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int sodr_tape_drive_writer_close(struct so_stream_writer * sw);
+static int sodr_tape_drive_writer_create_new_file(struct so_stream_writer * sw);
 static int sodr_tape_drive_file_position(struct so_stream_writer * sw);
 static void sodr_tape_drive_writer_free(struct so_stream_writer * sw);
 static ssize_t sodr_tape_drive_writer_get_available_size(struct so_stream_writer * sw);
@@ -80,6 +84,7 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 static struct so_stream_writer_ops sodr_tape_drive_writer_ops = {
 	.before_close       = sodr_tape_drive_writer_before_close,
 	.close              = sodr_tape_drive_writer_close,
+	.create_new_file    = sodr_tape_drive_writer_create_new_file,
 	.file_position      = sodr_tape_drive_file_position,
 	.free               = sodr_tape_drive_writer_free,
 	.get_available_size = sodr_tape_drive_writer_get_available_size,
@@ -177,7 +182,7 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 		self->media->free_block--;
 	}
 
-	if (self->fd > -1) {
+	if (!self->closed) {
 		static struct mtop eof = { MTWEOF, 1 };
 		sodr_time_start();
 		int failed = ioctl(self->fd, MTIOCTOP, &eof);
@@ -191,11 +196,25 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 			return -1;
 		}
 
-		self->fd = -1;
+		self->closed = true;
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is closed"),
 			self->drive->vendor, self->drive->model, self->drive->index);
 	}
+
+	return 0;
+}
+
+static int sodr_tape_drive_writer_create_new_file(struct so_stream_writer * sw) {
+	struct sodr_tape_drive_writer * self = sw->data;
+
+	self->closed = false;
+	self->position = 0;
+	self->file_position++;
+	self->last_errno = 0;
+
+	self->media->write_count++;
+	self->media->last_write = time(NULL);
 
 	return 0;
 }
@@ -247,6 +266,7 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive 
 
 	struct sodr_tape_drive_writer * self = malloc(sizeof(struct sodr_tape_drive_writer));
 	self->fd = fd;
+	self->closed = false;
 	self->buffer = malloc(block_size);
 	self->buffer_used = 0;
 	self->block_size = block_size;

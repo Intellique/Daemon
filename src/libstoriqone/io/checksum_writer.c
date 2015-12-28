@@ -44,6 +44,7 @@ struct so_io_stream_checksum_writer_private {
 
 static ssize_t so_io_checksum_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int so_io_checksum_writer_close(struct so_stream_writer * sw);
+static int so_io_checksum_writer_create_new_file(struct so_stream_writer * sw);
 static int so_io_checksum_writer_file_position(struct so_stream_writer * sw);
 static void so_io_checksum_writer_free(struct so_stream_writer * sw);
 static ssize_t so_io_checksum_writer_get_available_size(struct so_stream_writer * sw);
@@ -56,6 +57,7 @@ static ssize_t so_io_checksum_writer_write(struct so_stream_writer * sw, const v
 static struct so_stream_writer_ops so_io_writer_ops = {
 	.before_close       = so_io_checksum_writer_before_close,
 	.close              = so_io_checksum_writer_close,
+	.create_new_file    = so_io_checksum_writer_create_new_file,
 	.file_position      = so_io_checksum_writer_file_position,
 	.free               = so_io_checksum_writer_free,
 	.get_available_size = so_io_checksum_writer_get_available_size,
@@ -100,6 +102,21 @@ static int so_io_checksum_writer_close(struct so_stream_writer * sw) {
 	if (!failed) {
 		self->closed = true;
 		self->worker->ops->finish(self->worker);
+	}
+
+	return failed;
+}
+
+static int so_io_checksum_writer_create_new_file(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
+	self->worker->ops->reset(self->worker);
+
+	int failed = 0;
+	if (self->out != NULL)
+		failed = self->out->ops->create_new_file(self->out);
+
+	if (failed == 0) {
+		self->closed = false;
 	}
 
 	return failed;

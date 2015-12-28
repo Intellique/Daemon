@@ -110,7 +110,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			break;
 		}
 
-		struct so_format_reader * reader = drive->ops->get_reader(drive, vol->media_position, NULL);
+		struct so_format_reader * reader = drive->ops->open_archive_volume(drive, vol, NULL);
 
 		unsigned int j = 0;
 		for (j = 0; j < vol->nb_files && !worker->stop_request; j++) {
