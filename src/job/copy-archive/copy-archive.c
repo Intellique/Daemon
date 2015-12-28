@@ -37,6 +37,7 @@
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
+#include <libstoriqone/format.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -143,6 +144,9 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 			data.src_archive->name);
 
 		failed = soj_copyarchive_util_write_meta(&data);
+
+		data.writer->ops->free(data.writer);
+		data.writer = NULL;
 
 		if (failed != 0)
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,

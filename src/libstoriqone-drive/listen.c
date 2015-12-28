@@ -87,7 +87,6 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_open_archive_volume(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_release(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * request, int fd);
 
 static void sodr_worker_command_count_archives(void * peer);
@@ -112,7 +111,6 @@ static struct sodr_socket_command {
 	{ 0, "init peer",             sodr_socket_command_init_peer },
 	{ 0, "open archive volume",   sodr_socket_command_open_archive_volume },
 	{ 0, "parse archive",         sodr_socket_command_parse_archive },
-	{ 0, "release",               sodr_socket_command_release },
 	{ 0, "sync",                  sodr_socket_command_sync },
 
 	{ 0, NULL, NULL }
@@ -826,14 +824,6 @@ static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so
 
 	if (size >= 0)
 		free(thread_name);
-}
-
-static void sodr_socket_command_release(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
-	sodr_listen_reset_peer();
-
-	struct so_value * response = so_value_pack("{sb}", "status", true);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
 }
 
 static void sodr_socket_command_sync(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {

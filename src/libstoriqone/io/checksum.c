@@ -355,8 +355,11 @@ static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_ch
 
 	pthread_mutex_lock(&self->lock);
 
-	while (self->used > 0 && self->used + length > self->limit)
-		pthread_cond_wait(&self->wait, &self->lock);
+	if (self->used > 0 && self->used + length > self->limit) {
+		size_t limit = self->limit >> 1;
+		while (self->used > 0 && self->used + length > limit)
+			pthread_cond_wait(&self->wait, &self->lock);
+	}
 
 	struct so_io_linked_list_block * block = self->last_block;
 	if (block != NULL) {

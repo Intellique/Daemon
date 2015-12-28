@@ -220,7 +220,8 @@ static void soj_create_archive_add_file3(struct soj_create_archive_worker * work
 static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect) {
 	soj_create_archive_worker_close2(worker, first_round);
 
-	worker->drive->ops->release(worker->drive);
+	worker->writer->ops->free(worker->writer);
+	worker->writer = NULL;
 
 	worker->drive = soj_media_find_and_load_next(worker->pool, false, db_connect);
 	if (worker->drive != NULL) {
@@ -255,7 +256,8 @@ int soj_create_archive_worker_close(bool first_round) {
 		else
 			soj_create_archive_worker_write_meta(primary_worker);
 
-		primary_worker->drive->ops->release(primary_worker->drive);
+		primary_worker->writer->ops->free(primary_worker->writer);
+		primary_worker->writer = NULL;
 	}
 
 	unsigned int i;
@@ -271,7 +273,8 @@ int soj_create_archive_worker_close(bool first_round) {
 		else
 			soj_create_archive_worker_write_meta(worker);
 
-		worker->drive->ops->release(worker->drive);
+		worker->writer->ops->free(worker->writer);
+		worker->writer = NULL;
 	}
 
 	return 0;

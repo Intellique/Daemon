@@ -59,7 +59,6 @@ static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * driv
 static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, struct so_value * checksums);
 static struct so_format_reader * soj_drive_open_archive_volume(struct so_drive * drive, struct so_archive_volume * volume, struct so_value * checksums);
 static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int archive_position, struct so_value * checksums);
-static void soj_drive_release(struct so_drive * drive);
 static int soj_drive_sync(struct so_drive * drive);
 
 static struct so_drive_ops soj_drive_ops = {
@@ -74,7 +73,6 @@ static struct so_drive_ops soj_drive_ops = {
 	.get_writer            = soj_drive_get_writer,
 	.open_archive_volume   = soj_drive_open_archive_volume,
 	.parse_archive         = soj_drive_parse_archive,
-	.release               = soj_drive_release,
 	.sync                  = soj_drive_sync,
 };
 
@@ -505,25 +503,6 @@ static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int 
 	}
 
 	return NULL;
-}
-
-static void soj_drive_release(struct so_drive * drive) {
-	struct soj_drive * self = drive->data;
-
-	struct so_value * request = so_value_pack("{ss}", "command", "release");
-
-	pthread_mutex_lock(&self->lock);
-
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-
-	pthread_mutex_unlock(&self->lock);
-
-	so_value_free(response);
-
-	return;
 }
 
 static int soj_drive_sync(struct so_drive * drive) {
