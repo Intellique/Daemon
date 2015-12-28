@@ -311,7 +311,7 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_ge
 		return so_format_reader_header_not_found;
 
 	if (self->i_files == 0)
-		self->file_info = self->ltfs_info->files;
+		self->file_info = self->ltfs_info->first_file;
 	else
 		self->file_info++;
 

@@ -852,7 +852,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 				if (media->private_data != NULL) {
 					struct sodr_tape_drive_media * mp = media->private_data;
 					if (mp->format == sodr_tape_drive_media_ltfs) {
-						if (mp->data.ltfs.files == NULL) {
+						if (mp->data.ltfs.first_file == NULL) {
 							int failed = sodr_tape_drive_media_parse_ltfs_index(&sodr_tape_drive, db);
 							if (failed != 0)
 								media->status = so_media_status_error;

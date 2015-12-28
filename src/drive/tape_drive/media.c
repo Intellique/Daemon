@@ -73,11 +73,13 @@ void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
 	unsigned int i;
 	switch (media_data->format) {
 		case sodr_tape_drive_media_ltfs:
-			for (i = 0; i < media_data->data.ltfs.nb_files; i++) {
-				struct sodr_tape_drive_format_ltfs_file * file = media_data->data.ltfs.files + i;
+			while (media_data->data.ltfs.first_file != NULL) {
+				struct sodr_tape_drive_format_ltfs_file * file = media_data->data.ltfs.first_file;
+				media_data->data.ltfs.first_file = file->next;
+
 				so_format_file_free(&file->file);
+				free(file->extents);
 			}
-			free(media_data->data.ltfs.files);
 			break;
 
 		default:

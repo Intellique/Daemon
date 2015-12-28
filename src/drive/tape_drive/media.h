@@ -84,7 +84,9 @@ struct sodr_tape_drive_media {
 					off_t file_offset;
 				} * extents;
 				unsigned int nb_extents;
-			} * files;
+
+				struct sodr_tape_drive_format_ltfs_file * next;
+			} * first_file, * last_file;
 			unsigned int nb_files;
 		} ltfs;
 	} data;
