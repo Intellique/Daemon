@@ -519,7 +519,7 @@ CREATE TABLE JobRun (
     endtime TIMESTAMP(3) WITH TIME ZONE,
 
     status JobStatus NOT NULL DEFAULT 'running',
-    script JobRunScript NOT NULL DEFAULT 'pre job',
+    step JobRunStep NOT NULL DEFAULT 'pre job',
     done FLOAT NOT NULL DEFAULT 0,
 
     exitcode INTEGER NOT NULL DEFAULT 0,

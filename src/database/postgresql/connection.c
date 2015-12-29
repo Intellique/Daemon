@@ -2638,7 +2638,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	// update jobrun
 	query = "update_jobrun";
-	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET status = $1, script = $2, done = $3 WHERE id = $4");
+	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET status = $1, step = $2, done = $3 WHERE id = $4");
 
 	char * done = so_database_postgresql_set_float(job->done);
 
