@@ -55,7 +55,7 @@ CREATE TYPE JobRecordNotif AS ENUM (
     'read'
 );
 
-CREATE TYPE JobRunScript AS ENUM (
+CREATE TYPE JobRunStep AS ENUM (
     'job',
     'on error',
     'pre job',

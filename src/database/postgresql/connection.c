@@ -2642,7 +2642,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	char * done = so_database_postgresql_set_float(job->done);
 
-	const char * param3[] = { so_job_status_to_string(job->status, false), so_job_run_script_to_string(job->script, false), done, jobrun_id };
+	const char * param3[] = { so_job_status_to_string(job->status, false), so_job_run_step_to_string(job->step, false), done, jobrun_id };
 	result = PQexecPrepared(self->connect, query, 4, param3, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
