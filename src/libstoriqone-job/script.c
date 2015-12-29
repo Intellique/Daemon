@@ -46,6 +46,8 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 	if (nb_scripts < 1)
 		return NULL;
 
+	job->done = -1;
+
 	struct so_value * datas = so_value_new_array(nb_scripts);
 
 	int i, status = 0;
@@ -118,6 +120,9 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 
 		free(path);
 	}
+
+	if (status == 0)
+		job->done = 1;
 
 	return so_value_pack("{sisosb}", "status", status, "datas", datas, "should run", should_run);
 }

@@ -56,6 +56,16 @@ enum so_job_record_notif {
 	so_job_record_notif_unknown = 0x0,
 };
 
+enum so_job_run_script {
+	so_job_run_script_job = 0x1,
+	so_job_run_script_on_error = 0x2,
+	so_job_run_script_post_job = 0x3,
+	so_job_run_script_pre_job = 0x4,
+	so_job_run_script_warm_up = 0x5,
+
+	so_job_run_script_unknown = 0x0,
+};
+
 struct so_job {
 	char * id;
 	char * name;
@@ -66,6 +76,7 @@ struct so_job {
 	long repetition;
 
 	long num_runs;
+	enum so_job_run_script script;
 	volatile float done;
 	volatile enum so_job_status status;
 
@@ -85,6 +96,8 @@ struct so_value * so_job_convert(struct so_job * job) __attribute__((warn_unused
 void so_job_free(struct so_job * job);
 void so_job_free2(void * job);
 const char * so_job_report_notif_to_string(enum so_job_record_notif notif, bool translate);
+const char * so_job_run_script_to_string(enum so_job_run_script script, bool translate);
+enum so_job_run_script so_job_run_string_to_script(const char * script, bool translate);
 const char * so_job_status_to_string(enum so_job_status status, bool translate);
 enum so_job_record_notif so_job_string_to_record_notif(const char * notif, bool translate);
 enum so_job_status so_job_string_to_status(const char * status, bool translate);

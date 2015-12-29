@@ -108,6 +108,9 @@ static void job_worker(void * arg) {
 		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, id: %s, name: %s)"),
 		j->type, j->id, j->name);
 
+	job->script = so_job_run_script_warm_up;
+	job->done = 0;
+
 	int failed = job_dr->simulate(j, db_connect);
 	if (failed != 0) {
 		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -118,11 +121,16 @@ static void job_worker(void * arg) {
 		goto error;
 	}
 
+	job->script = so_job_run_script_pre_job;
+
 	if (!job_dr->script_pre_run(j, db_connect)) {
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;
 	}
+
+	job->script = so_job_run_script_job;
+	job->done = 0;
 
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
 		dgettext("libstoriqone-job", "Starting job (type: %s, id: %s, name: %s)"),
@@ -135,10 +143,13 @@ static void job_worker(void * arg) {
 	if (failed != 0 && job->stopped_by_user)
 		goto error;
 
-	if (failed == 0)
+	if (failed == 0) {
+		job->script = so_job_run_script_post_job;
 		job_dr->script_post_run(j, db_connect);
-	else
+	} else {
+		job->script = so_job_run_script_on_error;
 		job_dr->script_on_error(j, db_connect);
+	}
 
 error:
 	if (db_connect != NULL) {

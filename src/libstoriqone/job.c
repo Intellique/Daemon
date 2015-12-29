@@ -75,11 +75,29 @@ static struct so_job_record_notif2 {
 };
 static const unsigned int so_job_record_notif2 = sizeof(so_job_record_notifs) / sizeof(*so_job_record_notifs);
 
+static struct so_job_run_script2 {
+	unsigned long long hash;
+	unsigned long long hash_translated;
+
+	const char * name;
+	const char * translation;
+	const enum so_job_run_script script;
+} so_job_run_scripts[] = {
+	[so_job_run_script_job]      = { 0, 0, gettext_noop("job"), NULL, so_job_run_script_job },
+	[so_job_run_script_on_error] = { 0, 0, gettext_noop("on error"), NULL, so_job_run_script_on_error },
+	[so_job_run_script_post_job] = { 0, 0, gettext_noop("post job"), NULL, so_job_run_script_post_job },
+	[so_job_run_script_pre_job]  = { 0, 0, gettext_noop("pre job"),  NULL, so_job_run_script_pre_job },
+	[so_job_run_script_warm_up]  = { 0, 0, gettext_noop("warm up"),  NULL, so_job_run_script_warm_up },
+
+	[so_job_run_script_unknown]  = { 0, 0, gettext_noop("unknown"),  NULL, so_job_run_script_unknown },
+};
+static const unsigned int so_job_run_script2 = sizeof(so_job_run_scripts) / sizeof(*so_job_run_scripts);
+
 static void so_job_init(void) __attribute__((constructor));
 
 
 struct so_value * so_job_convert(struct so_job * job) {
-	return so_value_pack("{sssssssssIsIsIsIsfsssisbsOsO}",
+	return so_value_pack("{sssssssssIsIsIsIsssfsssisbsOsO}",
 		"id", job->id,
 		"name", job->name,
 		"type", job->type,
@@ -90,6 +108,7 @@ struct so_value * so_job_convert(struct so_job * job) {
 		"repetition", job->repetition,
 
 		"num runs", job->num_runs,
+		"script", so_job_run_script_to_string(job->script, false),
 		"done", job->done,
 		"status", so_job_status_to_string(job->status, false),
 
@@ -133,6 +152,12 @@ static void so_job_init() {
 		so_job_record_notifs[i].translation = dgettext("libstoriqone", so_job_record_notifs[i].name);
 		so_job_record_notifs[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_job_record_notifs[i].name));
 	}
+
+	for (i = 0; i < so_job_run_script2; i++) {
+		so_job_run_scripts[i].hash = so_string_compute_hash2(so_job_run_scripts[i].name);
+		so_job_run_scripts[i].translation = dgettext("libstoriqone", so_job_run_scripts[i].name);
+		so_job_run_scripts[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_job_run_scripts[i].name));
+	}
 }
 
 const char * so_job_report_notif_to_string(enum so_job_record_notif notif, bool translate) {
@@ -140,6 +165,33 @@ const char * so_job_report_notif_to_string(enum so_job_record_notif notif, bool 
 		return so_job_record_notifs[notif].translation;
 	else
 		return so_job_record_notifs[notif].name;
+}
+
+const char * so_job_run_script_to_string(enum so_job_run_script script, bool translate) {
+	if (translate)
+		return so_job_run_scripts[script].translation;
+	else
+		return so_job_run_scripts[script].name;
+}
+
+enum so_job_run_script so_job_run_string_to_script(const char * script, bool translate) {
+	if (script == NULL)
+		return so_job_run_script_unknown;
+
+	unsigned int i;
+	const unsigned long long hash = so_string_compute_hash2(script);
+
+	if (translate) {
+		for (i = 0; i < so_job_run_script2; i++)
+			if (so_job_run_scripts[i].hash_translated == hash)
+				return so_job_run_scripts[i].script;
+	} else {
+		for (i = 0; i < so_job_run_script2; i++)
+			if (so_job_run_scripts[i].hash == hash)
+				return so_job_run_scripts[i].script;
+	}
+
+	return so_job_run_script_unknown;
 }
 
 const char * so_job_status_to_string(enum so_job_status status, bool translate) {
@@ -157,11 +209,11 @@ enum so_job_record_notif so_job_string_to_record_notif(const char * notif, bool 
 	const unsigned long long hash = so_string_compute_hash2(notif);
 
 	if (translate) {
-		for (i = 0; so_job_record_notifs[i].notif != so_job_record_notif_unknown; i++)
+		for (i = 0; i < so_job_record_notif2; i++)
 			if (so_job_record_notifs[i].hash_translated == hash)
 				return so_job_record_notifs[i].notif;
 	} else {
-		for (i = 0; so_job_record_notifs[i].notif != so_job_record_notif_unknown; i++)
+		for (i = 0; i < so_job_record_notif2; i++)
 			if (so_job_record_notifs[i].hash == hash)
 				return so_job_record_notifs[i].notif;
 	}
@@ -201,8 +253,9 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 
 	char * status = NULL;
 	double done = 0;
+	char * script = NULL;
 
-	so_value_unpack(new_job, "{sssssssssisIsIsIsfsssisbsOsO}",
+	so_value_unpack(new_job, "{sssssssssisIsIsIsssfsssisbsOsO}",
 		"id", &job->id,
 		"name", &job->name,
 		"type", &job->type,
@@ -213,6 +266,7 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 		"repetition", &job->repetition,
 
 		"num runs", &job->num_runs,
+		"script", &script,
 		"done", &done,
 		"status", &status,
 
@@ -226,5 +280,8 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 	job->done = done;
 	job->status = so_job_string_to_status(status, false);
 	free(status);
+
+	job->script = so_job_run_string_to_script(script, false);
+	free(script);
 }
 

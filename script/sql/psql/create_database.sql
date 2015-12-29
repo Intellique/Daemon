@@ -55,6 +55,14 @@ CREATE TYPE JobRecordNotif AS ENUM (
     'read'
 );
 
+CREATE TYPE JobRunScript AS ENUM (
+    'job',
+    'on error',
+    'pre job',
+    'post job',
+    'warm up'
+);
+
 CREATE TYPE JobStatus AS ENUM (
     'disable',
     'error',
@@ -511,7 +519,9 @@ CREATE TABLE JobRun (
     endtime TIMESTAMP(3) WITH TIME ZONE,
 
     status JobStatus NOT NULL DEFAULT 'running',
+    script JobRunScript NOT NULL DEFAULT 'pre job',
     done FLOAT NOT NULL DEFAULT 0,
+
     exitcode INTEGER NOT NULL DEFAULT 0,
     stoppedbyuser BOOLEAN NOT NULL DEFAULT FALSE,
 
