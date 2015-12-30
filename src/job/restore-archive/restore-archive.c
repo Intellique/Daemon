@@ -57,20 +57,20 @@ static struct so_value * selected_path = NULL;
 static void soj_restorearchive_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_restorearchive_init(void) __attribute__((constructor));
 static int soj_restorearchive_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_restorearchive_simulate(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_restorearchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_restorearchive_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_restorearchive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_restorearchive_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver soj_restorearchive = {
 	.name = "restore-archive",
 
 	.exit            = soj_restorearchive_exit,
 	.run             = soj_restorearchive_run,
-	.simulate        = soj_restorearchive_simulate,
 	.script_on_error = soj_restorearchive_script_on_error,
 	.script_post_run = soj_restorearchive_script_post_run,
 	.script_pre_run  = soj_restorearchive_script_pre_run,
+	.warm_up         = soj_restorearchive_warm_up,
 };
 
 
@@ -180,38 +180,6 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 	return 0;
 }
 
-static int soj_restorearchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	archive = db_connect->ops->get_archive_by_job(db_connect, job);
-	if (archive == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-storiqone-job-restore-archive", "Archive not found"));
-		return 1;
-	}
-	if (archive->deleted) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-storiqone-job-restore-archive", "No restoration for deleted archive '%s'"),
-			archive->name);
-		return 1;
-	}
-
-	restore_path = db_connect->ops->get_restore_path(db_connect, job);
-	if (restore_path != NULL && restore_path[0] != '/') {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-storiqone-job-restore-archive", "Restore path should be absolute (starts with '/')"));
-		return 2;
-	}
-
-	selected_path = db_connect->ops->get_selected_files_by_job(db_connect, job);
-	if (selected_path == NULL)
-		selected_path = so_value_new_linked_list();
-
-	has_selected_path = so_value_list_get_length(selected_path) > 0;
-
-	soj_restorearchive_path_init(restore_path, selected_path);
-
-	return 0;
-}
-
 static void soj_restorearchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	struct so_pool * pool = archive->volumes->media->pool;
 
@@ -273,5 +241,37 @@ static bool soj_restorearchive_script_pre_run(struct so_job * job, struct so_dat
 	so_value_free(returned);
 
 	return should_run;
+}
+
+static int soj_restorearchive_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	archive = db_connect->ops->get_archive_by_job(db_connect, job);
+	if (archive == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-storiqone-job-restore-archive", "Archive not found"));
+		return 1;
+	}
+	if (archive->deleted) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-storiqone-job-restore-archive", "No restoration for deleted archive '%s'"),
+			archive->name);
+		return 1;
+	}
+
+	restore_path = db_connect->ops->get_restore_path(db_connect, job);
+	if (restore_path != NULL && restore_path[0] != '/') {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-storiqone-job-restore-archive", "Restore path should be absolute (starts with '/')"));
+		return 2;
+	}
+
+	selected_path = db_connect->ops->get_selected_files_by_job(db_connect, job);
+	if (selected_path == NULL)
+		selected_path = so_value_new_linked_list();
+
+	has_selected_path = so_value_list_get_length(selected_path) > 0;
+
+	soj_restorearchive_path_init(restore_path, selected_path);
+
+	return 0;
 }
 

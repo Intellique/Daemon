@@ -37,10 +37,10 @@ struct so_job_driver {
 
 	void (*exit)(struct so_job * job, struct so_database_connection * db_connect);
 	int (*run)(struct so_job * job, struct so_database_connection * db_connect);
-	int (*simulate)(struct so_job * job, struct so_database_connection * db_connect);
 	void (*script_on_error)(struct so_job * job, struct so_database_connection * db_connect);
 	void (*script_post_run)(struct so_job * job, struct so_database_connection * db_connect);
 	bool (*script_pre_run)(struct so_job * job, struct so_database_connection * db_connect);
+	int (*warm_up)(struct so_job * job, struct so_database_connection * db_connect);
 };
 
 int soj_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 5, 6)));

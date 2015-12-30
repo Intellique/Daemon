@@ -111,7 +111,7 @@ static void job_worker(void * arg) {
 	job->step = so_job_run_step_warm_up;
 	job->done = 0;
 
-	int failed = job_dr->simulate(j, db_connect);
+	int failed = job_dr->warm_up(j, db_connect);
 	if (failed != 0) {
 		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("libstoriqone-job", "Simulation of job (type: %s, id: %s, name: %s) failed with code: %d"),

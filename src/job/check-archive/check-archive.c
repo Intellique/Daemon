@@ -49,20 +49,20 @@ static struct so_archive * archive = NULL;
 static void soj_checkarchive_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_checkarchive_init(void) __attribute__((constructor));
 static int soj_checkarchive_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_checkarchive_simulate(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_checkarchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_checkarchive_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_checkarchive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_checkarchive_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver soj_checkarchive = {
 	.name = "check-archive",
 
 	.exit            = soj_checkarchive_exit,
 	.run             = soj_checkarchive_run,
-	.simulate        = soj_checkarchive_simulate,
 	.script_on_error = soj_checkarchive_script_on_error,
 	.script_post_run = soj_checkarchive_script_post_run,
 	.script_pre_run  = soj_checkarchive_script_pre_run,
+	.warm_up         = soj_checkarchive_warm_up,
 };
 
 
@@ -98,24 +98,6 @@ static int soj_checkarchive_run(struct so_job * job, struct so_database_connecti
 	free(json);
 
 	return failed;
-}
-
-static int soj_checkarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	archive = db_connect->ops->get_archive_by_job(db_connect, job);
-	if (archive == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-check-archive", "Archive not found"));
-		return 1;
-	}
-
-	if (archive->deleted) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-check-archive", "No check for deleted archive '%s'"),
-			archive->name);
-		return 1;
-	}
-
-	return 0;
 }
 
 static void soj_checkarchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
@@ -173,5 +155,23 @@ static bool soj_checkarchive_script_pre_run(struct so_job * job, struct so_datab
 	so_value_free(returned);
 
 	return should_run;
+}
+
+static int soj_checkarchive_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	archive = db_connect->ops->get_archive_by_job(db_connect, job);
+	if (archive == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "Archive not found"));
+		return 1;
+	}
+
+	if (archive->deleted) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "No check for deleted archive '%s'"),
+			archive->name);
+		return 1;
+	}
+
+	return 0;
 }
 
