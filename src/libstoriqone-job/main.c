@@ -105,7 +105,7 @@ static void job_worker(void * arg) {
 		goto error;
 
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
-		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, id: %s, name: %s)"),
+		dgettext("libstoriqone-job", "Starting warm up job (type: %s, id: %s, name: %s)"),
 		j->type, j->id, j->name);
 
 	job->step = so_job_run_step_warm_up;
@@ -114,7 +114,7 @@ static void job_worker(void * arg) {
 	int failed = job_dr->warm_up(j, db_connect);
 	if (failed != 0) {
 		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("libstoriqone-job", "Simulation of job (type: %s, id: %s, name: %s) failed with code: %d"),
+			dgettext("libstoriqone-job", "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"),
 			j->type, j->id, j->name, failed);
 		job->exit_code = failed;
 		job->status = so_job_status_error;
