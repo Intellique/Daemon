@@ -24,6 +24,7 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // bool
 #include <stdbool.h>
 // open
@@ -38,6 +39,10 @@
 #include <stdlib.h>
 // memmove, strlen, strncmp, strspn, strstr
 #include <string.h>
+// ioctl
+#include <sys/ioctl.h>
+// mmap, munmap
+#include <sys/mman.h>
 // fstat, open
 #include <sys/stat.h>
 // fstat, open
@@ -52,6 +57,8 @@
 
 static size_t so_json_compute_length(struct so_value * val);
 static ssize_t so_json_encode_to_string_inner(struct so_value * val, char * buffer, size_t length);
+static struct so_value * so_json_parse_fd_reg_file(int fd, struct stat * info);
+static struct so_value * so_json_parse_fd_reg_pipe(int fd, int timeout);
 static struct so_value * so_json_parse_string_inner(const char ** json);
 static void so_json_parse_string_strip(const char ** json);
 
@@ -455,6 +462,30 @@ char * so_json_encode_to_string(struct so_value * value) {
 }
 
 struct so_value * so_json_parse_fd(int fd, int timeout) {
+	struct so_value * ret_val = NULL;
+
+	struct stat fd_info;
+	int failed = fstat(fd, &fd_info);
+	if (failed != 0)
+		return NULL;
+
+	if (S_ISREG(fd_info.st_mode))
+		ret_val = so_json_parse_fd_reg_file(fd, &fd_info);
+	else if (S_ISFIFO(fd_info.st_mode) || S_ISSOCK(fd_info.st_mode))
+		ret_val = so_json_parse_fd_reg_pipe(fd, timeout);
+
+	return ret_val;
+}
+
+static struct so_value * so_json_parse_fd_reg_file(int fd, struct stat * info) {
+	char * buffer = mmap(NULL, info->st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	struct so_value * ret_val = ret_val = so_json_parse_string(buffer);
+	munmap(buffer, info->st_size);
+
+	return ret_val;
+}
+
+static struct so_value * so_json_parse_fd_reg_pipe(int fd, int timeout) {
 	struct pollfd pfd = {
 		.fd = fd,
 		.events = POLLIN | POLLHUP,
@@ -466,37 +497,112 @@ struct so_value * so_json_parse_fd(int fd, int timeout) {
 	if (pfd.revents == POLLHUP)
 		return NULL;
 
-	ssize_t buffer_size = 4096, nb_total_read = 0, size;
-	char * buffer = malloc(buffer_size + 1);
-	buffer[0] = '\0';
+	ssize_t available_in_pipe = 0;
+	int failed = ioctl(fd, FIONREAD, &available_in_pipe);
+	if (failed != 0)
+		return NULL;
+
+	int pipe_fd[2];
+	failed = pipe(pipe_fd);
+	if (failed != 0)
+		return NULL;
+
+	if (available_in_pipe > 4096)
+		available_in_pipe = 4096;
+
+	ssize_t buffer_size = 4096, nb_total_read = 0;
+	char * str_buffer = malloc(buffer_size + 1);
+	str_buffer[0] = '\0';
+
+	unsigned int nb_bracket = 0;
+	bool in_string = false;
+	bool escaped = false;
 
 	struct so_value * ret_val = NULL;
 
-	while (size = read(fd, buffer + nb_total_read, buffer_size - nb_total_read), size > 0) {
-		nb_total_read += size;
-		buffer[nb_total_read] = '\0';
+	do {
+		ssize_t nb_copied = tee(fd, pipe_fd[1], available_in_pipe, 0);
+		if (nb_copied < 0)
+			goto pipe_error;
 
-		ret_val = so_json_parse_string(buffer);
-		if (ret_val != NULL)
-			break;
+		char quick_buffer[4096];
+		ssize_t nb_read = read(pipe_fd[0], quick_buffer, nb_copied);
+		if (nb_read < 0)
+			goto pipe_error;
 
-		pfd.revents = 0;
-		if (poll(&pfd, 1, timeout) == 0)
-			break;
-		if (pfd.revents & POLLHUP)
-			break;
+		ssize_t nb_parsed;
+		for (nb_parsed = 0; nb_parsed < nb_read; nb_parsed++) {
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
 
-		buffer_size += 4096;
-		void * addr = realloc(buffer, buffer_size + 1);
-		if (addr == NULL) {
-			free(buffer);
-			return NULL;
+			switch (quick_buffer[nb_parsed]) {
+				case '{':
+					if (!in_string)
+						nb_bracket++;
+					break;
+
+				case '}':
+					if (!in_string)
+						nb_bracket--;
+					break;
+
+				case '"':
+					in_string = !in_string;
+					break;
+
+				case '\\':
+					if (in_string)
+						escaped = true;
+					break;
+			}
+
+			if (nb_bracket < 1) {
+				nb_parsed++;
+				break;
+			}
 		}
 
-		buffer = addr;
-	}
+		if (nb_total_read + nb_parsed > buffer_size) {
+			while (nb_total_read + nb_parsed > buffer_size)
+				buffer_size += 4096;
 
-	free(buffer);
+			void * addr = realloc(str_buffer, buffer_size);
+			if (addr == NULL)
+				goto pipe_error;
+
+			str_buffer = addr;
+		}
+
+		nb_read = read(fd, str_buffer + nb_total_read, nb_parsed);
+		if (nb_read < 0)
+			goto pipe_error;
+
+		nb_total_read += nb_read;
+		str_buffer[nb_total_read] = '\0';
+
+		if (nb_bracket > 0) {
+			pfd.revents = 0;
+			if (poll(&pfd, 1, timeout) == 0)
+				goto pipe_error;
+
+			if (pfd.revents == POLLHUP)
+				goto pipe_error;
+
+			failed = ioctl(fd, FIONREAD, &available_in_pipe);
+			if (failed != 0)
+				goto pipe_error;
+		}
+	} while (nb_bracket > 0);
+
+	ret_val = so_json_parse_string(str_buffer);
+
+pipe_error:
+	close(pipe_fd[0]);
+	close(pipe_fd[1]);
+	free(str_buffer);
+
 	return ret_val;
 }
 
@@ -508,22 +614,11 @@ struct so_value * so_json_parse_file(const char * file) {
 		return NULL;
 
 	int fd = open(file, O_RDONLY);
-
-	struct stat st;
-	fstat(fd, &st);
-
-	char * buffer = malloc(st.st_size + 1);
-	ssize_t nb_read = read(fd, buffer, st.st_size);
-	close(fd);
-	buffer[nb_read] = '\0';
-
-	if (nb_read < 0) {
-		free(buffer);
+	if (fd < 0)
 		return NULL;
-	}
 
-	struct so_value * ret_value = so_json_parse_string(buffer);
-	free(buffer);
+	struct so_value * ret_value = so_json_parse_fd(fd, -1);
+	close(fd);
 
 	return ret_value;
 }
