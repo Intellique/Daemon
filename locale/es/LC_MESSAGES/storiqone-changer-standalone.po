@@ -1,0 +1,22 @@
+# Spanish translations for storiqone-changer-standalone package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-changer-standalone v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/changer/standalone_changer/device.c:122
+#, c-format
+msgid   "Critical, standalone drive %s %s (serial: %s) is not enabled"
+msgstr  "Critico, el lector autónomo %s %s (número de serie: %s) no está activo"

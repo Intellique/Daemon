@@ -1,0 +1,55 @@
+# Spanish translations for storiqone-changer-vtl package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/changer/vtl_changer/device.c:133
+#, c-format
+msgid   "[%s | %s]: will update VTL"
+msgstr  "[ %s | %s ]: va a actualizar la VTL"
+
+#: src/changer/vtl_changer/device.c:143
+#, c-format
+msgid   "[%s | %s]: will remove %u drive"
+msgid_plural    "[%s | %s]: will remove %u drives"
+msgstr[0]       "[ %s | %s ]: va a eliminar %u lector"
+msgstr[1]       "[ %s | %s ]: va a eliminar %u lectores"
+
+#: src/changer/vtl_changer/device.c:195
+#, c-format
+msgid   "[%s | %s]: will remove %u slot"
+msgid_plural    "[%s | %s]: will remove %u slots"
+msgstr[0]       "[ %s | %s ]: va a eliminar %u ranura"
+msgstr[1]       "[ %s | %s ]: va a eliminar %u ranuras"
+
+#: src/changer/vtl_changer/device.c:224
+#, c-format
+msgid   "[%s | %s]: will add %u slot"
+msgid_plural    "[%s | %s]: will add %u slots"
+msgstr[0]       "[ %s | %s ]: va a agregar %u ranura"
+msgstr[1]       "[ %s | %s ]: va a agregar %u ranuras"
+
+#: src/changer/vtl_changer/device.c:261
+#, c-format
+msgid   "[%s | %s]: will add %u drive"
+msgid_plural    "[%s | %s]: will add %u drives"
+msgstr[0]       "[ %s | %s ]: va a agregar %u lector"
+msgstr[1]       "[ %s | %s ]: va a agregar %u lectores"
+
+#: src/changer/vtl_changer/device.c:332
+#, c-format
+msgid   "[%s | %s]: will delete VTL"
+msgstr  "[ %s | %s ]: va a suprimir la VTL"

@@ -1,16 +1,16 @@
-# French translations for database-postgresql package.
-# Copyright (C) 2014-2015
+# Spanish translations for database-postgresql package.
+# Copyright (C) 2015
 # This file is distributed under the same license as the storiqone package.
-# Guillaume Clercin <gclercin@intellique.com>, 2014
+# Katty Ramirez <kramirez@intellique.com>, 2015
 #
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-17 23:36+0100\n"
-        "PO-Revision-Date: 2014-10-17 11:18+0200\n"
-        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
-        "Language: fr\n"
+        "Language: es\n"
         "MIME-Version: 1.0\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
@@ -19,64 +19,64 @@ msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
 #: src/database/postgresql/connection.c:302
 #, c-format
 msgid   "PSQL: error while rolling back a savepoint => %s"
-msgstr  "PSQL : erreur lors de l’annulation du point de sauvegarde => %s"
+msgstr  "PSQL: error a la anulación del punto de recuperación => %s"
 
 #: src/database/postgresql/connection.c:343
 msgid   "PSQL: Can't create checkpoint because there is an error in current transaction"
-msgstr  "PSQL : Ne peut créer un point de sauvegarde parce qu’il y a une erreur dans la transaction courante"
+msgstr  "PSQL: No se puede crear un punto de control de recuperación porque hay un error en la transacción actual"
 
 #: src/database/postgresql/connection.c:346
 msgid   "PSQL: Can't create checkpoint because there is no active transaction"
-msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il n’y a pas de transaction"
+msgstr  "PSQL: No se puede crear un punto de control porque no hay transacción"
 
 #: src/database/postgresql/connection.c:363
 #, c-format
 msgid   "PSQL: error while creating a savepoint => %s"
-msgstr  "PSQL : erreur lors de la création d’un point de sauvegarde => %s"
+msgstr  "PSQL: error en el momento de la creación de un punto de recuperación => %s"
 
 #: src/database/postgresql/connection.c:381
 msgid   "PSQL: Rolling back transaction because current transaction encountered an error"
-msgstr  "PSQL : Annulation de la transcation parce qu’elle est en erreur"
+msgstr  "PSQL: Anulación de la transaccion porque está en error"
 
 #: src/database/postgresql/connection.c:490
 #, c-format
 msgid   "PSQL: Host not found into database (%s)"
-msgstr  "PSQL : Hôte non trouvé dans la base de données (%s)"
+msgstr  "PSQL: Host no encontrado en la base de datos (%s)"
 
 #: src/database/postgresql/connection.c:1452
 msgid   "PSQL: error while synchronizing drive with database"
-msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base de données"
+msgstr  "PSQL: error de sincronización de un lector con la base de datos"
 
 #: src/database/postgresql/connection.c:1473 src/database/postgresql/connection.c:1486
 msgid   "PSQL: error while synchronizing changer slots with database"
-msgstr  "PSQL : erreur lors de la synchronisation des emplacements d’une librairie de bande avec la base de données"
+msgstr  "PSQL: error de sincronización de ubicación de una librería de banda con la base de datos"
 
 #: src/database/postgresql/connection.c:2948
 #, c-format
 msgid   "Checking '%s'"
-msgstr  "Vérification « %s »"
+msgstr  "Verificación \"%s\""
 
 #: src/database/postgresql/connection.c:4618
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
-msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"
+msgstr  "PSQL: nueva consulta preparada (%s) => {%s}, status: %s"
 
 #: src/database/postgresql/error.c:48
 #, c-format
 msgid   "PSQL: error {%s} => %s"
-msgstr  "PSQL : erreur {%s} => %s"
+msgstr  "PSQL: error {%s} => %s"
 
 #: src/database/postgresql/error.c:50
 #, c-format
 msgid   "PSQL: error => %s"
-msgstr  "PSQL : erreur => %s"
+msgstr  "PSQL: error => %s"
 
 #: src/database/postgresql/error.c:58
 #, c-format
 msgid   "PSQL: detail => %s"
-msgstr  "PSQL : détail => %s"
+msgstr  "PSQL: detalle => %s"
 
 #: src/database/postgresql/error.c:70
 #, c-format
 msgid   "PSQL: hint => %s"
-msgstr  "PSQL : suggestion => %s"
+msgstr  "PSQL: sugerencia => %s"

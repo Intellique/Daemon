@@ -1,0 +1,92 @@
+# Spanish translations for storiqoned package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqoned v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/storiqoned/admin.c:122
+msgid   "New connection 'admin'"
+msgstr  "Nueva conexión \"admin\""
+
+#: src/storiqoned/device.c:251
+#, c-format
+msgid   "Restarting changer: %s"
+msgstr  "Reinicio del brazo artículado: %s"
+
+#: src/storiqoned/logger.c:75
+msgid   "Restarting logger"
+msgstr  "Reinicio del registrador"
+
+#: src/storiqoned/main.c:64
+#, c-format
+msgid   "storiqone, version: %s, build: %s %s"
+msgstr  "storiqone, version: %s, construcción: %s %s"
+
+#: src/storiqoned/main.c:65
+#, c-format
+msgid   "storiqone (pid: %d, sid: %d)"
+msgstr  "storiqone (pid: %d, sid: %d)"
+
+#: src/storiqoned/main.c:66
+#, c-format
+msgid   "Checksum: %s, last commit: %s"
+msgstr  "Huella: %s, última confirmación: %s"
+
+#: src/storiqoned/main.c:98
+#, c-format
+msgid   "Using configuration file: '%s' instead of '%s'"
+msgstr  "Utilización del fichero de configuración: \"%s\" en lugar de \"%s\""
+
+#: src/storiqoned/main.c:112 src/storiqoned/main.c:204
+#, c-format
+msgid   "storiqone, version: %s, build: %s %s\n"
+msgstr  "storiqone, versión: %s, construcción: %s %s\n"
+
+#: src/storiqoned/main.c:113
+#, c-format
+msgid   "Checksum: %s, last commit: %s\n"
+msgstr  "Huella: %s, último commit: %s\n"
+
+#: src/storiqoned/main.c:121
+msgid   "Parsing options: OK"
+msgstr  "Analaisis de las opciones: OK"
+
+#: src/storiqoned/main.c:147
+msgid   "Administration not configured"
+msgstr  "Administración no configurada"
+
+#: src/storiqoned/main.c:193
+msgid   "Daemon will shut down"
+msgstr  "El deminio se va a detener"
+
+#: src/storiqoned/main.c:205
+#, c-format
+msgid   "    --config=FILE,   -c : Uses this configuration FILE instead of “%s”\n"
+msgstr  "    --config=FICHIER,   -c: utilice éste FICHERO de configuración en lugar de \"%s\"\n"
+
+#: src/storiqoned/main.c:206
+#, c-format
+msgid   "    --help,          -h : Shows this help and exits\n"
+msgstr  "    --help,             -h:Mostrar ésta ayuda y salir\n"
+
+#: src/storiqoned/main.c:207
+#, c-format
+msgid   "    --pid-file=FILE, -p : Writes the pid of daemon into FILE instead of “%s”\n"
+msgstr  "    --pid-file=FICHIER, -p: Escribir al pies del demonio en el FICHERO en lugar de \"%s\"\n"
+
+#: src/storiqoned/main.c:208
+#, c-format
+msgid   "    --version,       -V : prints StoriqOne version number and exits\n"
+msgstr  "    --version,          -V: Mostrar la versión de Storiqone luego salir\n"

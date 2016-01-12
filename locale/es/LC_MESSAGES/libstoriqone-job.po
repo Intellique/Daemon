@@ -1,0 +1,122 @@
+# Spanish translations for libstoriqone-job package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2015
+#
+msgid   ""
+msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/libstoriqone-job/io/filesystem_reader.c:382
+#, c-format
+msgid   "Failed to read link of file '%s' because %m"
+msgstr  "fallo al leer el enlace simbólico del fichero \"%s\" porque %m"
+
+#: src/libstoriqone-job/main.c:68
+msgid   "Daemon unexpectedly quit"
+msgstr  "El demonio se ha cerrado inesperadamente"
+
+#: src/libstoriqone-job/main.c:107
+#, c-format
+msgid   "Starting simulation of job (type: %s, key: %s, name: %s)"
+msgstr  "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
+
+#: src/libstoriqone-job/main.c:113
+#, c-format
+msgid   "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
+msgstr  "Simulación de la tarea (tipo: %s, llave: %s, nombre: %s) a fallado con el codigo: %d  "
+
+#: src/libstoriqone-job/main.c:127
+#, c-format
+msgid   "Starting job (type: %s, key: %s, name: %s)"
+msgstr  "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
+
+#: src/libstoriqone-job/main.c:131
+#, c-format
+msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
+msgstr  "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"
+
+#: src/libstoriqone-job/main.c:175
+#, c-format
+msgid   "Starting job (type: %s)"
+msgstr  "Arranque de la tarea (tipo: %s)"
+
+#: src/libstoriqone-job/main.c:206
+#, c-format
+msgid   "Initializing job (type: %s)"
+msgstr  "Inicializanción de la tarea (tipo : %s)"
+
+#: src/libstoriqone-job/media.c:92 src/libstoriqone-job/media.c:168
+#, c-format
+msgid   "Media not found (named: %s)"
+msgstr  "Media no encontrado (llamado: %s)"
+
+#: src/libstoriqone-job/media.c:211
+#, c-format
+msgid   "Automatic formatting media '%s'"
+msgstr  "Formateo automático del media \"%s\""
+
+#: src/libstoriqone-job/media.c:217
+msgid   "Failed to format media"
+msgstr  "Fallo de formateo del media"
+
+#: src/libstoriqone-job/media.c:226
+#, c-format
+msgid   "Checking media header '%s' was successful"
+msgstr  "verificación del encabezamiento del media  \"%s\" en curso"
+
+#: src/libstoriqone-job/media.c:230
+#, c-format
+msgid   "Checking media header '%s': failed"
+msgstr  "verificación del encabezamiento del media \"%s\" fallo"
+
+#: src/libstoriqone-job/script.c:45
+#, c-format
+msgid   "run script: %d script found, type: %s"
+msgid_plural    "run script: %d scripts found, type: %s"
+msgstr[0]       "Ejecución del script: %d script encontrado, tipo: %s"
+msgstr[1]       "Ejecución del script: %d scripts encontrados; tipo: %s"
+
+#: src/libstoriqone-job/script.c:56
+#, c-format
+msgid   "script not found in database, %s, %d/%d"
+msgstr  "el script no a sido encontrado en la base de datos, %s, %d/%d"
+
+#: src/libstoriqone-job/script.c:61
+#, c-format
+msgid   "starting script (type: %s, path: %s)"
+msgstr  "arranque del script (tipo: %s, ruta: %s)"
+
+#: src/libstoriqone-job/script.c:82
+#, c-format
+msgid   "script '%s' exited with code %d"
+msgstr  "el escript \"%s\" a salido con el codigo %d"
+
+#: src/libstoriqone-job/script.c:84
+#, c-format
+msgid   "script '%s' exited with code OK"
+msgstr  "el script \"%s\" a salido con el codigo ok"
+
+#: src/libstoriqone-job/script.c:87
+#, c-format
+msgid   "script '%s' has not returned any data"
+msgstr  "el script \"%s\" no ha renviado los datos"
+
+#: src/libstoriqone-job/script.c:97
+#, c-format
+msgid   "script '%s' has not returned data 'should run'"
+msgstr  "el script \"%s\" no ha renviado \"shuold run\""
+
+#: src/libstoriqone-job/script.c:112
+#, c-format
+msgid   "script '%s' return message: %s"
+msgstr  "el script \"%s\" a enviado el mensaje: %s"
