@@ -1,16 +1,16 @@
-# French translations for libstoriqone package.
-# Copyright (C) 2014-2015
-# This file is distributed under the same license as the stone package.
-# Guillaume Clercin <gclercin@intellique.com>, 2014
+# Spanish translations for libstoriqone package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2015
 #
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-23 15:35+0100\n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
-        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
-        "Language: fr\n"
+        "Language: es\n"
         "MIME-Version: 1.0\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
@@ -18,209 +18,204 @@ msgstr  "Project-Id-Version: libstoriqone v1.2\n"
 
 #: src/libstoriqone/archive.c:56
 msgid   "block device"
-msgstr  "fichier spécial de type bloc"
+msgstr  "dispositivo de bloques"
 
 #: src/libstoriqone/archive.c:57
 msgid   "character device"
-msgstr  "fichier spécial de type caractère"
+msgstr  "dispositivo de caracteres"
 
 #: src/libstoriqone/archive.c:58
 msgid   "directory"
-msgstr  "répertoire"
+msgstr  "directorio"
 
 #: src/libstoriqone/archive.c:59
 msgid   "fifo"
-msgstr  "tube nommé"
+msgstr  "tubería nombrada fifo"
 
 #: src/libstoriqone/archive.c:60
 msgid   "regular file"
-msgstr  "fichier"
+msgstr  "fichero regular"
 
 #: src/libstoriqone/archive.c:61
 msgid   "socket"
-msgstr  "socket"
+msgstr  "conector socket"
 
 #: src/libstoriqone/archive.c:62
 msgid   "symbolic link"
-msgstr  "lien symbolique"
+msgstr  "enlace simbólico"
 
 #: src/libstoriqone/archive.c:64
 msgid   "unknown file type"
-msgstr  "type de fichier inconnu"
+msgstr  "tipo de fichero desconocido"
 
 #: src/libstoriqone/changer.c:48 src/libstoriqone/media.c:123 src/libstoriqone/media.c:139
 msgid   "none"
-msgstr  "aucun"
+msgstr  "ninguno"
 
 #: src/libstoriqone/changer.c:49
 msgid   "set offline"
-msgstr  "mettre hors ligne"
+msgstr  "poner fuera de linea"
 
 #: src/libstoriqone/changer.c:50
 msgid   "set online"
-msgstr  "mettre en ligne"
+msgstr  "poner en linea"
 
 #: src/libstoriqone/changer.c:52
 msgid   "unknown action"
-msgstr  "action inconnue"
+msgstr  "acción desconocida"
 
-#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:50 src/libstoriqone/media.c:85
+#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:52 src/libstoriqone/media.c:85
 msgid   "error"
-msgstr  "erreur"
+msgstr  "error"
 
 #: src/libstoriqone/changer.c:65
 msgid   "exporting"
-msgstr  "exportation"
+msgstr  "exportación"
 
 #: src/libstoriqone/changer.c:66
 msgid   "idle"
-msgstr  "au repos"
+msgstr  "en reposo"
 
 #: src/libstoriqone/changer.c:67
 msgid   "going offline"
-msgstr  "en cours de mise hors ligne"
+msgstr  "va a ponerse fuera de linea"
 
 #: src/libstoriqone/changer.c:68
 msgid   "going online"
-msgstr  "en cours de mise en ligne"
+msgstr  "va a ponerse en linea"
 
 #: src/libstoriqone/changer.c:69
 msgid   "importing"
-msgstr  "importation"
+msgstr  "importación"
 
 #: src/libstoriqone/changer.c:70 src/libstoriqone/drive.c:53
 msgid   "loading"
-msgstr  "en chargement"
+msgstr  "cargando"
 
 #: src/libstoriqone/changer.c:71
 msgid   "offline"
-msgstr  "hors ligne"
+msgstr  "fuera de linea"
 
 #: src/libstoriqone/changer.c:72 src/libstoriqone/drive.c:57
 msgid   "unloading"
-msgstr  "déchargement"
+msgstr  "descargando"
 
-#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:58
+#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:60
 msgid   "unknown status"
-msgstr  "statut inconnu"
+msgstr  "estado desconocido"
 
 #: src/libstoriqone/checksum.c:63
 #, c-format
 msgid   "so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd)"
-msgstr  "so_checksum_compute : paramètres invalides (checksum : %p, data : %p, length : %zd)"
+msgstr  "so_cheksum_compute: parámetros inválidos (checksum : %p, data : %p, length : %zd)"
 
 #: src/libstoriqone/checksum.c:69
 #, c-format
 msgid   "so_checksum_compute: failed to load checksum plugin '%s'"
-msgstr  "so_checksum_compute : échec lors du chargement du module de calcul d’empreinte « %s »"
+msgstr  "so_checksum_compute: fallo al cargar el módulo de cálculo de comprobación de la huella« %s »  "
 
 #: src/libstoriqone/checksum.c:85
 #, c-format
 msgid   "so_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"
-msgstr  "so_checksum_convert_to_hex : paramètres invalides (digest : %p, length : %zd, hex_digest : %s)"
+msgstr  "so_checksum_convert_to_hex: parámetros inválidos  (digest : %p, length : %zd, hex_digest : %s)"
 
 #: src/libstoriqone/checksum.c:102
 #, c-format
 msgid   "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"
-msgstr  "so_checksum_gen_salt : longueur du paramètre « length » doit être supérieur à 8 (au lieu de %zd)"
+msgstr  "so_checksum_gen_salt: longitud del parámetro \"length\" debe ser superior a 8 (en lugar de %zd)"
 
 #: src/libstoriqone/checksum.c:108
 #, c-format
 msgid   "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt because %m"
-msgstr  "so_checksum_gen_salt : erreur lors de l’ouverture de « /dev/urandom » pour générer un sel parce que %m"
+msgstr  "so_checksum_gen_salt: error en el momento de la abertura de \"/dev/urandom\" para generar una sal porque %m"
 
 #: src/libstoriqone/checksum.c:118
 #, c-format
 msgid   "so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"
-msgstr  "so_checksum_gen_salt : attention, error lors de la fermeture de « /dev/urandom » (fd : %d) parce que %m"
+msgstr  "so_checksum_gen_salt: atención, error en el momento del cierre de \"/dev/urandom\" (fd : %d) porque %m"
 
 #: src/libstoriqone/checksum.c:122
 #, c-format
 msgid   "so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"
-msgstr  "so_checksum_gen_salt : erreur lors de la lecture depuis « /dev/urandom » parce que %m"
+msgstr  "so_checksum_gen_salt: error en el momento de la lectura desde \"/dev/urandom\" porque  %m"
 
 #: src/libstoriqone/checksum.c:128
 #, c-format
 msgid   "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, expected: %zd)"
-msgstr  "so_checksum_gen_salt : a lu moins qu’attendu depuis « /dev/urandom » (nb read : %zd, read expected : %zd)"
+msgstr  "so_checksum_gen_salt: a leído menos de lo esperado desde \"/dev/urandom\" (nb read : %zd, read expected : %zd)"
 
 #: src/libstoriqone/checksum.c:146
 msgid   "so_checksum_get_driver: invalid parameter, 'driver' should not be NULL"
-msgstr  "so_checksum_get_driver : paramètre invalide, « driver » ne doit pas être null"
+msgstr  "so_checksum_get_driver: parámetro invalido, \"driver\"no debe ser nulo "
 
 #: src/libstoriqone/checksum.c:159
 #, c-format
 msgid   "so_checksum_get_driver: failed to load checksum driver '%s'"
-msgstr  "so_checksum_get_driver : échec de chargement du module de calcul d’empreinte « %s »"
+msgstr  "so_checksum_get_driver: fallo de carga del modulo de cálculo de comprobación de la huella \"%s\""
 
 #: src/libstoriqone/checksum.c:167
 #, c-format
 msgid   "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"
-msgstr  "so_checksum_get_driver : le pilote « %s » n’a pas appelé « so_checksum_register_driver »"
+msgstr  "so_checksum_get_driver: el controlador \"%s\" no ha llamado \"so_checksum_register_driver"
 
 #: src/libstoriqone/checksum.c:190
 msgid   "so_checksum_register_driver: trying to register a NULL driver"
-msgstr  "so_checksum_register_driver : tentative d’enregistrer un pilote « NULL »"
+msgstr  "so_checksum_register_driver: intento para grabar un controlador \"NULL\""
 
 #: src/libstoriqone/checksum.c:199
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is already registered"
-msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s » est déjà chargé"
+msgstr  "so_checksum_register_driver: el controlador de cálculo de comprobación de la huella \"%s\" está cargado"
 
 #: src/libstoriqone/checksum.c:210
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is now registered"
-msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s » est maintenant chargé"
+msgstr  "so_checksum_register_driver: el controlador de cálculo de comprobación \"%s\" ahora está cargado"
 
 #: src/libstoriqone/checksum.c:216
 #, c-format
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
-msgstr  "so_checksum_salt_password : paramètre invalide (password : %p, salt : %p)"
-
-#: src/libstoriqone/crash.c:62
-#, c-format
-msgid   "Oops!!!, programs '%s' catch signal: %s"
-msgstr  "Oops!!!, le programme « %s » a reçu le signale : %s"
+msgstr  "so_checksum_salt_password: parámetro invalido (contraseña: %p, sal: %p)"
 
 #: src/libstoriqone/database.c:61
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
-msgstr  "so_database_get_driver : paramètre invalide, « driver » ne doit pas être « NULL »"
+msgstr  "so_database_get_driver: parámetro invalido, \"driver\" no debe ser \"NULL\""
 
 #: src/libstoriqone/database.c:73
 #, c-format
 msgid   "so_database_get_driver: failed to load database driver '%s'"
-msgstr  "so_database_get_driver : échec de chargement du module de base de données « %s »"
+msgstr  "so_database_get_driver: error al cargar el modulo de la base de datos \"%s\""
 
 #: src/libstoriqone/database.c:79
 #, c-format
 msgid   "so_database_get_driver: driver '%s' did not call 'so_database_register_driver'"
-msgstr  "so_database_get_driver : le pilote « %s » n’a pas appelé « so_database_register_driver »"
+msgstr  "so_database_get_driver: el controlador \"%s\" no ha llamado \"so_database_register_driver"
 
 #: src/libstoriqone/database.c:101
 #, c-format
 msgid   "so_database_load_config: invalid parameters (config: %p)"
-msgstr  "so_database_load_config : paramètres invalides (config : %p)"
+msgstr  "so_database_load_config: parámetro invalido (config: %p)"
 
 #: src/libstoriqone/database.c:125
 msgid   "so_database_register_driver: trying to register a NULL driver"
-msgstr  "so_database_register_driver : tentative d’enregistrer un pilote « NULL »"
+msgstr  "so_database_register_driver: intentar grabar un controlador \"NULL\""
 
 #: src/libstoriqone/database.c:134
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is already registered"
-msgstr  "so_database_register_driver : le pilote de base de données « %s » est déjà chargé"
+msgstr  "so_database_register_driver: el controlador de base de datos \"%s\" está cargado"
 
 #: src/libstoriqone/database.c:148
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is now registered"
-msgstr  "so_database_register_driver : le pilote de base de données « %s » est maintenant chargé"
+msgstr  "so_database_register_driver: el controlor de la base de datos \" %s\" ahora está cargado"
 
 #: src/libstoriqone/debug.c:59
 #, c-format
 msgid   "Dump %zd stack, stack addr: %p, stack size: %zd"
 msgid_plural    "Dump %zd stacks, stack addr: %p, stack size: %zd"
-msgstr[0]       "Vide %zd tas, adresse du tas: %p, taille du tas: %zd"
-msgstr[1]       "Vide %zd tas, adresse du tas: %p, taille du tas: %zd"
+msgstr[0]       "Vacio %zd pila, dirección de la pila: %p, tamaño de la pila: %zd"
+msgstr[1]       "Vacios %zd pilas, dirección de las pilas: %p, tamaño de las pilas: %zd"
 
 #: src/libstoriqone/debug.c:65
 #, c-format
@@ -229,298 +224,298 @@ msgstr  "#%zd %s"
 
 #: src/libstoriqone/drive.c:48 src/libstoriqone/media.c:52 src/libstoriqone/media.c:105
 msgid   "cleaning"
-msgstr  "nettoyage en cours"
+msgstr  "limpiando"
 
 #: src/libstoriqone/drive.c:49
 msgid   "empty idle"
-msgstr  "vide"
+msgstr  "vacío"
 
 #: src/libstoriqone/drive.c:50
 msgid   "erasing"
-msgstr  "formatage en cours"
+msgstr  "borrando"
 
 #: src/libstoriqone/drive.c:52
 msgid   "loaded idle"
-msgstr  "chargé"
+msgstr  "cargando"
 
 #: src/libstoriqone/drive.c:54
 msgid   "positioning"
-msgstr  "positionnement en cours"
+msgstr  "posición en curso"
 
 #: src/libstoriqone/drive.c:55
 msgid   "reading"
-msgstr  "en lecture"
+msgstr  "leyendo"
 
 #: src/libstoriqone/drive.c:56
 msgid   "rewinding"
-msgstr  "rembobinage"
+msgstr  "rebobinando"
 
 #: src/libstoriqone/drive.c:58
 msgid   "writing"
-msgstr  "en écriture"
+msgstr  "escribiendo"
 
 #: src/libstoriqone/file.c:210
 #, c-format
 msgid   "%zd B"
-msgstr  "%zd o"
+msgstr  "%zd B"
 
 #: src/libstoriqone/file.c:213
 #, c-format
 msgid   "%.*f KB"
-msgstr  "%.*f Ko"
+msgstr  "%.*f KB"
 
 #: src/libstoriqone/file.c:216
 #, c-format
 msgid   "%.*f MB"
-msgstr  "%.*f Mo"
+msgstr  "%.*f MB"
 
 #: src/libstoriqone/file.c:219
 #, c-format
 msgid   "%.*f GB"
-msgstr  "%.*f Go"
+msgstr  "%.*f GB"
 
 #: src/libstoriqone/file.c:222
 #, c-format
 msgid   "%.*f TB"
-msgstr  "%.*f To"
+msgstr  "%.*f TB"
 
 #: src/libstoriqone/file.c:249 src/libstoriqone/file.c:267 src/libstoriqone/file.c:297
 #, c-format
 msgid   "so_file_cp: can't get information of '%s' because %m"
-msgstr  "so_file_cp : n’a pas réussi à obtenir les informations de « %s » parce que %m"
+msgstr  "so_file_cp: no ha logrado obtener las informaciones del \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:256
 #, c-format
 msgid   "so_file_cp: ignoring socket file '%s'"
-msgstr  "so_file_cp : ignore les fichier du type socket « %s »"
+msgstr  "so_file_cp: ignorar los ficheros de tipo conector socket \"%s\""
 
 #: src/libstoriqone/file.c:274 src/libstoriqone/file.c:305
 #, c-format
 msgid   "so_file_cp: '%s' should be a directory"
-msgstr  "so_file_cp : « %s » doit être un répertoire"
+msgstr  "so_file_cp: \"%s\" debe ser un directorio"
 
 #: src/libstoriqone/file.c:325
 #, c-format
 msgid   "so_file_cp: error while scanning directory '%s' because %m"
-msgstr  "so_file_cp : erreur lors du parcours du répertoire « %s » parce que %m"
+msgstr  "so_file_cp: error al recorrer el directorio \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:353
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for reading because %m"
-msgstr  "so_file_cp : n’a pas réussi à ouvrir le fichier « %s » en lecture parce que %m"
+msgstr  "so_file_cp: no puede abrir el fichero \"%s\" durante la lectura porque %m"
 
 #: src/libstoriqone/file.c:364
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for writing because %m"
-msgstr  "so_file_cp : n’a pas réussi à ouvrir le fichier « %s » en écriture parce que %m"
+msgstr  "so_file_cp: no puede abrir el fichero \"%s\" en escritura porque %m"
 
 #: src/libstoriqone/file.c:377
 #, c-format
 msgid   "so_file_cp: error while writing into '%s' because %m"
-msgstr  "so_file_cp : erreur lors de l’écriture dans « %s » parce que %m"
+msgstr  "so_file_cp: error durante la escritura en \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:386
 #, c-format
 msgid   "so_file_cp: error while reading from '%s' because %m"
-msgstr  "so_file_cp : erreur lors de la lecture depuis « %s » parce que %m"
+msgstr  "so_file_cp: error durante la lectura desde \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:401
 #, c-format
 msgid   "so_file_cp: can't read link of '%s' because %m"
-msgstr  "so_file_cp : n’a pas réussi à lire le lien symbolique « %s » parce que %m"
+msgstr  "so_file_cp: no ha podido leer el enlace simbólico \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:410
 #, c-format
 msgid   "so_file_cp: failed to create symlink '%s' -> '%s' because %m"
-msgstr  "so_file_cp : échec lors de la création du lien symbolique « %s » -> « %s » parce que %m"
+msgstr  "so_file_cp: fallo en el momento de la creación del enlace simbólico \"%s\" -> \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:419
 #, c-format
 msgid   "so_file_cp: failed to create fifo '%s' because %m"
-msgstr  "so_file_cp : échec lors de la création du tube nommé « %s » parce que %m"
+msgstr  "so_file_cp: fallo en el momento de la creación de la tubería nombrada fifo \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:427
 #, c-format
 msgid   "so_file_cp: failed to create device '%s' because %m"
-msgstr  "so_file_cp : échec lors de la création du périphérique « %s » parce que %m"
+msgstr  "so_file_cp: fallo en el momento de la creación del periférico \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:474 src/libstoriqone/file.c:492 src/libstoriqone/file.c:504
 #, c-format
 msgid   "so_file_mkdir: error while creating directory '%s' because %m"
-msgstr  "so_file_mkdir : erreur lors de la création du répertoire « %s » parce que %m"
+msgstr  "so_file_mkdir: error en el momento de la creación del directorio \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:518 src/libstoriqone/file.c:530
 #, c-format
 msgid   "so_file_mv: can't get information of '%s' because %m"
-msgstr  "so_file_mv : n’a pas réussi à obtenir les informations de « %s » parce que %m"
+msgstr  "so_file_mv: no ha podido obtener las informaciones de \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:540
 #, c-format
 msgid   "so_file_mv: failed to rename '%s' to '%s' because %m"
-msgstr  "so_file_mv : échec lors du renommage du fichier « %s » en « %s » parce que %m"
+msgstr  "so_file_mv: fallo en el momento de renombrar un fichero \"%s\" en \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:553
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
-msgstr  "so_file_read_all_from : échec lors de l’ouverture du fichier « %s » parce que %m"
+msgstr  "so_file_read_all_from: fallo al abrir el fichero \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:570
 #, c-format
 msgid   "so_file_read_all_from: error while reading from file '%s' because %m"
-msgstr  "so_file_read_all_from: erreur en lisant depuis le fichier « %s » parce que %m"
+msgstr  "so_file_read_all_from: error de lectura del fichero \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:583
 #, c-format
 msgid   "so_file_read_all_from: failed while reading from '%s' because %m"
-msgstr  "so_file_read_all_from : échec en lisant depuis « %s » parce que %m"
+msgstr  "so_file_read_all_from: fallo al leer desde \"%s\" porque %m"
 
 #: src/libstoriqone/file.c:634
 #, c-format
 msgid   "so_file_rm: failed to get information of '%s' because %m"
-msgstr  "so_file_rm : échec lors de obtention des informations de « %s » parce que %m"
+msgstr  "so_file_rm: fallo a la obtención de informaciones de \"%s\" porque %m"
 
-#: src/libstoriqone/io/tmp.c:110
+#: src/libstoriqone/io/tmp.c:108
 #, c-format
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
-msgstr  "so_io_tmp_writer: n’a pas pu créé de fichier temporaire dans le répertoire « %s » parce que %m"
-
-#: src/libstoriqone/job.c:49
-msgid   "disabled"
-msgstr  "désactivé"
+msgstr  "so_io_tmp_writer: no se pudo crear el fichero temporal en el directorio \"%s\" porque %m"
 
 #: src/libstoriqone/job.c:51
-msgid   "finished"
-msgstr  "terminée"
-
-#: src/libstoriqone/job.c:52
-msgid   "paused"
-msgstr  "en pause"
+msgid   "disabled"
+msgstr  "desactivado"
 
 #: src/libstoriqone/job.c:53
-msgid   "running"
-msgstr  "en exécution"
+msgid   "finished"
+msgstr  "finalizado"
 
 #: src/libstoriqone/job.c:54
-msgid   "scheduled"
-msgstr  "programmée"
+msgid   "paused"
+msgstr  "en pausa"
 
 #: src/libstoriqone/job.c:55
-msgid   "stopped"
-msgstr  "arêtée"
+msgid   "running"
+msgstr  "en ejecución"
 
 #: src/libstoriqone/job.c:56
-msgid   "waiting"
-msgstr  "en attente"
+msgid   "scheduled"
+msgstr  "programado"
 
-#: src/libstoriqone/job.c:70
+#: src/libstoriqone/job.c:57
+msgid   "stopped"
+msgstr  "parado"
+
+#: src/libstoriqone/job.c:58
+msgid   "waiting"
+msgstr  "en espera"
+
+#: src/libstoriqone/job.c:72
 msgid   "normal"
 msgstr  "normal"
 
-#: src/libstoriqone/job.c:71
+#: src/libstoriqone/job.c:73
 msgid   "important"
-msgstr  "important"
-
-#: src/libstoriqone/job.c:72
-msgid   "read"
-msgstr  "lu"
+msgstr  "importante"
 
 #: src/libstoriqone/job.c:74
+msgid   "read"
+msgstr  "leido"
+
+#: src/libstoriqone/job.c:76
 msgid   "unknown notification"
-msgstr  "notification inconnue"
+msgstr  "notificación desconocida"
 
 #: src/libstoriqone/loader.c:77
 #, c-format
 msgid   "libstoriqone: loader: failed to access file '%s' because %m"
-msgstr  "libstoriqone : loader : échec lors de l’accès au fichier « %s » parce que %m"
+msgstr  "libstoriqone: loader: fallo de acceso al fichero \"%s\" porque %m"
 
 #: src/libstoriqone/loader.c:91
 #, c-format
 msgid   "libstoriqone: loader: failed to load '%s' because %s"
-msgstr  "libstoriqone : loader : échec du chargemenet de « %s » parce que %s"
+msgstr  "libstoriqone: loader: fallo de carga \"%s\" porque %s"
 
 #: src/libstoriqone/log.c:83
 msgid   "Alert"
-msgstr  "Alerte"
+msgstr  "Alerta"
 
 #: src/libstoriqone/log.c:84
 msgid   "Critical"
-msgstr  "Critique"
+msgstr  "Critico"
 
 #: src/libstoriqone/log.c:85
 msgid   "Debug"
-msgstr  "Débogage"
+msgstr  "Depuración"
 
 #: src/libstoriqone/log.c:86
 msgid   "Emergency"
-msgstr  "Urgent"
+msgstr  "Urgente"
 
 #: src/libstoriqone/log.c:87
 msgid   "Error"
-msgstr  "Erreur"
+msgstr  "Error"
 
 #: src/libstoriqone/log.c:88
 msgid   "Info"
-msgstr  "Info"
+msgstr  "Información"
 
 #: src/libstoriqone/log.c:89
 msgid   "Notice"
-msgstr  "Avis"
+msgstr  "Aviso"
 
 #: src/libstoriqone/log.c:90
 msgid   "Warning"
-msgstr  "Attention"
+msgstr  "Advertencia"
 
 #: src/libstoriqone/log.c:92
 msgid   "Unknown level"
-msgstr  "Niveau inconnu"
+msgstr  "Nievel desconocido"
 
 #: src/libstoriqone/log.c:105
 msgid   "Changer"
-msgstr  "Échangeur"
+msgstr  "Intercambio"
 
 #: src/libstoriqone/log.c:106
 msgid   "Daemon"
-msgstr  "Démon"
+msgstr  "Demonio"
 
 #: src/libstoriqone/log.c:107
 msgid   "Drive"
-msgstr  "Lecteur"
+msgstr  "Lector"
 
 #: src/libstoriqone/log.c:108
 msgid   "Job"
-msgstr  "Tâche"
+msgstr  "Tarea"
 
 #: src/libstoriqone/log.c:109
 msgid   "Logger"
-msgstr  "Enregistreur"
+msgstr  "Registrador"
 
 #: src/libstoriqone/log.c:110
 msgid   "Checksum Plugin"
-msgstr  "Greffon de somme de contrôle"
+msgstr  "Complemento suma de comprobación"
 
 #: src/libstoriqone/log.c:111
 msgid   "Database Plugin"
-msgstr  "Greffon de la base de données"
+msgstr  "Complemento base de datos"
 
 #: src/libstoriqone/log.c:112
 msgid   "Log Plugin"
-msgstr  "Greffon d’enregistrement"
+msgstr  "Complemento registrador"
 
 #: src/libstoriqone/log.c:113
 msgid   "Scheduler"
-msgstr  "Ordonnanceur"
+msgstr  "Programador"
 
 #: src/libstoriqone/log.c:115
 msgid   "User Interface"
-msgstr  "Interface utilisateur"
+msgstr  "Interfaz Usuario"
 
 #: src/libstoriqone/log.c:116
 msgid   "User Message"
-msgstr  "Message utilisateur"
+msgstr  "Mensaje usuario"
 
 #: src/libstoriqone/log.c:118
 msgid   "Unknown type"
-msgstr  "Type inconnu"
+msgstr  "Tipo desconocido"
 
 #: src/libstoriqone/media.c:51
 msgid   "audio"
@@ -528,60 +523,60 @@ msgstr  "audio"
 
 #: src/libstoriqone/media.c:53
 msgid   "data"
-msgstr  "données"
+msgstr  "datos"
 
 #: src/libstoriqone/media.c:54
 msgid   "video"
-msgstr  "vidéo"
+msgstr  "video"
 
 #: src/libstoriqone/media.c:56 src/libstoriqone/media.c:72 src/libstoriqone/media.c:93 src/libstoriqone/media.c:109
 #: src/libstoriqone/media.c:125 src/libstoriqone/media.c:141 src/libstoriqone/script.c:49
 msgid   "unknown"
-msgstr  "inconnu"
+msgstr  "desconocido"
 
 #: src/libstoriqone/media.c:68
 msgid   "disk"
-msgstr  "disque"
+msgstr  "disco"
 
 #: src/libstoriqone/media.c:69
 msgid   "linear"
-msgstr  "linéaire"
+msgstr  "banda magnética"
 
 #: src/libstoriqone/media.c:70
 msgid   "optical"
-msgstr  "optique"
+msgstr  "disco optico"
 
 #: src/libstoriqone/media.c:84
 msgid   "erasable"
-msgstr  "effaçable"
+msgstr  "borrable"
 
 #: src/libstoriqone/media.c:86
 msgid   "foreign"
-msgstr  "étrangère"
+msgstr  "extranjero"
 
 #: src/libstoriqone/media.c:87
 msgid   "in use"
-msgstr  "en usage"
+msgstr  "en uso"
 
 #: src/libstoriqone/media.c:88
 msgid   "locked"
-msgstr  "verrouillée"
+msgstr  "bloqueado"
 
 #: src/libstoriqone/media.c:89
 msgid   "needs replacement"
-msgstr  "à changer"
+msgstr  "necesita reemplazo"
 
 #: src/libstoriqone/media.c:90
 msgid   "new"
-msgstr  "neuve"
+msgstr  "nuevo"
 
 #: src/libstoriqone/media.c:91
 msgid   "pooled"
-msgstr  "groupé"
+msgstr  "agrupado"
 
 #: src/libstoriqone/media.c:106
 msgid   "rewritable"
-msgstr  "ré-inscriptible"
+msgstr  "reescritura"
 
 #: src/libstoriqone/media.c:107
 msgid   "WORM"
@@ -589,58 +584,57 @@ msgstr  "WORM"
 
 #: src/libstoriqone/media.c:121
 msgid   "quick mode"
-msgstr  "mode rapide"
+msgstr  "modo rápido"
 
 #: src/libstoriqone/media.c:122
 msgid   "thorough mode"
-msgstr  "mode minutieux"
+msgstr  "modo minucioso"
 
 #: src/libstoriqone/media.c:137
 msgid   "archive"
-msgstr  "archive"
+msgstr  "archivo"
 
 #: src/libstoriqone/media.c:138
 msgid   "file"
-msgstr  "fichier"
+msgstr  "fichero"
 
 #: src/libstoriqone/script.c:45
 msgid   "on error"
-msgstr  "en cas d’erreur"
+msgstr  "en error"
 
 #: src/libstoriqone/script.c:46
 msgid   "post job"
-msgstr  "post tâche"
+msgstr  "tarea posterior"
 
 #: src/libstoriqone/script.c:47
 msgid   "pre job"
-msgstr  "pré tâche"
+msgstr  "previa tarea"
 
 #: src/libstoriqone/thread_pool.c:178
 msgid   "so_thread_pool_run2: error, not enough memory to start new thread"
-msgstr  "so_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau fil d’exécution"
+msgstr  "so_thread_pool_run2: error, no hay suficiente memoria para iniciar un nuevo hilo de ejecución"
 
 #: src/libstoriqone/thread_pool.c:233
 #, c-format
 msgid   "Failed while setting the name of thread '%s' because %m"
-msgstr  "Échec lors de la définition du nom du fil d’exécution « %s » parce que %m"
+msgstr  "fallo al definir el nombre del hilo de ejecución \"%s\" porque %m"
 
 #: src/libstoriqone/thread_pool.c:247
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "so_thread_pool_work : démarrage d’un nouveau fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme "
-        "paramètre : %p"
+msgstr  "so_thread_pool_work: iniciar un nuevo hilo de ejecución #%ld (pid : %d) a la función:%p con como parámetro: %p"
 
 #: src/libstoriqone/thread_pool.c:274
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
-msgstr  "so_thread_pool_work : fil d’exécution #%ld (pid : %d) est mis en attente"
+msgstr  "so_thread_pool_work: hilo de ejecución #%ld (pid: %d) está en epera"
 
 #: src/libstoriqone/thread_pool.c:296
 #, c-format
 msgid   "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "so_thread_pool_work : redémarrage du fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
+msgstr  "so_thread_pool_work: reicio del hilo de ejecución #%ld (pid : %d) a la función: %p con como parámetro: %p"
 
 #: src/libstoriqone/thread_pool.c:302
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld terminated"
-msgstr  "so_thread_pool_work : fil d’exécution #%ld terminé"
+msgstr  "so_thread_pool_work: hilo de ejecución #%ld finalizado"
