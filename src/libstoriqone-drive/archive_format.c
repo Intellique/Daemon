@@ -31,7 +31,7 @@
 #include <libstoriqone-drive/archive_format.h>
 
 static struct so_archive_format sodr_format_storiq_one = {
-	.name     = "Storiq One",
+	.name     = "Storiq One (TAR)",
 	.readable = true,
 	.writable = true,
 	.db_data  = NULL,

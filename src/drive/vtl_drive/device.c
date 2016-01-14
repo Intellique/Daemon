@@ -265,7 +265,7 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 	if (block_size < 0)
 		return 1;
 
-	if (pool->archive_format == NULL || pool->archive_format->name == NULL || strcmp(pool->archive_format->name, "Storiq One") != 0) {
+	if (pool->archive_format == NULL || pool->archive_format->name == NULL || strcmp(pool->archive_format->name, "Storiq One (TAR)") != 0) {
 		so_log_write(so_log_level_error,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: VTL does only support Storiq One format"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index);
@@ -361,7 +361,7 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 		media->free_block--;
 
 		so_pool_free(media->pool);
-		media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One");
+		media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One (TAR)");
 		media->pool = pool;
 	} else
 		so_pool_free(pool);

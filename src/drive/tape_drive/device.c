@@ -186,7 +186,7 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 
 			switch (format) {
 				case sodr_tape_drive_media_storiq_one:
-					media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One");
+					media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One (TAR)");
 					break;
 
 				case sodr_tape_drive_media_ltfs:
