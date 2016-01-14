@@ -440,10 +440,21 @@ char * so_json_encode_to_string(struct so_value * value) {
 	locale_t current_locale = uselocale(c_locale);
 
 	size_t length = so_json_compute_length(value);
-	if (length == 0)
+	if (length == 0) {
+		freelocale(c_locale);
+		uselocale(current_locale);
+
 		return NULL;
+	}
 
 	char * buffer = malloc(length + 1);
+	if (buffer == NULL) {
+		freelocale(c_locale);
+		uselocale(current_locale);
+
+		return NULL;
+	}
+
 	buffer[length] = '\0';
 
 	so_json_encode_to_string_inner(value, buffer, length + 1);
