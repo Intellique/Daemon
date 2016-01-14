@@ -447,7 +447,7 @@ CREATE TABLE ArchiveFile (
 
     name TEXT NOT NULL,
     type FileType NOT NULL,
-    mimeType VARCHAR(64) NOT NULL,
+    mimeType VARCHAR(255) NOT NULL,
 
     ownerId INTEGER NOT NULL DEFAULT 0,
     owner VARCHAR(255) NOT NULL,
