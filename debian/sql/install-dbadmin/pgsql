@@ -1,0 +1,3 @@
+-- Load extention
+CREATE EXTENSION "uuid-ossp";
+

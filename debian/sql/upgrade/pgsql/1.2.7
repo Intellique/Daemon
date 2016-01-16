@@ -1,0 +1,10 @@
+-- Upgrade from v1.2 to v1.2.7
+-- freeBlock and totalBlock from table Media
+-- are not enough
+
+BEGIN;
+
+ALTER TABLE Media ALTER freeBlock TYPE BIGINT, ALTER totalBlock TYPE BIGINT;
+
+COMMIT;
+
