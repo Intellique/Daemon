@@ -142,12 +142,12 @@ struct so_value * soctl_detect_hardware() {
 
 		char dev[35];
 		dev[34] = '\0';
-		memset(dev, ' ', 35);
+		memset(dev, ' ', 34);
 		strncpy(dev, drive->vendor, strlen(drive->vendor));
 		dev[7] = ' ';
 		strncpy(dev + 8, drive->model, strlen(drive->model));
 		dev[23] = ' ';
-		strcpy(dev + 24, drive->serial_number);
+		strncpy(dev + 24, drive->serial_number, 10);
 
 		so_value_hashtable_put2(drives, dev, so_value_new_custom(drive, so_drive_free2), true);
 	}
