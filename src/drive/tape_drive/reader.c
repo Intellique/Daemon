@@ -36,7 +36,7 @@
 #include <sys/ioctl.h>
 // struct mtget
 #include <sys/mtio.h>
-// read
+// close, read
 #include <unistd.h>
 // time
 #include <time.h>
@@ -93,6 +93,8 @@ static int sodr_tape_drive_reader_close(struct so_stream_reader * io) {
 	struct sodr_tape_drive_reader * self = io->data;
 
 	if (self->fd > -1) {
+		close(self->fd);
+
 		self->fd = -1;
 		self->buffer_pos = self->buffer + self->block_size;
 		self->last_errno = 0;
