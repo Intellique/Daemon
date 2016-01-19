@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-format-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 19:29+0100\n"
+        "POT-Creation-Date: 2016-02-18 10:28+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -106,7 +106,7 @@ msgstr  "tratando de formatear un media \"%s\" que está en error \"%s\""
 #, c-format
 msgid   "Trying to format a media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
 msgstr  "Tratando de formatear un media \"%s\" (formato del media: %s) donde el nombre no corresponde al formato del pool \"%s"
-        "\" (format du pool: %s)"
+        "\" (formato del pool: %s)"
 
 #: src/job/format-media/format-media.c:301
 #, c-format
@@ -121,7 +121,7 @@ msgstr  "Utilise el tamaño del boque predeterminado \"%s\" defina el formato de
 #: src/job/format-media/format-media.c:328
 #, c-format
 msgid   "Will use default block size '%s' defined by media format '%s' because type of media '%s' is WORM"
-msgstr  "Utilizará el tamaño del bloque \"%s\" predeterminado por el formato de media \"%s\" porque el tipo de media \"%s\" "
+msgstr  "Utilizará el tamaño del bloque \"%s\" predeterminado por el formato de media \"%s\" porque el tipo de media \"%s\" es "
         "WORM"
 
 #: src/job/format-media/format-media.c:334
