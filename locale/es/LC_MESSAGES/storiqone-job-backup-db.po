@@ -27,7 +27,7 @@ msgstr  "Fallo de creación del fichero temporal"
 #: src/job/backup-db/backup-db.c:126
 #, c-format
 msgid   "Error while writting into temporary file because %m"
-msgstr  "Error de escritura en el fichero temporal  porque %m"
+msgstr  "Error de escritura en el fichero temporal porque %m"
 
 #: src/job/backup-db/backup-db.c:139
 #, c-format
@@ -62,4 +62,4 @@ msgstr  "Intento de copia de seguridad en un pool suprimido"
 
 #: src/job/backup-db/backup-db.c:292
 msgid   "Trying to back up database to a pool which is not growable and without any media"
-msgstr  "Intento de copia de seguridad en un pool que no es extensible et que no contiene los medias"
+msgstr  "Intento de copia de seguridad en un pool que no es extensible y que no contiene medias"

@@ -42,7 +42,7 @@ msgstr  "storiqone (pid: %d, sid: %d)"
 #: src/storiqoned/main.c:66
 #, c-format
 msgid   "Checksum: %s, last commit: %s"
-msgstr  "Huella: %s, última confirmación: %s"
+msgstr  "Huella: %s, último commit: %s"
 
 #: src/storiqoned/main.c:98
 #, c-format
@@ -74,12 +74,12 @@ msgstr  "El deminio se va a detener"
 #: src/storiqoned/main.c:205
 #, c-format
 msgid   "    --config=FILE,   -c : Uses this configuration FILE instead of “%s”\n"
-msgstr  "    --config=FICHIER,   -c: utilice éste FICHERO de configuración en lugar de \"%s\"\n"
+msgstr  "    --config=FICHERO,   -c: utilice éste FICHERO de configuración en lugar de \"%s\"\n"
 
 #: src/storiqoned/main.c:206
 #, c-format
 msgid   "    --help,          -h : Shows this help and exits\n"
-msgstr  "    --help,             -h:Mostrar ésta ayuda y salir\n"
+msgstr  "    --help,             -h: Mostrar ésta ayuda y salir\n"
 
 #: src/storiqoned/main.c:207
 #, c-format

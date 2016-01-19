@@ -622,7 +622,7 @@ msgstr  "fallo al definir el nombre del hilo de ejecución \"%s\" porque %m"
 #: src/libstoriqone/thread_pool.c:247
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "so_thread_pool_work: iniciar un nuevo hilo de ejecución #%ld (pid : %d) a la función:%p con como parámetro: %p"
+msgstr  "so_thread_pool_work: iniciar un nuevo hilo de ejecución #%ld (pid : %d) a la función:%p con parámetro: %p"
 
 #: src/libstoriqone/thread_pool.c:274
 #, c-format
@@ -632,7 +632,7 @@ msgstr  "so_thread_pool_work: hilo de ejecución #%ld (pid: %d) está en epera"
 #: src/libstoriqone/thread_pool.c:296
 #, c-format
 msgid   "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "so_thread_pool_work: reicio del hilo de ejecución #%ld (pid : %d) a la función: %p con como parámetro: %p"
+msgstr  "so_thread_pool_work: reicio del hilo de ejecución #%ld (pid : %d) a la función: %p con parámetro: %p"
 
 #: src/libstoriqone/thread_pool.c:302
 #, c-format

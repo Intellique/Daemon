@@ -24,7 +24,7 @@ msgstr  "storiqonectl config: configuración básica\n"
 #: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:130 src/storiqonectl/daemon.c:186 src/storiqonectl/daemon.c:230
 #, c-format
 msgid   "  -h, --help    : show this and exit\n"
-msgstr  "  -h, --help    : muestra esto et finaliza\n"
+msgstr  "  -h, --help    : muestra esto y finaliza\n"
 
 #: src/storiqonectl/daemon.c:129
 #, c-format
@@ -43,7 +43,7 @@ msgstr  "  -v, --verbose : augmenta la verbosidad\n"
 
 #: src/storiqonectl/daemon.c:201 src/storiqonectl/daemon.c:205
 msgid   "Status of daemon: "
-msgstr  "Estado del demonio"
+msgstr  "Estado del demonio: "
 
 #: src/storiqonectl/daemon.c:201
 msgid   "alive"
