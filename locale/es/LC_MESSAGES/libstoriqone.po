@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-01-19 19:19+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -64,7 +64,7 @@ msgstr  "poner en linea"
 msgid   "unknown action"
 msgstr  "acción desconocida"
 
-#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:52 src/libstoriqone/media.c:85
+#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:50 src/libstoriqone/media.c:85
 msgid   "error"
 msgstr  "error"
 
@@ -100,7 +100,7 @@ msgstr  "fuera de linea"
 msgid   "unloading"
 msgstr  "descargando"
 
-#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:60
+#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:58
 msgid   "unknown status"
 msgstr  "estado desconocido"
 
@@ -176,6 +176,11 @@ msgstr  "so_checksum_register_driver: el controlador de cálculo de comprobació
 #, c-format
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
 msgstr  "so_checksum_salt_password: parámetro invalido (contraseña: %p, sal: %p)"
+
+#: src/libstoriqone/crash.c:62
+#, c-format
+msgid   "Oops!!!, programs '%s' catch signal: %s"
+msgstr  ""
 
 #: src/libstoriqone/database.c:61
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
@@ -374,52 +379,52 @@ msgstr  "so_file_read_all_from: fallo al leer desde \"%s\" porque %m"
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm: fallo a la obtención de informaciones de \"%s\" porque %m"
 
-#: src/libstoriqone/io/tmp.c:108
+#: src/libstoriqone/io/tmp.c:110
 #, c-format
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
 msgstr  "so_io_tmp_writer: no se pudo crear el fichero temporal en el directorio \"%s\" porque %m"
 
-#: src/libstoriqone/job.c:51
+#: src/libstoriqone/job.c:49
 msgid   "disabled"
 msgstr  "desactivado"
 
-#: src/libstoriqone/job.c:53
+#: src/libstoriqone/job.c:51
 msgid   "finished"
 msgstr  "finalizado"
 
-#: src/libstoriqone/job.c:54
+#: src/libstoriqone/job.c:52
 msgid   "paused"
 msgstr  "en pausa"
 
-#: src/libstoriqone/job.c:55
+#: src/libstoriqone/job.c:53
 msgid   "running"
 msgstr  "en ejecución"
 
-#: src/libstoriqone/job.c:56
+#: src/libstoriqone/job.c:54
 msgid   "scheduled"
 msgstr  "programado"
 
-#: src/libstoriqone/job.c:57
+#: src/libstoriqone/job.c:55
 msgid   "stopped"
 msgstr  "parado"
 
-#: src/libstoriqone/job.c:58
+#: src/libstoriqone/job.c:56
 msgid   "waiting"
 msgstr  "en espera"
 
-#: src/libstoriqone/job.c:72
+#: src/libstoriqone/job.c:70
 msgid   "normal"
 msgstr  "normal"
 
-#: src/libstoriqone/job.c:73
+#: src/libstoriqone/job.c:71
 msgid   "important"
 msgstr  "importante"
 
-#: src/libstoriqone/job.c:74
+#: src/libstoriqone/job.c:72
 msgid   "read"
 msgstr  "leido"
 
-#: src/libstoriqone/job.c:76
+#: src/libstoriqone/job.c:74
 msgid   "unknown notification"
 msgstr  "notificación desconocida"
 

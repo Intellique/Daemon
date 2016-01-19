@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-01-19 19:19+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,115 +16,115 @@ msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/tape_drive/device.c:178
+#: src/drive/tape_drive/device.c:182
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:277
+#: src/drive/tape_drive/device.c:292
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
-#: src/drive/tape_drive/device.c:294
+#: src/drive/tape_drive/device.c:309
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:296 src/drive/tape_drive/device.c:303 src/drive/tape_drive/device.c:325
+#: src/drive/tape_drive/device.c:311 src/drive/tape_drive/device.c:318 src/drive/tape_drive/device.c:340
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:296 src/drive/tape_drive/device.c:303 src/drive/tape_drive/device.c:325
+#: src/drive/tape_drive/device.c:311 src/drive/tape_drive/device.c:318 src/drive/tape_drive/device.c:340
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:301
+#: src/drive/tape_drive/device.c:316
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:323
+#: src/drive/tape_drive/device.c:338
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:381
+#: src/drive/tape_drive/device.c:396
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:427
+#: src/drive/tape_drive/device.c:442
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:445
+#: src/drive/tape_drive/device.c:460
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:581
+#: src/drive/tape_drive/device.c:596
 #, c-format
 msgid   "[%s | %s | #%u]: Trying to recover from error"
 msgstr  "[ %s | %s | #%u ]: Intenta recuperar un error"
 
-#: src/drive/tape_drive/device.c:618
+#: src/drive/tape_drive/device.c:661
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\""
 
-#: src/drive/tape_drive/device.c:630
+#: src/drive/tape_drive/device.c:673
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\" a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:634
+#: src/drive/tape_drive/device.c:677
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  "[ %s | %s | #%u ] : Avance rápido hacia el final del media \"%s\" terminado avec éxito"
 
-#: src/drive/tape_drive/device.c:641
+#: src/drive/tape_drive/device.c:684
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
 
-#: src/drive/tape_drive/device.c:654 src/drive/tape_drive/device.c:671
+#: src/drive/tape_drive/device.c:697 src/drive/tape_drive/device.c:714
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 msgstr  "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:675 src/drive/tape_drive/device.c:682
+#: src/drive/tape_drive/device.c:718 src/drive/tape_drive/device.c:725
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
 
-#: src/drive/tape_drive/device.c:789
+#: src/drive/tape_drive/device.c:832
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #°%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:798
+#: src/drive/tape_drive/device.c:841
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:61
+#: src/drive/tape_drive/format/storiqone/storiqone.c:62
 #, c-format
 msgid   "[%s | %s | #%u]: Finding best block size"
 msgstr  "[ %s | %s | #%u ]: busqueda de la mejor talla del bloque"
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:86
+#: src/drive/tape_drive/format/storiqone/storiqone.c:87
 #, c-format
 msgid   "[%s | %s | #%u]: Test (block size: %s)"
 msgstr  "[ %s | %s | #%u ]: Prueba (tamaño del bloque: %s)"
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:127
+#: src/drive/tape_drive/format/storiqone/storiqone.c:128
 #, c-format
 msgid   "[%s | %s | #%u]: Test (block size: %s), throughput: %s/s"
 msgstr  "[ %s | %s | #%u ]: Prueba (tamaño del bloque: %s), throughput: %s/s"
 
-#: src/drive/tape_drive/format/storiqone/storiqone.c:145
+#: src/drive/tape_drive/format/storiqone/storiqone.c:146
 #, c-format
 msgid   "[%s | %s | #%u]: Found best block size: %s"
 msgstr  "[ %s | %s | #%u ]: Mejor tamaño de bloque encontrado: %s"
@@ -189,7 +189,7 @@ msgstr  "Información del media %s, Frabricante del media: %s"
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Información del media %s, Fecha del media: %s"
 
-#: src/drive/tape_drive/writer.c:196
+#: src/drive/tape_drive/writer.c:201
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
