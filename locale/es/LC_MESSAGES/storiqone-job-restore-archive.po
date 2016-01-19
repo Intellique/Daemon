@@ -40,7 +40,7 @@ msgstr  "El fichero \"%s\" es ignorado"
 #: src/job/restore-archive/data_worker.c:178
 #, c-format
 msgid   "Error while reading header from media '%s'"
-msgstr  "Error al ller el emcabezamiento desde el media  \"%s\""
+msgstr  "Error al leer el emcabezamiento desde el media  \"%s\""
 
 #: src/job/restore-archive/data_worker.c:204
 #, c-format
@@ -55,7 +55,7 @@ msgstr  "Arranque de la restitución del fichero \"%s\""
 #: src/job/restore-archive/data_worker.c:219
 #, c-format
 msgid   "Error while opening file '%s' for writing because %m"
-msgstr  "error a la apertura del fuchero \"%s\" en escritura porque %m"
+msgstr  "error a la apertura del fichero \"%s\" en escritura porque %m"
 
 #: src/job/restore-archive/data_worker.c:229
 #, c-format
@@ -138,7 +138,7 @@ msgstr  "Archivo no encontrado"
 #: src/job/restore-archive/restore-archive.c:192
 #, c-format
 msgid   "No restoration for deleted archive '%s'"
-msgstr  "ninguna restauraciŏn del archivo supriùido \"%s\""
+msgstr  "ninguna restauración del archivo suprimido \"%s\""
 
 #: src/job/restore-archive/restore-archive.c:200
 msgid   "Restore path should be absolute (starts with '/')"

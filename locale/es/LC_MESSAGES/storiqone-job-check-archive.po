@@ -28,18 +28,18 @@ msgstr  "No hay verificación del archivo suprimido \"%s\""
 #: src/job/check-archive/quick_mode.c:81
 #, c-format
 msgid   "Starting check archive (%s) in quick mode"
-msgstr  "Inicio de la verificación del archivo (%s) en modo rapido"
+msgstr  "Arranque de la verificación del archivo (%s) en modo rápido"
 
 #: src/job/check-archive/quick_mode.c:129
 msgid   "Failed to set worker thread name"
-msgstr  "Fallo a la definición del nomnre del hilo de ejecución"
+msgstr  "Fallo de la definición del nombre del hilo de ejecución"
 
 #: src/job/check-archive/quick_mode.c:136
 #, c-format
 msgid   "Starting worker #%u"
-msgstr  "Inicio en el hilo de ejecución #%u"
+msgstr  "Arranque del hilo de ejecución #%u"
 
 #: src/job/check-archive/thorough_mode.c:51
 #, c-format
 msgid   "Starting check archive (%s) in thorough mode"
-msgstr  "Inicio de la verificacón del archivo (%s) en modo minucioso"
+msgstr  "Arranque de la verificacón del archivo (%s) en modo minucioso"

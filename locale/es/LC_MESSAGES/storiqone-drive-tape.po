@@ -24,7 +24,7 @@ msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s
 #: src/drive/tape_drive/device.c:287
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
-msgstr  "[ %s | %s | #%u ] : Fallo a la lectura de la memoria auxiliar del media"
+msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
 #: src/drive/tape_drive/device.c:310
 #, c-format
@@ -82,7 +82,7 @@ msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\" a e
 #: src/drive/tape_drive/device.c:694
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
-msgstr  "[ %s | %s | #%u ] : Avance rápido hacia el fin del media \"%s\" terminado avec éxito"
+msgstr  "[ %s | %s | #%u ] : Avance rápido hacia el final del media \"%s\" terminado avec éxito"
 
 #: src/drive/tape_drive/device.c:701
 #, c-format
@@ -122,7 +122,7 @@ msgstr  "[ %s | %s | #%u ]: Prueba (tamaño del bloque: %s)"
 #: src/drive/tape_drive/format/storiqone/storiqone.c:127
 #, c-format
 msgid   "[%s | %s | #%u]: Test (block size: %s), throughput: %s/s"
-msgstr  "[ %s | %s | #%u ]: Prueba (tamaño del bloque: %s), debit: %s/s"
+msgstr  "[ %s | %s | #%u ]: Prueba (tamaño del bloque: %s), throughput: %s/s"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:145
 #, c-format
@@ -152,12 +152,12 @@ msgstr  "encontró un indice LTFS corrupto en el media \"%s\""
 #: src/drive/tape_drive/media.c:186
 #, c-format
 msgid   "Error, not enough memory to read LTFS index from media '%s'"
-msgstr  "Error, no hay suficiente memoria para el leer el indice LTFS del media \"%s\""
+msgstr  "Error, no hay suficiente memoria para leer el indice LTFS del media \"%s\""
 
 #: src/drive/tape_drive/media.c:214
 #, c-format
 msgid   "Failed to read LTFS label from media '%s'"
-msgstr  "Fallo en la lectura de la etiqueta LTFS del media \"%s\""
+msgstr  "Fallo a la lectura de la etiqueta LTFS del media \"%s\""
 
 #: src/drive/tape_drive/media.c:226
 #, c-format

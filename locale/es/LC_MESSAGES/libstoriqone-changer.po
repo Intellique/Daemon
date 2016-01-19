@@ -19,17 +19,17 @@ msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
 #: src/libstoriqone-changer/listen.c:257 src/libstoriqone-changer/listen.c:337
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d"
-msgstr  "[%s | %s]: descarga de media \"%s\" desde el lector #%d"
+msgstr  "[%s | %s]: descargando el media \"%s\" desde el lector #%d"
 
 #: src/libstoriqone-changer/listen.c:263 src/libstoriqone-changer/listen.c:343
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"
-msgstr  "[%s | %s]: descarga de media \"%s\" desde el lector #%d finalizado con el codigo = %d"
+msgstr  "[%s | %s]: descargando el media \"%s\" desde el lector #%d finalizado con el codigo = %d"
 
 #: src/libstoriqone-changer/listen.c:267 src/libstoriqone-changer/listen.c:358
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"
-msgstr  "[%s | %s]: descarga de media \"%s\" desde el lector #%d finalizado con el codigo = OK"
+msgstr  "[%s | %s]: descargando el media \"%s\" desde el lector #%d finalizado con el codigo = OK"
 
 #: src/libstoriqone-changer/listen.c:271
 #, c-format
@@ -39,17 +39,17 @@ msgstr  "[%s | %s]: el lector (%s#%u) no puede utilizar los medias de formato (%
 #: src/libstoriqone-changer/listen.c:364
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d"
-msgstr  "[%s | %s]: carga de media  \"%s\" desde la ranura #%u al lector #%d"
+msgstr  "[%s | %s]: cargando el media  \"%s\" desde la ranura #%u al lector #%d"
 
 #: src/libstoriqone-changer/listen.c:368
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"
-msgstr  "[%s | %s]: carga de media \"%s\" desde la ranura #%u al lector #%d finalizado con el codigo =%d"
+msgstr  "[%s | %s]: cargando el media \"%s\" desde la ranura #%u al lector #%d finalizado con el codigo =%d"
 
 #: src/libstoriqone-changer/listen.c:379
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"
-msgstr  "[%s | %s]: carga de media \"%s\" desde la ranura #%u al lector #%d finalizado con el codigo =OK"
+msgstr  "[%s | %s]: cargando el media \"%s\" desde la ranura #%u al lector #%d finalizado con el codigo =OK"
 
 #: src/libstoriqone-changer/main.c:57
 msgid   "Stoned has hang up"
@@ -58,7 +58,7 @@ msgstr  "El demonio se ha colgado inesperadamente"
 #: src/libstoriqone-changer/main.c:90
 #, c-format
 msgid   "Starting changer (type: %s)"
-msgstr  "Inicio del movimiento brazo articulado (type : %s)"
+msgstr  "Iniciando el movimiento del brazo articulado (type : %s)"
 
 #: src/libstoriqone-changer/main.c:127
 #, c-format
@@ -78,7 +78,7 @@ msgstr  "[%s | %s]: el brazo articulado está fuera de linea"
 #: src/libstoriqone-changer/main.c:154
 #, c-format
 msgid   "[%s | %s]: failed to set changer offline"
-msgstr  "[%s | %s]: fallo al ponerse en fuera de linea el brazo articulado"
+msgstr  "[%s | %s]: fallo al ponerse fuera de linea el brazo articulado"
 
 #: src/libstoriqone-changer/main.c:160
 #, c-format

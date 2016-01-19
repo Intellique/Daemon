@@ -25,15 +25,15 @@ msgstr  "[ %s | %s ]: va a actualizar la VTL"
 #, c-format
 msgid   "[%s | %s]: will remove %u drive"
 msgid_plural    "[%s | %s]: will remove %u drives"
-msgstr[0]       "[ %s | %s ]: va a eliminar %u lector"
-msgstr[1]       "[ %s | %s ]: va a eliminar %u lectores"
+msgstr[0]       "[ %s | %s ]: va a suprimir %u lector"
+msgstr[1]       "[ %s | %s ]: va a suprimir %u lectores"
 
 #: src/changer/vtl_changer/device.c:195
 #, c-format
 msgid   "[%s | %s]: will remove %u slot"
 msgid_plural    "[%s | %s]: will remove %u slots"
-msgstr[0]       "[ %s | %s ]: va a eliminar %u ranura"
-msgstr[1]       "[ %s | %s ]: va a eliminar %u ranuras"
+msgstr[0]       "[ %s | %s ]: va a suprimir %u ranura"
+msgstr[1]       "[ %s | %s ]: va a suprimir %u ranuras"
 
 #: src/changer/vtl_changer/device.c:224
 #, c-format

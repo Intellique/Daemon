@@ -23,7 +23,7 @@ msgstr  "Fallo al cargar el media \"%s\""
 
 #: src/job/import-archives/import-archives.c:119
 msgid   "Counting archives"
-msgstr  "Calculando los nombres de los archivos "
+msgstr  "Calculando los archivos "
 
 #: src/job/import-archives/import-archives.c:126
 #, c-format
@@ -32,7 +32,7 @@ msgstr  "Analisis del archivo #%u"
 
 #: src/job/import-archives/import-archives.c:218
 msgid   "Critical error: no media linked to current job"
-msgstr  "Error critico: nungun media está liado a tarea actual"
+msgstr  "Error critico: nungún media está liado a tarea actual"
 
 #: src/job/import-archives/import-archives.c:223
 #, c-format
