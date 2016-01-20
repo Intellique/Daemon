@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-09 16:48+0100\n"
+        "POT-Creation-Date: 2016-01-08 13:51+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -109,40 +109,40 @@ msgstr  "[ %s | %s | n°%u ] : Vérification de l’entête du média « %s�
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande « %s »"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:60
+#: src/drive/tape_drive/format/ltfs/ltfs.c:78
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' info LTFS format"
-msgstr  ""
+msgstr  "[ %s | %s | n°%u ] : Formattage du média « %s » au format LTFS"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:64
+#: src/drive/tape_drive/format/ltfs/ltfs.c:82
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
-msgstr  ""
+msgstr  "[ %s | %s | n°%u ] : Formattage du média « %s » avec une seule partition"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:74
+#: src/drive/tape_drive/format/ltfs/ltfs.c:92
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
-msgstr  ""
+msgstr  "[ %s | %s | n°%u ] : Échec du formattage du média « %s » avec une seule partition parce que %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:83
+#: src/drive/tape_drive/format/ltfs/ltfs.c:101
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
-msgstr  ""
+msgstr  "[ %s | %s | n°%u ] : Succès du formattage du média « %s » avec une partition"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:91
+#: src/drive/tape_drive/format/ltfs/ltfs.c:109
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with two partitions (second partition size: %s)"
-msgstr  ""
+msgstr  "[ %s | %s | n°%u ] : Formattage du média « %s » avec deux partitions (taille de la deuxième partition: %s)"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:102
+#: src/drive/tape_drive/format/ltfs/ltfs.c:120
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with two partition because %m"
-msgstr  ""
+msgstr  "[ %s | %s | n°%u ] : Échec du formattage du média « %s » avec deux partitions parce que %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:111
+#: src/drive/tape_drive/format/ltfs/ltfs.c:129
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
-msgstr  ""
+msgstr  "[ %s | %s | n°%u ] : Succès du formattage du média « %s » avec deux partitions"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:63
 #, c-format
@@ -169,42 +169,42 @@ msgstr  "[ %s | %s | n°%u ] : Meilleure taille de bloc trouvé : %s"
 msgid   "Found LTFS header in media with (volume id: %s)"
 msgstr  "Entête de bande LTFS trouvé (id du volume : %s)"
 
-#: src/drive/tape_drive/media.c:145
+#: src/drive/tape_drive/media.c:144
 #, c-format
 msgid   "Failed to read LTFS index from media '%s'"
 msgstr  "Échec lors de la lecture de l’index LTFS du média « %s »"
 
-#: src/drive/tape_drive/media.c:157
+#: src/drive/tape_drive/media.c:156
 #, c-format
 msgid   "Error while reading LTFS index from media '%s'"
 msgstr  "Erreur en lisant l’index LTFS du média « %s »"
 
-#: src/drive/tape_drive/media.c:168
+#: src/drive/tape_drive/media.c:167
 #, c-format
 msgid   "Found corrupted LTFS index on media '%s'"
 msgstr  "Trouvé un index LTFS corrompu sur le média « %s »"
 
-#: src/drive/tape_drive/media.c:188
+#: src/drive/tape_drive/media.c:187
 #, c-format
 msgid   "Error, not enough memory to read LTFS index from media '%s'"
 msgstr  "Erreur, pas assez de mémoire pour lire l’index LTFS du média « %s »"
 
-#: src/drive/tape_drive/media.c:216
+#: src/drive/tape_drive/media.c:215
 #, c-format
 msgid   "Failed to read LTFS label from media '%s'"
 msgstr  "Échec lors de la lecture de l’étiquette LTFS du média « %s »"
 
-#: src/drive/tape_drive/media.c:228
+#: src/drive/tape_drive/media.c:227
 #, c-format
 msgid   "Error while reading LTFS label from media '%s'"
 msgstr  "Erreur en lisant l’étiquette LTFS du média « %s »"
 
-#: src/drive/tape_drive/media.c:239
+#: src/drive/tape_drive/media.c:238
 #, c-format
 msgid   "Found corrupted LTFS label on media '%s'"
 msgstr  "Trouvé une étiquette LTFS corrompue sur le média « %s »"
 
-#: src/drive/tape_drive/media.c:259
+#: src/drive/tape_drive/media.c:258
 #, c-format
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média « %s »"

@@ -347,7 +347,7 @@ static int sodr_tape_drive_format_media(struct sodr_peer * peer, struct so_pool 
 	if (strcmp(pool->archive_format->name, "Storiq One") == 0)
 		return sodr_tape_drive_format_storiqone_format_media(peer, &sodr_tape_drive, fd_nst, pool, option, db);
 	else if (strcmp(pool->archive_format->name, "LTFS") == 0)
-		return sodr_tape_drive_format_ltfs_format_media(&sodr_tape_drive, fd_nst, pool, option, db);
+		return sodr_tape_drive_format_ltfs_format_media(&sodr_tape_drive, fd_nst, option, db);
 	else
 		return -1;
 }
@@ -587,7 +587,7 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 		}
 
 		static struct so_archive_format formats[] = {
-			{ "LTFS", true, false, NULL },
+			{ "LTFS", true, true, NULL },
 		};
 		sodr_archive_format_sync(formats, 1, db_connect);
 	}

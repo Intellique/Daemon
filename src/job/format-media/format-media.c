@@ -194,13 +194,6 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 }
 
 static int soj_formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
-	if (soj_formatmedia_pool == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
-			dgettext("storiqone-job-format-media", "No pool related to this job"));
-		return 1;
-	}
-
 	soj_formatmedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
 	if (soj_formatmedia_media == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,

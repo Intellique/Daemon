@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // gettext
@@ -40,7 +40,7 @@
 
 #include "ltfs.h"
 
-int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
+int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, struct so_value * option, struct so_database_connection * db) {
 	ssize_t block_size = 0, partition_size = 0;
 	so_value_unpack(option, "{sz}", "block size", &block_size);
 	so_value_unpack(option, "{sz}", "partition size", &partition_size);
@@ -48,10 +48,28 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 	if (partition_size == 0)
 		partition_size = 524288;
 
-	if (partition_size == 0)
-		partition_size = pool->media_format->capacity;
+	static const struct default_parition_size {
+		unsigned char density_code;
+		unsigned long size;
+	} default_parition_sizes[] = {
+		{ 0x58, 1424000L << 20 },
+		{ 0x5A, 2450000L << 20 },
+	};
+	static const unsigned int nb_default_parition_size = sizeof(default_parition_sizes) / sizeof(*default_parition_sizes);
 
 	struct so_media * media = drive->slot->media;
+
+	if (partition_size == 0) {
+		unsigned int i;
+		for (i = 0; i < nb_default_parition_size; i++)
+			if (media->media_format->density_code == default_parition_sizes[i].density_code) {
+				partition_size = default_parition_sizes[i].size;
+				break;
+			}
+	}
+
+	if (partition_size == 0)
+		return -1;
 
 	drive->status = so_drive_status_writing;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
