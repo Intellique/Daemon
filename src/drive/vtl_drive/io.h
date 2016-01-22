@@ -40,6 +40,7 @@ struct sodr_vtl_drive_io {
 
 	ssize_t position;
 	int file_position;
+	ssize_t file_size;
 	int last_errno;
 
 	struct so_media * media;

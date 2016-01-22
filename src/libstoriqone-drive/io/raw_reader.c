@@ -46,16 +46,20 @@
 static void sodr_io_raw_reader_close(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_reader_end_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_reader_forward(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_raw_reader_get_available_size(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_reader_init(void) __attribute__((constructor));
+static void sodr_io_raw_reader_peek(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_reader_read(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_raw_reader_rewind(struct sodr_peer * peer, struct so_value * request);
 
 static struct sodr_command commands[] = {
-	{ 0, "close",       sodr_io_raw_reader_close },
-	{ 0, "end of file", sodr_io_raw_reader_end_of_file },
-	{ 0, "forward",     sodr_io_raw_reader_forward },
-	{ 0, "read",        sodr_io_raw_reader_read },
-	{ 0, "rewind",      sodr_io_raw_reader_rewind },
+	{ 0, "close",              sodr_io_raw_reader_close },
+	{ 0, "end of file",        sodr_io_raw_reader_end_of_file },
+	{ 0, "forward",            sodr_io_raw_reader_forward },
+	{ 0, "get available size", sodr_io_raw_reader_get_available_size },
+	{ 0, "peek",               sodr_io_raw_reader_peek },
+	{ 0, "read",               sodr_io_raw_reader_read },
+	{ 0, "rewind",             sodr_io_raw_reader_rewind },
 
 	{ 0, NULL, NULL },
 };
@@ -117,6 +121,51 @@ static void sodr_io_raw_reader_forward(struct sodr_peer * peer, struct so_value 
 		"returned", new_position,
 		"last errno", last_errno
 	);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+}
+
+static void sodr_io_raw_reader_get_available_size(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	ssize_t available_size = peer->stream_reader->ops->get_available_size(peer->stream_reader);
+
+	int last_errno = 0;
+	if (available_size < 0)
+		last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
+
+	struct so_value * response = so_value_pack("{szsi}", "returned", available_size, "last errno", last_errno);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+}
+
+static void sodr_io_raw_reader_peek(struct sodr_peer * peer, struct so_value * request) {
+	ssize_t length = 0;
+	so_value_unpack(request, "{s{sz}}", "params", "length", &length);
+
+	if (length < 0) {
+		struct so_value * response = so_value_pack("{szsi}", "returned", -1L, "last errno", 0);
+		so_json_encode_to_fd(response, peer->fd_cmd, true);
+		so_value_free(response);
+
+		return;
+	}
+
+	ssize_t nb_read = 0;
+	if (length > 0) {
+		void * buffer = length > peer->buffer_length ? malloc(length) : peer->buffer;
+
+		nb_read = peer->stream_reader->ops->peek(peer->stream_reader, buffer, length);
+		if (nb_read > 0)
+			send(peer->fd_data, buffer, nb_read, 0);
+
+		if (buffer != peer->buffer)
+			free(buffer);
+	}
+
+	int last_errno = 0;
+	if (nb_read < 0)
+		last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
+
+	struct so_value * response = so_value_pack("{szsi}", "returned", nb_read, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }

@@ -265,6 +265,7 @@ struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * file
 	self->buffer_used = 0;
 	self->position = 0;
 	self->file_position = file_position;
+	self->file_size = 0;
 	self->last_errno = 0;
 	struct so_media * media = self->media = drive->slot->media;
 

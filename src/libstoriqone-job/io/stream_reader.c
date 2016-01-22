@@ -59,22 +59,26 @@ static int soj_stream_reader_close(struct so_stream_reader * sr);
 static bool soj_stream_reader_end_of_file(struct so_stream_reader * sr);
 static off_t soj_stream_reader_forward(struct so_stream_reader * sr, off_t offset);
 static void soj_stream_reader_free(struct so_stream_reader * sr);
+static ssize_t soj_stream_reader_get_available_size(struct so_stream_reader * sr);
 static ssize_t soj_stream_reader_get_block_size(struct so_stream_reader * sr);
 static int soj_stream_reader_last_errno(struct so_stream_reader * sr);
+static ssize_t soj_stream_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static ssize_t soj_stream_reader_position(struct so_stream_reader * sr);
 static ssize_t soj_stream_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static int soj_stream_reader_rewind(struct so_stream_reader * sr);
 
 static struct so_stream_reader_ops soj_reader_ops = {
-	.close          = soj_stream_reader_close,
-	.end_of_file    = soj_stream_reader_end_of_file,
-	.forward        = soj_stream_reader_forward,
-	.free           = soj_stream_reader_free,
-	.get_block_size = soj_stream_reader_get_block_size,
-	.last_errno     = soj_stream_reader_last_errno,
-	.position       = soj_stream_reader_position,
-	.read           = soj_stream_reader_read,
-	.rewind         = soj_stream_reader_rewind,
+	.close              = soj_stream_reader_close,
+	.end_of_file        = soj_stream_reader_end_of_file,
+	.forward            = soj_stream_reader_forward,
+	.free               = soj_stream_reader_free,
+	.get_available_size = soj_stream_reader_get_available_size,
+	.get_block_size     = soj_stream_reader_get_block_size,
+	.last_errno         = soj_stream_reader_last_errno,
+	.peek               = soj_stream_reader_peek,
+	.position           = soj_stream_reader_position,
+	.read               = soj_stream_reader_read,
+	.rewind             = soj_stream_reader_rewind,
 };
 
 
@@ -186,6 +190,28 @@ static void soj_stream_reader_free(struct so_stream_reader * sr) {
 	free(sr);
 }
 
+static ssize_t soj_stream_reader_get_available_size(struct so_stream_reader * sr) {
+	struct soj_stream_reader_private * self = sr->data;
+
+	struct so_value * request = so_value_pack("{ss}",
+		"command", "get available size"
+	);
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	ssize_t available_size = -1;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{sz}", "returned", &available_size);
+
+		if (available_size < 0)
+			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+		so_value_free(response);
+	}
+
+	return available_size;
+}
+
 static ssize_t soj_stream_reader_get_block_size(struct so_stream_reader * sr) {
 	struct soj_stream_reader_private * self = sr->data;
 	return self->block_size;
@@ -194,6 +220,51 @@ static ssize_t soj_stream_reader_get_block_size(struct so_stream_reader * sr) {
 static int soj_stream_reader_last_errno(struct so_stream_reader * sr) {
 	struct soj_stream_reader_private * self = sr->data;
 	return self->last_errno;
+}
+
+static ssize_t soj_stream_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length) {
+	struct soj_stream_reader_private * self = sr->data;
+
+	struct so_value * request = so_value_pack("{sss{sz}}",
+		"command", "peek",
+		"params",
+			"length", length
+	);
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	size_t nb_total_read = 0;
+	for (;;) {
+		struct pollfd fds[] = {
+			{ self->command_fd, POLLIN | POLLHUP, 0 },
+			{ self->data_fd,    POLLIN | POLLHUP, 0 },
+		};
+
+		poll(fds, 2, -1);
+
+		if (fds[0].revents & POLLHUP)
+			return -1;
+
+		ssize_t nb_read = -1;
+		if (fds[1].revents & POLLIN)
+			nb_read = recv(self->data_fd, buffer + nb_total_read, length - nb_total_read, 0);
+
+		if (nb_read > 0) {
+			self->position += nb_read;
+			nb_total_read += nb_read;
+		}
+
+		if (fds[0].revents & POLLIN) {
+			struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+			if (nb_read < 0)
+				so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+			so_value_free(response);
+
+			return nb_total_read;
+		}
+	}
+
+	return -1;
 }
 
 static ssize_t soj_stream_reader_position(struct so_stream_reader * sr) {
