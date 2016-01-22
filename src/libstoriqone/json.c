@@ -73,7 +73,7 @@ struct so_json_parser {
 	bool (*read_more)(struct so_json_parser * parser);
 
 	struct {
-		int pipe_fd[2];
+		int fd[2];
 	} pipe;
 	struct {
 		struct so_stream_reader * reader;
@@ -631,14 +631,9 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 					return NULL;
 				}
 
-				if (parser->buffer[parser->position] == ',') {
+				if (parser->buffer[parser->position] == ',')
 					parser->position++;
-
-					if (!so_json_parse_skip(parser)) {
-						so_value_free(ret_val);
-						return NULL;
-					}
-				} else if (parser->buffer[parser->position] != '}') {
+				else if (parser->buffer[parser->position] != '}') {
 					so_value_free(ret_val);
 					return NULL;
 				}
@@ -670,14 +665,9 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 					return NULL;
 				}
 
-				if (parser->buffer[parser->position] == ',') {
+				if (parser->buffer[parser->position] == ',')
 					parser->position++;
-
-					if (!so_json_parse_skip(parser)) {
-						so_value_free(ret_val);
-						return NULL;
-					}
-				} else if (parser->buffer[parser->position] != ']') {
+				else if (parser->buffer[parser->position] != ']') {
 					so_value_free(ret_val);
 					return NULL;
 				}
@@ -703,7 +693,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 						if (parser->position + position >= parser->used && !so_json_parse_read_more(parser, false))
 							return NULL;
 
-						if (strspn(str, "\"\\/bfnrtu") == 0)
+						if (strspn(str + position, "\"\\/bfnrtu") == 0)
 							return NULL;
 
 						if (str[position] == 'u') {
@@ -885,7 +875,7 @@ static struct so_value * so_json_parse_pipe(int fd, int timeout) {
 		.read = so_json_parse_fd_read,
 		.read_more = so_json_parse_pipe_read,
 
-		.pipe.pipe_fd = { -1, -1 },
+		.pipe.fd = { -1, -1 },
 		.stream.reader = NULL,
 	};
 	parser.buffer = parser.static_buffer;
@@ -904,15 +894,15 @@ static struct so_value * so_json_parse_pipe(int fd, int timeout) {
 	if (available_in_pipe > 4096)
 		available_in_pipe = 4096;
 
-	failed = pipe(parser.pipe.pipe_fd);
+	failed = pipe(parser.pipe.fd);
 	if (failed != 0)
 		return NULL;
 
-	ssize_t nb_copied = tee(fd, parser.pipe.pipe_fd[1], available_in_pipe, 0);
+	ssize_t nb_copied = tee(fd, parser.pipe.fd[1], available_in_pipe, 0);
 
 	struct so_value * ret_val = NULL;
 	if (nb_copied > 0) {
-		parser.last_read = read(parser.pipe.pipe_fd[0], parser.buffer, nb_copied);
+		parser.last_read = read(parser.pipe.fd[0], parser.buffer, nb_copied);
 		if (parser.last_read > 0) {
 			parser.used = parser.last_read;
 			parser.buffer[parser.last_read] = '\0';
@@ -922,8 +912,8 @@ static struct so_value * so_json_parse_pipe(int fd, int timeout) {
 	}
 
 	free(parser.dynamic_buffer);
-	close(parser.pipe.pipe_fd[0]);
-	close(parser.pipe.pipe_fd[1]);
+	close(parser.pipe.fd[0]);
+	close(parser.pipe.fd[1]);
 
 	return ret_val;
 }
@@ -938,11 +928,11 @@ static bool so_json_parse_pipe_read(struct so_json_parser * parser) {
 	if (available_in_pipe > remain)
 		available_in_pipe = remain;
 
-	ssize_t nb_copied = tee(parser->pfd.fd, parser->pipe.pipe_fd[1], available_in_pipe, 0);
+	ssize_t nb_copied = tee(parser->pfd.fd, parser->pipe.fd[1], available_in_pipe, 0);
 	if (nb_copied < 0)
 		return false;
 
-	ssize_t nb_read = read(parser->pipe.pipe_fd[0], parser->buffer + parser->position, nb_copied);
+	ssize_t nb_read = read(parser->pipe.fd[0], parser->buffer + parser->position, nb_copied);
 	if (nb_read < 0)
 		return false;
 
@@ -1017,7 +1007,7 @@ static struct so_value * so_json_parse_reg_file(int fd, struct stat * info) {
 		.read = NULL,
 		.read_more = NULL,
 
-		.pipe.pipe_fd = { -1, -1 },
+		.pipe.fd = { -1, -1 },
 		.stream.reader = NULL,
 	};
 	struct so_value * ret_val = so_json_parse(&parser);
@@ -1059,7 +1049,7 @@ static struct so_value * so_json_parse_socket(int fd, int timeout) {
 		.read = so_json_parse_fd_read,
 		.read_more = so_json_parse_socket_read,
 
-		.pipe.pipe_fd = { -1, -1 },
+		.pipe.fd = { -1, -1 },
 		.stream.reader = NULL,
 	};
 	parser.buffer = parser.static_buffer;
@@ -1129,7 +1119,7 @@ struct so_value * so_json_parse_stream(struct so_stream_reader * reader) {
 		.read = so_json_parse_stream_read,
 		.read_more = so_json_parse_stream_read_more,
 
-		.pipe.pipe_fd = { -1, -1 },
+		.pipe.fd = { -1, -1 },
 		.stream.reader = reader,
 	};
 	parser.buffer = parser.static_buffer;
@@ -1187,7 +1177,7 @@ struct so_value * so_json_parse_string(const char * json) {
 		.read = NULL,
 		.read_more = NULL,
 
-		.pipe.pipe_fd = { -1, -1 },
+		.pipe.fd = { -1, -1 },
 		.stream.reader = NULL,
 	};
 	return so_json_parse(&parser);
