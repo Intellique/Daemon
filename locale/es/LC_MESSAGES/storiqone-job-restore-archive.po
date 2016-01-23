@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -131,15 +131,15 @@ msgstr  "Fallo en el momento de la definición del hilo de ejecución"
 msgid   "Starting worker thread #%u"
 msgstr  "Arranque del hilo de ejecución #%u"
 
-#: src/job/restore-archive/restore-archive.c:187
+#: src/job/restore-archive/restore-archive.c:250
 msgid   "Archive not found"
 msgstr  "Archivo no encontrado"
 
-#: src/job/restore-archive/restore-archive.c:192
+#: src/job/restore-archive/restore-archive.c:255
 #, c-format
 msgid   "No restoration for deleted archive '%s'"
 msgstr  "ninguna restauración del archivo suprimido \"%s\""
 
-#: src/job/restore-archive/restore-archive.c:200
+#: src/job/restore-archive/restore-archive.c:263
 msgid   "Restore path should be absolute (starts with '/')"
 msgstr  "La ruta de restitución debe ser absoluta (comience por \"/\")"

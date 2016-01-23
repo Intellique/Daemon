@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-erase-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -49,28 +49,28 @@ msgstr  "Borrando los medias \"%s\" terminado con éxito"
 msgid   "Failed to erase media '%s'"
 msgstr  "Fallo al borrar los medias \"%s\""
 
-#: src/job/erase-media/erase-media.c:176
+#: src/job/erase-media/erase-media.c:229
 msgid   "Critical error: no media linked to the current job"
 msgstr  "Error critico: no hay media liado a la tarea actual"
 
-#: src/job/erase-media/erase-media.c:181
+#: src/job/erase-media/erase-media.c:234
 msgid   "Trying to erase a cleaning media"
 msgstr  "Tratando de borrar un media de limpieza"
 
-#: src/job/erase-media/erase-media.c:186
+#: src/job/erase-media/erase-media.c:239
 msgid   "Trying to erase a worm media"
 msgstr  "Tratando de borrar un media "
 
-#: src/job/erase-media/erase-media.c:191
+#: src/job/erase-media/erase-media.c:244
 msgid   "Trying to erase a media with error status"
 msgstr  "Tratando de borrar un media con estado en error"
 
-#: src/job/erase-media/erase-media.c:201
+#: src/job/erase-media/erase-media.c:254
 #, c-format
 msgid   "Trying to erase a media containing a non-deleted archive (named: %s)"
 msgstr  "Tratando de borrar un media que contiene un archivo no suprimido (llamado: %s)"
 
-#: src/job/erase-media/erase-media.c:210
+#: src/job/erase-media/erase-media.c:263
 #, c-format
 msgid   "Aborting job because media '%s' contains non-deleted archives"
 msgstr  "Abandono de la tarea porque el media \"%s\" contiene los archivos no suprimidos"

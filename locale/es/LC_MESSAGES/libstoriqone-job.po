@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 18:37+0100\n"
+        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -27,30 +27,30 @@ msgstr  "El demonio se ha cerrado inesperadamente"
 
 #: src/libstoriqone-job/main.c:108
 #, c-format
-msgid   "Starting simulation of job (type: %s, id: %s, name: %s)"
+msgid   "Starting warm up job (type: %s, id: %s, name: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:114
+#: src/libstoriqone-job/main.c:117
 #, c-format
-msgid   "Simulation of job (type: %s, id: %s, name: %s) failed with code: %d"
+msgid   "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:128
+#: src/libstoriqone-job/main.c:136
 #, c-format
 msgid   "Starting job (type: %s, id: %s, name: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:132
+#: src/libstoriqone-job/main.c:140
 #, c-format
 msgid   "Job exit (type: %s, id: %s, name: %s), exit code: %d"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:178
+#: src/libstoriqone-job/main.c:189
 #, c-format
 msgid   "Starting job (type: %s)"
 msgstr  "Arranque de la tarea (tipo: %s)"
 
-#: src/libstoriqone-job/main.c:208
+#: src/libstoriqone-job/main.c:219
 #, c-format
 msgid   "Initializing job (type: %s)"
 msgstr  "Inicializanción de la tarea (tipo : %s)"
@@ -86,49 +86,49 @@ msgid_plural    "run script: %d scripts found, type: %s"
 msgstr[0]       "Ejecución del script: %d script encontrado, tipo: %s"
 msgstr[1]       "Ejecución del script: %d scripts encontrados; tipo: %s"
 
-#: src/libstoriqone-job/script.c:56
+#: src/libstoriqone-job/script.c:58
 #, c-format
 msgid   "script not found in database, %s, %d/%d"
 msgstr  "el script no ha sido encontrado en la base de datos, %s, %d/%d"
 
-#: src/libstoriqone-job/script.c:61
+#: src/libstoriqone-job/script.c:63
 #, c-format
 msgid   "starting script (type: %s, path: %s)"
 msgstr  "arranque del script (tipo: %s, ruta: %s)"
 
-#: src/libstoriqone-job/script.c:82
+#: src/libstoriqone-job/script.c:84
 #, c-format
 msgid   "script '%s' exited with code %d"
 msgstr  "el escript \"%s\" a salido con el codigo %d"
 
-#: src/libstoriqone-job/script.c:84
+#: src/libstoriqone-job/script.c:86
 #, c-format
 msgid   "script '%s' exited with code OK"
 msgstr  "el script \"%s\" a salido con el codigo ok"
 
-#: src/libstoriqone-job/script.c:87
+#: src/libstoriqone-job/script.c:89
 #, c-format
 msgid   "script '%s' has not returned any data"
 msgstr  "el script \"%s\" no ha renviado los datos"
 
-#: src/libstoriqone-job/script.c:97
+#: src/libstoriqone-job/script.c:99
 #, c-format
 msgid   "script '%s' has not returned data 'should run'"
 msgstr  "el script \"%s\" no ha renviado \"shuold run\""
 
-#: src/libstoriqone-job/script.c:112
+#: src/libstoriqone-job/script.c:114
 #, c-format
 msgid   "script '%s' return message: %s"
 msgstr  "el script \"%s\" a enviado el mensaje: %s"
 
-#~ msgid        "Job exit (type: %s, key: %s, name: %s), exit code: %d"
-#~ msgstr       "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"
-
-#~ msgid        "Starting job (type: %s, key: %s, name: %s)"
-#~ msgstr       "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
+#~ msgid        "Starting simulation of job (type: %s, key: %s, name: %s)"
+#~ msgstr       "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
 
 #~ msgid        "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
 #~ msgstr       "Simulación de la tarea (tipo: %s, llave: %s, nombre: %s) a fallado con el codigo: %d  "
 
-#~ msgid        "Starting simulation of job (type: %s, key: %s, name: %s)"
-#~ msgstr       "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
+#~ msgid        "Starting job (type: %s, key: %s, name: %s)"
+#~ msgstr       "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
+
+#~ msgid        "Job exit (type: %s, key: %s, name: %s), exit code: %d"
+#~ msgstr       "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"

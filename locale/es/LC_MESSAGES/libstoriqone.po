@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 18:37+0100\n"
+        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -428,6 +428,31 @@ msgstr  "leido"
 msgid   "unknown notification"
 msgstr  "notificación desconocida"
 
+#: src/libstoriqone/job.c:86
+msgid   "job"
+msgstr  ""
+
+#: src/libstoriqone/job.c:87 src/libstoriqone/script.c:45
+msgid   "on error"
+msgstr  "en error"
+
+#: src/libstoriqone/job.c:88 src/libstoriqone/script.c:46
+msgid   "post job"
+msgstr  "tarea posterior"
+
+#: src/libstoriqone/job.c:89 src/libstoriqone/script.c:47
+msgid   "pre job"
+msgstr  "previa tarea"
+
+#: src/libstoriqone/job.c:90
+msgid   "warm up"
+msgstr  ""
+
+#: src/libstoriqone/job.c:92 src/libstoriqone/media.c:56 src/libstoriqone/media.c:72 src/libstoriqone/media.c:93
+#: src/libstoriqone/media.c:109 src/libstoriqone/media.c:125 src/libstoriqone/media.c:141 src/libstoriqone/script.c:49
+msgid   "unknown"
+msgstr  "desconocido"
+
 #: src/libstoriqone/loader.c:77
 #, c-format
 msgid   "libstoriqone: loader: failed to access file '%s' because %m"
@@ -534,11 +559,6 @@ msgstr  "datos"
 msgid   "video"
 msgstr  "video"
 
-#: src/libstoriqone/media.c:56 src/libstoriqone/media.c:72 src/libstoriqone/media.c:93 src/libstoriqone/media.c:109
-#: src/libstoriqone/media.c:125 src/libstoriqone/media.c:141 src/libstoriqone/script.c:49
-msgid   "unknown"
-msgstr  "desconocido"
-
 #: src/libstoriqone/media.c:68
 msgid   "disk"
 msgstr  "disco"
@@ -602,18 +622,6 @@ msgstr  "archivo"
 #: src/libstoriqone/media.c:138
 msgid   "file"
 msgstr  "fichero"
-
-#: src/libstoriqone/script.c:45
-msgid   "on error"
-msgstr  "en error"
-
-#: src/libstoriqone/script.c:46
-msgid   "post job"
-msgstr  "tarea posterior"
-
-#: src/libstoriqone/script.c:47
-msgid   "pre job"
-msgstr  "previa tarea"
 
 #: src/libstoriqone/thread_pool.c:178
 msgid   "so_thread_pool_run2: error, not enough memory to start new thread"
