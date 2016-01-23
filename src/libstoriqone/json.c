@@ -714,7 +714,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 						if (str[position] == 'u') {
 							position++;
 
-							if (parser->position + position + 4 >= parser->used) {
+							while (parser->position + position + 4 >= parser->used) {
 								if (!so_json_parse_read_more(parser, false))
 									return NULL;
 
