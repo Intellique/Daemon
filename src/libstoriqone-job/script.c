@@ -42,7 +42,10 @@
 
 struct so_value * soj_script_run(struct so_database_connection * db_connect, struct so_job * job, enum so_script_type type, struct so_pool * pool, struct so_value * data) {
 	int nb_scripts = db_connect->ops->get_nb_scripts(db_connect, job->type, type, pool);
-	so_log_write(so_log_level_info, dngettext("libstoriqone-job", "run script: %d script found, type: %s", "run script: %d scripts found, type: %s", nb_scripts), nb_scripts, so_script_type_to_string(type, true));
+	so_log_write(so_log_level_info,
+		dngettext("libstoriqone-job", "run script: %d script found, type: %s", "run script: %d scripts found, type: %s", nb_scripts),
+		nb_scripts, so_script_type_to_string(type, true));
+
 	if (nb_scripts < 1)
 		return NULL;
 
@@ -55,14 +58,19 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 	for (i = 0; i < nb_scripts && status == 0; i++) {
 		char * path = db_connect->ops->get_script(db_connect, job->type, i, type, pool);
 		if (path == NULL) {
-			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "script not found in database, %s, %d/%d"), so_script_type_to_string(type, false), i, nb_scripts);
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("libstoriqone-job", "script not found in database, %s, %d/%d"),
+				so_script_type_to_string(type, false), i, nb_scripts);
+
 			status = 1;
 			break;
 		}
 
-		soj_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_normal, dgettext("libstoriqone-job", "starting script (type: %s, path: %s)"), so_script_type_to_string(type, false), path);
+		soj_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("libstoriqone-job", "starting script (type: %s, path: %s)"),
+			so_script_type_to_string(type, false), path);
 
-		// run command & wait result
+		// run command
 		struct so_process process;
 		const char * params[] = { so_script_type_to_string(type, false) };
 		so_process_new(&process, path, params, 1);
@@ -74,19 +82,57 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 		so_json_encode_to_fd(data, fd_write, true);
 		close(fd_write);
 
-		struct so_value * returned = so_json_parse_fd(fd_read, -1);
+		unsigned int nb_retry = 0;
+		struct so_value * returned = NULL;
+		while (!process.has_exited) {
+			returned = so_json_parse_fd(fd_read, 12000);
 
-		so_process_wait(&process, 1);
+			if (returned == NULL) {
+				nb_retry++;
+				if (nb_retry > 5)
+					job->done = -1;
+
+				so_process_wait(&process, 1, false);
+			} else {
+				bool finished = false;
+				double done = -1;
+
+				so_value_unpack(returned, "{sbsf}",
+					"finished", &finished,
+					"done", &done
+				);
+
+				if (finished)
+					break;
+
+				done += i;
+				done /= nb_scripts;
+
+				if (done >= 0 && done <= 1)
+					job->done = done;
+				else
+					job->done = -1;
+			}
+		}
+
+		so_process_wait(&process, 1, true);
 		status = process.exited_code;
 		so_process_free(&process, 1);
 
 		if (status != 0)
-			soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' exited with code %d"), path, status);
+			soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("libstoriqone-job", "script '%s' exited with code %d"),
+				path, status);
 		else
-			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' exited with code OK"), path);
+			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important,
+				dgettext("libstoriqone-job", "script '%s' exited with code OK"),
+				path);
 
 		if (returned == NULL) {
-			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' has not returned any data"), path);
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					dgettext("libstoriqone-job", "script '%s' has not returned any data"),
+					path);
+
 			status = 1;
 			free(path);
 			break;
@@ -96,7 +142,10 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 			so_value_unpack(returned, "{sb}", "should run", &should_run);
 
 			if (!should_run) {
-				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' has not returned data 'should run'"), path);
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					dgettext("libstoriqone-job", "script '%s' has not returned data 'should run'"),
+					path);
+
 				status = 1;
 				free(path);
 				break;
@@ -111,7 +160,10 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 		char * message = NULL;
 		so_value_unpack(returned, "{ss}", "message", &message);
 		if (message != NULL) {
-			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' return message: %s"), path, message);
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				dgettext("libstoriqone-job", "script '%s' return message: %s"),
+				path, message);
+
 			free(message);
 		}
 

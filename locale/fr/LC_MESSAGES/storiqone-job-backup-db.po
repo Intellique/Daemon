@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-backupdb v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-30 09:26+0100\n"
+        "POT-Creation-Date: 2015-12-30 12:05+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -60,6 +60,6 @@ msgstr  "Pool (Storiq one database backup) non trouvé"
 msgid   "Trying to back up database to a deleted pool"
 msgstr  "Tentative de sauvegarde dans un pool supprimé"
 
-#: src/job/backup-db/backup-db.c:346
+#: src/job/backup-db/backup-db.c:348
 msgid   "Trying to back up database to a pool which is not growable and without any media"
 msgstr  "Tentative de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de média"

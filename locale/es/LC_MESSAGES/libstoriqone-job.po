@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
+        "POT-Creation-Date: 2016-01-23 20:31+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -79,44 +79,44 @@ msgstr  "verificación del encabezamiento del media  \"%s\" en curso"
 msgid   "Checking media header '%s': failed"
 msgstr  "verificación del encabezamiento del media \"%s\" fallo"
 
-#: src/libstoriqone-job/script.c:45
+#: src/libstoriqone-job/script.c:46
 #, c-format
 msgid   "run script: %d script found, type: %s"
 msgid_plural    "run script: %d scripts found, type: %s"
 msgstr[0]       "Ejecución del script: %d script encontrado, tipo: %s"
 msgstr[1]       "Ejecución del script: %d scripts encontrados; tipo: %s"
 
-#: src/libstoriqone-job/script.c:58
+#: src/libstoriqone-job/script.c:62
 #, c-format
 msgid   "script not found in database, %s, %d/%d"
 msgstr  "el script no ha sido encontrado en la base de datos, %s, %d/%d"
 
-#: src/libstoriqone-job/script.c:63
+#: src/libstoriqone-job/script.c:70
 #, c-format
 msgid   "starting script (type: %s, path: %s)"
 msgstr  "arranque del script (tipo: %s, ruta: %s)"
 
-#: src/libstoriqone-job/script.c:84
+#: src/libstoriqone-job/script.c:124
 #, c-format
 msgid   "script '%s' exited with code %d"
 msgstr  "el escript \"%s\" a salido con el codigo %d"
 
-#: src/libstoriqone-job/script.c:86
+#: src/libstoriqone-job/script.c:128
 #, c-format
 msgid   "script '%s' exited with code OK"
 msgstr  "el script \"%s\" a salido con el codigo ok"
 
-#: src/libstoriqone-job/script.c:89
+#: src/libstoriqone-job/script.c:133
 #, c-format
 msgid   "script '%s' has not returned any data"
 msgstr  "el script \"%s\" no ha renviado los datos"
 
-#: src/libstoriqone-job/script.c:99
+#: src/libstoriqone-job/script.c:146
 #, c-format
 msgid   "script '%s' has not returned data 'should run'"
 msgstr  "el script \"%s\" no ha renviado \"shuold run\""
 
-#: src/libstoriqone-job/script.c:114
+#: src/libstoriqone-job/script.c:164
 #, c-format
 msgid   "script '%s' return message: %s"
 msgstr  "el script \"%s\" a enviado el mensaje: %s"

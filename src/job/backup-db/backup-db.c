@@ -340,6 +340,8 @@ static int soj_backupdb_warm_up(struct so_job * job, struct so_database_connecti
 		return 1;
 	}
 
+	job->done = 0.25;
+
 	soj_backupdb_medias = db_connect->ops->get_medias_of_pool(db_connect, soj_backupdb_pool);
 	if (!soj_backupdb_pool->growable && so_value_list_get_length(soj_backupdb_medias) == 0) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -347,7 +349,11 @@ static int soj_backupdb_warm_up(struct so_job * job, struct so_database_connecti
 		return 1;
 	}
 
+	job->done = 0.5;
+
 	soj_backupdb_checksums = db_connect->ops->get_checksums_from_pool(db_connect, soj_backupdb_pool);
+
+	job->done = 0.75;
 
 	soj_backupdb_backup = soj_backup_new(job);
 

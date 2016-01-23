@@ -96,7 +96,7 @@ void so_process_set_fd(struct so_process * process, enum so_process_std fd_proce
 void so_process_set_nice(struct so_process * process, int nice);
 void so_process_set_null(struct so_process * process, enum so_process_std fd);
 void so_process_start(struct so_process * process, unsigned int nb_process);
-void so_process_wait(struct so_process * process, unsigned int nb_process);
+void so_process_wait(struct so_process * process, unsigned int nb_process, bool wait);
 
 int so_process_fork_and_do(so_process_sub_callback function, void * arg);
 

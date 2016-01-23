@@ -125,7 +125,7 @@ static int so_database_postgresql_stream_backup_close(struct so_stream_reader * 
 	close(self->pg_out);
 	self->pg_out = -1;
 
-	so_process_wait(&self->pg_dump, 1);
+	so_process_wait(&self->pg_dump, 1, true);
 	so_file_rm(self->pgpass);
 
 	return 0;

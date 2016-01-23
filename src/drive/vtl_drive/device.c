@@ -234,7 +234,7 @@ static int sodr_vtl_drive_erase_media(struct sodr_peer * peer, bool quick_mode, 
 			so_process_start(&command, 1);
 
 			if (command.pid > 0) {
-				so_process_wait(&command, 1);
+				so_process_wait(&command, 1, true);
 
 				if (command.exited_code != 0) {
 					ok = false;
