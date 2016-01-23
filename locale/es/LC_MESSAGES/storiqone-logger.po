@@ -1,0 +1,70 @@
+# Spanish translations for storiqone-logger package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:25+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/logger/file.c:147
+msgid   "Log: file: logrotate detected"
+msgstr  "Log: file: logrotate detectado"
+
+#: src/logger/listen.c:54
+msgid   "New connection..."
+msgstr  "Nueva conexión..."
+
+#: src/logger/listen.c:60
+msgid   "Connection closed"
+msgstr  "Conexión cerrada"
+
+#: src/logger/listen.c:69
+msgid   "Received incorrect message"
+msgstr  "Mensajes incorrectos recibidos"
+
+#: src/logger/loader.c:76
+#, c-format
+msgid   "Loader: failed to access to file '%s' because %m"
+msgstr  "Loader: fallo al momento de ingresar al fichero \"%s\" porque %m"
+
+#: src/logger/loader.c:90
+#, c-format
+msgid   "Loader: failed to load '%s' because %s"
+msgstr  "Loader: fallo al cargar de \"%s\" porque %s"
+
+#: src/logger/main.c:58
+msgid   "Storiqoned has hang up"
+msgstr  "el demonio se ha cerrado inesperadamente"
+
+#: src/logger/main.c:83
+#, c-format
+msgid   "Starting logger process (pid: %d, ppid: %d, sid: %d)"
+msgstr  "Arranque o del proceso de jornalización (pid: %d, ppid: %d, sid: %d)"
+
+#: src/logger/main.c:86
+#, c-format
+msgid   "Checksum: %s, last commit: %s"
+msgstr  "huellas: %s, último commit: %s "
+
+#: src/logger/main.c:92
+msgid   "No configuration received from daemon, will now quit"
+msgstr  "Ho hay configuración de parte del demonio, salir ahora"
+
+#: src/logger/main.c:104
+msgid   "Modules loaded"
+msgstr  "Módulos cargados"
+
+#: src/logger/main.c:118
+#, c-format
+msgid   "Logger process (pid: %d) exiting normally"
+msgstr  "Proceso de jornalización (pid: %d) apagado"

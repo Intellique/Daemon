@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-29 12:08+0100\n"
+        "POT-Creation-Date: 2016-01-21 09:06+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -122,7 +122,7 @@ msgstr  "so_checksum_convert_to_hex : paramètres invalides (digest : %p, lengt
 #: src/libstoriqone/checksum.c:102
 #, c-format
 msgid   "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"
-msgstr  "so_checksum_gen_salt : longueur du paramater « length » doit être supérieur à 8 (au lieu de %zd)"
+msgstr  "so_checksum_gen_salt : longueur du paramètre « length » doit être supérieur à 8 (au lieu de %zd)"
 
 #: src/libstoriqone/checksum.c:108
 #, c-format
@@ -379,7 +379,7 @@ msgstr  "so_file_read_all_from : échec en lisant depuis « %s » parce que %
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm : échec lors de obtention des informations de « %s » parce que %m"
 
-#: src/libstoriqone/io/tmp.c:110
+#: src/libstoriqone/io/tmp.c:116
 #, c-format
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
 msgstr  "so_io_tmp_writer: n’a pas pu créé de fichier temporaire dans le répertoire « %s » parce que %m"

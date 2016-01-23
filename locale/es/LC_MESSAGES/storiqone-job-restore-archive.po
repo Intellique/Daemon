@@ -1,0 +1,145 @@
+# Spanish translations for storiqone-job-restore-archive package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-job-restore-archive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/restore-archive/check_worker.c:118
+#, c-format
+msgid   "Skipping verifying '%s' because there are no checksums availables"
+msgstr  "No hay verificación de \"%s\" porque no hay huellas disponibles"
+
+#: src/job/restore-archive/check_worker.c:126
+#, c-format
+msgid   "Failed to open '%s' because %m"
+msgstr  "Fallo a la apertura de \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:126 src/job/restore-archive/data_worker.c:145
+#: src/job/restore-archive/data_worker.c:169
+#, c-format
+msgid   "Error while seeking to file '%s'"
+msgstr  "Error al posicionarse en el fichero \"%s\""
+
+#: src/job/restore-archive/data_worker.c:163
+#, c-format
+msgid   "Skipping file '%s'"
+msgstr  "El fichero \"%s\" es ignorado"
+
+#: src/job/restore-archive/data_worker.c:178
+#, c-format
+msgid   "Error while reading header from media '%s'"
+msgstr  "Error al leer el emcabezamiento desde el media  \"%s\""
+
+#: src/job/restore-archive/data_worker.c:204
+#, c-format
+msgid   "Creating missing directories '%s' with permission 0777"
+msgstr  "Creando los directorios faltantes \"%s\" con el permiso 0777"
+
+#: src/job/restore-archive/data_worker.c:212
+#, c-format
+msgid   "Starting restoring file '%s'"
+msgstr  "Arranque de la restitución del fichero \"%s\""
+
+#: src/job/restore-archive/data_worker.c:219
+#, c-format
+msgid   "Error while opening file '%s' for writing because %m"
+msgstr  "error a la apertura del fichero \"%s\" en escritura porque %m"
+
+#: src/job/restore-archive/data_worker.c:229
+#, c-format
+msgid   "Error while seeking into file '%s' because %m"
+msgstr  "Error al moverse en el fichero \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:247
+#, c-format
+msgid   "Error while writing to file '%s' because %m"
+msgstr  "Error al escribir en el fichero \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:256
+#, c-format
+msgid   "Error while reading from media '%s' because %m"
+msgstr  "Error al leer desde el media \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:264
+#, c-format
+msgid   "Error while restoring file owner (%s) because %m"
+msgstr  "error al restaurar la propiedad del fichero (%s) porque %m"
+
+#: src/job/restore-archive/data_worker.c:271
+#, c-format
+msgid   "Error while restoring file permissions '%s' because %m"
+msgstr  "Error al restaurar las permisiones de los ficheros \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:282
+#, c-format
+msgid   "Error while setting file date and time '%s' because %m"
+msgstr  "Error al restaurar la fecha y hora del fichero \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:295
+#, c-format
+msgid   "Failed to create directory '%s' because %m"
+msgstr  "Fallo a la creación del directorio \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:302
+#, c-format
+msgid   "Failed to create symbolic link '%s' to '%s' because %m"
+msgstr  "fallo a la creación del enlace simbólico \"%s\" hacia \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:307
+#, c-format
+msgid   "Failed to change permission of '%s' to '%03o' because %m"
+msgstr  "fallo al momento de cambiar los permisos de \"%s\" hacia \"%03o\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:314
+#, c-format
+msgid   "Failed to create fifo '%s' because %m"
+msgstr  "Fallo al crear la tubería nombrada fifo \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:321
+#, c-format
+msgid   "Failed to create character device '%s' because %m"
+msgstr  "Fallo al momento de la creación del dispositivo de caracteres \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:329
+#, c-format
+msgid   "Failed to create block device '%s' because %m"
+msgstr  "Fallo al momento de la creación del dispositivo de bloques\"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:337
+#, c-format
+msgid   "Failed to change owner and group of '%s' because %m"
+msgstr  "Fallo al momento del cambio del propietario y del grupo de \"%s\" porque %m"
+
+#: src/job/restore-archive/data_worker.c:362
+msgid   "Failed while setting worker thread name"
+msgstr  "Fallo en el momento de la definición del hilo de ejecución"
+
+#: src/job/restore-archive/data_worker.c:369
+#, c-format
+msgid   "Starting worker thread #%u"
+msgstr  "Arranque del hilo de ejecución #%u"
+
+#: src/job/restore-archive/restore-archive.c:187
+msgid   "Archive not found"
+msgstr  "Archivo no encontrado"
+
+#: src/job/restore-archive/restore-archive.c:192
+#, c-format
+msgid   "No restoration for deleted archive '%s'"
+msgstr  "ninguna restauración del archivo suprimido \"%s\""
+
+#: src/job/restore-archive/restore-archive.c:200
+msgid   "Restore path should be absolute (starts with '/')"
+msgstr  "La ruta de restitución debe ser absoluta (comience por \"/\")"
