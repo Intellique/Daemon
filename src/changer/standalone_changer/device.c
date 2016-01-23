@@ -26,6 +26,8 @@
 
 // malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // bzero
 #include <strings.h>
 
@@ -88,12 +90,39 @@ static int sochgr_standalone_changer_check(unsigned int nb_clients __attribute__
 	if (!dr->enable || !dr->ops->is_free(dr))
 		return 0;
 
-	int failed = dr->ops->reset(dr);
+	static bool has_media = false;
+	if (has_media != !dr->is_empty) {
+		struct so_slot * slot = sochgr_standalone_changer.slots;
+		if (dr->is_empty) {
+			so_media_free(slot->media);
+			slot->media = NULL;
 
-	sochgr_standalone_changer.status = dr->is_empty ? so_changer_status_offline : so_changer_status_idle;
-	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
+			free(slot->volume_name);
+			slot->volume_name = NULL;
 
-	return failed;
+			slot->full = false;
+
+			has_media = false;
+		} else {
+			slot->media = db_connect->ops->get_media(db_connect, dr->slot->media->medium_serial_number, NULL, NULL);
+
+			if (slot->media->label != NULL)
+				slot->volume_name = strdup(slot->media->label);
+			else if (slot->media->name != NULL)
+				slot->volume_name = strdup(slot->media->name);
+			else if (slot->media->medium_serial_number != NULL)
+				slot->volume_name = strdup(slot->media->medium_serial_number);
+
+			slot->full = true;
+
+			has_media = true;
+		}
+
+		sochgr_standalone_changer.status = dr->is_empty ? so_changer_status_offline : so_changer_status_idle;
+		db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
+	}
+
+	return 0;
 }
 
 struct so_changer * sochgr_standalone_changer_get_device() {

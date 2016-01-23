@@ -135,7 +135,7 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
 static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
-static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
+static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id);
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files);
 static int so_database_postgresql_update_link_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job);
 
@@ -3051,6 +3051,8 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 		so_database_postgresql_get_bool(result, 0, 4, &archive->can_append);
 		so_database_postgresql_get_bool(result, 0, 5, &archive->deleted);
 
+		archive->metadata = so_value_new_hashtable2();
+
 		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 		struct so_value * db = so_value_new_hashtable2();
 		so_value_hashtable_put(archive->db_data, key, false, db, true);
@@ -3165,6 +3167,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 					so_database_postgresql_get_ssize(result3, j, 15, &file->size);
 					so_database_postgresql_get_string_dup(result3, j, 16, &file->selected_path);
 					file->digests = so_value_new_hashtable2();
+					file->metadata = so_value_new_hashtable2();
 
 					file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 					struct so_value * db = so_value_new_hashtable2();
@@ -3178,7 +3181,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 
 					const char * param4[] = { file_id };
 					PGresult * result4 = PQexecPrepared(self->connect, query4, 1, param4, NULL, NULL, 0);
-					ExecStatusType status4 = PQresultStatus(result);
+					ExecStatusType status4 = PQresultStatus(result4);
 					int nb_result4 = PQntuples(result4);
 
 					if (status4 == PGRES_FATAL_ERROR)
@@ -3190,10 +3193,52 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 					}
 
 					PQclear(result4);
+
+					const char * query5 = "select_metadata_by_archivefile";
+					so_database_postgresql_prepare(self, query5, "SELECT key, value FROM metadata WHERE id = $1 AND type = 'archivefile'");
+
+					PGresult * result5 = PQexecPrepared(self->connect, query5, 1, param4, NULL, NULL, 0);
+					ExecStatusType status5 = PQresultStatus(result5);
+					int nb_result5 = PQntuples(result5);
+
+					if (status5 == PGRES_FATAL_ERROR)
+						so_database_postgresql_get_error(result5, query5);
+					else if (status5 == PGRES_TUPLES_OK && nb_result5 > 0) {
+						int i;
+						for (i = 0; i < nb_result5; i++) {
+							const char * key = PQgetvalue(result5, i, 0);
+							const char * value = PQgetvalue(result5, i, 1);
+
+							so_value_hashtable_put2(file->metadata, key, so_json_parse_string(value), true);
+						}
+					}
+
+					PQclear(result5);
 				}
 			}
 
 			PQclear(result3);
+		}
+	}
+
+	PQclear(result);
+
+	query = "select_metadata_by_archive";
+	so_database_postgresql_prepare(self, query, "SELECT key, value FROM metadata WHERE id = $1 AND type = 'archive'");
+
+	result = PQexecPrepared(self->connect, query, 1, param2, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			const char * key = PQgetvalue(result, i, 0);
+			const char * value = PQgetvalue(result, i, 1);
+
+			so_value_hashtable_put2(archive->metadata, key, so_json_parse_string(value), true);
 		}
 	}
 
@@ -3648,9 +3693,58 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 		PQclear(result);
 	}
 
-	if (archive_id == NULL) {
-		free(archive_id);
+	if (archive_id == NULL)
 		return 1;
+
+	/**
+	 * Update metadata of archive
+	 */
+	if (archive->metadata != NULL) {
+		const char * query_select = "select_archive_metadata";
+		so_database_postgresql_prepare(self, query_select, "SELECT id FROM metadata WHERE id = $1 AND type = 'archive' AND key = $2 LIMIT 1");
+
+		const char * query_update = "update_archive_metadata";
+		so_database_postgresql_prepare(self, query_update, "UPDATE metadata SET value = $3 WHERE id = $1 AND type = 'archive' AND key = $2");
+
+		const char * query_insert = "insert_archive_metadata";
+		so_database_postgresql_prepare(self, query_insert, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata SELECT $1, 'archive', $2, $3, owner FROM a");
+
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(archive->metadata);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_key(iter, false, false);
+			struct so_value * value = so_value_iterator_get_value(iter, false);
+
+			const char * str_key = so_value_string_get(key);
+			char * str_value = so_json_encode_to_string(value);
+
+			const char * param[] = { archive_id, str_key, str_value };
+			PGresult * result_select = PQexecPrepared(self->connect, query_select, 2, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result_select);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result_select, query_select);
+			else if (PQntuples(result_select) > 0) {
+				PGresult * result_update = PQexecPrepared(self->connect, query_update, 3, param, NULL, NULL, 0);
+				status = PQresultStatus(result_update);
+
+				if (status == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result_update, query_update);
+
+				PQclear(result_update);
+			} else {
+				PGresult * result_insert = PQexecPrepared(self->connect, query_insert, 3, param, NULL, NULL, 0);
+				status = PQresultStatus(result_insert);
+
+				if (status == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result_insert, query_insert);
+
+				PQclear(result_insert);
+			}
+
+			PQclear(result_select);
+			free(str_value);
+		}
+		so_value_iterator_free(iter);
 	}
 
 	int failed = 0;
@@ -3663,7 +3757,7 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 	return failed;
 }
 
-static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id) {
+static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id) {
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = NULL;
 
@@ -3767,6 +3861,31 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 		free(digest_id);
 	}
 	so_value_iterator_free(iter);
+
+	if (file->metadata != NULL) {
+		const char * query_meta = "insert_archivefile_metadata";
+		so_database_postgresql_prepare(self, query_meta, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata SELECT $2, 'archivefile', $3, $4, owner FROM a");
+
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->metadata);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_key(iter, false, false);
+			struct so_value * value = so_value_iterator_get_value(iter, false);
+
+			const char * str_key = so_value_string_get(key);
+			char * str_value = so_json_encode_to_string(value);
+
+			const char * param[] = { archive_id, *file_id, str_key, str_value };
+			PGresult * result = PQexecPrepared(self->connect, query_meta, 4, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, query_meta);
+
+			PQclear(result);
+			free(str_value);
+		}
+		so_value_iterator_free(iter);
+	}
 
 	return status != PGRES_TUPLES_OK;
 }
@@ -3930,7 +4049,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 			so_value_unpack(files, "{ss}", file->path, &file_id);
 
 			if (file_id == NULL) {
-				so_database_postgresql_sync_archive_file(connect, file, &file_id);
+				so_database_postgresql_sync_archive_file(connect, archive_id, file, &file_id);
 				so_value_hashtable_put2(files, file->path, so_value_new_string(file_id), true);
 			}
 

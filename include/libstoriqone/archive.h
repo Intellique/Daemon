@@ -65,6 +65,8 @@ struct so_archive {
 	char * creator;
 	char * owner;
 
+	struct so_value * metadata;
+
 	bool can_append;
 	bool deleted;
 
@@ -117,6 +119,7 @@ struct so_archive_file {
 
 	ssize_t size;
 
+	struct so_value * metadata;
 	char * mime_type;
 	char * selected_path;
 

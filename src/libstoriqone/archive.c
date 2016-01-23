@@ -106,7 +106,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		so_value_list_push(volumes, so_archive_volume_convert(vol), true);
 	}
 
-	return so_value_pack("{ssssszsosssssbsb}",
+	return so_value_pack("{ssssszsosssssOsbsb}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
@@ -116,6 +116,8 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 
 		"creator", archive->creator,
 		"owner", archive->owner,
+
+		"metadata", archive->metadata,
 
 		"can append", archive->can_append,
 		"deleted", archive->deleted
@@ -135,6 +137,8 @@ void so_archive_free(struct so_archive * archive) {
 
 	free(archive->creator);
 	free(archive->owner);
+
+	so_value_free(archive->metadata);
 
 	so_value_free(archive->db_data);
 	free(archive);
@@ -164,11 +168,13 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 	free(archive->name);
 	free(archive->creator);
 	free(archive->owner);
+	so_value_free(archive->metadata);
 
 	struct so_value * uuid = NULL;
 	struct so_value * volumes = NULL;
+	archive->metadata = NULL;
 
-	so_value_unpack(new_archive, "{sossszsosssssbsb}",
+	so_value_unpack(new_archive, "{sossszsosssssOsbsb}",
 		"uuid", &uuid,
 		"name", &archive->name,
 
@@ -178,6 +184,8 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 
 		"creator", &archive->creator,
 		"owner", &archive->owner,
+
+		"metadata", &archive->metadata,
 
 		"can append", &archive->can_append,
 		"deleted", &archive->deleted
@@ -294,7 +302,7 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 	else
 		checksums = so_value_share(file->digests);
 
-	return so_value_pack("{szsIs{sssssusssusssusssIsIsbsIsoszssss}}",
+	return so_value_pack("{szsIs{sssssusssusssusssIsIsbsIsoszsOssss}}",
 		"position", ptr_file->position,
 		"archived time", (long long) ptr_file->archived_time,
 		"file",
@@ -317,6 +325,7 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 
 			"size", file->size,
 
+			"metadata", file->metadata,
 			"mime type", file->mime_type,
 			"selected path", file->selected_path
 	);
@@ -328,6 +337,7 @@ static void so_archive_file_free(struct so_archive_files * files) {
 	free(file->restored_to);
 	free(file->owner);
 	free(file->group);
+	so_value_free(file->metadata);
 	free(file->mime_type);
 	free(file->selected_path);
 	so_value_free(file->digests);
@@ -353,13 +363,14 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 		free(files->file->group);
 		so_value_free(files->file->digests);
 		files->file->digests = NULL;
+		so_value_free(files->file->metadata),
 		free(files->file->mime_type);
 		free(files->file->selected_path);
 	}
 
 	struct so_archive_file * file = files->file;
 
-	so_value_unpack(new_file, "{szsis{sssssusssusssusssisisbsisOszssss}}",
+	so_value_unpack(new_file, "{szsis{sssssusssusssusssisisbsisOszsOssss}}",
 		"position", &files->position,
 		"archived time", &archived_time,
 		"file",
@@ -382,6 +393,7 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 			"size", &file->size,
 
+			"metadata", &file->metadata,
 			"mime type", &file->mime_type,
 			"selected path", &file->selected_path
 	);

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -40,7 +40,7 @@
 #include <sys/mtio.h>
 // time
 #include <time.h>
-// write
+// close, write
 #include <unistd.h>
 
 #include <libstoriqone/drive.h>
@@ -190,6 +190,10 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 			self->media->nb_write_errors++;
 			return -1;
 		}
+
+		sodr_time_start();
+		close(self->fd);
+		sodr_time_stop(self->drive);
 
 		self->fd = -1;
 		so_log_write(so_log_level_debug,

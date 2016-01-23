@@ -1,0 +1,107 @@
+# Spanish translations for storiqone-drive-vtl package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/drive/vtl_drive/device.c:175
+#, c-format
+msgid   "[%s %s %d]: Failed to erase file '%s' because %m"
+msgstr  "[ %s %s %d ] : Fallo al borrar el fichero \"%s\" porque %m"
+
+#: src/drive/vtl_drive/device.c:195 src/drive/vtl_drive/device.c:288 src/drive/vtl_drive/device.c:416
+#, c-format
+msgid   "[%s %s %d]: Failed to list files from media '%s'"
+msgstr  "[ %s %s %d ]: Fallo en la enumeración de los ficheros del media \"%s\""
+
+#: src/drive/vtl_drive/device.c:197 src/drive/vtl_drive/device.c:290 src/drive/vtl_drive/device.c:313
+#: src/drive/vtl_drive/device.c:418
+msgid   "NULL"
+msgstr  "VACÍO"
+
+#: src/drive/vtl_drive/device.c:226
+#, c-format
+msgid   "[%s %s %d]: Command 'shred' ended with code '%d' while removing file '%s'"
+msgstr  "[ %s %s %d ]: Comando \"shred\" a salido con el codigo \"%d\" en el momento de la supresión del fichero \"%s\""
+
+#: src/drive/vtl_drive/device.c:232
+#, c-format
+msgid   "[%s %s %d]: Failed to start 'shred' command to remove file '%s'"
+msgstr  "[ %s %s %d]: Fallo al lanzamiento del comando \"shred\" para suprimir un fichero \"%s\""
+
+#: src/drive/vtl_drive/device.c:270
+#, c-format
+msgid   "[%s %s %d]: VTL does only support Storiq One format"
+msgstr  "[ %s %s %d]: VTL soporta únicamente el formato \"Storiq One\""
+
+#: src/drive/vtl_drive/device.c:311
+#, c-format
+msgid   "[%s %s %d]: Failed to find optimal block size for media '%s'"
+msgstr  "[ %s %s %d ]: Fallo al buscar el tamaño del bloque optimal para el media \"%s\""
+
+#: src/drive/vtl_drive/device.c:333
+#, c-format
+msgid   "[%s %s %d]: Failed to write media header '%s'"
+msgstr  "[%s %s %d]: Fallo de escritura en el encabezamiento del media \"%s\""
+
+#: src/drive/vtl_drive/device.c:397
+#, c-format
+msgid   "[%s %s %d]: Failed to open file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d ]: Fallo a la abertura del fichero del media \"%s\" en la posición \"%d\" porque %m "
+
+#: src/drive/vtl_drive/device.c:521
+#, c-format
+msgid   "[%s %s %d]: Failed to find media with UUID '%s' from database"
+msgstr  "[%s %s %d]: Fallo al buscar el media con l'UUID \"%s\" desde la base de datos"
+
+#: src/drive/vtl_drive/reader.c:88 src/drive/vtl_drive/writer.c:173
+#, c-format
+msgid   "[%s %s %d] Error while closing media '%s' at position '%d' because %s"
+msgstr  "[%s %s %d] Error al cerra el media \"%s\" en la posición \"%d\" porque %s"
+
+#: src/drive/vtl_drive/reader.c:107 src/drive/vtl_drive/reader.c:127
+#, c-format
+msgid   "[%s %s %d] Error while getting file information from media '%s' at position '%d' because %m"
+msgstr  "[%s %s %d] Error al recuperar las informaciones del fichero \"%s\" en la posición \"%d\" porque %m"
+
+#: src/drive/vtl_drive/reader.c:160
+#, c-format
+msgid   "[%s %s %d] Error while forwarding into media file '%s' at position '%d' because %m"
+msgstr  "[%s %s %d] Error de avance en el fichero del media \"%s\" en la posición \"%d\" porque %m"
+
+#: src/drive/vtl_drive/reader.c:182 src/drive/vtl_drive/reader.c:285 src/drive/vtl_drive/reader.c:312
+#, c-format
+msgid   "[%s %s %d] Error while reading file from media '%s' at position '%d' because %m"
+msgstr  "[%s %s %d] Error leyendo el fichero desde el media \"%s\" en la posición \"%d\" porque %m"
+
+#: src/drive/vtl_drive/writer.c:112 src/drive/vtl_drive/writer.c:365
+#, c-format
+msgid   "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d] Error al escribir en el fichero desde el media \"%s\" en la posición \"%d\" porque %m"
+
+#: src/drive/vtl_drive/writer.c:154 src/drive/vtl_drive/writer.c:282 src/drive/vtl_drive/writer.c:340
+#, c-format
+msgid   "[%s %s %d] Error while writing to media file '%s' at position '%d' because %m"
+msgstr  "[%s %s %d] Error al ecribir el fichero del media \"%s\" en la posición \"%d\" porque %m"
+
+#: src/drive/vtl_drive/writer.c:223
+#, c-format
+msgid   "[%s %s %d] Error while opening file '%s' because %m"
+msgstr  "[ %s %s %d] Error al abrir el fichero \"%s\" porque %m"
+
+#: src/drive/vtl_drive/writer.c:298
+#, c-format
+msgid   "[%s %s %d] Error while repositioning at beginning of file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d] Error al posicionarse al comienzo del fichero desde el media \"%s\" en la posición \"%d\" porque %m"

@@ -123,7 +123,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		soj_create_archive_worker_init_archive(job, primary_archive, archives_mirrors);
 	else
 		soj_create_archive_worker_init_pool(job, primary_pool, pool_mirrors);
-	soj_create_archive_worker_reserve_medias(job, archive_size, db_connect);
+	soj_create_archive_worker_reserve_medias(archive_size, db_connect);
 	soj_create_archive_worker_prepare_medias(db_connect);
 
 	bool stop = false;
@@ -143,7 +143,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				if (round == 1)
 					soj_create_archive_meta_worker_add_file(file.filename, root);
 
-				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(job, &file, round == 1, db_connect);
+				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file, round == 1, db_connect);
 				if (write_status != so_format_writer_ok) {
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
@@ -155,7 +155,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 					static char buffer[16384];
 					ssize_t nb_read;
 					while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 16384), nb_read > 0) {
-						ssize_t nb_write = soj_create_archive_worker_write(job, &file, buffer, nb_read, round == 1, db_connect);
+						ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, round == 1, db_connect);
 						if (nb_write < 0) {
 							failed = -2;
 							break;
@@ -189,7 +189,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
-		failed = soj_create_archive_worker_sync_archives(job, db_connect);
+		failed = soj_create_archive_worker_sync_archives(db_connect);
 
 		if (failed != 0)
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -209,7 +209,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 	job->done = 0.99;
 
-	soj_create_archive_worker_generate_report(job, selected_path, db_connect);
+	soj_create_archive_worker_generate_report(selected_path, db_connect);
 
 	bool check_archive = false;
 	so_value_unpack(job->option, "{sb}", "check_archive", &check_archive);
@@ -224,7 +224,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 			free(mode);
 		}
 
-		soj_create_archive_worker_create_check_archive(job, quick_mode, db_connect);
+		soj_create_archive_worker_create_check_archive(quick_mode, db_connect);
 	}
 
 	/**

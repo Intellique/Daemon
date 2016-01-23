@@ -287,7 +287,7 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 			dev[7] = ' ';
 			strncpy(dev + 8, model, strlen(model));
 			dev[23] = ' ';
-			strcpy(dev + 24, serial_number);
+			strncpy(dev + 24, serial_number, 10);
 
 			so_value_hashtable_put2(sochgr_scsi_changer_available_drives, dev, dr, false);
 
