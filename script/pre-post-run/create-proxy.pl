@@ -30,10 +30,11 @@ foreach my $dir ( split ':', $ENV{PATH} ) {
     last if defined $encoder;
 }
 
-unless ($encoder) {
+unless (defined $encoder) {
     my $sent = {
-        'data'    => {},
-        'message' => "Encoder not found ('ffmpeg', 'avconv')",
+        'finished' => JSON::PP::true,
+        'data'     => {},
+        'message'  => "Encoder not found ('ffmpeg', 'avconv')",
     };
     print encode_json($sent);
     exit 1;
@@ -116,12 +117,44 @@ sub process {
     }
 }
 
-foreach my $vol ( @{ $data->{archive}->{main}->{volumes} } ) {
+my $archive;
+if (defined $data->{archive}->{main}) {
+    $archive = $data->{archive}->{main};
+}
+elsif (defined $data->{archive}->{source}) {
+    $archive = $data->{archive}->{source};
+}
+else {
+    my $sent = {
+        'finished' => JSON::PP::true,
+        'data'     => {},
+        'message'  => "No archive found",
+    };
+    print encode_json($sent);
+    exit 2;
+}
+
+my $nb_total_files = 0;
+foreach my $vol ( @{ $archive->{volumes} } ) {
     foreach my $ptr_file ( @{ $vol->{files} } ) {
         my $file = $ptr_file->{file};
 
         next if defined $file_done{ $file->{path} };
         $file_done{ $file->{path} } = $file;
+
+        $nb_total_files++;
+    }
+}
+%file_done = ();
+
+my $nb_file_done = 0;
+foreach my $vol ( @{ $archive->{volumes} } ) {
+    foreach my $ptr_file ( @{ $vol->{files} } ) {
+        my $file = $ptr_file->{file};
+
+        next if defined $file_done{ $file->{path} };
+        $file_done{ $file->{path} } = $file;
+        $nb_file_done++;
 
         next unless -e $file->{path};
         next if $file->{type} eq 'directory';
@@ -132,6 +165,14 @@ foreach my $vol ( @{ $data->{archive}->{main}->{volumes} } ) {
 
         process( $file->{path}, 'mp4' );
         process( $file->{path}, 'ogv' );
+
+        my $sent = {
+            'finished'    => JSON::PP::false,
+            'data'        => {},
+            'progression' => $nb_file_done / $nb_total_files,
+            'message'     => ''
+        };
+        print encode_json($sent);
     }
 }
 
@@ -141,8 +182,9 @@ while ( $nb_processes > 0 ) {
 }
 
 my $sent = {
-    'data'    => {},
-    'message' => "",
+    'finished'    => JSON::PP::true,
+    'data'        => {},
+    'message'     => ''
 };
 print encode_json($sent);
 

@@ -85,7 +85,7 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 		unsigned int nb_retry = 0;
 		struct so_value * returned = NULL;
 		while (!process.has_exited) {
-			returned = so_json_parse_fd(fd_read, 12000);
+			returned = so_json_parse_fd(fd_read, 60000);
 
 			if (returned == NULL) {
 				nb_retry++;
@@ -99,7 +99,7 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 
 				so_value_unpack(returned, "{sbsf}",
 					"finished", &finished,
-					"done", &done
+					"progression", &done
 				);
 
 				if (finished)
