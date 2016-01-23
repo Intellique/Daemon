@@ -353,7 +353,7 @@ void so_process_wait(struct so_process * process, unsigned int nb_process, bool 
 		int err = waitpid(process[i].pid, &status, wait ? 0 : WNOHANG);
 		if (err > 0)
 			process[i].exited_code = WEXITSTATUS(status);
-		process[i].has_exited = true;
+		process[i].has_exited = WIFEXITED(status);
 	}
 }
 
