@@ -49,7 +49,7 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 	if (nb_scripts < 1)
 		return NULL;
 
-	job->done = -1;
+	job->done = 0;
 
 	struct so_value * datas = so_value_new_array(nb_scripts);
 
@@ -106,7 +106,8 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 					break;
 
 				done += i;
-				done /= nb_scripts;
+				if (nb_scripts > 1)
+					done /= nb_scripts;
 
 				if (done >= 0 && done <= 1)
 					job->done = done;
