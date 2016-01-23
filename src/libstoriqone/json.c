@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -483,10 +483,21 @@ char * so_json_encode_to_string(struct so_value * value) {
 	locale_t current_locale = uselocale(c_locale);
 
 	size_t length = so_json_compute_length(value);
-	if (length == 0)
+	if (length == 0) {
+		freelocale(c_locale);
+		uselocale(current_locale);
+
 		return NULL;
+	}
 
 	char * buffer = malloc(length + 1);
+	if (buffer == NULL) {
+		freelocale(c_locale);
+		uselocale(current_locale);
+
+		return NULL;
+	}
+
 	buffer[length] = '\0';
 
 	so_json_encode_to_string_inner(value, buffer, length + 1);

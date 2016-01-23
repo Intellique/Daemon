@@ -122,7 +122,7 @@ msgstr  "so_checksum_convert_to_hex : paramètres invalides (digest : %p, lengt
 #: src/libstoriqone/checksum.c:102
 #, c-format
 msgid   "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"
-msgstr  "so_checksum_gen_salt : longueur du paramater « length » doit être supérieur à 8 (au lieu de %zd)"
+msgstr  "so_checksum_gen_salt : longueur du paramètre « length » doit être supérieur à 8 (au lieu de %zd)"
 
 #: src/libstoriqone/checksum.c:108
 #, c-format

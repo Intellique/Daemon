@@ -1,0 +1,91 @@
+# Spanish translations for storiqonectl package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqonectl v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-12-28 16:25+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/storiqonectl/config.c:75
+#, c-format
+msgid   "storiqonectl config : basic configuration\n"
+msgstr  "storiqonectl config: configuración básica\n"
+
+#: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:130 src/storiqonectl/daemon.c:186 src/storiqonectl/daemon.c:230
+#, c-format
+msgid   "  -h, --help    : show this and exit\n"
+msgstr  "  -h, --help    : muestra esto y finaliza\n"
+
+#: src/storiqonectl/daemon.c:129
+#, c-format
+msgid   "storiqonectl start : start storiqoned\n"
+msgstr  "storiqonectl start : inicia el demonio\n"
+
+#: src/storiqonectl/daemon.c:185
+#, c-format
+msgid   "storiqonectl status : get status of storiqoned\n"
+msgstr  "storiqonectl status : recupera el estado del demonio\n"
+
+#: src/storiqonectl/daemon.c:187
+#, c-format
+msgid   "  -v, --verbose : increase verbosity\n"
+msgstr  "  -v, --verbose : augmenta la verbosidad\n"
+
+#: src/storiqonectl/daemon.c:201 src/storiqonectl/daemon.c:205
+msgid   "Status of daemon: "
+msgstr  "Estado del demonio: "
+
+#: src/storiqonectl/daemon.c:201
+msgid   "alive"
+msgstr  "con vida"
+
+#: src/storiqonectl/daemon.c:205
+msgid   "unknown"
+msgstr  "desconocido"
+
+#: src/storiqonectl/daemon.c:229
+#, c-format
+msgid   "storiqonectl stop : stop storiqoned daemon\n"
+msgstr  "storiqonectl stop : detener el demonio\n"
+
+#: src/storiqonectl/hardware.c:76
+#, c-format
+msgid   "storiqonectl: Found %zd drive\n"
+msgid_plural    "storiqonectl: Found %zd drives\n"
+msgstr[0]       "storiqonectl :%zd lector encontrado\n"
+msgstr[1]       "storiqonectl :%zd lectores encontrados\n"
+
+#: src/storiqonectl/hardware.c:88 src/storiqonectl/hardware.c:100 src/storiqonectl/hardware.c:121
+#: src/storiqonectl/hardware.c:165 src/storiqonectl/hardware.c:181
+#, c-format
+msgid   "storiqonectl: Failed while reading file link '%s' because %m\n"
+msgstr  "storiqonectl : Fallo leyendo el enlace del fichero \"%s\" porque %m\n"
+
+#: src/storiqonectl/hardware.c:159
+#, c-format
+msgid   "storiqonectl: Found %zd changer\n"
+msgid_plural    "storiqonectl: Found %zd changers\n"
+msgstr[0]       "storiqonectl: %zd brazo artículado encontrado\n"
+msgstr[1]       "storiqonectl: %zd brazos artículados encontrados\n"
+
+#: src/storiqonectl/hardware.c:251
+#, c-format
+msgid   "storiqonectl: Found %u standalong drive\n"
+msgid_plural    "storiqonectl: Found %u standalong drives\n"
+msgstr[0]       "storiqonectl: %u lector autónomo encontrado\n"
+msgstr[1]       "storiqonectl: %u lectores autónomos encontrados\n"
+
+#: src/storiqonectl/main.c:64
+#, c-format
+msgid   "Error: command not found (%s)\n"
+msgstr  "Erreur: comando no encontrado (%s)\n"
