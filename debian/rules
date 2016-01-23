@@ -29,6 +29,9 @@ override_dh_auto_test:
 override_dh_auto_install:
 	make install DESTDIR=debian/tmp
 
+override_dh_installinit:
+	dh_installinit --name=storiqoned -r --no-start
+
 override_dh_fixperms:
 	dh_fixperms -X bin -X lib
 
