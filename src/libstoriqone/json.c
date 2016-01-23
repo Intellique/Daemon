@@ -62,7 +62,7 @@
 struct so_json_parser {
 	char * buffer;
 	char * dynamic_buffer;
-	char static_buffer[4096];
+	char static_buffer[4097];
 	size_t position, used, buffer_size, last_read;
 
 	struct pollfd pfd;
@@ -677,12 +677,20 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 			break;
 
 		case '"': {
-				const char * str = parser->buffer + parser->position + 1;
+				parser->position++;
+				const char * str = parser->buffer + parser->position;
 
 				unsigned int str_length, position;
 				for (str_length = 0, position = 0; str[position] != '"'; str_length++, position++) {
-					if (parser->position + position >= parser->used && !so_json_parse_read_more(parser, false))
-						return NULL;
+					if (parser->position + position >= parser->used) {
+						if (!so_json_parse_read_more(parser, false))
+							return NULL;
+
+						str = parser->buffer;
+
+						if (str[position] == '"')
+							break;
+					}
 
 					if (str[position] == '\0')
 						return NULL;
@@ -690,8 +698,15 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 					if (str[position] == '\\') {
 						position++;
 
-						if (parser->position + position >= parser->used && !so_json_parse_read_more(parser, false))
-							return NULL;
+						if (parser->position + position >= parser->used) {
+							if (!so_json_parse_read_more(parser, false))
+								return NULL;
+
+							str = parser->buffer;
+
+							if (str[position] == '"')
+								return NULL;
+						}
 
 						if (strspn(str + position, "\"\\/bfnrtu") == 0)
 							return NULL;
@@ -699,8 +714,12 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 						if (str[position] == 'u') {
 							position++;
 
-							if (parser->position + position + 4 >= parser->used && !so_json_parse_read_more(parser, false))
-								return NULL;
+							if (parser->position + position + 4 >= parser->used) {
+								if (!so_json_parse_read_more(parser, false))
+									return NULL;
+
+								str = parser->buffer;
+							}
 
 							unsigned int unicode;
 							if (sscanf(str + position, "%4x", &unicode) < 1)
@@ -716,7 +735,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 						}
 					}
 				}
-				parser->position += position + 2;
+				parser->position += position + 1;
 
 				char * tmp_string = malloc(str_length + 1);
 				size_t from, to;
@@ -932,7 +951,7 @@ static bool so_json_parse_pipe_read(struct so_json_parser * parser) {
 	if (nb_copied < 0)
 		return false;
 
-	ssize_t nb_read = read(parser->pipe.fd[0], parser->buffer + parser->position, nb_copied);
+	ssize_t nb_read = read(parser->pipe.fd[0], parser->buffer + parser->used, nb_copied);
 	if (nb_read < 0)
 		return false;
 
@@ -947,10 +966,12 @@ static bool so_json_parse_read_more(struct so_json_parser * parser, bool wait) {
 	if (parser->read == NULL)
 		return false;
 
-	static char tmp_buffer[4096];
-	ssize_t nb_read = parser->read(parser, tmp_buffer, parser->last_read);
-	if (nb_read < 0)
-		return false;
+	if (parser->last_read > 0) {
+		static char tmp_buffer[4096];
+		ssize_t nb_read = parser->read(parser, tmp_buffer, parser->last_read);
+		if (nb_read < 0)
+			return false;
+	}
 
 	if (!parser->has_more_data(parser, wait))
 		return false;
@@ -979,6 +1000,7 @@ static bool so_json_parse_read_more(struct so_json_parser * parser, bool wait) {
 			}
 		}
 
+		parser->position = 0;
 		parser->used = remain;
 	} else
 		parser->position = parser->used = 0;
@@ -1090,7 +1112,7 @@ static bool so_json_parse_socket_read(struct so_json_parser * parser) {
 	if (available_in_socket > remain)
 		available_in_socket = remain;
 
-	ssize_t nb_peek = recv(parser->pfd.fd, parser->buffer + parser->position, available_in_socket, MSG_PEEK);
+	ssize_t nb_peek = recv(parser->pfd.fd, parser->buffer + parser->used, available_in_socket, MSG_PEEK);
 	if (nb_peek < 0)
 		return false;
 
@@ -1147,7 +1169,7 @@ static bool so_json_parse_stream_read_more(struct so_json_parser * parser) {
 	if (available_in_stream > remain)
 		available_in_stream = remain;
 
-	ssize_t nb_read = parser->stream.reader->ops->peek(parser->stream.reader, parser->buffer + parser->position, remain);
+	ssize_t nb_read = parser->stream.reader->ops->peek(parser->stream.reader, parser->buffer + parser->used, remain);
 	if (nb_read < 0)
 		return false;
 
