@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 20:31+0100\n"
+        "POT-Creation-Date: 2016-01-23 22:50+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -96,27 +96,27 @@ msgstr  "le script n’a pas été trouvé dans la base de données, %s, %d/%d"
 msgid   "starting script (type: %s, path: %s)"
 msgstr  "démarrage du script (type : %s, chemin : %s)"
 
-#: src/libstoriqone-job/script.c:124
+#: src/libstoriqone-job/script.c:125
 #, c-format
 msgid   "script '%s' exited with code %d"
 msgstr  "le script « %s » a quitté avec le code %d"
 
-#: src/libstoriqone-job/script.c:128
+#: src/libstoriqone-job/script.c:129
 #, c-format
 msgid   "script '%s' exited with code OK"
 msgstr  "le script « %s » a quitté avec le code ok"
 
-#: src/libstoriqone-job/script.c:133
+#: src/libstoriqone-job/script.c:134
 #, c-format
 msgid   "script '%s' has not returned any data"
 msgstr  "le script « %s » n‘a pas retourné de données"
 
-#: src/libstoriqone-job/script.c:146
+#: src/libstoriqone-job/script.c:147
 #, c-format
 msgid   "script '%s' has not returned data 'should run'"
 msgstr  "le script « %s » n’a pas retourné « should run »"
 
-#: src/libstoriqone-job/script.c:164
+#: src/libstoriqone-job/script.c:165
 #, c-format
 msgid   "script '%s' return message: %s"
 msgstr  "le script « %s » a retourné le message : %s"

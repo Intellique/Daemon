@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 22:36+0100\n"
+        "POT-Creation-Date: 2016-01-23 22:50+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -96,39 +96,39 @@ msgstr  "el script no ha sido encontrado en la base de datos, %s, %d/%d"
 msgid   "starting script (type: %s, path: %s)"
 msgstr  "arranque del script (tipo: %s, ruta: %s)"
 
-#: src/libstoriqone-job/script.c:124
+#: src/libstoriqone-job/script.c:125
 #, c-format
 msgid   "script '%s' exited with code %d"
 msgstr  "el escript \"%s\" a salido con el codigo %d"
 
-#: src/libstoriqone-job/script.c:128
+#: src/libstoriqone-job/script.c:129
 #, c-format
 msgid   "script '%s' exited with code OK"
 msgstr  "el script \"%s\" a salido con el codigo ok"
 
-#: src/libstoriqone-job/script.c:133
+#: src/libstoriqone-job/script.c:134
 #, c-format
 msgid   "script '%s' has not returned any data"
 msgstr  "el script \"%s\" no ha renviado los datos"
 
-#: src/libstoriqone-job/script.c:146
+#: src/libstoriqone-job/script.c:147
 #, c-format
 msgid   "script '%s' has not returned data 'should run'"
 msgstr  "el script \"%s\" no ha renviado \"shuold run\""
 
-#: src/libstoriqone-job/script.c:164
+#: src/libstoriqone-job/script.c:165
 #, c-format
 msgid   "script '%s' return message: %s"
 msgstr  "el script \"%s\" a enviado el mensaje: %s"
 
-#~ msgid        "Job exit (type: %s, key: %s, name: %s), exit code: %d"
-#~ msgstr       "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"
-
-#~ msgid        "Starting job (type: %s, key: %s, name: %s)"
-#~ msgstr       "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
+#~ msgid        "Starting simulation of job (type: %s, key: %s, name: %s)"
+#~ msgstr       "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
 
 #~ msgid        "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
 #~ msgstr       "Simulación de la tarea (tipo: %s, llave: %s, nombre: %s) a fallado con el codigo: %d  "
 
-#~ msgid        "Starting simulation of job (type: %s, key: %s, name: %s)"
-#~ msgstr       "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
+#~ msgid        "Starting job (type: %s, key: %s, name: %s)"
+#~ msgstr       "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
+
+#~ msgid        "Job exit (type: %s, key: %s, name: %s), exit code: %d"
+#~ msgstr       "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"
