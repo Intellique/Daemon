@@ -63,7 +63,7 @@ struct so_json_parser {
 	char * buffer;
 	char * dynamic_buffer;
 	char static_buffer[4097];
-	size_t position, used, buffer_size, last_read;
+	size_t position, used, buffer_size, last_read, last_remain;
 
 	struct pollfd pfd;
 	int timeout;
@@ -509,7 +509,7 @@ static struct so_value * so_json_parse(struct so_json_parser * parser) {
 
 	if (parser->read != NULL && parser->position > 0) {
 		static char tmp_buffer[4096];
-		parser->read(parser, tmp_buffer, parser->position);
+		parser->read(parser, tmp_buffer, parser->position - parser->last_remain);
 	}
 
 	return returned;
@@ -882,6 +882,7 @@ static struct so_value * so_json_parse_pipe(int fd, int timeout) {
 		.used = 0,
 		.buffer_size = 4096,
 		.last_read = 0,
+		.last_remain = 0,
 
 		.pfd = {
 			.fd = fd,
@@ -977,33 +978,33 @@ static bool so_json_parse_read_more(struct so_json_parser * parser, bool wait) {
 		return false;
 
 	if (parser->position < parser->used) {
-		size_t remain = parser->used - parser->position;
+		parser->last_remain = parser->used - parser->position;
 
-		if (remain > 2048 && parser->dynamic_buffer == NULL) {
+		if (parser->last_remain > 2048 && parser->dynamic_buffer == NULL) {
 			parser->buffer_size = 8192;
 			parser->dynamic_buffer = malloc(parser->buffer_size);
 
-			memcpy(parser->dynamic_buffer, parser->static_buffer + parser->position, remain);
+			memcpy(parser->dynamic_buffer, parser->static_buffer + parser->position, parser->last_remain);
 
 			parser->buffer = parser->dynamic_buffer;
 		} else {
-			memmove(parser->buffer, parser->buffer + parser->position, remain);
+			memmove(parser->buffer, parser->buffer + parser->position, parser->last_remain);
 
-			if (parser->buffer_size - remain < 2048) {
+			if (parser->buffer_size - parser->last_remain < 2048) {
 				parser->buffer_size += 4096;
 
 				void * addr = realloc(parser->dynamic_buffer, parser->buffer_size);
 				if (addr == NULL)
 					return false;
 
-				parser->dynamic_buffer = addr;
+				parser->buffer = parser->dynamic_buffer = addr;
 			}
 		}
 
 		parser->position = 0;
-		parser->used = remain;
+		parser->used = parser->last_remain;
 	} else
-		parser->position = parser->used = 0;
+		parser->position = parser->used = parser->last_remain = 0;
 
 	return parser->read_more(parser);
 }
@@ -1017,6 +1018,7 @@ static struct so_value * so_json_parse_reg_file(int fd, struct stat * info) {
 		.position = 0,
 		.used = info->st_size,
 		.last_read = 0,
+		.last_remain = 0,
 
 		.pfd = {
 			.fd = -1,
@@ -1059,6 +1061,7 @@ static struct so_value * so_json_parse_socket(int fd, int timeout) {
 		.used = 0,
 		.buffer_size = 4096,
 		.last_read = 0,
+		.last_remain = 0,
 
 		.pfd = {
 			.fd = fd,
@@ -1129,6 +1132,7 @@ struct so_value * so_json_parse_stream(struct so_stream_reader * reader) {
 		.position = 0,
 		.used = 0,
 		.last_read = 0,
+		.last_remain = 0,
 
 		.pfd = {
 			.fd = -1,
@@ -1187,6 +1191,7 @@ struct so_value * so_json_parse_string(const char * json) {
 		.position = 0,
 		.used = strlen(json),
 		.last_read = 0,
+		.last_remain = 0,
 
 		.pfd = {
 			.fd = -1,
