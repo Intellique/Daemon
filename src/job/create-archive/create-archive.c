@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain, dgettext
@@ -72,20 +72,20 @@ static ssize_t archive_size = 0;
 static void soj_create_archive_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_create_archive_init(void) __attribute__((constructor));
 static int soj_create_archive_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_create_archive_simulate(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_create_archive_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_create_archive_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_create_archive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_create_archive_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver create_archive = {
 	.name = "create-archive",
 
 	.exit            = soj_create_archive_exit,
 	.run             = soj_create_archive_run,
-	.simulate        = soj_create_archive_simulate,
 	.script_on_error = soj_create_archive_script_on_error,
 	.script_post_run = soj_create_archive_script_post_run,
 	.script_pre_run  = soj_create_archive_script_pre_run,
+	.warm_up         = soj_create_archive_warm_up,
 };
 
 
@@ -238,7 +238,97 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	return failed;
 }
 
-static int soj_create_archive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
+static void soj_create_archive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, primary_pool) < 1)
+		return;
+
+	struct so_value * vpool_mirrors = so_value_new_linked_list();
+	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * vpool = so_value_iterator_get_value(iter, false);
+		struct so_pool * pool = so_value_custom_get(vpool);
+
+		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
+	}
+	so_value_iterator_free(iter);
+
+	struct so_value * json = so_value_pack("{sosos{soso}sO}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool",
+			"primary", so_pool_convert(primary_pool),
+			"mirrors", vpool_mirrors,
+		"selected paths", selected_path
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, primary_pool, json);
+	so_value_free(returned);
+	so_value_free(json);
+}
+
+static void soj_create_archive_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, primary_pool) < 1)
+		return;
+
+	struct so_value * vpool_mirrors = so_value_new_linked_list();
+	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * vpool = so_value_iterator_get_value(iter, false);
+		struct so_pool * pool = so_value_custom_get(vpool);
+
+		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
+	}
+	so_value_iterator_free(iter);
+
+	struct so_value * json = so_value_pack("{sosos{soso}sosO}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool",
+			"primary", so_pool_convert(primary_pool),
+			"mirrors", vpool_mirrors,
+		"archive", soj_create_archive_worker_archives(),
+		"selected paths", selected_path
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, primary_pool, json);
+	so_value_free(returned);
+	so_value_free(json);
+}
+
+static bool soj_create_archive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, primary_pool) < 1)
+		return true;
+
+	struct so_value * vpool_mirrors = so_value_new_linked_list();
+	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * vpool = so_value_iterator_get_value(iter, false);
+		struct so_pool * pool = so_value_custom_get(vpool);
+
+		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
+	}
+	so_value_iterator_free(iter);
+
+	struct so_value * json = so_value_pack("{sosos{soso}sO}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool",
+			"primary", so_pool_convert(primary_pool),
+			"mirrors", vpool_mirrors,
+		"selected paths", selected_path
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, primary_pool, json);
+	so_value_free(json);
+
+	bool should_run = false;
+	so_value_unpack(returned, "{sb}", "should run", &should_run);
+	so_value_free(returned);
+
+	return should_run;
+}
+
+static int soj_create_archive_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
 	/**
 	 * reserved for future (see ltfs)
 	 * media_source = db_connect->ops->get_media(db_connect, NULL, NULL, job);
@@ -372,95 +462,5 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 	}
 
 	return 0;
-}
-
-static void soj_create_archive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, primary_pool) < 1)
-		return;
-
-	struct so_value * vpool_mirrors = so_value_new_linked_list();
-	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * vpool = so_value_iterator_get_value(iter, false);
-		struct so_pool * pool = so_value_custom_get(vpool);
-
-		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
-	}
-	so_value_iterator_free(iter);
-
-	struct so_value * json = so_value_pack("{sosos{soso}sO}",
-		"job", so_job_convert(job),
-		"host", so_host_get_info2(),
-		"pool",
-			"primary", so_pool_convert(primary_pool),
-			"mirrors", vpool_mirrors,
-		"selected paths", selected_path
-	);
-
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, primary_pool, json);
-	so_value_free(returned);
-	so_value_free(json);
-}
-
-static void soj_create_archive_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, primary_pool) < 1)
-		return;
-
-	struct so_value * vpool_mirrors = so_value_new_linked_list();
-	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * vpool = so_value_iterator_get_value(iter, false);
-		struct so_pool * pool = so_value_custom_get(vpool);
-
-		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
-	}
-	so_value_iterator_free(iter);
-
-	struct so_value * json = so_value_pack("{sosos{soso}sosO}",
-		"job", so_job_convert(job),
-		"host", so_host_get_info2(),
-		"pool",
-			"primary", so_pool_convert(primary_pool),
-			"mirrors", vpool_mirrors,
-		"archive", soj_create_archive_worker_archives(),
-		"selected paths", selected_path
-	);
-
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, primary_pool, json);
-	so_value_free(returned);
-	so_value_free(json);
-}
-
-static bool soj_create_archive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, primary_pool) < 1)
-		return true;
-
-	struct so_value * vpool_mirrors = so_value_new_linked_list();
-	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * vpool = so_value_iterator_get_value(iter, false);
-		struct so_pool * pool = so_value_custom_get(vpool);
-
-		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
-	}
-	so_value_iterator_free(iter);
-
-	struct so_value * json = so_value_pack("{sosos{soso}sO}",
-		"job", so_job_convert(job),
-		"host", so_host_get_info2(),
-		"pool",
-			"primary", so_pool_convert(primary_pool),
-			"mirrors", vpool_mirrors,
-		"selected paths", selected_path
-	);
-
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, primary_pool, json);
-	so_value_free(json);
-
-	bool should_run = false;
-	so_value_unpack(returned, "{sb}", "should run", &should_run);
-	so_value_free(returned);
-
-	return should_run;
 }
 

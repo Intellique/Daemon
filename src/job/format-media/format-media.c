@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain, dgettext
@@ -60,20 +60,20 @@ static bool soj_formatmedia_check_partition_size(struct so_job * job, ssize_t pa
 static void soj_formatmedia_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_formatmedia_init(void) __attribute__((constructor));
 static int soj_formatmedia_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_formatmedia_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_formatmedia_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_formatmedia_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver soj_formatmedia = {
 	.name = "format-media",
 
 	.exit            = soj_formatmedia_exit,
 	.run             = soj_formatmedia_run,
-	.simulate        = soj_formatmedia_simulate,
 	.script_on_error = soj_formatmedia_script_on_error,
 	.script_post_run = soj_formatmedia_script_post_run,
 	.script_pre_run  = soj_formatmedia_script_pre_run,
+	.warm_up         = soj_formatmedia_warm_up,
 };
 
 
@@ -193,7 +193,105 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 	}
 }
 
-static int soj_formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
+static void soj_formatmedia_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_formatmedia_pool) < 1)
+		return;
+
+	struct so_value * json = so_value_pack("{sosososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"media", so_media_convert(soj_formatmedia_media),
+		"pool", so_pool_convert(soj_formatmedia_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, soj_formatmedia_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
+}
+
+static void soj_formatmedia_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, soj_formatmedia_pool) < 1)
+		return;
+
+	struct so_value * json = so_value_pack("{sosososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"media", so_media_convert(soj_formatmedia_media),
+		"pool", so_pool_convert(soj_formatmedia_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, soj_formatmedia_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
+}
+
+static bool soj_formatmedia_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, soj_formatmedia_pool) < 1)
+		return true;
+
+	struct so_value * json = so_value_pack("{sosososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"media", so_media_convert(soj_formatmedia_media),
+		"pool", so_pool_convert(soj_formatmedia_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, soj_formatmedia_pool, json);
+	so_value_free(json);
+
+	bool should_run = false;
+	so_value_unpack(returned, "{sb}", "should run", &should_run);
+	if (should_run) {
+		struct so_value * datas = NULL;
+		so_value_unpack(returned, "{so}", "datas", &datas);
+
+		struct so_value_iterator * iter = so_value_list_get_iterator(datas);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * data = so_value_iterator_get_value(iter, false);
+
+			char * uuid = NULL;
+			so_value_unpack(data, "{s{ss}}", "media", "uuid", &uuid);
+			if (uuid != NULL) {
+				uuid_t tmp;
+				if (uuid_parse(uuid, tmp) != 0) {
+					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal,
+						dgettext("storiqone-job-format-media", "Invalid UUID provided by script, ignoring it"));
+				} else {
+					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal,
+						dgettext("storiqone-job-format-media", "Script request to format media with this UUID (%s) instead of (%s)"),
+						uuid, soj_formatmedia_media->uuid);
+					strcpy(soj_formatmedia_media->uuid, uuid);
+				}
+				free(uuid);
+			}
+
+			char * name = NULL;
+			so_value_unpack(data, "{s{ss}}", "media", "name", &name);
+			if (name != NULL) {
+				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal,
+					dgettext("storiqone-job-format-media", "Script request to format media with this name (%s) instead of (%s)"),
+					name, soj_formatmedia_media->name);
+
+				free(soj_formatmedia_media->name);
+				soj_formatmedia_media->name = name;
+			}
+		}
+		so_value_iterator_free(iter);
+	}
+
+	so_value_free(returned);
+
+	return should_run;
+}
+
+static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	soj_formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
+	if (soj_formatmedia_pool == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "No pool related to this job"));
+		return 1;
+	}
+
 	soj_formatmedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
 	if (soj_formatmedia_media == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
@@ -354,96 +452,5 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 	}
 
 	return 0;
-}
-
-static void soj_formatmedia_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_formatmedia_pool) < 1)
-		return;
-
-	struct so_value * json = so_value_pack("{sosososo}",
-		"job", so_job_convert(job),
-		"host", so_host_get_info2(),
-		"media", so_media_convert(soj_formatmedia_media),
-		"pool", so_pool_convert(soj_formatmedia_pool)
-	);
-
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, soj_formatmedia_pool, json);
-	so_value_free(json);
-	so_value_free(returned);
-}
-
-static void soj_formatmedia_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, soj_formatmedia_pool) < 1)
-		return;
-
-	struct so_value * json = so_value_pack("{sosososo}",
-		"job", so_job_convert(job),
-		"host", so_host_get_info2(),
-		"media", so_media_convert(soj_formatmedia_media),
-		"pool", so_pool_convert(soj_formatmedia_pool)
-	);
-
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, soj_formatmedia_pool, json);
-	so_value_free(json);
-	so_value_free(returned);
-}
-
-static bool soj_formatmedia_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, soj_formatmedia_pool) < 1)
-		return true;
-
-	struct so_value * json = so_value_pack("{sosososo}",
-		"job", so_job_convert(job),
-		"host", so_host_get_info2(),
-		"media", so_media_convert(soj_formatmedia_media),
-		"pool", so_pool_convert(soj_formatmedia_pool)
-	);
-
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, soj_formatmedia_pool, json);
-	so_value_free(json);
-
-	bool should_run = false;
-	so_value_unpack(returned, "{sb}", "should run", &should_run);
-	if (should_run) {
-		struct so_value * datas = NULL;
-		so_value_unpack(returned, "{so}", "datas", &datas);
-
-		struct so_value_iterator * iter = so_value_list_get_iterator(datas);
-		while (so_value_iterator_has_next(iter)) {
-			struct so_value * data = so_value_iterator_get_value(iter, false);
-
-			char * uuid = NULL;
-			so_value_unpack(data, "{s{ss}}", "media", "uuid", &uuid);
-			if (uuid != NULL) {
-				uuid_t tmp;
-				if (uuid_parse(uuid, tmp) != 0) {
-					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal,
-						dgettext("storiqone-job-format-media", "Invalid UUID provided by script, ignoring it"));
-				} else {
-					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal,
-						dgettext("storiqone-job-format-media", "Script request to format media with this UUID (%s) instead of (%s)"),
-						uuid, soj_formatmedia_media->uuid);
-					strcpy(soj_formatmedia_media->uuid, uuid);
-				}
-				free(uuid);
-			}
-
-			char * name = NULL;
-			so_value_unpack(data, "{s{ss}}", "media", "name", &name);
-			if (name != NULL) {
-				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal,
-					dgettext("storiqone-job-format-media", "Script request to format media with this name (%s) instead of (%s)"),
-					name, soj_formatmedia_media->name);
-
-				free(soj_formatmedia_media->name);
-				soj_formatmedia_media->name = name;
-			}
-		}
-		so_value_iterator_free(iter);
-	}
-
-	so_value_free(returned);
-
-	return should_run;
 }
 

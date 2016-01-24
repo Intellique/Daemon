@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // free, malloc
@@ -42,22 +42,26 @@ static int so_io_checksum_reader_close(struct so_stream_reader * sr);
 static bool so_io_checksum_reader_end_of_file(struct so_stream_reader * sr);
 static off_t so_io_checksum_reader_forward(struct so_stream_reader * sr, off_t offset);
 static void so_io_checksum_reader_free(struct so_stream_reader * sr);
+static ssize_t so_io_checksum_reader_get_available_size(struct so_stream_reader * sr);
 static ssize_t so_io_checksum_reader_get_block_size(struct so_stream_reader * sr);
 static int so_io_checksum_reader_last_errno(struct so_stream_reader * sr);
+static ssize_t so_io_checksum_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static ssize_t so_io_checksum_reader_position(struct so_stream_reader * sr);
 static ssize_t so_io_checksum_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static int so_io_checksum_reader_rewind(struct so_stream_reader * sr);
 
 static struct so_stream_reader_ops so_io_checksum_reader_ops = {
-	.close          = so_io_checksum_reader_close,
-	.end_of_file    = so_io_checksum_reader_end_of_file,
-	.forward        = so_io_checksum_reader_forward,
-	.free           = so_io_checksum_reader_free,
-	.get_block_size = so_io_checksum_reader_get_block_size,
-	.last_errno     = so_io_checksum_reader_last_errno,
-	.position       = so_io_checksum_reader_position,
-	.read           = so_io_checksum_reader_read,
-	.rewind         = so_io_checksum_reader_rewind,
+	.close              = so_io_checksum_reader_close,
+	.end_of_file        = so_io_checksum_reader_end_of_file,
+	.forward            = so_io_checksum_reader_forward,
+	.free               = so_io_checksum_reader_free,
+	.get_available_size = so_io_checksum_reader_get_available_size,
+	.get_block_size     = so_io_checksum_reader_get_block_size,
+	.last_errno         = so_io_checksum_reader_last_errno,
+	.peek               = so_io_checksum_reader_peek,
+	.position           = so_io_checksum_reader_position,
+	.read               = so_io_checksum_reader_read,
+	.rewind             = so_io_checksum_reader_rewind,
 };
 
 
@@ -126,6 +130,11 @@ static ssize_t so_io_checksum_reader_get_block_size(struct so_stream_reader * sr
 	return self->in->ops->get_block_size(self->in);
 }
 
+static ssize_t so_io_checksum_reader_get_available_size(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
+	return self->in->ops->get_available_size(self->in);
+}
+
 struct so_value * so_io_checksum_reader_get_checksums(struct so_stream_reader * sr) {
 	struct so_io_stream_checksum_reader_private * self = sr->data;
 	return self->worker->ops->digest(self->worker);
@@ -151,6 +160,11 @@ struct so_stream_reader * so_io_checksum_reader_new(struct so_stream_reader * st
 	reader->data = self;
 
 	return reader;
+}
+
+static ssize_t so_io_checksum_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
+	return self->in->ops->peek(self->in, buffer, length);
 }
 
 static ssize_t so_io_checksum_reader_position(struct so_stream_reader * sr) {

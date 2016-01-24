@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-22 22:36+0100\n"
+        "POT-Creation-Date: 2015-12-30 09:26+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,11 +16,11 @@ msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/job/check-archive/check-archive.c:107
+#: src/job/check-archive/check-archive.c:164
 msgid   "Archive not found"
 msgstr  "Archive non trouvée"
 
-#: src/job/check-archive/check-archive.c:113
+#: src/job/check-archive/check-archive.c:170
 #, c-format
 msgid   "No check for deleted archive '%s'"
 msgstr  "Pas de vérification d’archive supprimée « %s »"

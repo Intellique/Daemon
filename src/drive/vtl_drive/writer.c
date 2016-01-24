@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // errno
@@ -265,6 +265,7 @@ struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * file
 	self->buffer_used = 0;
 	self->position = 0;
 	self->file_position = file_position;
+	self->file_size = 0;
 	self->last_errno = 0;
 	struct so_media * media = self->media = drive->slot->media;
 

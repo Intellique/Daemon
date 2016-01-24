@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 12:26+0100\n"
+        "POT-Creation-Date: 2016-01-23 22:50+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -27,30 +27,30 @@ msgstr  "Le démon a inopinément quitté"
 
 #: src/libstoriqone-job/main.c:108
 #, c-format
-msgid   "Starting simulation of job (type: %s, id: %s, name: %s)"
-msgstr  "Démarrage de la simulation de la tâche (type : %s, id : %s, nom : %s)"
+msgid   "Starting warm up job (type: %s, id: %s, name: %s)"
+msgstr  "Démarrage de l’échauffement de la tâche (type : %s, id : %s, nom : %s)"
 
-#: src/libstoriqone-job/main.c:114
+#: src/libstoriqone-job/main.c:117
 #, c-format
-msgid   "Simulation of job (type: %s, id: %s, name: %s) failed with code: %d"
-msgstr  "La simulation de la tâche (type : %s, id : %s, nom : %s) a échoué avec le code : %d"
+msgid   "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"
+msgstr  "L’échauffement de la tâche (type : %s, id : %s, nom : %s) a échoué avec le code : %d"
 
-#: src/libstoriqone-job/main.c:128
+#: src/libstoriqone-job/main.c:136
 #, c-format
 msgid   "Starting job (type: %s, id: %s, name: %s)"
 msgstr  "Démarrage de la tâche (type : %s, id : %s, nom : %s)"
 
-#: src/libstoriqone-job/main.c:132
+#: src/libstoriqone-job/main.c:140
 #, c-format
 msgid   "Job exit (type: %s, id: %s, name: %s), exit code: %d"
 msgstr  "Fin de la tâche (type : %s, id : %s, nom : %s), code de sortie : %d"
 
-#: src/libstoriqone-job/main.c:178
+#: src/libstoriqone-job/main.c:189
 #, c-format
 msgid   "Starting job (type: %s)"
 msgstr  "Démarrage de la tâche (type : %s)"
 
-#: src/libstoriqone-job/main.c:208
+#: src/libstoriqone-job/main.c:219
 #, c-format
 msgid   "Initializing job (type: %s)"
 msgstr  "Initialisation de la tâche (type : %s)"
@@ -79,44 +79,44 @@ msgstr  "Vérification de l’entête du média « %s » en cours"
 msgid   "Checking media header '%s': failed"
 msgstr  "Vérification de l’entête du média « %s » : échec"
 
-#: src/libstoriqone-job/script.c:45
+#: src/libstoriqone-job/script.c:46
 #, c-format
 msgid   "run script: %d script found, type: %s"
 msgid_plural    "run script: %d scripts found, type: %s"
 msgstr[0]       "Exécution de script : %d script trouvé, type : %s"
 msgstr[1]       "Exécution de script : %d scripts trouvés, type : %s"
 
-#: src/libstoriqone-job/script.c:56
+#: src/libstoriqone-job/script.c:62
 #, c-format
 msgid   "script not found in database, %s, %d/%d"
 msgstr  "le script n’a pas été trouvé dans la base de données, %s, %d/%d"
 
-#: src/libstoriqone-job/script.c:61
+#: src/libstoriqone-job/script.c:70
 #, c-format
 msgid   "starting script (type: %s, path: %s)"
 msgstr  "démarrage du script (type : %s, chemin : %s)"
 
-#: src/libstoriqone-job/script.c:82
+#: src/libstoriqone-job/script.c:125
 #, c-format
 msgid   "script '%s' exited with code %d"
 msgstr  "le script « %s » a quitté avec le code %d"
 
-#: src/libstoriqone-job/script.c:84
+#: src/libstoriqone-job/script.c:129
 #, c-format
 msgid   "script '%s' exited with code OK"
 msgstr  "le script « %s » a quitté avec le code ok"
 
-#: src/libstoriqone-job/script.c:87
+#: src/libstoriqone-job/script.c:134
 #, c-format
 msgid   "script '%s' has not returned any data"
 msgstr  "le script « %s » n‘a pas retourné de données"
 
-#: src/libstoriqone-job/script.c:97
+#: src/libstoriqone-job/script.c:147
 #, c-format
 msgid   "script '%s' has not returned data 'should run'"
 msgstr  "le script « %s » n’a pas retourné « should run »"
 
-#: src/libstoriqone-job/script.c:112
+#: src/libstoriqone-job/script.c:165
 #, c-format
 msgid   "script '%s' return message: %s"
 msgstr  "le script « %s » a retourné le message : %s"

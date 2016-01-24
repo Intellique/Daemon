@@ -1,0 +1,76 @@
+# Spanish translations for storiqone-job-erase-media package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-job-erase-media v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/erase-media/erase-media.c:122
+#, c-format
+msgid   "Failed to load media '%s'"
+msgstr  "Fallo al cargar el media \"%s\""
+
+#: src/job/erase-media/erase-media.c:135
+#, c-format
+msgid   "Trying to erase a write protected media '%s'"
+msgstr  "Tratando de borrar de un media protegido en escritura \"%s\""
+
+#: src/job/erase-media/erase-media.c:147
+#, c-format
+msgid   "Erasing media '%s' in progress (mode: %s)"
+msgstr  "Borrando los medias \"%s\" en progreso (modo: %s)"
+
+#: src/job/erase-media/erase-media.c:149
+msgid   "long"
+msgstr  "largo"
+
+#: src/job/erase-media/erase-media.c:149
+msgid   "quick"
+msgstr  "rápido"
+
+#: src/job/erase-media/erase-media.c:162
+#, c-format
+msgid   "Erasing media '%s' completed sucessfully"
+msgstr  "Borrando los medias \"%s\" terminado con éxito"
+
+#: src/job/erase-media/erase-media.c:166
+#, c-format
+msgid   "Failed to erase media '%s'"
+msgstr  "Fallo al borrar los medias \"%s\""
+
+#: src/job/erase-media/erase-media.c:229
+msgid   "Critical error: no media linked to the current job"
+msgstr  "Error critico: no hay media liado a la tarea actual"
+
+#: src/job/erase-media/erase-media.c:234
+msgid   "Trying to erase a cleaning media"
+msgstr  "Tratando de borrar un media de limpieza"
+
+#: src/job/erase-media/erase-media.c:239
+msgid   "Trying to erase a worm media"
+msgstr  "Tratando de borrar un media "
+
+#: src/job/erase-media/erase-media.c:244
+msgid   "Trying to erase a media with error status"
+msgstr  "Tratando de borrar un media con estado en error"
+
+#: src/job/erase-media/erase-media.c:254
+#, c-format
+msgid   "Trying to erase a media containing a non-deleted archive (named: %s)"
+msgstr  "Tratando de borrar un media que contiene un archivo no suprimido (llamado: %s)"
+
+#: src/job/erase-media/erase-media.c:263
+#, c-format
+msgid   "Aborting job because media '%s' contains non-deleted archives"
+msgstr  "Abandono de la tarea porque el media \"%s\" contiene los archivos no suprimidos"

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -60,20 +60,20 @@ static struct so_pool * soj_checkbackupdb_pool = NULL;
 static void soj_checkbackupdb_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_checkbackupdb_init(void) __attribute__((constructor));
 static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_checkbackupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_checkbackupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_checkbackupdb_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver checkbackupdb = {
 	.name = "check-backup-db",
 
 	.exit            = soj_checkbackupdb_exit,
 	.run             = soj_checkbackupdb_run,
-	.simulate        = soj_checkbackupdb_simulate,
 	.script_on_error = soj_checkbackupdb_script_on_error,
 	.script_post_run = soj_checkbackupdb_script_post_run,
 	.script_pre_run  = soj_checkbackupdb_script_pre_run,
+	.warm_up         = soj_checkbackupdb_warm_up,
 };
 
 
@@ -170,35 +170,6 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 	return 0;
 }
 
-static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_checkbackupdb_backup = db_connect->ops->get_backup(db_connect, job);
-	if (soj_checkbackupdb_backup == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-check-backup-db", "Backup not found"));
-		return 1;
-	}
-
-	unsigned int i;
-	for (i = 0; i < soj_checkbackupdb_backup->nb_volumes; i++) {
-		struct so_backup_volume * vol = soj_checkbackupdb_backup->volumes + i;
-		soj_checkbackupdb_backup_size += vol->size;
-
-		if (soj_checkbackupdb_pool == NULL)
-			soj_checkbackupdb_pool = vol->media->pool;
-
-		if (vol->media == NULL) {
-			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-				dgettext("storiqone-job-check-backup-db", "BUG: media should not be empty"));
-			return 1;
-		}
-		if (vol->media->status == so_media_status_error)
-			soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-				dgettext("storiqone-job-check-backup-db", "Try to read a media with error status"));
-	}
-
-	return 0;
-}
-
 static void soj_checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_checkbackupdb_pool) < 1)
 		return;
@@ -250,5 +221,34 @@ static bool soj_checkbackupdb_script_pre_run(struct so_job * job, struct so_data
 	so_value_free(returned);
 
 	return true;
+}
+
+static int soj_checkbackupdb_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	soj_checkbackupdb_backup = db_connect->ops->get_backup(db_connect, job);
+	if (soj_checkbackupdb_backup == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-backup-db", "Backup not found"));
+		return 1;
+	}
+
+	unsigned int i;
+	for (i = 0; i < soj_checkbackupdb_backup->nb_volumes; i++) {
+		struct so_backup_volume * vol = soj_checkbackupdb_backup->volumes + i;
+		soj_checkbackupdb_backup_size += vol->size;
+
+		if (soj_checkbackupdb_pool == NULL)
+			soj_checkbackupdb_pool = vol->media->pool;
+
+		if (vol->media == NULL) {
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-backup-db", "BUG: media should not be empty"));
+			return 1;
+		}
+		if (vol->media->status == so_media_status_error)
+			soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("storiqone-job-check-backup-db", "Try to read a media with error status"));
+	}
+
+	return 0;
 }
 

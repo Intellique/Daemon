@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // errno
@@ -34,9 +34,9 @@
 #include <sys/stat.h>
 // fstatvfs
 #include <sys/statvfs.h>
-// fstat, lseek
+// fstat
 #include <sys/types.h>
-// close, fstat, lseek, read, unlink, write
+// close, fstat, pread, read, unlink, write
 #include <unistd.h>
 
 #include <libstoriqone/io.h>
@@ -47,18 +47,22 @@
 struct so_io_tmp_private {
 	int fd;
 	int last_errno;
+
+	ssize_t file_position;
+	ssize_t file_size;
 };
 
 static int so_io_tmp_close(struct so_io_tmp_private * self);
 static ssize_t so_io_tmp_get_block_size(struct so_io_tmp_private * self);
-static ssize_t so_io_tmp_position(struct so_io_tmp_private * self);
 
 static int so_io_tmp_reader_close(struct so_stream_reader * sr);
 static bool so_io_tmp_reader_end_of_file(struct so_stream_reader * sr);
 static off_t so_io_tmp_reader_forward(struct so_stream_reader * sr, off_t offset);
 static void so_io_tmp_reader_free(struct so_stream_reader * sr);
+static ssize_t so_io_tmp_reader_get_available_size(struct so_stream_reader * sr);
 static ssize_t so_io_tmp_reader_get_block_size(struct so_stream_reader * sr);
 static int so_io_tmp_reader_last_errno(struct so_stream_reader * sr);
+static ssize_t so_io_tmp_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static ssize_t so_io_tmp_reader_position(struct so_stream_reader * sr);
 static ssize_t so_io_tmp_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static int so_io_tmp_reader_rewind(struct so_stream_reader * sr);
@@ -76,15 +80,17 @@ static struct so_stream_reader * so_io_tmp_writer_reopen(struct so_stream_writer
 static ssize_t so_io_tmp_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length);
 
 static struct so_stream_reader_ops so_io_tmp_reader_ops = {
-	.close          = so_io_tmp_reader_close,
-	.end_of_file    = so_io_tmp_reader_end_of_file,
-	.forward        = so_io_tmp_reader_forward,
-	.free           = so_io_tmp_reader_free,
-	.get_block_size = so_io_tmp_reader_get_block_size,
-	.last_errno     = so_io_tmp_reader_last_errno,
-	.position       = so_io_tmp_reader_position,
-	.read           = so_io_tmp_reader_read,
-	.rewind         = so_io_tmp_reader_rewind,
+	.close              = so_io_tmp_reader_close,
+	.end_of_file        = so_io_tmp_reader_end_of_file,
+	.forward            = so_io_tmp_reader_forward,
+	.free               = so_io_tmp_reader_free,
+	.get_available_size = so_io_tmp_reader_get_available_size,
+	.get_block_size     = so_io_tmp_reader_get_block_size,
+	.last_errno         = so_io_tmp_reader_last_errno,
+	.peek               = so_io_tmp_reader_peek,
+	.position           = so_io_tmp_reader_position,
+	.read               = so_io_tmp_reader_read,
+	.rewind             = so_io_tmp_reader_rewind,
 };
 
 static struct so_stream_writer_ops so_io_tmp_writer_ops = {
@@ -116,6 +122,9 @@ struct so_stream_writer * so_io_tmp_writer() {
 	struct so_io_tmp_private * self = malloc(sizeof(struct so_io_tmp_private));
 	self->fd = fd;
 	self->last_errno = 0;
+
+	self->file_position = 0;
+	self->file_size = 0;
 
 	struct so_stream_writer * writer = malloc(sizeof(struct so_stream_writer));
 	writer->ops = &so_io_tmp_writer_ops;
@@ -154,26 +163,18 @@ static ssize_t so_io_tmp_get_block_size(struct so_io_tmp_private * self) {
 	return st.st_blksize;
 }
 
-static ssize_t so_io_tmp_position(struct so_io_tmp_private * self) {
-	ssize_t new_pos = lseek(self->fd, 0, SEEK_CUR);
-
-	if (new_pos < 0)
-		self->last_errno = errno;
-
-	return new_pos;
-}
-
 
 static int so_io_tmp_reader_close(struct so_stream_reader * sr) {
 	return so_io_tmp_close(sr->data);
 }
 
 static bool so_io_tmp_reader_end_of_file(struct so_stream_reader * sr) {
-	ssize_t cur_pos = so_io_tmp_position(sr->data);
+	struct so_io_tmp_private * self = sr->data;
+
+	ssize_t cur_pos = self->file_position;
 	if (cur_pos < 0)
 		return true;
 
-	struct so_io_tmp_private * self = sr->data;
 	struct stat st;
 	if (fstat(self->fd, &st)) {
 		self->last_errno = errno;
@@ -202,6 +203,11 @@ static void so_io_tmp_reader_free(struct so_stream_reader * sr) {
 	free(sr);
 }
 
+static ssize_t so_io_tmp_reader_get_available_size(struct so_stream_reader * sr) {
+	struct so_io_tmp_private * self = sr->data;
+	return self->file_size - self->file_position;
+}
+
 static ssize_t so_io_tmp_reader_get_block_size(struct so_stream_reader * sr) {
 	return so_io_tmp_get_block_size(sr->data);
 }
@@ -211,8 +217,26 @@ static int so_io_tmp_reader_last_errno(struct so_stream_reader * sr) {
 	return self->last_errno;
 }
 
+static ssize_t so_io_tmp_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length) {
+	if (sr == NULL || buffer == NULL || length < 0)
+		return -1;
+
+	if (length == 0)
+		return 0;
+
+	struct so_io_tmp_private * self = sr->data;
+	self->last_errno = 0;
+
+	ssize_t nb_read = pread(self->fd, buffer, length, self->file_position);
+	if (nb_read < 0)
+		self->last_errno = errno;
+
+	return nb_read;
+}
+
 static ssize_t so_io_tmp_reader_position(struct so_stream_reader * sr) {
-	return so_io_tmp_position(sr->data);
+	struct so_io_tmp_private * self = sr->data;
+	return self->file_position;
 }
 
 static ssize_t so_io_tmp_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length) {
@@ -228,6 +252,8 @@ static ssize_t so_io_tmp_reader_read(struct so_stream_reader * sr, void * buffer
 	ssize_t nb_read = read(self->fd, buffer, length);
 	if (nb_read < 0)
 		self->last_errno = errno;
+	else if (nb_read > 0)
+		self->file_position += nb_read;
 
 	return nb_read;
 }
@@ -297,7 +323,8 @@ static int so_io_tmp_writer_last_errno(struct so_stream_writer * sw) {
 }
 
 static ssize_t so_io_tmp_writer_position(struct so_stream_writer * sw) {
-	return so_io_tmp_position(sw->data);
+	struct so_io_tmp_private * self = sw->data;
+	return self->file_size;
 }
 
 static struct so_stream_reader * so_io_tmp_writer_reopen(struct so_stream_writer * sw) {
@@ -305,6 +332,9 @@ static struct so_stream_reader * so_io_tmp_writer_reopen(struct so_stream_writer
 	struct so_io_tmp_private * new_self = malloc(sizeof(struct so_io_tmp_private));
 	new_self->fd = self->fd;
 	new_self->last_errno = 0;
+
+	new_self->file_position = 0;
+	new_self->file_size = self->file_size;
 
 	self->fd = -1;
 
@@ -329,6 +359,8 @@ static ssize_t so_io_tmp_writer_write(struct so_stream_writer * sw, const void *
 
 	if (nb_write < 0)
 		self->last_errno = errno;
+	else if (nb_write > 0)
+		self->file_size += nb_write;
 
 	return nb_write;
 }

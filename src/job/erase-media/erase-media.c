@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain, dgettext
@@ -54,20 +54,20 @@ static void soj_erasemedia_exit(struct so_job * job, struct so_database_connecti
 static void soj_erasemedia_init(void) __attribute__((constructor));
 static void soj_erasemedia_make_report(struct so_job * job, struct so_database_connection * db_connect);
 static int soj_erasemedia_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_erasemedia_simulate(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_erasemedia_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_erasemedia_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_erasemedia_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_erasemedia_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver soj_erasemedia = {
 	.name = "erase-media",
 
 	.exit            = soj_erasemedia_exit,
 	.run             = soj_erasemedia_run,
-	.simulate        = soj_erasemedia_simulate,
 	.script_on_error = soj_erasemedia_script_on_error,
 	.script_post_run = soj_erasemedia_script_post_run,
 	.script_pre_run  = soj_erasemedia_script_pre_run,
+	.warm_up         = soj_erasemedia_warm_up,
 };
 
 static struct so_value * soj_erasemedia_archives = NULL;
@@ -169,52 +169,6 @@ static int soj_erasemedia_run(struct so_job * job, struct so_database_connection
 	return failed != 0 ? 2 : 0;
 }
 
-static int soj_erasemedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_erasemedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
-	if (soj_erasemedia_media == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Critical error: no media linked to the current job"));
-		return 1;
-	}
-	if (soj_erasemedia_media->type == so_media_type_cleaning) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Trying to erase a cleaning media"));
-		return 1;
-	}
-	if (soj_erasemedia_media->type == so_media_type_worm) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Trying to erase a worm media"));
-		return 1;
-	}
-	if (soj_erasemedia_media->status == so_media_status_error)
-		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Trying to erase a media with error status"));
-
-	soj_erasemedia_archives = db_connect->ops->get_archives_by_media(db_connect, soj_erasemedia_media);
-
-	bool undeleted_archive = false;
-	struct so_value_iterator * iter = so_value_list_get_iterator(soj_erasemedia_archives);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_archive * archive = so_value_custom_get(so_value_iterator_get_value(iter, false));
-		if (!archive->deleted) {
-			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-				dgettext("storiqone-job-erase-media", "Trying to erase a media containing a non-deleted archive (named: %s)"),
-				archive->name);
-			undeleted_archive = true;
-		}
-	}
-	so_value_iterator_free(iter);
-
-	if (undeleted_archive) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Aborting job because media '%s' contains non-deleted archives"),
-			soj_erasemedia_media->name);
-		return 1;
-	}
-
-	return 0;
-}
-
 static void soj_erasemedia_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_erasemedia_media->pool) < 1)
 		return;
@@ -266,5 +220,51 @@ static bool soj_erasemedia_script_pre_run(struct so_job * job, struct so_databas
 	so_value_free(returned);
 
 	return should_run;
+}
+
+static int soj_erasemedia_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	soj_erasemedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
+	if (soj_erasemedia_media == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-erase-media", "Critical error: no media linked to the current job"));
+		return 1;
+	}
+	if (soj_erasemedia_media->type == so_media_type_cleaning) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-erase-media", "Trying to erase a cleaning media"));
+		return 1;
+	}
+	if (soj_erasemedia_media->type == so_media_type_worm) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-erase-media", "Trying to erase a worm media"));
+		return 1;
+	}
+	if (soj_erasemedia_media->status == so_media_status_error)
+		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+			dgettext("storiqone-job-erase-media", "Trying to erase a media with error status"));
+
+	soj_erasemedia_archives = db_connect->ops->get_archives_by_media(db_connect, soj_erasemedia_media);
+
+	bool undeleted_archive = false;
+	struct so_value_iterator * iter = so_value_list_get_iterator(soj_erasemedia_archives);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_archive * archive = so_value_custom_get(so_value_iterator_get_value(iter, false));
+		if (!archive->deleted) {
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-erase-media", "Trying to erase a media containing a non-deleted archive (named: %s)"),
+				archive->name);
+			undeleted_archive = true;
+		}
+	}
+	so_value_iterator_free(iter);
+
+	if (undeleted_archive) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-erase-media", "Aborting job because media '%s' contains non-deleted archives"),
+			soj_erasemedia_media->name);
+		return 1;
+	}
+
+	return 0;
 }
 

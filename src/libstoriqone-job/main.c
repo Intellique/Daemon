@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain, dgettext
@@ -105,24 +105,32 @@ static void job_worker(void * arg) {
 		goto error;
 
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
-		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, id: %s, name: %s)"),
+		dgettext("libstoriqone-job", "Starting warm up job (type: %s, id: %s, name: %s)"),
 		j->type, j->id, j->name);
 
-	int failed = job_dr->simulate(j, db_connect);
+	job->step = so_job_run_step_warm_up;
+	job->done = 0;
+
+	int failed = job_dr->warm_up(j, db_connect);
 	if (failed != 0) {
 		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("libstoriqone-job", "Simulation of job (type: %s, id: %s, name: %s) failed with code: %d"),
+			dgettext("libstoriqone-job", "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"),
 			j->type, j->id, j->name, failed);
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;
 	}
 
+	job->step = so_job_run_step_pre_job;
+
 	if (!job_dr->script_pre_run(j, db_connect)) {
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;
 	}
+
+	job->step = so_job_run_step_job;
+	job->done = 0;
 
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
 		dgettext("libstoriqone-job", "Starting job (type: %s, id: %s, name: %s)"),
@@ -135,10 +143,13 @@ static void job_worker(void * arg) {
 	if (failed != 0 && job->stopped_by_user)
 		goto error;
 
-	if (failed == 0)
+	if (failed == 0) {
+		job->step = so_job_run_step_post_job;
 		job_dr->script_post_run(j, db_connect);
-	else
+	} else {
+		job->step = so_job_run_step_on_error;
 		job_dr->script_on_error(j, db_connect);
+	}
 
 error:
 	if (db_connect != NULL) {

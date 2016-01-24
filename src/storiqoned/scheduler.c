@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -107,7 +107,7 @@ static void sod_job_process(int fd, short event, void * data) {
 		close(self->fd_in);
 		close(self->fd_out);
 		self->fd_in = self->fd_out = -1;
-		so_process_wait(&self->process, 1);
+		so_process_wait(&self->process, 1, true);
 		so_process_free(&self->process, 1);
 		free(self->key);
 		free(self);

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // NULL
@@ -31,7 +31,7 @@
 #include <libstoriqone-drive/archive_format.h>
 
 static struct so_archive_format sodr_format_storiq_one = {
-	.name     = "Storiq One",
+	.name     = "Storiq One (TAR)",
 	.readable = true,
 	.writable = true,
 	.db_data  = NULL,

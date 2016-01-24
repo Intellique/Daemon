@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain, dgettext
@@ -58,7 +58,7 @@ static struct so_pool * soj_backupdb_pool = NULL;
 static void soj_backupdb_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_backupdb_init(void) __attribute__((constructor));
 static int soj_backupdb_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_backupdb_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_backupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
@@ -68,10 +68,10 @@ static struct so_job_driver backupdb = {
 
 	.exit            = soj_backupdb_exit,
 	.run             = soj_backupdb_run,
-	.simulate        = soj_backupdb_simulate,
 	.script_on_error = soj_backupdb_script_on_error,
 	.script_post_run = soj_backupdb_script_post_run,
 	.script_pre_run  = soj_backupdb_script_pre_run,
+	.warm_up         = soj_backupdb_warm_up,
 };
 
 
@@ -273,33 +273,6 @@ tmp_reader:
 	return 1;
 }
 
-static int soj_backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
-	if (soj_backupdb_pool == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-backup-db", "Pool (Storiq one database backup) not found"));
-		return 1;
-	}
-	if (soj_backupdb_pool->deleted) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-backup-db", "Trying to back up database to a deleted pool"));
-		return 1;
-	}
-
-	soj_backupdb_medias = db_connect->ops->get_medias_of_pool(db_connect, soj_backupdb_pool);
-	if (!soj_backupdb_pool->growable && so_value_list_get_length(soj_backupdb_medias) == 0) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-backup-db", "Trying to back up database to a pool which is not growable and without any media"));
-		return 1;
-	}
-
-	soj_backupdb_checksums = db_connect->ops->get_checksums_from_pool(db_connect, soj_backupdb_pool);
-
-	soj_backupdb_backup = soj_backup_new(job);
-
-	return 0;
-}
-
 static void soj_backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_backupdb_pool) < 1)
 		return;
@@ -352,5 +325,38 @@ static bool soj_backupdb_script_pre_run(struct so_job * job, struct so_database_
 	so_value_free(returned);
 
 	return should_run;
+}
+
+static int soj_backupdb_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	soj_backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
+	if (soj_backupdb_pool == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-backup-db", "Pool (Storiq one database backup) not found"));
+		return 1;
+	}
+	if (soj_backupdb_pool->deleted) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-backup-db", "Trying to back up database to a deleted pool"));
+		return 1;
+	}
+
+	job->done = 0.25;
+
+	soj_backupdb_medias = db_connect->ops->get_medias_of_pool(db_connect, soj_backupdb_pool);
+	if (!soj_backupdb_pool->growable && so_value_list_get_length(soj_backupdb_medias) == 0) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-backup-db", "Trying to back up database to a pool which is not growable and without any media"));
+		return 1;
+	}
+
+	job->done = 0.5;
+
+	soj_backupdb_checksums = db_connect->ops->get_checksums_from_pool(db_connect, soj_backupdb_pool);
+
+	job->done = 0.75;
+
+	soj_backupdb_backup = soj_backup_new(job);
+
+	return 0;
 }
 

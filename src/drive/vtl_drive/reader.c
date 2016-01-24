@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // errno
@@ -38,7 +38,7 @@
 #include <sys/types.h>
 // time
 #include <time.h>
-// close, fstat, lseek, read
+// close, fstat, lseek, pread, read
 #include <unistd.h>
 
 #include <libstoriqone/drive.h>
@@ -53,22 +53,26 @@ static int sodr_vtl_drive_reader_close(struct so_stream_reader * sr);
 static bool sodr_vtl_drive_reader_end_of_file(struct so_stream_reader * sr);
 static off_t sodr_vtl_drive_reader_forward(struct so_stream_reader * sr, off_t offset);
 static void sodr_vtl_drive_reader_free(struct so_stream_reader * sr);
+static ssize_t sodr_vtl_drive_reader_get_available_size(struct so_stream_reader * sr);
 static ssize_t sodr_vtl_drive_reader_get_block_size(struct so_stream_reader * sr);
 static int sodr_vtl_drive_reader_last_errno(struct so_stream_reader * sr);
+static ssize_t sodr_vtl_drive_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static ssize_t sodr_vtl_drive_reader_position(struct so_stream_reader * sr);
 static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
 static int sodr_vtl_drive_reader_rewind(struct so_stream_reader * sr);
 
 static struct so_stream_reader_ops sodr_vtl_drive_reader_ops = {
-	.close          = sodr_vtl_drive_reader_close,
-	.end_of_file    = sodr_vtl_drive_reader_end_of_file,
-	.forward        = sodr_vtl_drive_reader_forward,
-	.free           = sodr_vtl_drive_reader_free,
-	.get_block_size = sodr_vtl_drive_reader_get_block_size,
-	.last_errno     = sodr_vtl_drive_reader_last_errno,
-	.position       = sodr_vtl_drive_reader_position,
-	.read           = sodr_vtl_drive_reader_read,
-	.rewind         = sodr_vtl_drive_reader_rewind,
+	.close              = sodr_vtl_drive_reader_close,
+	.end_of_file        = sodr_vtl_drive_reader_end_of_file,
+	.forward            = sodr_vtl_drive_reader_forward,
+	.free               = sodr_vtl_drive_reader_free,
+	.get_available_size = sodr_vtl_drive_reader_get_available_size,
+	.get_block_size     = sodr_vtl_drive_reader_get_block_size,
+	.last_errno         = sodr_vtl_drive_reader_last_errno,
+	.peek               = sodr_vtl_drive_reader_peek,
+	.position           = sodr_vtl_drive_reader_position,
+	.read               = sodr_vtl_drive_reader_read,
+	.rewind             = sodr_vtl_drive_reader_rewind,
 };
 
 
@@ -206,6 +210,11 @@ static void sodr_vtl_drive_reader_free(struct so_stream_reader * sr) {
 	free(sr);
 }
 
+static ssize_t sodr_vtl_drive_reader_get_available_size(struct so_stream_reader * sr) {
+	struct sodr_vtl_drive_io * self = sr->data;
+	return self->file_size - self->position;
+}
+
 static ssize_t sodr_vtl_drive_reader_get_block_size(struct so_stream_reader * sr) {
 	struct sodr_vtl_drive_io * self = sr->data;
 	return self->buffer_length;
@@ -214,12 +223,16 @@ static ssize_t sodr_vtl_drive_reader_get_block_size(struct so_stream_reader * sr
 struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd, int file_position) {
 	struct so_drive * drive = sodr_vtl_drive_get_device();
 
+	struct stat info;
+	fstat(fd, &info);
+
 	struct sodr_vtl_drive_io * self = malloc(sizeof(struct sodr_vtl_drive_io));
 	self->fd = fd;
 	self->buffer_used = self->buffer_length = drive->slot->media->block_size;
 	self->buffer = malloc(self->buffer_length);
 	self->position = 0;
 	self->file_position = file_position;
+	self->file_size = info.st_size;
 	self->last_errno = 0;
 	struct so_media * media = self->media = drive->slot->media;
 
@@ -237,6 +250,25 @@ struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd, int file_
 static int sodr_vtl_drive_reader_last_errno(struct so_stream_reader * sr) {
 	struct sodr_vtl_drive_io * self = sr->data;
 	return self->last_errno;
+}
+
+static ssize_t sodr_vtl_drive_reader_peek(struct so_stream_reader * sr, void * buffer, ssize_t length) {
+	if (sr == NULL || buffer == NULL || length < 0)
+		return -1;
+
+	if (length == 0)
+		return 0;
+
+	struct so_drive * dr = sodr_vtl_drive_get_device();
+
+	struct sodr_vtl_drive_io * self = sr->data;
+	self->last_errno = 0;
+
+	sodr_time_start();
+	ssize_t nb_read = pread(self->fd, buffer, length, self->position);
+	sodr_time_stop(dr);
+
+	return nb_read;
 }
 
 static ssize_t sodr_vtl_drive_reader_position(struct so_stream_reader * sr) {

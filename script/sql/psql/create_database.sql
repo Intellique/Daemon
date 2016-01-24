@@ -55,6 +55,14 @@ CREATE TYPE JobRecordNotif AS ENUM (
     'read'
 );
 
+CREATE TYPE JobRunStep AS ENUM (
+    'job',
+    'on error',
+    'pre job',
+    'post job',
+    'warm up'
+);
+
 CREATE TYPE JobStatus AS ENUM (
     'disable',
     'error',
@@ -447,7 +455,7 @@ CREATE TABLE ArchiveFile (
 
     name TEXT NOT NULL,
     type FileType NOT NULL,
-    mimeType VARCHAR(64) NOT NULL,
+    mimeType VARCHAR(255) NOT NULL,
 
     ownerId INTEGER NOT NULL DEFAULT 0,
     owner VARCHAR(255) NOT NULL,
@@ -511,7 +519,9 @@ CREATE TABLE JobRun (
     endtime TIMESTAMP(3) WITH TIME ZONE,
 
     status JobStatus NOT NULL DEFAULT 'running',
+    step JobRunStep NOT NULL DEFAULT 'pre job',
     done FLOAT NOT NULL DEFAULT 0,
+
     exitcode INTEGER NOT NULL DEFAULT 0,
     stoppedbyuser BOOLEAN NOT NULL DEFAULT FALSE,
 

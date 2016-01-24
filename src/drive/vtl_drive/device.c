@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -234,7 +234,7 @@ static int sodr_vtl_drive_erase_media(struct sodr_peer * peer, bool quick_mode, 
 			so_process_start(&command, 1);
 
 			if (command.pid > 0) {
-				so_process_wait(&command, 1);
+				so_process_wait(&command, 1, true);
 
 				if (command.exited_code != 0) {
 					ok = false;
@@ -284,7 +284,7 @@ static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool *
 	if (block_size < 0)
 		return 1;
 
-	if (pool->archive_format == NULL || pool->archive_format->name == NULL || strcmp(pool->archive_format->name, "Storiq One") != 0) {
+	if (pool->archive_format == NULL || pool->archive_format->name == NULL || strcmp(pool->archive_format->name, "Storiq One (TAR)") != 0) {
 		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: VTL does only support Storiq One format"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index);
@@ -380,7 +380,7 @@ static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool *
 		media->free_block--;
 
 		so_pool_free(media->pool);
-		media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One");
+		media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One (TAR)");
 		media->pool = pool;
 	} else
 		so_pool_free(pool);

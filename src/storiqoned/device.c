@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -245,7 +245,7 @@ static void sod_device_exited(int fd __attribute__((unused)), short event, void 
 	}
 
 	dev->fd_in = -1;
-	so_process_wait(&dev->process, 1);
+	so_process_wait(&dev->process, 1, true);
 	so_process_free(&dev->process, 1);
 
 	so_log_write2(so_log_level_critical, so_log_type_daemon, gettext("Restarting changer: %s"), dev->process_name);
@@ -293,7 +293,7 @@ static void sod_device_pong(int fd, short event __attribute__((unused)), void * 
 	struct sod_device * dev = data;
 	so_poll_unregister(dev->fd_out, POLLIN);
 	so_poll_unregister(dev->fd_in, POLLHUP);
-	so_process_wait(&dev->process, 1);
+	so_process_wait(&dev->process, 1, true);
 
 	unsigned int index = dev->index;
 	so_value_list_remove(devices, index);

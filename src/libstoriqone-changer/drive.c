@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // snprintf
@@ -96,7 +96,7 @@ static void sochgr_drive_free(struct so_drive * drive) {
 
 	struct sochgr_drive * self = drive->data;
 	if (!self->process.has_exited)
-		so_process_wait(&self->process, 1);
+		so_process_wait(&self->process, 1, true);
 	so_process_free(&self->process, 1);
 
 	close(self->fd_in);
@@ -262,7 +262,7 @@ static int sochgr_drive_stop(struct so_drive * drive) {
 
 	if (val == 0) {
 		struct sochgr_drive * self = drive->data;
-		so_process_wait(&self->process, 1);
+		so_process_wait(&self->process, 1, true);
 	}
 
 	return val;

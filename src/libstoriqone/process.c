@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -340,7 +340,7 @@ void so_process_start(struct so_process * process, unsigned int nb_process) {
 	}
 }
 
-void so_process_wait(struct so_process * process, unsigned int nb_process) {
+void so_process_wait(struct so_process * process, unsigned int nb_process, bool wait) {
 	if (!process || nb_process < 1)
 		return;
 
@@ -350,10 +350,10 @@ void so_process_wait(struct so_process * process, unsigned int nb_process) {
 			continue;
 
 		int status = 0;
-		int err = waitpid(process[i].pid, &status, 0);
+		int err = waitpid(process[i].pid, &status, wait ? 0 : WNOHANG);
 		if (err > 0)
 			process[i].exited_code = WEXITSTATUS(status);
-		process[i].has_exited = true;
+		process[i].has_exited = WIFEXITED(status);
 	}
 }
 

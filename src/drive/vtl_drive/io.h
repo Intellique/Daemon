@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __SO_VTLDRIVE_IO_H__
@@ -40,6 +40,7 @@ struct sodr_vtl_drive_io {
 
 	ssize_t position;
 	int file_position;
+	ssize_t file_size;
 	int last_errno;
 
 	struct so_media * media;

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-erase-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-09-23 12:40+0200\n"
+        "POT-Creation-Date: 2015-12-30 09:26+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -49,28 +49,28 @@ msgstr  "L’effacement du média « %s » terminé avec succès"
 msgid   "Failed to erase media '%s'"
 msgstr  "Échec lors de l’effacement du média « %s »"
 
-#: src/job/erase-media/erase-media.c:176
+#: src/job/erase-media/erase-media.c:229
 msgid   "Critical error: no media linked to the current job"
 msgstr  "Erreur critique: pas de média lié à la tâche actuelle"
 
-#: src/job/erase-media/erase-media.c:181
+#: src/job/erase-media/erase-media.c:234
 msgid   "Trying to erase a cleaning media"
 msgstr  "Tentative d’effacement d’un média de netoyage"
 
-#: src/job/erase-media/erase-media.c:186
+#: src/job/erase-media/erase-media.c:239
 msgid   "Trying to erase a worm media"
 msgstr  "Tentative d’effacement d’un média non réinscriptible"
 
-#: src/job/erase-media/erase-media.c:191
+#: src/job/erase-media/erase-media.c:244
 msgid   "Trying to erase a media with error status"
 msgstr  "Tentative d’effacement d’un média qui a un statut en erreur"
 
-#: src/job/erase-media/erase-media.c:201
+#: src/job/erase-media/erase-media.c:254
 #, c-format
 msgid   "Trying to erase a media containing a non-deleted archive (named: %s)"
 msgstr  "Tentative d’effacement d’un média contenant une archive non supprimée (nommé : %s)"
 
-#: src/job/erase-media/erase-media.c:210
+#: src/job/erase-media/erase-media.c:263
 #, c-format
 msgid   "Aborting job because media '%s' contains non-deleted archives"
 msgstr  "Abandon de la tâche parce que le média « %s » contient des archives non supprimées"

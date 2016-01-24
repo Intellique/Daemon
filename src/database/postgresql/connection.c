@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2638,12 +2638,12 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	// update jobrun
 	query = "update_jobrun";
-	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET status = $1, done = $2 WHERE id = $3");
+	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET status = $1, step = $2, done = $3 WHERE id = $4");
 
 	char * done = so_database_postgresql_set_float(job->done);
 
-	const char * param3[] = { so_job_status_to_string(job->status, false), done, jobrun_id };
-	result = PQexecPrepared(self->connect, query, 3, param3, NULL, NULL, 0);
+	const char * param3[] = { so_job_status_to_string(job->status, false), so_job_run_step_to_string(job->step, false), done, jobrun_id };
+	result = PQexecPrepared(self->connect, query, 4, param3, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)

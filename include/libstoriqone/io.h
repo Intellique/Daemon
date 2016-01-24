@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_IO_H__
@@ -67,6 +67,7 @@ struct so_stream_reader {
 		 * \param[in] sr : a stream reader
 		 */
 		void (*free)(struct so_stream_reader * sr);
+		ssize_t (*get_available_size)(struct so_stream_reader * sr);
 		/**
 		 * \brief Get block size of this <a>stream reader</a>
 		 */
@@ -78,6 +79,7 @@ struct so_stream_reader {
 		 * \returns latest errno or 0
 		 */
 		int (*last_errno)(struct so_stream_reader * sr);
+		ssize_t (*peek)(struct so_stream_reader * sr, void * buffer, ssize_t length);
 		/**
 		 * \brief Get current position into stream \a sr
 		 *

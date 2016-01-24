@@ -1,0 +1,104 @@
+# Spanish translations for storiqone-job-check-archive package.
+# Copyright (C) 2016
+# This file is distributed under the same license as the storiqone package.
+# Katty Ramirez <kramirez@intellique.com>, 2016
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-job-check-archive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
+        "PO-Revision-Date: 2014-11-12 01:16+0100\n"
+        "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: es\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/check-archive/check-archive.c:164
+msgid   "Archive not found"
+msgstr  "Archivo no encontrado"
+
+#: src/job/check-archive/check-archive.c:170
+#, c-format
+msgid   "No check for deleted archive '%s'"
+msgstr  "No hay verificación del archivo suprimido \"%s\""
+
+#: src/job/check-archive/quick_mode.c:82
+#, c-format
+msgid   "Starting check archive (%s) in quick mode"
+msgstr  "Arranque de la verificación del archivo (%s) en modo rápido"
+
+#: src/job/check-archive/quick_mode.c:131
+msgid   "Failed to set worker thread name"
+msgstr  "Fallo de la definición del nombre del hilo de ejecución"
+
+#: src/job/check-archive/quick_mode.c:138
+#, c-format
+msgid   "Starting worker #%u"
+msgstr  "Arranque del hilo de ejecución #%u"
+
+#: src/job/check-archive/quick_mode.c:184
+#, c-format
+msgid   "Worker #%u has finished with %s and %s"
+msgstr  ""
+
+#: src/job/check-archive/quick_mode.c:185
+#, c-format
+msgid   "%u warning"
+msgid_plural    "%u warnings"
+msgstr[0]       ""
+msgstr[1]       ""
+
+#: src/job/check-archive/quick_mode.c:186
+#, c-format
+msgid   "%u error"
+msgid_plural    "%u errors"
+msgstr[0]       ""
+msgstr[1]       ""
+
+#: src/job/check-archive/quick_mode.c:236
+#, c-format
+msgid   "Worker #%u : error while reading from media '%s'"
+msgstr  ""
+
+#: src/job/check-archive/quick_mode.c:257
+#, c-format
+msgid   "Worker #%u : data integrity of volume '%s' is correct"
+msgstr  ""
+
+#: src/job/check-archive/quick_mode.c:261
+#, c-format
+msgid   "Worker #%u : data integrity of volume '%s' is not correct"
+msgstr  ""
+
+#: src/job/check-archive/thorough_mode.c:52
+#, c-format
+msgid   "Starting check archive (%s) in thorough mode"
+msgstr  "Arranque de la verificacón del archivo (%s) en modo minucioso"
+
+#: src/job/check-archive/thorough_mode.c:134
+#, c-format
+msgid   "Error while reading from media '%s'"
+msgstr  ""
+
+#: src/job/check-archive/thorough_mode.c:153
+#, c-format
+msgid   "Data integrity of file '%s' is correct"
+msgstr  ""
+
+#: src/job/check-archive/thorough_mode.c:157
+#, c-format
+msgid   "Data integrity of file '%s' is not correct"
+msgstr  ""
+
+#: src/job/check-archive/thorough_mode.c:194
+#, c-format
+msgid   "Data integrity of volume '%s' is correct"
+msgstr  ""
+
+#: src/job/check-archive/thorough_mode.c:198
+#, c-format
+msgid   "Data integrity of volume '%s' is not correct"
+msgstr  ""

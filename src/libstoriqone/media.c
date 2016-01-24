@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext, gettext
@@ -252,9 +252,11 @@ struct so_media * so_media_dup(struct so_media * media) {
 	bzero(new_media, sizeof(struct so_media));
 
 	strncpy(new_media->uuid, media->uuid, 37);
-	new_media->label = strdup(media->label);
+	if (media->label != NULL)
+		new_media->label = strdup(media->label);
 	new_media->medium_serial_number = strdup(media->medium_serial_number);
-	new_media->name = strdup(media->name);
+	if (media->name != NULL)
+		new_media->name = strdup(media->name);
 
 	new_media->status = media->status;
 

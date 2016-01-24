@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain, dgettext
@@ -71,20 +71,20 @@ static struct soj_copyarchive_private data = {
 static void soj_copyarchive_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_copyarchive_init(void) __attribute__((constructor));
 static int soj_copyarchive_run(struct so_job * job, struct so_database_connection * db_connect);
-static int soj_copyarchive_simulate(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_copyarchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_copyarchive_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
 static bool soj_copyarchive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_copyarchive_warm_up(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver soj_copyarchive = {
 	.name = "copy-archive",
 
 	.exit            = soj_copyarchive_exit,
 	.run             = soj_copyarchive_run,
-	.simulate        = soj_copyarchive_simulate,
 	.script_on_error = soj_copyarchive_script_on_error,
 	.script_post_run = soj_copyarchive_script_post_run,
 	.script_pre_run  = soj_copyarchive_script_pre_run,
+	.warm_up         = soj_copyarchive_warm_up,
 };
 
 
@@ -207,51 +207,6 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	return failed;
 }
 
-static int soj_copyarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	data.src_archive = db_connect->ops->get_archive_by_job(db_connect, job);
-	if (data.src_archive == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Archive not found"));
-		return 1;
-	}
-	if (data.src_archive->deleted) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Trying to copy a deleted archive '%s'"),
-			data.src_archive->name);
-		return 1;
-	}
-
-	data.pool = db_connect->ops->get_pool(db_connect, NULL, job);
-	if (data.pool == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Pool not found"));
-		return 1;
-	}
-	if (data.pool->deleted) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Trying to copy an archive '%s' to a deleted pool '%s'"),
-			data.src_archive->name, data.pool->name);
-		return 1;
-	}
-
-	if (!soj_changer_has_apt_drive(data.pool->media_format, true)) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Failed to find a suitable drive to copy archive '%s'"),
-			data.src_archive->name);
-		return 1;
-	}
-
-	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, db_connect);
-	if (reserved < data.src_archive->size) {
-		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Error: not enought space available in pool '%s'"),
-			data.pool->name);
-		return 1;
-	}
-
-	return 0;
-}
-
 static void soj_copyarchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, data.pool) < 1)
 		return;
@@ -307,5 +262,50 @@ static bool soj_copyarchive_script_pre_run(struct so_job * job, struct so_databa
 	so_value_free(returned);
 
 	return should_run;
+}
+
+static int soj_copyarchive_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	data.src_archive = db_connect->ops->get_archive_by_job(db_connect, job);
+	if (data.src_archive == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Archive not found"));
+		return 1;
+	}
+	if (data.src_archive->deleted) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Trying to copy a deleted archive '%s'"),
+			data.src_archive->name);
+		return 1;
+	}
+
+	data.pool = db_connect->ops->get_pool(db_connect, NULL, job);
+	if (data.pool == NULL) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Pool not found"));
+		return 1;
+	}
+	if (data.pool->deleted) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Trying to copy an archive '%s' to a deleted pool '%s'"),
+			data.src_archive->name, data.pool->name);
+		return 1;
+	}
+
+	if (!soj_changer_has_apt_drive(data.pool->media_format, true)) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Failed to find a suitable drive to copy archive '%s'"),
+			data.src_archive->name);
+		return 1;
+	}
+
+	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, db_connect);
+	if (reserved < data.src_archive->size) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Error: not enought space available in pool '%s'"),
+			data.pool->name);
+		return 1;
+	}
+
+	return 0;
 }
 

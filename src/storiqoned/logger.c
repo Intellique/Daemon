@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // gettext
@@ -69,7 +69,7 @@ static void sod_logger_exited(int fd __attribute__((unused)), short event, void 
 	}
 
 	logger_in = -1;
-	so_process_wait(&logger, 1);
+	so_process_wait(&logger, 1, true);
 	so_process_free(&logger, 1);
 
 	so_log_write2(so_log_level_critical, so_log_type_daemon, gettext("Restarting logger"));
@@ -114,7 +114,7 @@ void sod_logger_stop() {
 	so_json_encode_to_fd(stop, logger_in, true);
 	so_value_free(stop);
 
-	so_process_wait(&logger, 1);
+	so_process_wait(&logger, 1, true);
 
 	close(logger_in);
 	logger_in = -1;

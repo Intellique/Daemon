@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // errno
@@ -42,7 +42,7 @@
 #include <sys/mtio.h>
 // time
 #include <time.h>
-// write
+// close, write
 #include <unistd.h>
 
 #include <libstoriqone/drive.h>
@@ -195,6 +195,10 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 			self->media->nb_write_errors++;
 			return -1;
 		}
+
+		sodr_time_start();
+		close(self->fd);
+		sodr_time_stop(self->drive);
 
 		self->closed = true;
 		so_log_write(so_log_level_debug,
