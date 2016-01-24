@@ -24,7 +24,7 @@ msgstr  "Fallo al cargar el media \"%s\""
 #: src/job/format-media/format-media.c:110
 #, c-format
 msgid   "Trying to format a write protected media '%s'"
-msgstr  "Tranado de formatear un media \"%s\" que está protegido"
+msgstr  "Tratando de formatear un media \"%s\" que está protegido"
 
 #: src/job/format-media/format-media.c:117
 #, c-format
@@ -120,7 +120,7 @@ msgstr  "El parámetro \"block size\" debe ser un número entero positivo (no %z
 
 #: src/job/format-media/format-media.c:330
 msgid   "Invalid UUID provided by script, ignoring it"
-msgstr  "UUID inválido proporcionado por el scrip, ignorado"
+msgstr  "UUID inválido proporcionado por el script, ignorado"
 
 #: src/job/format-media/format-media.c:333
 #, c-format

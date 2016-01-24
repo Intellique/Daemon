@@ -98,7 +98,7 @@ msgstr  "Espacio requerido (%s) para crear un nuevo archivo \"%s\""
 #: src/job/create-archive/create-archive.c:354
 #, c-format
 msgid   "Error, trying to create an archive into a deleted pool '%s'"
-msgstr  "Error, al iniciar la creación de un archivo en un pool ssuprimido \"%s\""
+msgstr  "Error, al iniciar la creación de un archivo en un pool suprimido \"%s\""
 
 #: src/job/create-archive/create-archive.c:362
 #, c-format

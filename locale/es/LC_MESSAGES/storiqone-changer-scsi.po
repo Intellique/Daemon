@@ -21,12 +21,12 @@ msgstr  "Project-Id-Version: storiqone-changer-scsi v1.2\n"
 msgid   "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minute"
 msgid_plural    "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minutes"
 msgstr[0]       "[ %s | %s ]: descargas de los medias \"%s\" desde el lector #%d porque los medios ya no se utilizarán desde %lld minuto"
-msgstr[1]       "[ %s | %s ]: descarga del media \"%s\" desde el lector #%d porque el media ya no se utilizarán desde %lld minuto"
+msgstr[1]       "[ %s | %s ]: descarga del media \"%s\" desde el lector #%d porque el media ya no se utilizarán desde %lld minutos"
 
 #: src/changer/scsi_changer/device.c:161
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"
-msgstr  "[ %s | %s ]: descarga del media \"%s\" desde el lector n°%dterminado con el codigo = OK"
+msgstr  "[ %s | %s ]: descarga del media \"%s\" desde el lector #%d terminado con el codigo = OK"
 
 #: src/changer/scsi_changer/device.c:165
 #, c-format
@@ -41,7 +41,7 @@ msgstr  "Fallo leyendo el enlace simbólico del fichero \"%s\" porque %m"
 #: src/changer/scsi_changer/device.c:259
 #, c-format
 msgid   "Found scsi changer %s %s, serial: %s"
-msgstr  "Encontró el brazo mecanico scsi %s %s, número de serie: %s"
+msgstr  "Encontró el brazo mecánico scsi %s %s, número de serie: %s"
 
 #: src/changer/scsi_changer/device.c:342
 #, c-format
@@ -57,7 +57,7 @@ msgstr  "[ %s | %s ]: fallo al reiniciar el lector #%u %s %s"
 #: src/changer/scsi_changer/device.c:457
 #, c-format
 msgid   "[%s | %s]: checking media with drive #%u completed"
-msgstr  "[ %s | %s ]: verificiación de media con el lector #%u terminado"
+msgstr  "[ %s | %s ]: verificiación del media con el lector #%u terminado"
 
 #: src/changer/scsi_changer/device.c:380
 #, c-format
@@ -87,12 +87,12 @@ msgstr  "[%s | %s]: descargo del media \"%s\" desde el lector #%u hacia el lugar
 #: src/changer/scsi_changer/device.c:443
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = OK"
-msgstr  "[ %s | %s ]: descarga de el media \"%s\" desde el lector #%u hacia el lugar #%u terminado con el codigo = OK"
+msgstr  "[ %s | %s ]: descarga del media \"%s\" desde el lector #%u hacia el lugar #%u terminado con el codigo = OK"
 
 #: src/changer/scsi_changer/device.c:447
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = %d"
-msgstr  "[ %s | %s ]: descarga de el media \"%s\" desde el lector #%u hacia el lugar #%u terminado con el codigo = %d"
+msgstr  "[ %s | %s ]: descarga del media \"%s\" desde el lector #%u hacia el lugar #%u terminado con el codigo = %d"
 
 #: src/changer/scsi_changer/device.c:540
 #, c-format

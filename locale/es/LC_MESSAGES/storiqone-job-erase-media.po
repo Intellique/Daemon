@@ -24,7 +24,7 @@ msgstr  "Fallo al cargar el media \"%s\""
 #: src/job/erase-media/erase-media.c:135
 #, c-format
 msgid   "Trying to erase a write protected media '%s'"
-msgstr  "Tatando de borrar de un media protegido en escritura \"%s\""
+msgstr  "Tratando de borrar de un media protegido en escritura \"%s\""
 
 #: src/job/erase-media/erase-media.c:147
 #, c-format

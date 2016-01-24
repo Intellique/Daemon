@@ -44,7 +44,7 @@ msgstr  "Loader: fallo al cargar de \"%s\" porque %s"
 
 #: src/logger/main.c:58
 msgid   "Storiqoned has hang up"
-msgstr  "el demonio se ha cerrado inesperadamente "
+msgstr  "el demonio se ha cerrado inesperadamente"
 
 #: src/logger/main.c:83
 #, c-format
@@ -54,7 +54,7 @@ msgstr  "Arranque o del proceso de jornalización (pid: %d, ppid: %d, sid: %d)"
 #: src/logger/main.c:86
 #, c-format
 msgid   "Checksum: %s, last commit: %s"
-msgstr  "huellas: %s, último comit: %s "
+msgstr  "huellas: %s, último commit: %s "
 
 #: src/logger/main.c:92
 msgid   "No configuration received from daemon, will now quit"

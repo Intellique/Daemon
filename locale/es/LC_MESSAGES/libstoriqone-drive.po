@@ -39,12 +39,12 @@ msgstr  "[%s %s #%u]: abertura de el media \"%s\" lectura de la posición #%d"
 #: src/libstoriqone-drive/listen.c:489 src/libstoriqone-drive/listen.c:632
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for writing"
-msgstr  "[%s %s #%u]: abertura de el media \"%s\" en escritura"
+msgstr  "[%s %s #%u]: abertura del media \"%s\" en escritura"
 
 #: src/libstoriqone-drive/listen.c:759
 #, c-format
 msgid   "[%s %s #%u]: counting archives from media '%s'"
-msgstr  "[%s %s #%u]: Contaje de los archivos de el media \"%s\""
+msgstr  "[%s %s #%u]: contaje de los archivos del media \"%s\""
 
 #: src/libstoriqone-drive/listen.c:788
 #, c-format
@@ -87,7 +87,7 @@ msgstr  "[%s %s #%u]: fallo de formateo del media \"%s\""
 #: src/libstoriqone-drive/listen.c:867
 #, c-format
 msgid   "[%s %s #%u]: Parsing archive from media '%s' at position #%u"
-msgstr  "[%s %s #%u]: Analisis de el archivo desde el media \"%s\" a la posición #%u"
+msgstr  "[%s %s #%u]: Analisis del archivo desde el media \"%s\" a la posición #%u"
 
 #: src/libstoriqone-drive/main.c:72
 #, c-format
@@ -125,4 +125,4 @@ msgstr  "Verificación del encabezamiento de Storiq One en el media: fallo"
 
 #: src/libstoriqone-drive/media.c:383
 msgid   "Failed to compute digest before writing media header"
-msgstr  "Fallo de cálculo de las huellas antes de la escritura a el encabezamiento de el media"
+msgstr  "Fallo de cálculo de las huellas antes de escribir en el encabezamiento de el media"

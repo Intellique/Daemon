@@ -40,7 +40,7 @@
 #include <sys/mtio.h>
 // time
 #include <time.h>
-// write
+// close, write
 #include <unistd.h>
 
 #include <libstoriqone/drive.h>
@@ -190,6 +190,10 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 			self->media->nb_write_errors++;
 			return -1;
 		}
+
+		sodr_time_start();
+		close(self->fd);
+		sodr_time_stop(self->drive);
 
 		self->fd = -1;
 		so_log_write(so_log_level_debug,

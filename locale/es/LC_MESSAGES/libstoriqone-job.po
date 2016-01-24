@@ -89,7 +89,7 @@ msgstr[1]       "Ejecución del script: %d scripts encontrados; tipo: %s"
 #: src/libstoriqone-job/script.c:56
 #, c-format
 msgid   "script not found in database, %s, %d/%d"
-msgstr  "el script no a sido encontrado en la base de datos, %s, %d/%d"
+msgstr  "el script no ha sido encontrado en la base de datos, %s, %d/%d"
 
 #: src/libstoriqone-job/script.c:61
 #, c-format
