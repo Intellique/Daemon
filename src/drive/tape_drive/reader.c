@@ -208,8 +208,8 @@ static ssize_t sodr_tape_drive_reader_get_block_size(struct so_stream_reader * i
 	return self->block_size;
 }
 
-struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int file_position) {
-	ssize_t block_size = sodr_tape_drive_get_block_size();
+struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db) {
+	ssize_t block_size = sodr_tape_drive_get_block_size(db);
 	if (block_size < 0)
 		return NULL;
 

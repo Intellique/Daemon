@@ -259,8 +259,8 @@ static int sodr_tape_drive_writer_last_errno(struct so_stream_writer * sw) {
 	return self->last_errno;
 }
 
-struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position) {
-	ssize_t block_size = sodr_tape_drive_get_block_size();
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db) {
+	ssize_t block_size = sodr_tape_drive_get_block_size(db);
 
 	drive->status = so_drive_status_writing;
 
@@ -304,7 +304,7 @@ static struct so_stream_reader * sodr_tape_drive_writer_reopen(struct so_stream_
 		return NULL;
 
 	struct sodr_tape_drive_writer * self = sw->data;
-	return sodr_tape_drive_reader_get_raw_reader(self->drive, self->fd, self->file_position);
+	return sodr_tape_drive_reader_get_raw_reader(self->drive, self->fd, self->file_position, NULL);
 }
 
 static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length) {

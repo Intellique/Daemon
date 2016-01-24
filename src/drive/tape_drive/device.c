@@ -72,6 +72,7 @@
 #include "io.h"
 #include "media.h"
 #include "scsi.h"
+#include "st.h"
 
 static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
@@ -89,7 +90,6 @@ static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static struct so_format_reader * sodr_tape_drive_open_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 static struct so_archive * sodr_tape_drive_parse_archive(struct sodr_peer * peer, const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_reset(struct so_database_connection * db);
-static int sodr_tape_drive_set_file_position(int file_position, struct so_database_connection * db);
 static int sodr_tape_drive_update_status(struct so_database_connection * db);
 
 static char * scsi_device = NULL;
@@ -142,18 +142,11 @@ static struct so_drive sodr_tape_drive = {
 
 
 static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db) {
-	size_t block_size = sodr_tape_drive_get_block_size();
+	size_t block_size = sodr_tape_drive_get_block_size(db);
 
-	sodr_tape_drive.status = so_drive_status_rewinding;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-	static struct mtop rewind = { MTREW, 1 };
-	sodr_time_start();
-	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	sodr_time_stop(&sodr_tape_drive);
-
-	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_reading;
-	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
+	int failed = sodr_tape_drive_st_rewind(&sodr_tape_drive, fd_nst, db);
+	if (failed != 0)
+		return false;
 
 	char * buffer = malloc(block_size);
 	sodr_time_start();
@@ -254,14 +247,9 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
 	media->media_format = db->ops->get_media_format(db, (unsigned char) density_code, so_media_format_mode_linear);
 
-	sodr_tape_drive.status = so_drive_status_rewinding;
-
-	static struct mtop rewind = { MTREW, 1 };
-	sodr_time_start();
-	ioctl(fd_nst, MTIOCTOP, &rewind);
-	sodr_time_stop(&sodr_tape_drive);
-
-	sodr_tape_drive.status = so_drive_status_loaded_idle;
+	int failed = sodr_tape_drive_st_rewind(&sodr_tape_drive, fd_nst, db);
+	if (failed != 0)
+		return;
 
 	static char buffer[1048576];
 	ssize_t nb_read = read(fd_nst, buffer, 1048576);
@@ -278,7 +266,7 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 
 	media->load_count = 1;
 
-	media->block_size = sodr_tape_drive_get_block_size();
+	media->block_size = sodr_tape_drive_get_block_size(db);
 	if (media->block_size < 1024)
 		media->block_size = 1024;
 
@@ -301,7 +289,7 @@ static int sodr_tape_drive_erase_media(struct sodr_peer * peer, bool quick_mode,
 	if (media == NULL)
 		return -1;
 
-	int failed = sodr_tape_drive_set_file_position(0, db);
+	int failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd_nst, 0, 0, peer, db);
 	if (failed != 0)
 		return failed;
 
@@ -352,7 +340,7 @@ static int sodr_tape_drive_format_media(struct sodr_peer * peer, struct so_pool 
 		return -1;
 }
 
-ssize_t sodr_tape_drive_get_block_size() {
+ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db) {
 	ssize_t block_size = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
 	if (block_size > 0)
 		return block_size;
@@ -361,14 +349,7 @@ ssize_t sodr_tape_drive_get_block_size() {
 	if (sodr_tape_drive.slot->media != NULL && media->block_size > 0)
 		return media->block_size;
 
-	sodr_tape_drive.status = so_drive_status_rewinding;
-
-	static struct mtop rewind = { MTREW, 1 };
-	sodr_time_start();
-	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	sodr_time_stop(&sodr_tape_drive);
-
-	sodr_tape_drive.status = so_drive_status_loaded_idle;
+	int failed = sodr_tape_drive_st_rewind(&sodr_tape_drive, fd_nst, db);
 
 	unsigned int i;
 	ssize_t nb_read;
@@ -439,7 +420,7 @@ static struct so_stream_reader * sodr_tape_drive_get_raw_reader(struct sodr_peer
 	if (sodr_tape_drive.slot->media == NULL)
 		return NULL;
 
-	if (sodr_tape_drive_set_file_position(file_position, db) != 0)
+	if (sodr_tape_drive_st_set_position(&sodr_tape_drive, fd_nst, 0, file_position, peer, db) != 0)
 		return NULL;
 
 	sodr_tape_drive.slot->media->read_count++;
@@ -447,14 +428,14 @@ static struct so_stream_reader * sodr_tape_drive_get_raw_reader(struct sodr_peer
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is open for reading"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
-	return sodr_tape_drive_reader_get_raw_reader(&sodr_tape_drive, fd_nst, file_position);
+	return sodr_tape_drive_reader_get_raw_reader(&sodr_tape_drive, fd_nst, file_position, db);
 }
 
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct sodr_peer * peer, struct so_database_connection * db) {
 	if (sodr_tape_drive.slot->media == NULL)
 		return NULL;
 
-	if (sodr_tape_drive_set_file_position(-1, db))
+	if (sodr_tape_drive_st_set_position(&sodr_tape_drive, fd_nst, 0, -1, peer, db))
 		return NULL;
 
 	if (sodr_tape_drive_update_status(db) != 0)
@@ -465,7 +446,7 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct sodr_peer
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is open for writing"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
-	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd_nst, status.mt_fileno);
+	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd_nst, status.mt_fileno, db);
 }
 
 static struct so_format_reader * sodr_tape_drive_get_reader(struct sodr_peer * peer, int file_position, struct so_value * checksums, struct so_database_connection * db) {
@@ -657,84 +638,6 @@ static struct so_archive * sodr_tape_drive_parse_archive(struct sodr_peer * peer
 static int sodr_tape_drive_reset(struct so_database_connection * db) {
 	sodr_tape_drive_on_failed(false, 1);
 	return sodr_tape_drive_update_status(db);
-}
-
-static int sodr_tape_drive_set_file_position(int file_position, struct so_database_connection * db) {
-	int failed;
-	if (file_position < 0) {
-		so_log_write(so_log_level_info,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s'"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name);
-		sodr_tape_drive.status = so_drive_status_positioning;
-		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-		static struct mtop eod = { MTEOM, 1 };
-		sodr_time_start();
-		failed = ioctl(fd_nst, MTIOCTOP, &eod);
-		sodr_time_stop(&sodr_tape_drive);
-
-		if (failed != 0)
-			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"),
-				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name);
-		else
-			so_log_write(so_log_level_info,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"),
-				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name);
-
-		sodr_tape_drive.status = failed ? so_drive_status_error : so_drive_status_positioning;
-		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-	} else {
-		so_log_write(so_log_level_info,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
-		sodr_tape_drive.status = so_drive_status_rewinding;
-		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-		static struct mtop rewind = { MTREW, 1 };
-		sodr_time_start();
-		failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-		sodr_time_stop(&sodr_tape_drive);
-
-		if (failed != 0) {
-			sodr_tape_drive.status = so_drive_status_error;
-			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"),
-				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
-			db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-			return failed;
-		}
-
-		if (file_position > 0) {
-			sodr_tape_drive.status = so_drive_status_positioning;
-			db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-
-			struct mtop fsr = { MTFSF, file_position };
-			sodr_time_start();
-			failed = ioctl(fd_nst, MTIOCTOP, &fsr);
-			sodr_time_stop(&sodr_tape_drive);
-
-			if (failed != 0)
-				so_log_write(so_log_level_error,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"),
-					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
-			else
-				so_log_write(so_log_level_info,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"),
-					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
-
-			sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_positioning;
-			db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
-		} else
-			so_log_write(so_log_level_info,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"),
-				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
-	}
-
-	if (failed != 0)
-		failed = sodr_tape_drive_update_status(db);
-
-	return failed;
 }
 
 static int sodr_tape_drive_update_status(struct so_database_connection * db) {

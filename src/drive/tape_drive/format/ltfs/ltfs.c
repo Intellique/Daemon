@@ -26,8 +26,12 @@
 
 // gettext
 #include <libintl.h>
+// snprintf
+#include <stdio.h>
 // struct mtget
 #include <sys/mtio.h>
+// write
+#include <unistd.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
@@ -39,6 +43,7 @@
 #include <libstoriqone-drive/time.h>
 
 #include "ltfs.h"
+#include "../../st.h"
 
 int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, struct so_value * option, struct so_database_connection * db) {
 	ssize_t block_size = 0, partition_size = 0;
@@ -128,6 +133,23 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Succeed to format media '%s' with two partition"),
 			drive->vendor, drive->model, drive->index, media->name);
+
+	/**
+	 * Write volume label
+	 */
+	char label[81];
+	snprintf(label, 81, "VOL1%6sL             LTFS                                                   4", media->label != NULL ? media->label : "");
+
+	failed = sodr_tape_drive_st_set_position(drive, fd, 0, 0, NULL, db);
+
+	ssize_t nb_write = write(fd, label, 80);
+	if (nb_write < 0) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while writing label on first partition because %m"),
+			drive->vendor, drive->model, drive->index);
+
+		return nb_write;
+	}
 
 	return 0;
 }
