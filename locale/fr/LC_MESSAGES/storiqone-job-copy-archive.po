@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-30 09:26+0100\n"
+        "POT-Creation-Date: 2016-02-18 09:00+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -55,30 +55,30 @@ msgstr  "Échec de la synchronisation de l’archive « %s » avec la base de 
 msgid   "Archive '%s' synchronized into database"
 msgstr  "L’archive « %s » est synchronisée avec la base de données"
 
-#: src/job/copy-archive/copy-archive.c:271
+#: src/job/copy-archive/copy-archive.c:289
 msgid   "Archive not found"
 msgstr  "Archive non trouvée"
 
-#: src/job/copy-archive/copy-archive.c:276
+#: src/job/copy-archive/copy-archive.c:294
 #, c-format
 msgid   "Trying to copy a deleted archive '%s'"
 msgstr  "Tentative de copier une archive supprimée « %s »"
 
-#: src/job/copy-archive/copy-archive.c:284
+#: src/job/copy-archive/copy-archive.c:302
 msgid   "Pool not found"
 msgstr  "Pool non trouvé"
 
-#: src/job/copy-archive/copy-archive.c:289
+#: src/job/copy-archive/copy-archive.c:307
 #, c-format
 msgid   "Trying to copy an archive '%s' to a deleted pool '%s'"
 msgstr  "Tentative de copier une archive « %s » vers un pool « %s » supprimé"
 
-#: src/job/copy-archive/copy-archive.c:296
+#: src/job/copy-archive/copy-archive.c:314
 #, c-format
 msgid   "Failed to find a suitable drive to copy archive '%s'"
 msgstr  "Échec lors de la recherche d’un lecteur convenable pour copier l’archive « %s »"
 
-#: src/job/copy-archive/copy-archive.c:304
+#: src/job/copy-archive/copy-archive.c:322
 #, c-format
 msgid   "Error: not enought space available in pool '%s'"
 msgstr  "Erreur : pas assez d’espace disponible dans le pool « %s »"

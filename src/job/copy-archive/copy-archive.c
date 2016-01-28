@@ -202,6 +202,24 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 			free(json);
 			so_value_free(report);
 		}
+
+		if (failed == 0) {
+			bool check_archive = false;
+			so_value_unpack(job->option, "{sb}", "check_archive", &check_archive);
+
+			if (check_archive) {
+				char * mode = NULL;
+				so_value_unpack(job->option, "{ss}", "check_archive_mode", &mode);
+
+				bool quick_mode = true;
+				if (mode != NULL) {
+					quick_mode = strcmp(mode, "quick_mode") == 0;
+					free(mode);
+				}
+
+				failed = db_connect->ops->create_check_archive_job(db_connect, job, data.copy_archive, quick_mode);
+			}
+		}
 	}
 
 	return failed;
