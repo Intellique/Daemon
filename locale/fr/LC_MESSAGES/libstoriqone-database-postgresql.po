@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 13:32+0100\n"
+        "POT-Creation-Date: 2016-02-18 09:07+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -43,20 +43,20 @@ msgstr  "PSQL : Annulation de la transcation parce qu’elle est en erreur"
 msgid   "PSQL: Host not found into database (%s)"
 msgstr  "PSQL : Hôte non trouvé dans la base de données (%s)"
 
-#: src/database/postgresql/connection.c:1449
+#: src/database/postgresql/connection.c:1452
 msgid   "PSQL: error while synchronizing drive with database"
 msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base de données"
 
-#: src/database/postgresql/connection.c:1470 src/database/postgresql/connection.c:1483
+#: src/database/postgresql/connection.c:1473 src/database/postgresql/connection.c:1486
 msgid   "PSQL: error while synchronizing changer slots with database"
 msgstr  "PSQL : erreur lors de la synchronisation des emplacements d’une librairie de bande avec la base de données"
 
-#: src/database/postgresql/connection.c:2965
+#: src/database/postgresql/connection.c:2968
 #, c-format
 msgid   "Checking '%s'"
 msgstr  "Vérification « %s »"
 
-#: src/database/postgresql/connection.c:4604
+#: src/database/postgresql/connection.c:4607
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"
