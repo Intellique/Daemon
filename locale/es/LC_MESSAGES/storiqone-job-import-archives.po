@@ -66,5 +66,8 @@ msgstr  "Intento de importación de archivos \"%s\" (media format: %s) donde el 
 
 #: src/job/import-archives/import-archives.c:340
 #, c-format
-msgid   "Failed to find a suitable drive to format media '%s'"
-msgstr  "fallo al momento de la busqueda de un lector para formatear el media \"%s\""
+msgid   "Failed to find a suitable drive to import media '%s'"
+msgstr  ""
+
+#~ msgid        "Failed to find a suitable drive to format media '%s'"
+#~ msgstr       "fallo al momento de la busqueda de un lector para formatear el media \"%s\""
