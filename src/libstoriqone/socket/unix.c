@@ -107,15 +107,13 @@ int so_socket_unix_accept_and_close(int fd, struct so_value * config) {
 }
 
 int so_socket_unix_close(int fd, struct so_value * config) {
-	char * path = NULL;
-	so_value_unpack(config, "{ss}", "path", &path);
+	const char * path = NULL;
+	so_value_unpack(config, "{sS}", "path", &path);
 
 	int failed = close(fd);
 
-	if (path != NULL) {
+	if (path != NULL)
 		unlink(path);
-		free(path);
-	}
 
 	return failed;
 }

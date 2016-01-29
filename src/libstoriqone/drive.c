@@ -152,8 +152,7 @@ void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool wi
 	free(drive->serial_number);
 	drive->model = drive->vendor = drive->revision = drive->serial_number = NULL;
 
-	char * status = NULL;
-	char * mode = NULL;
+	const char * status = NULL, * mode = NULL;
 
 	if (sl != NULL) {
 		free(sl->volume_name);
@@ -163,7 +162,7 @@ void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool wi
 	struct so_value * last_clean = NULL;
 	struct so_value * slot = NULL;
 
-	so_value_unpack(new_drive, "{sssssssssssbsusssfsosbso}",
+	so_value_unpack(new_drive, "{sssssssssSsbsusSsfsosbso}",
 		"model", &drive->model,
 		"vendor", &drive->vendor,
 		"revision", &drive->revision,
@@ -183,11 +182,9 @@ void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool wi
 
 	if (status != NULL)
 		drive->status = so_drive_string_to_status(status, false);
-	free(status);
 
 	if (mode != NULL)
 		drive->mode = so_media_string_to_format_mode(mode, false);
-	free(mode);
 
 	if (last_clean->type == so_value_null)
 		drive->last_clean = 0;

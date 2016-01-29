@@ -322,12 +322,12 @@ struct so_value * so_media_format_convert(struct so_media_format * format) {
 }
 
 void so_media_format_sync(struct so_media_format * format, struct so_value * new_format) {
-	char * name = NULL;
+	const char * name = NULL;
 
 	long int density_code = 0;
-	char * type = NULL, * mode = NULL;
+	const char * type = NULL, * mode = NULL;
 
-	so_value_unpack(new_format, "{sssusssssIsIsIsIsIszszsbsb}",
+	so_value_unpack(new_format, "{sSsusSsSsIsIsIsIsIszszsbsb}",
 		"name", &name,
 
 		"density code", &density_code,
@@ -350,13 +350,10 @@ void so_media_format_sync(struct so_media_format * format, struct so_value * new
 
 	if (name != NULL)
 		strncpy(format->name, name, 64);
-	free(name);
 
 	format->density_code = density_code;
 	format->type = so_media_string_to_format_data_type(type, false);
-	free(type);
 	format->mode = so_media_string_to_format_mode(mode, false);
-	free(mode);
 }
 
 struct so_media * so_media_new(struct so_value * media) {
@@ -381,11 +378,11 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	struct so_value * last_read = NULL;
 	struct so_value * last_write = NULL;
 
-	char * status = NULL, * type = NULL;
+	const char * status = NULL, * type = NULL;
 	long int nb_read_errors = 0, nb_write_errors = 0;
 	long int nb_volumes = 0;
 
-	so_value_unpack(new_media, "{sosssssssssisisososIsIsIsIszszsususzszszsusbsssbsososo}",
+	so_value_unpack(new_media, "{sosssssssSsisisososIsIsIsIszszsususzszszsusbsSsbsososo}",
 		"uuid", &uuid,
 		"label", &media->label,
 		"medium serial number", &media->medium_serial_number,
@@ -430,7 +427,6 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 		media->uuid[0] = '\0';
 
 	media->status = so_media_string_to_status(status, false);
-	free(status);
 
 	if (last_read->type != so_value_integer)
 		media->last_read = 0;
@@ -447,7 +443,6 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 
 	media->nb_volumes = nb_volumes;
 	media->type = so_media_string_to_type(type, false);
-	free(type);
 
 	if (archive_format->type != so_value_null) {
 		if (media->archive_format == NULL) {
@@ -518,16 +513,16 @@ struct so_pool * so_pool_dup(struct so_pool * pool) {
 }
 
 void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) {
-	char * uuid = NULL;
+	const char * uuid = NULL;
 	free(pool->name);
 	pool->name = NULL;
 
-	char * auto_check = NULL, * unbreakable_level = NULL;
+	const char * auto_check = NULL, * unbreakable_level = NULL;
 
 	struct so_value * archive_format = NULL;
 	struct so_value * media_format = NULL;
 
-	so_value_unpack(new_pool, "{sssssssbsssbsoso}",
+	so_value_unpack(new_pool, "{sSsssSsbsSsbsoso}",
 		"uuid", &uuid,
 		"name", &pool->name,
 
@@ -542,12 +537,9 @@ void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) {
 
 	if (uuid != NULL)
 		strncpy(pool->uuid, uuid, 37);
-	free(uuid);
 
 	pool->auto_check = so_pool_string_to_autocheck_mode(auto_check, false);
-	free(auto_check);
 	pool->unbreakable_level = so_pool_string_to_unbreakable_level(unbreakable_level, false);
-	free(unbreakable_level);
 
 	if (pool->archive_format == NULL) {
 		pool->archive_format = malloc(sizeof(struct so_archive_format));

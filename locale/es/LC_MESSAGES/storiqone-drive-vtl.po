@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 18:37+0100\n"
+        "POT-Creation-Date: 2016-01-29 19:27+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -61,7 +61,7 @@ msgstr  "[%s %s %d]: Fallo de escritura en el encabezamiento del media \"%s\""
 msgid   "[%s %s %d]: Failed to open file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ]: Fallo a la abertura del fichero del media \"%s\" en la posición \"%d\" porque %m "
 
-#: src/drive/vtl_drive/device.c:568
+#: src/drive/vtl_drive/device.c:565
 #, c-format
 msgid   "[%s %s %d]: Failed to find media with UUID '%s' from database"
 msgstr  "[%s %s %d]: Fallo al buscar el media con l'UUID \"%s\" desde la base de datos"

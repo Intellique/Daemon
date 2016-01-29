@@ -62,18 +62,15 @@ static void so_socket_tcp_server_callback(int fd, short event, void * data);
 int so_socket_tcp(struct so_value * config) {
 	int stype = SOCK_STREAM;
 
-	char * type = NULL;
-	char * saddr = NULL;
+	const char * type = NULL;
+	const char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(config, "{sssu}", "address", &saddr, "port", &port) < 2) {
-		free(saddr);
+	if (so_value_unpack(config, "{sSsu}", "address", &saddr, "port", &port) < 2)
 		return -1;
-	}
 
 	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	struct addrinfo * addr = NULL;
 	struct addrinfo hint = {
@@ -86,7 +83,6 @@ int so_socket_tcp(struct so_value * config) {
 		.ai_next      = NULL,
 	};
 	int failed = getaddrinfo(saddr, NULL, &hint, &addr);
-	free(saddr);
 	if (failed != 0)
 		return -1;
 
@@ -122,18 +118,15 @@ int so_socket_tcp(struct so_value * config) {
 int so_socket_tcp6(struct so_value * config) {
 	int stype = SOCK_STREAM;
 
-	char * type = NULL;
-	char * saddr = NULL;
+	const char * type = NULL;
+	const char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(config, "{sssu}", "address", &saddr, "port", &port) < 2) {
-		free(saddr);
+	if (so_value_unpack(config, "{sSsu}", "address", &saddr, "port", &port) < 2)
 		return -1;
-	}
 
-	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{sS}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	struct addrinfo * addr = NULL;
 	struct addrinfo hint = {
@@ -146,7 +139,6 @@ int so_socket_tcp6(struct so_value * config) {
 		.ai_next      = NULL,
 	};
 	int failed = getaddrinfo(saddr, NULL, &hint, &addr);
-	free(saddr);
 	if (failed != 0)
 		return -1;
 
@@ -214,16 +206,15 @@ int so_socket_tcp6_close(int fd, struct so_value * config __attribute__((unused)
 bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_callback) {
 	int stype = SOCK_STREAM;
 
-	char * type = NULL;
-	char * saddr = NULL;
+	const char * type = NULL;
+	const char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{susS}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{sS}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	int fd = -1, failed;
 	if (saddr != NULL) {
@@ -264,7 +255,6 @@ bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_ca
 		}
 
 		freeaddrinfo(addr);
-		free(saddr);
 	} else {
 		fd = socket(AF_INET, stype, 0);
 		if (fd < 0)
@@ -302,16 +292,15 @@ bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_ca
 bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_callback) {
 	int stype = SOCK_STREAM;
 
-	char * type = NULL;
-	char * saddr = NULL;
+	const char * type = NULL;
+	const char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{susS}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{sS}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	int fd = -1, failed;
 	if (saddr != NULL) {
@@ -389,16 +378,15 @@ bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_c
 bool so_socket_tcp_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) {
 	int stype = SOCK_STREAM;
 
-	char * type = NULL;
-	char * saddr = NULL;
+	const char * type = NULL;
+	const char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(socket_template, "{suss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(socket_template, "{susS}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (so_value_unpack(socket_template, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(socket_template, "{sS}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	int fd = -1, failed;
 	if (saddr != NULL) {
@@ -457,7 +445,6 @@ bool so_socket_tcp_from_template(struct so_value * socket_template, so_socket_ac
 		}
 
 		freeaddrinfo(addr);
-		free(saddr);
 	} else
 		while (fd < 0) {
 			fd = socket(AF_INET, stype, 0);
@@ -500,16 +487,15 @@ bool so_socket_tcp_from_template(struct so_value * socket_template, so_socket_ac
 bool so_socket_tcp6_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) {
 	int stype = SOCK_STREAM;
 
-	char * type = NULL;
-	char * saddr = NULL;
+	const char * type = NULL;
+	const char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(socket_template, "{suss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(socket_template, "{susS}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (so_value_unpack(socket_template, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(socket_template, "{sS}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	int fd = -1, failed;
 	if (saddr != NULL) {
@@ -568,7 +554,6 @@ bool so_socket_tcp6_from_template(struct so_value * socket_template, so_socket_a
 		}
 
 		freeaddrinfo(addr);
-		free(saddr);
 	} else
 		while (fd < 0) {
 			fd = socket(AF_INET6, stype, 0);
@@ -653,12 +638,11 @@ int so_socket_server_temp_tcp(struct so_value * config) {
 	char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{susS}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{sS}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	int fd = -1, failed;
 	if (saddr != NULL) {
@@ -750,12 +734,11 @@ int so_socket_server_temp_tcp6(struct so_value * config) {
 	char * saddr = NULL;
 	unsigned int port;
 
-	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{susS}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{sS}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-	free(type);
 
 	int fd = -1, failed;
 	if (saddr != NULL) {

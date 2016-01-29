@@ -61,8 +61,8 @@ static void sochgr_daemon_hungup(int fd __attribute__((unused)), short event __a
 
 static void sochgr_daemon_request(int fd, short event __attribute__((unused)), void * data __attribute__((unused))) {
 	struct so_value * request = so_json_parse_fd(fd, 1000);
-	char * command;
-	if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+	const char * command = NULL;
+	if (request == NULL || so_value_unpack(request, "{sS}", "command", &command) < 0) {
 		if (request != NULL)
 			so_value_free(request);
 		return;
@@ -77,7 +77,6 @@ static void sochgr_daemon_request(int fd, short event __attribute__((unused)), v
 	}
 
 	so_value_free(request);
-	free(command);
 }
 
 int main(int argc __attribute__((unused)), char ** argv) {

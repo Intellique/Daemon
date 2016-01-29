@@ -209,15 +209,15 @@ void so_changer_sync(struct so_changer * changer, struct so_value * new_changer)
 	free(changer->wwn);
 	changer->model = changer->vendor = changer->revision = changer->serial_number = changer->wwn = NULL;
 
-	char * status = NULL;
-	struct so_value * wwn = NULL, * drives = NULL, * slots = NULL;
+	const char * status = NULL;
+	struct so_value * drives = NULL, * slots = NULL;
 
-	so_value_unpack(new_changer, "{sssssssssosbsssbsbsoso}",
+	so_value_unpack(new_changer, "{sssssssssssbsSsbsbsoso}",
 		"model", &changer->model,
 		"vendor", &changer->vendor,
 		"revision", &changer->revision,
 		"serial number", &changer->serial_number,
-		"wwn", &wwn,
+		"wwn", &changer->wwn,
 		"barcode", &changer->barcode,
 
 		"status", &status,
@@ -227,11 +227,9 @@ void so_changer_sync(struct so_changer * changer, struct so_value * new_changer)
 		"drives", &drives,
 		"slots", &slots
 	);
-	so_value_unpack(wwn, "s", &changer->wwn);
 
 	if (status != NULL)
 		changer->status = so_changer_string_to_status(status, false);
-	free(status);
 
 	unsigned int i;
 	struct so_value_iterator * iter = so_value_list_get_iterator(drives);

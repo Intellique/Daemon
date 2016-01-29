@@ -251,11 +251,11 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 	job->id = job->name = job->type = NULL;
 	job->meta = job->option = NULL;
 
-	char * status = NULL;
+	const char * status = NULL;
 	double done = 0;
-	char * step = NULL;
+	const char * step = NULL;
 
-	so_value_unpack(new_job, "{sssssssssisIsIsIsssfsssisbsOsO}",
+	so_value_unpack(new_job, "{sssssssssisIsIsIsSsfsSsisbsOsO}",
 		"id", &job->id,
 		"name", &job->name,
 		"type", &job->type,
@@ -279,9 +279,6 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 
 	job->done = done;
 	job->status = so_job_string_to_status(status, false);
-	free(status);
-
 	job->step = so_job_run_string_to_step(step, false);
-	free(step);
 }
 

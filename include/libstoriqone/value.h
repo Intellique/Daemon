@@ -334,6 +334,7 @@ struct so_value * so_value_list_splice(struct so_value * list, int index, int ho
 bool so_value_list_unshift(struct so_value * list, struct so_value * val, bool new_val);
 
 const char * so_value_string_get(const struct so_value * value);
+struct so_value * so_value_sprintf(const char * format, ...) __attribute__((warn_unused_result,format (printf, 1, 2)));
 
 bool so_value_iterator_detach_previous(struct so_value_iterator * iter);
 void so_value_iterator_free(struct so_value_iterator * iter);

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-format-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-30 09:26+0100\n"
+        "POT-Creation-Date: 2016-01-29 19:29+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -64,72 +64,72 @@ msgstr  "UUID invalide fourni par le script, ignoré"
 msgid   "Script request to format media with this UUID (%s) instead of (%s)"
 msgstr  "Le script demande de formater le média avec cet UUID (%s) au lieu de (%s)"
 
-#: src/job/format-media/format-media.c:234
+#: src/job/format-media/format-media.c:233
 #, c-format
 msgid   "Script request to format media with this name (%s) instead of (%s)"
 msgstr  "Le script demande de formater le média avec ce nom (%s) au lieu de (%s)"
 
-#: src/job/format-media/format-media.c:253
+#: src/job/format-media/format-media.c:252
 msgid   "No pool related to this job"
 msgstr  "Pas de pool lié à cette tâche"
 
-#: src/job/format-media/format-media.c:260
+#: src/job/format-media/format-media.c:259
 msgid   "No media linked to the current job"
 msgstr  "Pas de média lié à la tâche actuelle"
 
-#: src/job/format-media/format-media.c:265
+#: src/job/format-media/format-media.c:264
 #, c-format
 msgid   "Trying to format a cleaning media '%s'"
 msgstr  "Tentative de formater un média de nettoyage « %s »"
 
-#: src/job/format-media/format-media.c:271
+#: src/job/format-media/format-media.c:270
 #, c-format
 msgid   "Trying to format a worm media '%s' containing data"
 msgstr  "Tentative de formater un média non réinscriptible « %s » qui contient des données"
 
-#: src/job/format-media/format-media.c:277
+#: src/job/format-media/format-media.c:276
 #, c-format
 msgid   "Trying to format a media '%s' which is member of pool '%s'"
 msgstr  "Tentative de formater un média « %s » qui est membre du pool « %s »"
 
-#: src/job/format-media/format-media.c:283
+#: src/job/format-media/format-media.c:282
 #, c-format
 msgid   "Trying to format a media '%s' with error status"
 msgstr  "Tentative de formater un média « %s » qui est en erreur"
 
-#: src/job/format-media/format-media.c:288
+#: src/job/format-media/format-media.c:287
 #, c-format
 msgid   "Trying to format a media '%s' to a deleted pool '%s'"
 msgstr  "Tentative de formater un média « %s » vers un pool supprimé « %s »"
 
-#: src/job/format-media/format-media.c:295
+#: src/job/format-media/format-media.c:294
 #, c-format
 msgid   "Trying to format a media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
 msgstr  "Tentative de formater un média « %s » (format du média : %s) dont le format ne correspond pas au format du pool "
         "« %s » (format du pool : %s)"
 
-#: src/job/format-media/format-media.c:302
+#: src/job/format-media/format-media.c:301
 #, c-format
 msgid   "Failed to find a suitable drive to format media '%s'"
 msgstr  "Aucun lecteur disponible pour formater le média « %s »"
 
-#: src/job/format-media/format-media.c:320
+#: src/job/format-media/format-media.c:319
 #, c-format
 msgid   "Will use default block size '%s' defined by media format '%s'"
 msgstr  "Utilisera la taille de bloc par défaut « %s » définie le format du média « %s »"
 
-#: src/job/format-media/format-media.c:329
+#: src/job/format-media/format-media.c:328
 #, c-format
 msgid   "Will use default block size '%s' defined by media format '%s' because type of media '%s' is WORM"
 msgstr  "Utilisera la taille de bloc « %s » par défaut définie par le format du média « %s » parce que le type du média « %s » "
         "est WORM"
 
-#: src/job/format-media/format-media.c:335
+#: src/job/format-media/format-media.c:334
 #, c-format
 msgid   "Will look for the best block size to use with media '%s'"
 msgstr  "Cherchera la meilleur taille de bloc à utiliser avec le média « %s »"
 
-#: src/job/format-media/format-media.c:347
+#: src/job/format-media/format-media.c:344
 #, c-format
 msgid   "parameter 'block size' should be a positive integer (not %zd)"
 msgstr  "Le paramètre « block size » doit être un entier positif (pas %zd)"

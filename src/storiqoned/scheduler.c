@@ -74,8 +74,8 @@ static void sod_job_process(int fd, short event, void * data) {
 
 	if (event & POLLIN) {
 		struct so_value * request = so_json_parse_fd(fd, 1000);
-		char * command;
-		if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+		const char * command = NULL;
+		if (request == NULL || so_value_unpack(request, "{sS}", "command", &command) < 0) {
 			if (request != NULL)
 				so_value_free(request);
 			return;
@@ -91,7 +91,6 @@ static void sod_job_process(int fd, short event, void * data) {
 		}
 
 		so_value_free(request);
-		free(command);
 	}
 
 	if (event & POLLHUP) {

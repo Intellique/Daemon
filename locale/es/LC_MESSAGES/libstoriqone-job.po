@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 22:52+0100\n"
+        "POT-Creation-Date: 2016-01-29 20:04+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -25,32 +25,32 @@ msgstr  "fallo al leer el enlace simbólico del fichero \"%s\" porque %m"
 msgid   "Daemon unexpectedly quit"
 msgstr  "El demonio se ha cerrado inesperadamente"
 
-#: src/libstoriqone-job/main.c:108
+#: src/libstoriqone-job/main.c:107
 #, c-format
 msgid   "Starting warm up job (type: %s, id: %s, name: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:117
+#: src/libstoriqone-job/main.c:116
 #, c-format
 msgid   "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:136
+#: src/libstoriqone-job/main.c:135
 #, c-format
 msgid   "Starting job (type: %s, id: %s, name: %s)"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:140
+#: src/libstoriqone-job/main.c:139
 #, c-format
 msgid   "Job exit (type: %s, id: %s, name: %s), exit code: %d"
 msgstr  ""
 
-#: src/libstoriqone-job/main.c:189
+#: src/libstoriqone-job/main.c:188
 #, c-format
 msgid   "Starting job (type: %s)"
 msgstr  "Arranque de la tarea (tipo: %s)"
 
-#: src/libstoriqone-job/main.c:219
+#: src/libstoriqone-job/main.c:218
 #, c-format
 msgid   "Initializing job (type: %s)"
 msgstr  "Inicializanción de la tarea (tipo : %s)"

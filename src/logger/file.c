@@ -91,8 +91,9 @@ static void solgr_file_driver_init() {
 }
 
 static struct solgr_log_module * solgr_file_driver_new_module(struct so_value * param) {
-	char * path = NULL, * level;
-	if (so_value_unpack(param, "{ssss}", "path", &path, "verbosity", &level) < 2) {
+	char * path = NULL;
+	const char * level = NULL;
+	if (so_value_unpack(param, "{sssS}", "path", &path, "verbosity", &level) < 2) {
 		free(path);
 		return NULL;
 	}
@@ -121,8 +122,6 @@ static struct solgr_log_module * solgr_file_driver_new_module(struct so_value * 
 	mod->ops = &solgr_file_module_ops;
 	mod->driver = &solgr_file_driver;
 	mod->data = self;
-
-	free(level);
 
 	return mod;
 }
@@ -179,10 +178,10 @@ static void solgr_file_module_free(struct solgr_log_module * module) {
 static void solgr_file_module_write(struct solgr_log_module * module, struct so_value * message) {
 	struct logger_log_file_private * self = module->data;
 
-	char * slevel = NULL, * stype = NULL, * smessage = NULL;
+	const char * slevel = NULL, * stype = NULL, * smessage = NULL;
 	long long int iTimestamp;
 
-	int ret = so_value_unpack(message, "{sssssIss}",
+	int ret = so_value_unpack(message, "{sSsSsIsS}",
 		"level", &slevel,
 		"type", &stype,
 		"timestamp", &iTimestamp,
@@ -197,12 +196,8 @@ static void solgr_file_module_write(struct solgr_log_module * module, struct so_
 	if (ret == 4)
 		type = so_log_string_to_type(stype, false);
 
-	if (ret < 4 || level == so_log_level_unknown || type == so_log_type_unknown) {
-		free(slevel);
-		free(stype);
-		free(smessage);
+	if (ret < 4 || level == so_log_level_unknown || type == so_log_type_unknown)
 		return;
-	}
 
 	solgr_file_module_check_logrotate(self);
 
@@ -214,9 +209,5 @@ static void solgr_file_module_write(struct solgr_log_module * module, struct so_
 	so_time_convert(&timestamp, "%c", strtime, 36);
 
 	dprintf(self->fd, "[L:%s | T:%s | %s]: %s\n", self->buf_level, self->buf_type, strtime, smessage);
-
-	free(slevel);
-	free(stype);
-	free(smessage);
 }
 

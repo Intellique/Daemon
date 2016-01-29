@@ -153,8 +153,8 @@ static void sochgr_socket_message(int fd, short event, void * data) {
 	}
 
 	struct so_value * request = so_json_parse_fd(fd, -1);
-	char * command = NULL;
-	if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+	const char * command = NULL;
+	if (request == NULL || so_value_unpack(request, "{sS}", "command", &command) < 0) {
 		if (request != NULL)
 			so_value_free(request);
 		return;
@@ -443,17 +443,16 @@ static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer, s
 }
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	char * medium_serial_number = NULL;
+	const char * medium_serial_number = NULL;
 	bool no_wait = false;
 
-	so_value_unpack(request, "{s{sssb}}",
+	so_value_unpack(request, "{s{sSsb}}",
 		"params",
 			"medium serial number", &medium_serial_number,
 			"no wait", &no_wait
 	);
 
 	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
-	free(medium_serial_number);
 
 	struct so_media * media = sl != NULL ? sl->media : NULL;
 	if (media == NULL) {
@@ -518,11 +517,11 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 }
 
 static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	char * medium_serial_number = NULL;
+	const char * medium_serial_number = NULL;
 	size_t size_need = 0;
-	char * str_unbreakable_level;
+	const char * str_unbreakable_level = NULL;
 
-	int nb_parsed = so_value_unpack(request, "{s{ssszss}}",
+	int nb_parsed = so_value_unpack(request, "{s{sSszsS}}",
 		"params",
 			"medium serial number", &medium_serial_number,
 			"size need", &size_need,
@@ -530,18 +529,15 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	);
 
 	enum so_pool_unbreakable_level unbreakable_level = so_pool_string_to_unbreakable_level(str_unbreakable_level, false);
-	free(str_unbreakable_level);
 
 	if (nb_parsed < 3 || unbreakable_level == so_pool_unbreakable_level_unknown) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(medium_serial_number);
 		return;
 	}
 
 	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
-	free(medium_serial_number);
 
 	if (sl->media == NULL) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);

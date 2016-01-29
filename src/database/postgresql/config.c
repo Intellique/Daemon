@@ -96,11 +96,20 @@ void so_database_postgresql_config_free(void * data) {
 }
 
 struct so_database_config * so_database_postgresql_config_init(struct so_value * params) {
+	char * name = NULL;
+	so_value_unpack(params, "{ss}", "name", &name);
+
+	if (name == NULL) {
+		static int n_config = 1;
+		int size = asprintf(&name, "config_%d", n_config);
+		if (size < 0)
+			return NULL;
+		n_config++;
+	}
+
 	struct so_database_postgresql_config_private * self = malloc(sizeof(struct so_database_postgresql_config_private));
 	bzero(self, sizeof(struct so_database_postgresql_config_private));
 
-	char * name = NULL;
-	so_value_unpack(params, "{ss}", "name", &name);
 	so_value_unpack(params, "{ss}", "user", &self->user);
 	so_value_unpack(params, "{ss}", "password", &self->password);
 	so_value_unpack(params, "{ss}", "db", &self->db);
@@ -108,30 +117,12 @@ struct so_database_config * so_database_postgresql_config_init(struct so_value *
 	so_value_unpack(params, "{ss}", "port", &self->port);
 
 	struct so_database_config * config = malloc(sizeof(struct so_database_config));
+	config->name = name;
 	config->ops = &so_database_postgresql_config_ops;
 	config->data = self;
 	config->driver = NULL;
 
-	if (name == NULL) {
-		static int n_config = 1;
-		int size = asprintf(&config->name, "config_%d", n_config);
-		if (size < 0)
-			goto error_init;
-		n_config++;
-	}
-
 	return config;
-
-error_init:
-	free(config);
-	free(self->user);
-	free(self->password);
-	free(self->db);
-	free(self->host);
-	free(self->port);
-	free(self);
-
-	return NULL;
 }
 
 static int so_database_postgresql_ping(struct so_database_config * db_config) {

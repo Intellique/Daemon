@@ -228,15 +228,14 @@ static void sodr_socket_message(int fd, short event, void * data) {
 	}
 
 	struct so_value * request = so_json_parse_fd(fd, -1);
-	char * command = NULL;
-	if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+	const char * command = NULL;
+	if (request == NULL || so_value_unpack(request, "{sS}", "command", &command) < 0) {
 		if (request != NULL)
 			so_value_free(request);
 		return;
 	}
 
 	const unsigned long hash = so_string_compute_hash2(command);
-	free(command);
 
 	unsigned int i;
 	for (i = 0; commands[i].name != NULL; i++)
@@ -255,17 +254,15 @@ static void sodr_socket_message(int fd, short event, void * data) {
 
 
 static void sodr_socket_command_check_header(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "job id", &job_id);
 
-	if (strcmp(sodr_current_id, job_id) != 0) {
+	if (job_id == NULL || strcmp(sodr_current_id, job_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "returned", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
 	}
-
-	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -312,27 +309,24 @@ static void sodr_socket_command_check_support(struct sodr_peer * peer __attribut
 }
 
 static void sodr_socket_command_count_archives(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "job id", &job_id);
 
 	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{si}", "returned", 0);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	peer->owned = true;
 	so_thread_pool_run("count archives", sodr_worker_command_count_archives, peer);
 }
 
 static void sodr_socket_command_create_archive_volume(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
+	const char * job_id = NULL;
 	struct so_value * checksums = NULL;
-	so_value_unpack(request, "{s{ssso}}",
+	so_value_unpack(request, "{s{sSso}}",
 		"params",
 			"job id", &job_id,
 			"checksums", &checksums
@@ -342,11 +336,8 @@ static void sodr_socket_command_create_archive_volume(struct sodr_peer * peer, s
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -417,18 +408,15 @@ static void sodr_socket_command_create_archive_volume(struct sodr_peer * peer, s
 }
 
 static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "job id", &job_id);
 
-	if (strcmp(sodr_current_id, job_id) != 0) {
+	if (job_id == NULL || strcmp(sodr_current_id, job_id) != 0) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	struct sodr_socket_params_erase_media * params = malloc(sizeof(struct sodr_socket_params_erase_media));
 	bzero(params, sizeof(struct sodr_socket_params_erase_media));
@@ -443,18 +431,15 @@ static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_v
 }
 
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "job id", &job_id);
 
-	if (strcmp(sodr_current_id, job_id) != 0) {
+	if (job_id == NULL || strcmp(sodr_current_id, job_id) != 0) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	ssize_t block_size = -1;
 	struct so_value * vpool = NULL;
@@ -479,18 +464,19 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
 	int position = -1;
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{sssi}}", "params", "job id", &job_id, "file position", &position);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sSsi}}",
+		"params",
+			"job id", &job_id,
+			"file position", &position
+	);
 
 	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -546,18 +532,15 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 }
 
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "job id", &job_id);
 
 	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -613,9 +596,9 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 }
 
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
+	const char * job_id = NULL;
 	struct so_value * checksums = NULL;
-	so_value_unpack(request, "{s{ssso}}",
+	so_value_unpack(request, "{s{sSso}}",
 		"params",
 			"job id", &job_id,
 			"checksums", &checksums
@@ -625,11 +608,8 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -706,10 +686,10 @@ static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_val
 }
 
 static void sodr_socket_command_open_archive_volume(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
+	const char * job_id = NULL;
 	struct so_value * varchive_volume = NULL;
 	struct so_value * checksums = NULL;
-	so_value_unpack(request, "{s{sssoso}}",
+	so_value_unpack(request, "{s{sSsoso}}",
 		"params",
 			"job id", &job_id,
 			"archive volume", &varchive_volume,
@@ -720,11 +700,8 @@ static void sodr_socket_command_open_archive_volume(struct sodr_peer * peer, str
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -778,18 +755,15 @@ static void sodr_socket_command_open_archive_volume(struct sodr_peer * peer, str
 }
 
 static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "job id", &job_id);
 
 	if (job_id == NULL || sodr_current_id == NULL || strcmp(job_id, sodr_current_id) != 0) {
 		struct so_value * response = so_value_pack("{sn}", "returned");
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		free(job_id);
 		return;
 	}
-
-	free(job_id);
 
 	int archive_position = -1;
 	struct so_value * checksums = NULL;

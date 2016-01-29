@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-21 09:06+0100\n"
+        "POT-Creation-Date: 2016-01-29 20:09+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -201,16 +201,16 @@ msgstr  "so_database_get_driver : le pilote « %s » n’a pas appelé « so
 msgid   "so_database_load_config: invalid parameters (config: %p)"
 msgstr  "so_database_load_config : paramètres invalides (config : %p)"
 
-#: src/libstoriqone/database.c:125
+#: src/libstoriqone/database.c:123
 msgid   "so_database_register_driver: trying to register a NULL driver"
 msgstr  "so_database_register_driver : tentative d’enregistrer un pilote « NULL »"
 
-#: src/libstoriqone/database.c:134
+#: src/libstoriqone/database.c:132
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is already registered"
 msgstr  "so_database_register_driver : le pilote de base de données « %s » est déjà chargé"
 
-#: src/libstoriqone/database.c:148
+#: src/libstoriqone/database.c:146
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is now registered"
 msgstr  "so_database_register_driver : le pilote de base de données « %s » est maintenant chargé"

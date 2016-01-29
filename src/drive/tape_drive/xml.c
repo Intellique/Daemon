@@ -50,8 +50,8 @@ static void sodr_tape_drive_xml_start_element(void * userData, const char * name
 static void sodr_tape_drive_xml_character_data(void * userData, const XML_Char *s, int len) {
 	struct sodr_tape_drive_xml_state * state = userData;
 
-	char * content = NULL;
-	so_value_unpack(state->current, "{ss}", "value", &content);
+	const char * content = NULL;
+	so_value_unpack(state->current, "{sS}", "value", &content);
 
 	if (content != NULL) {
 		size_t content_length = strlen(content);
@@ -63,7 +63,6 @@ static void sodr_tape_drive_xml_character_data(void * userData, const XML_Char *
 
 		so_value_hashtable_put2(state->current, "value", so_value_new_string(new_content), true);
 
-		free(content);
 		free(new_content);
 	} else
 		so_value_hashtable_put2(state->current, "value", so_value_new_string2(s, len), true);

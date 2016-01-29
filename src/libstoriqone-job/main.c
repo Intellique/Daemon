@@ -72,8 +72,8 @@ static void daemon_request(int fd, short event, void * data __attribute__((unuse
 	}
 
 	struct so_value * request = so_json_parse_fd(fd, 1000);
-	char * command;
-	if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+	const char * command;
+	if (request == NULL || so_value_unpack(request, "{sS}", "command", &command) < 0) {
 		if (request != NULL)
 			so_value_free(request);
 		return;
@@ -86,7 +86,6 @@ static void daemon_request(int fd, short event, void * data __attribute__((unuse
 	}
 
 	so_value_free(request);
-	free(command);
 }
 
 static void job_worker(void * arg) {
