@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-import-archives v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-01-29 11:32+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -61,9 +61,13 @@ msgstr  "Intento de importacón en un pool suprimido \"%s\""
 #: src/job/import-archives/import-archives.c:255
 #, c-format
 msgid   "Trying to import archives from media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
-msgstr  "Intento de importación de archivos \"%s\" (media format: %s) donde el formato no corresponde al \" formato del pool \"%s\" (formato del pool: %s)"
+msgstr  "Intento de importación de archivos \"%s\" (media format: %s) donde el formato no corresponde al \" formato del pool "
+        "\"%s\" (formato del pool: %s)"
 
 #: src/job/import-archives/import-archives.c:262
 #, c-format
-msgid   "Failed to find a suitable drive to format media '%s'"
-msgstr  "fallo al momento de la busqueda de un lector para formatear el media \"%s\""
+msgid   "Failed to find a suitable drive to import media '%s'"
+msgstr  ""
+
+#~ msgid        "Failed to find a suitable drive to format media '%s'"
+#~ msgstr       "fallo al momento de la busqueda de un lector para formatear el media \"%s\""

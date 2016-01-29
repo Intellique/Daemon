@@ -259,7 +259,7 @@ static int soj_importarchives_simulate(struct so_job * job, struct so_database_c
 
 	if (!soj_changer_has_apt_drive(soj_importarchives_media->media_format, false)) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-import-archives", "Failed to find a suitable drive to format media '%s'"),
+			dgettext("storiqone-job-import-archives", "Failed to find a suitable drive to import media '%s'"),
 			soj_importarchives_media->name);
 		return 1;
 	}

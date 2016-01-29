@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-format-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-10 17:18+0200\n"
+        "POT-Creation-Date: 2016-01-29 11:32+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -60,12 +60,11 @@ msgstr  "Tentative d’importation dans un pool supprimé « %s »"
 
 #: src/job/import-archives/import-archives.c:255
 #, c-format
-msgid   "Trying to import archives from media '%s' (media format: %s) not matching pool '%s' (pool format: "
-        "%s)"
+msgid   "Trying to import archives from media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
 msgstr  "Tentative d’importation d’archives depuis un média « %s » (média format : %s) dont le format ne correspond pas au "
         "format du pool « %s » (format du pool : %s)"
 
 #: src/job/import-archives/import-archives.c:262
 #, c-format
-msgid   "Failed to find a suitable drive to format media '%s'"
-msgstr  "Échec lors de la recherche d’un lecteur pour formater le média « %s »"
+msgid   "Failed to find a suitable drive to import media '%s'"
+msgstr  "Échec lors de la recherche d’un lecteur pour importer le média « %s »"
