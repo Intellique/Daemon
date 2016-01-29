@@ -606,7 +606,7 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_real_changer_by_host";
-	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1) AND c.enable");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1123,7 +1123,7 @@ static struct so_value * so_database_postgresql_get_standalone_drives(struct so_
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_standalone_drives_by_host";
-	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1) AND c.enable");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1214,7 +1214,7 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, NULL FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id WHERE v.host = $1 AND NOT v.deleted AND v.uuid::TEXT NOT IN (SELECT serialnumber FROM changer)");
 	} else {
 		query = "select_vtls";
-		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1 AND NOT v.deleted");
+		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1 AND c.enable AND NOT v.deleted");
 	}
 
 	const char * params[] = { host_id };
@@ -1395,6 +1395,7 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 
 			if (status == PGRES_FATAL_ERROR) {
 				free(hostid);
+				free(changer_id);
 
 				if (transStatus == PQTRANS_IDLE)
 					so_database_postgresql_cancel_transaction(connect);
@@ -1423,6 +1424,8 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 
 			if (status == PGRES_FATAL_ERROR) {
 				free(hostid);
+				free(changer_id);
+
 				if (transStatus == PQTRANS_IDLE)
 					so_database_postgresql_cancel_transaction(connect);
 				return -1;
