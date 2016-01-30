@@ -3417,6 +3417,8 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 		so_database_postgresql_get_uint(result, 0, 0, &nb_volumes);
 
 	PQclear(result);
+	free(archive_id);
+	free(file_id);
 
 	return nb_volumes;
 }
