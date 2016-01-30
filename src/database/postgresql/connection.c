@@ -3404,8 +3404,9 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) > 0)
 		so_database_postgresql_get_uint(result, 0, 0, &nb_volumes);
 
-
 	PQclear(result);
+	free(archive_id);
+	free(file_id);
 
 	return nb_volumes;
 }
@@ -4424,6 +4425,7 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
 
+	PQclear(result);
 	free(backup_volume_id);
 
 	return status == PGRES_FATAL_ERROR ? 1 : 0;
