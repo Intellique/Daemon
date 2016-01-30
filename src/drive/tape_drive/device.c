@@ -69,10 +69,10 @@
 #include "device.h"
 #include "format/ltfs/ltfs.h"
 #include "format/storiqone/storiqone.h"
-#include "io.h"
+#include "io/io.h"
 #include "media.h"
-#include "scsi.h"
-#include "st.h"
+#include "util/scsi.h"
+#include "util/st.h"
 
 static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
@@ -357,7 +357,7 @@ static int sodr_tape_drive_format_media(struct sodr_peer * peer, struct so_pool 
 		return -1;
 
 	int failed = -1;
-	if (strcmp(pool->archive_format->name, "Storiq One") == 0)
+	if (strcmp(pool->archive_format->name, "Storiq One (TAR)") == 0)
 		failed = sodr_tape_drive_format_storiqone_format_media(peer, &sodr_tape_drive, fd, pool, option, db);
 	else if (strcmp(pool->archive_format->name, "LTFS") == 0)
 		failed = sodr_tape_drive_format_ltfs_format_media(&sodr_tape_drive, fd, option, db);
@@ -647,11 +647,29 @@ static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
 }
 
 static int sodr_tape_drive_open_drive() {
-	sodr_time_start();
-	int fd = open(so_device, O_RDWR | O_NONBLOCK);
-	sodr_time_stop(&sodr_tape_drive);
+	unsigned short retry = 0;
+	for (retry = 0; retry < 5; retry++) {
+		if (retry > 0)
+			so_log_write(so_log_level_warning,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: retry #%uh to open tape drive"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, retry);
 
-	return fd;
+		sodr_time_start();
+		int fd = open(so_device, O_RDWR | O_NONBLOCK);
+		sodr_time_stop(&sodr_tape_drive);
+
+		if (fd < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to open tape drive because %m"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
+			if (retry < 4)
+				sleep(1 << retry);
+		} else
+			return fd;
+	}
+
+	return -1;
 }
 
 static struct so_format_reader * sodr_tape_drive_open_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {

@@ -47,7 +47,7 @@
 
 #include "format/ltfs/ltfs.h"
 #include "media.h"
-#include "xml.h"
+#include "util/xml.h"
 
 static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, const char * buffer);
 

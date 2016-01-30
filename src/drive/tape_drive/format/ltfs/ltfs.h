@@ -44,6 +44,7 @@ struct sodr_tape_drive_media;
 
 unsigned int sodr_tape_drive_format_ltfs_count_archives(struct so_media * media);
 unsigned int sodr_tape_drive_format_ltfs_count_files(struct so_value * index);
+struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const char * uuid, ssize_t block_size);
 int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, struct so_value * option, struct so_database_connection * db);
 struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive * drive, int fd, int scsi_fd);
 struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, struct sodr_peer * peer, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db);

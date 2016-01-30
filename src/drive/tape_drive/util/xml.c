@@ -26,6 +26,8 @@
 
 // expat
 #include <expat.h>
+// dprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
 // strlen
@@ -43,6 +45,7 @@ struct sodr_tape_drive_xml_state {
 };
 
 static void sodr_tape_drive_xml_character_data(void * userData, const XML_Char *s, int len);
+ssize_t sodr_tape_drive_xml_encode_inner(struct so_value * xml, int fd);
 static void sodr_tape_drive_xml_end_element(void * userData, const char * name);
 static void sodr_tape_drive_xml_start_element(void * userData, const char * name, const char ** atts);
 
@@ -67,6 +70,52 @@ static void sodr_tape_drive_xml_character_data(void * userData, const XML_Char *
 		free(new_content);
 	} else
 		so_value_hashtable_put2(state->current, "value", so_value_new_string2(s, len), true);
+}
+
+ssize_t sodr_tape_drive_xml_encode(struct so_value * xml, int fd) {
+}
+
+ssize_t sodr_tape_drive_xml_encode_inner(struct so_value * xml, int fd) {
+	ssize_t nb_total_write = 0;
+
+	char * name = NULL;
+	so_value_unpack(xml, "{ss}", "name", &name);
+
+	ssize_t nb_write = dprintf(fd, "<%s", name);
+	if (nb_write < 0)
+		return nb_write;
+	else
+		nb_total_write += nb_write;
+
+	struct so_value * attributes = NULL;
+	so_value_unpack(xml, "{so}", "attributes", &attributes);
+	if (attributes != NULL) {
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(attributes);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_key(iter, false, false);
+			struct so_value * value = so_value_iterator_get_value(iter, value);
+
+			nb_write = dprintf(fd, " %s=\"%s\"", so_value_string_get(key), so_value_string_get(value));
+			if (nb_write < 0) {
+				so_value_iterator_free(iter);
+				return nb_write;
+			} else
+				nb_total_write += nb_write;
+		}
+		so_value_iterator_free(iter);
+	}
+
+	nb_write += dprintf(fd, ">\n");
+	if (nb_write < 0)
+		return nb_write;
+	else
+		nb_total_write += nb_write;
+
+	nb_write += dprintf(fd, "</%s>\n", name);
+	if (nb_write < 0)
+		return nb_write;
+	else
+		nb_total_write += nb_write;
 }
 
 static void sodr_tape_drive_xml_end_element(void * userData, const char * name __attribute__((unused))) {
@@ -104,10 +153,13 @@ struct so_value * sodr_tape_drive_xml_parse_string(const char * xml) {
 static void sodr_tape_drive_xml_start_element(void * userData, const char * name, const char ** atts) {
 	struct sodr_tape_drive_xml_state * state = userData;
 
-	struct so_value * attributes = so_value_new_hashtable2();
-	const char ** ptr_atts;
-	for (ptr_atts = atts; ptr_atts[0] != NULL; ptr_atts += 2)
-		so_value_hashtable_put2(attributes, ptr_atts[0], so_value_new_string(ptr_atts[1]), true);
+	struct so_value * attributes = NULL;
+	if (ptr_atts[0] != NULL) {
+		attributes = so_value_new_hashtable2();
+		const char ** ptr_atts;
+		for (ptr_atts = atts; ptr_atts[0] != NULL; ptr_atts += 2)
+			so_value_hashtable_put2(attributes, ptr_atts[0], so_value_new_string(ptr_atts[1]), true);
+	}
 
 	struct so_value * obj = so_value_pack("{sssos[]sn}",
 		"name", name,

@@ -52,6 +52,7 @@
 #include <libstoriqone-drive/time.h>
 
 #include "io.h"
+#include "../util/st.h"
 
 struct sodr_tape_drive_writer {
 	int fd;
@@ -183,10 +184,7 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 	}
 
 	if (!self->closed) {
-		static struct mtop eof = { MTWEOF, 1 };
-		sodr_time_start();
-		int failed = ioctl(self->fd, MTIOCTOP, &eof);
-		sodr_time_stop(self->drive);
+		int failed = sodr_tape_drive_st_write_end_of_file(self->drive, self->fd);
 
 		self->media->last_write = time(NULL);
 

@@ -193,3 +193,19 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 	return failed;
 }
 
+int sodr_tape_drive_st_write_end_of_file(struct so_drive * drive, int fd) {
+	static struct mtop eof = { MTWEOF, 1 };
+
+	sodr_time_start();
+	int failed = ioctl(fd, MTIOCTOP, &eof);
+	sodr_time_stop(drive);
+
+	if (failed != 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while closing file because '%m'"),
+			drive->vendor, drive->model, drive->index);
+	}
+
+	return failed;
+}
+

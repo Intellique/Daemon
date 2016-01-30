@@ -30,8 +30,12 @@
 #include <stdio.h>
 // struct mtget
 #include <sys/mtio.h>
+// now
+#include <time.h>
 // write
 #include <unistd.h>
+// uuid
+#include <uuid/uuid.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
@@ -43,7 +47,7 @@
 #include <libstoriqone-drive/time.h>
 
 #include "ltfs.h"
-#include "../../st.h"
+#include "../../util/st.h"
 
 int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, struct so_value * option, struct so_database_connection * db) {
 	ssize_t block_size = 0, partition_size = 0;
@@ -150,6 +154,15 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 
 		return nb_write;
 	}
+
+	failed = sodr_tape_drive_st_write_end_of_file(drive, fd);
+	if (failed != 0)
+		return failed;
+
+	time_t format_time = time(NULL);
+
+	uuid_t uuid;
+	uuid_generate(uuid);
 
 	return 0;
 }

@@ -24,10 +24,18 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __SO_TAPEDRIVE_XML_H__
-#define __SO_TAPEDRIVE_XML_H__
+#ifndef __SO_TAPEDRIVE_IO_IO_H__
+#define __SO_TAPEDRIVE_IO_IO_H__
 
-struct so_value * sodr_tape_drive_xml_parse_string(const char * xml);
+#include <libstoriqone/io.h>
+
+struct so_drive;
+struct so_database_connection;
+
+ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db);
+struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db);
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db);
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer2(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db);
 
 #endif
 

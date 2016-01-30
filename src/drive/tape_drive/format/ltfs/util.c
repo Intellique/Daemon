@@ -57,6 +57,8 @@
 #include "ltfs.h"
 #include "../../media.h"
 
+#include "storiqone.version"
+
 struct sodr_tape_drive_format_ltfs_default_value {
 	char * user;
 	uid_t user_id;
@@ -142,6 +144,48 @@ static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_valu
 	so_value_iterator_free(iter);
 
 	return nb_files;
+}
+
+struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const char * uuid, ssize_t block_size) {
+	struct tm gmt;
+	gmtime_r(&time, &gmt);
+
+	char buf_time[64];
+	strftime(buf_time, 64, "%FT%TZ", &gmt);
+
+	return so_value_pack("{sss{ss}s[{ssss}{ssss}{ssss}{s[{ssss}]ss}{s[{ssss}{ssss}]ss}{sssz}{ssss}]}",
+		"name", "ltfsindex",
+		"attributes",
+			"version", "2.2.0",
+		"children",
+			"name", "creator",
+			"value", "Storiq One v" STORIQONE_VERSION,
+
+			"name", "formattime",
+			"value", buf_time,
+
+			"name", "volumeuuid",
+			"value", uuid,
+
+			"children",
+				"name", "partition",
+				"value", "a",
+			"name", "location",
+
+			"children",
+				"name", "index",
+				"value", "a",
+
+				"name", "data",
+				"value", "b",
+			"name", "partition",
+
+			"name", "blocksize",
+			"value", block_size,
+
+			"name", "compression",
+			"value", "false"
+	);
 }
 
 static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * index, const char * node) {

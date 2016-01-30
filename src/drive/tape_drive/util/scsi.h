@@ -24,18 +24,47 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __SO_TAPEDRIVE_ST_H__
-#define __SO_TAPEDRIVE_ST_H__
+#ifndef __SO_TAPEDRIVE_UTIL_SCSI_H__
+#define __SO_TAPEDRIVE_UTIL_SCSI_H__
+
+// bool
+#include <stdbool.h>
+// off_t
+#include <sys/types.h>
 
 struct so_drive;
-struct so_database_connection;
-struct sodr_peer;
+struct so_media_format;
 
-struct mtget;
+struct sodr_tape_drive_scsi_position {
+	unsigned int partition;
+	off_t block_position;
+	bool end_of_partition;
+};
 
-int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct sodr_peer * peer, struct so_database_connection * db);
-int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_database_connection * db);
-int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, struct sodr_peer * peer, struct so_database_connection * db);
+bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path);
+bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path);
+int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode);
+/**
+ * \brief SCSI command to format medium
+ * \pre The current logical position of tape should be bottom of partition in partition 0.
+ * \param path : path of generic scsi device
+ * \param parition_size : size of second partition. Zero means format into one partition.
+ * \param two_times : if partition_size is greater than zero, the drive will format into one partition then
+ * into two partition
+ * \return 0 if succeed
+ */
+int sodr_tape_drive_scsi_format_medium(const char * path, size_t partition_size, bool two_times);
+/**
+ * \brief Set position on tape
+ * \remark Require LTO-4 drive at least
+ */
+int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position);
+int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path);
+int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_position * position);
+int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
+int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media);
+int sodr_tape_drive_scsi_rewind(int fd);
+int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);
 
 #endif
 

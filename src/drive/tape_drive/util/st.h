@@ -24,18 +24,19 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __SO_TAPEDRIVE_IO_H__
-#define __SO_TAPEDRIVE_IO_H__
-
-#include <libstoriqone/io.h>
+#ifndef __SO_TAPEDRIVE_UTIL_ST_H__
+#define __SO_TAPEDRIVE_UTIL_ST_H__
 
 struct so_drive;
 struct so_database_connection;
+struct sodr_peer;
 
-ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db);
-struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db);
-struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db);
-struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer2(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db);
+struct mtget;
+
+int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct sodr_peer * peer, struct so_database_connection * db);
+int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_database_connection * db);
+int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, struct sodr_peer * peer, struct so_database_connection * db);
+int sodr_tape_drive_st_write_end_of_file(struct so_drive * drive, int fd);
 
 #endif
 

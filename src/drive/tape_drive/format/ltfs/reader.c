@@ -43,7 +43,7 @@
 
 #include "ltfs.h"
 #include "../../media.h"
-#include "../../scsi.h"
+#include "../../util/scsi.h"
 
 struct sodr_tape_drive_format_ltfs_reader_private {
 	int fd;
