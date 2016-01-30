@@ -27,9 +27,15 @@
 #ifndef __SO_TAPEDRIVE_XML_H__
 #define __SO_TAPEDRIVE_XML_H__
 
+// ssize_t
 #include <sys/types.h>
 
-ssize_t sodr_tape_drive_xml_encode(struct so_value * xml, int fd);
+struct so_stream_reader;
+struct so_stream_writer;
+
+ssize_t sodr_tape_drive_xml_encode_fd(int fd, struct so_value * xml);
+ssize_t sodr_tape_drive_xml_encode_stream(struct so_stream_writer * writer, struct so_value * xml);
+struct so_value * sodr_tape_drive_xml_parse_stream(struct so_stream_reader * reader);
 struct so_value * sodr_tape_drive_xml_parse_string(const char * xml);
 
 #endif
