@@ -281,14 +281,12 @@ static void sod_device_pong(int fd, short event __attribute__((unused)), void * 
 	if (command == NULL)
 		return;
 
-	char * com = NULL;
-	so_value_unpack(command, "{ss}", "command", &com);
+	const char * com = NULL;
+	so_value_unpack(command, "{sS}", "command", &com);
 	so_value_free(command);
 
-	if (com == NULL || strcmp(com, "exit") != 0) {
-		free(com);
+	if (com == NULL || strcmp(com, "exit") != 0)
 		return;
-	}
 
 	struct sod_device * dev = data;
 	so_poll_unregister(dev->fd_out, POLLIN);

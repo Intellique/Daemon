@@ -28,6 +28,8 @@
 #include <stdarg.h>
 // calloc, free, malloc
 #include <stdlib.h>
+// vsnprintf
+#include <stdio.h>
 // memmove, strcpy, strlen, strdup
 #include <string.h>
 // bzero
@@ -1022,6 +1024,22 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 				}
 			} else if (value->type == so_value_null) {
 				char ** val = va_arg(params, char **);
+				if (val != NULL) {
+					*val = NULL;
+					return 1;
+				}
+			}
+			break;
+
+		case 'S':
+			if (value->type == so_value_string) {
+				const char ** val = va_arg(params, const char **);
+				if (val != NULL) {
+					*val = so_value_string_get(value);
+					return 1;
+				}
+			} else if (value->type == so_value_null) {
+				const char ** val = va_arg(params, const char **);
 				if (val != NULL) {
 					*val = NULL;
 					return 1;
@@ -2061,6 +2079,23 @@ bool so_value_list_unshift(struct so_value * list, struct so_value * val, bool n
 
 const char * so_value_string_get(const struct so_value * value) {
 	return so_value_get(value);
+}
+
+struct so_value * so_value_sprintf(const char * format, ...) {
+	va_list va;
+
+	va_start(va, format);
+	int length = vsnprintf(NULL, 0, format, va);
+	va_end(va);
+
+	struct so_value * val = so_value_new(so_value_string, length + 1);
+	char * string = so_value_get(val);
+
+	va_start(va, format);
+	vsnprintf(string, length + 1, format, va);
+	va_end(va);
+
+	return val;
 }
 
 

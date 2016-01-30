@@ -249,8 +249,8 @@ static bool soj_formatmedia_script_pre_run(struct so_job * job, struct so_databa
 		while (so_value_iterator_has_next(iter)) {
 			struct so_value * data = so_value_iterator_get_value(iter, false);
 
-			char * uuid = NULL;
-			so_value_unpack(data, "{s{ss}}", "media", "uuid", &uuid);
+			const char * uuid = NULL;
+			so_value_unpack(data, "{s{sS}}", "media", "uuid", &uuid);
 			if (uuid != NULL) {
 				uuid_t tmp;
 				if (uuid_parse(uuid, tmp) != 0) {
@@ -262,7 +262,6 @@ static bool soj_formatmedia_script_pre_run(struct so_job * job, struct so_databa
 						uuid, soj_formatmedia_media->uuid);
 					strcpy(soj_formatmedia_media->uuid, uuid);
 				}
-				free(uuid);
 			}
 
 			char * name = NULL;
@@ -365,8 +364,8 @@ static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_conne
 	ssize_t block_size = 0;
 
 	if (so_value_valid(job->option, "{ss}", "block size")) {
-		char * action = NULL;
-		so_value_unpack(job->option, "{ss}", "block size", &action);
+		const char * action = NULL;
+		so_value_unpack(job->option, "{sS}", "block size", &action);
 
 		struct so_media_format * format = soj_formatmedia_media->media_format;
 		char buf_size[16];
@@ -408,8 +407,6 @@ static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_conne
 		}
 
 		so_value_hashtable_put2(soj_formatmedia_option, "block size", so_value_new_integer(block_size), true);
-
-		free(action);
 	} else if (so_value_valid(job->option, "{sz}", "block size")) {
 		so_value_unpack(job->option, "{sz}", "block size", &block_size);
 		if (block_size < 0) {

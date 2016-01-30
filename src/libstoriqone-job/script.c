@@ -158,15 +158,12 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 		if (data != NULL)
 			so_value_list_push(datas, data, true);
 
-		char * message = NULL;
-		so_value_unpack(returned, "{ss}", "message", &message);
-		if (message != NULL) {
+		const char * message = NULL;
+		so_value_unpack(returned, "{sS}", "message", &message);
+		if (message != NULL)
 			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 				dgettext("libstoriqone-job", "script '%s' return message: %s"),
 				path, message);
-
-			free(message);
-		}
 
 		if (type == so_script_type_pre_job && !should_run)
 			status = 1;

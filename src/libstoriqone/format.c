@@ -104,11 +104,9 @@ void so_format_file_init(struct so_format_file * file) {
 }
 
 void so_format_file_sync(struct so_format_file * file, struct so_value * new_file) {
-	struct so_value * vlink = NULL;
-
-	so_value_unpack(new_file, "{sssoszszsususususssusssisisb}",
+	so_value_unpack(new_file, "{ssssszszsususususssusssisisb}",
 		"filename", &file->filename,
-		"link", &vlink,
+		"link", &file->link,
 
 		"position", &file->position,
 		"size", &file->size,
@@ -126,11 +124,5 @@ void so_format_file_sync(struct so_format_file * file, struct so_value * new_fil
 
 		"is label", &file->is_label
 	);
-
-	free(file->link);
-	if (vlink->type == so_value_string)
-		file->link = strdup(so_value_string_get(vlink));
-	else
-		file->link = NULL;
 }
 

@@ -106,15 +106,13 @@ void so_database_load_config(struct so_value * config) {
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * conf = so_value_iterator_get_value(iter, false);
 
-		char * type;
-		if (so_value_unpack(conf, "{ss}", "type", &type) < 1)
+		const char * type = NULL;
+		if (so_value_unpack(conf, "{sS}", "type", &type) < 1)
 			continue;
 
 		struct so_database * driver = so_database_get_driver(type);
 		if (driver != NULL)
 			driver->ops->add(conf);
-
-		free(type);
 	}
 	so_value_iterator_free(iter);
 }

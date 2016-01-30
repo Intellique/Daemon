@@ -345,7 +345,7 @@ static void so_archive_file_free(struct so_archive_files * files) {
 static void so_archive_file_sync(struct so_archive_files * files, struct so_value * new_file) {
 	long int archived_time = 0;
 	long int permission = 0;
-	char * file_type = NULL;
+	const char * file_type = NULL;
 	long int owner_id = 0;
 	long int group_id = 0;
 	long int create_time = 0;
@@ -367,7 +367,7 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 	struct so_archive_file * file = files->file;
 
-	so_value_unpack(new_file, "{szsis{sssssusssusssusssisisbsisOszsOssss}}",
+	so_value_unpack(new_file, "{szsis{sssssusSsusssusssisisbsisOszsOssss}}",
 		"position", &files->position,
 		"archived time", &archived_time,
 		"file",
@@ -404,8 +404,6 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 	file->create_time = create_time;
 	file->modify_time = modify_time;
 	file->check_time = check_time;
-
-	free(file_type);
 }
 
 

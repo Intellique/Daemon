@@ -501,9 +501,9 @@ static int sodr_vtl_drive_init(struct so_value * config, struct so_database_conn
 	bzero(sodr_vtl_drive.slot, sizeof(struct so_slot));
 	sl->drive = &sodr_vtl_drive;
 
-	char * root_dir = NULL;
+	const char * root_dir = NULL;
 	struct so_value * format = NULL;
-	so_value_unpack(config, "{sssssosu}",
+	so_value_unpack(config, "{ssSssosu}",
 		"serial number", &sodr_vtl_drive.serial_number,
 		"device", &root_dir,
 		"format", &format,
@@ -518,9 +518,6 @@ static int sodr_vtl_drive_init(struct so_value * config, struct so_database_conn
 	int size = asprintf(&sodr_vtl_media_dir, "%s/media", root_dir);
 	if (size < 0)
 		return 1;
-
-	free(root_dir);
-
 
 	sodr_vtl_media_format = malloc(sizeof(struct so_media_format));
 	bzero(sodr_vtl_media_format, sizeof(struct so_media_format));

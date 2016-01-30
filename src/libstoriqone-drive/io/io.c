@@ -82,15 +82,14 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 			break;
 
 		struct so_value * request = so_json_parse_fd(peer->fd_cmd, -1);
-		char * command = NULL;
-		if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+		const char * command = NULL;
+		if (request == NULL || so_value_unpack(request, "{sS}", "command", &command) < 0) {
 			if (request != NULL)
 				so_value_free(request);
 			break;
 		}
 
 		const unsigned long hash = so_string_compute_hash2(command);
-		free(command);
 
 		unsigned int i;
 		for (i = 0; commands[i].name != NULL; i++)

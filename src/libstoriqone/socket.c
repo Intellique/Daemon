@@ -36,8 +36,8 @@
 #include "socket/unix.h"
 
 int so_socket(struct so_value * config) {
-	char * domain = NULL;
-	if (so_value_unpack(config, "{ss}", "domain", &domain) < 1)
+	const char * domain = NULL;
+	if (so_value_unpack(config, "{sS}", "domain", &domain) < 1)
 		return -1;
 
 	int fd = -1;
@@ -48,14 +48,12 @@ int so_socket(struct so_value * config) {
 	else if (!strcmp(domain, "unix"))
 		fd = so_socket_unix(config);
 
-	free(domain);
-
 	return fd;
 }
 
 int so_socket_accept_and_close(int fd, struct so_value * config) {
-	char * domain = NULL;
-	if (so_value_unpack(config, "{ss}", "domain", &domain) < 1)
+	const char * domain = NULL;
+	if (so_value_unpack(config, "{sS}", "domain", &domain) < 1)
 		return -1;
 
 	int new_fd = -1;
@@ -66,14 +64,12 @@ int so_socket_accept_and_close(int fd, struct so_value * config) {
 	else if (!strcmp(domain, "unix"))
 		new_fd = so_socket_unix_accept_and_close(fd, config);
 
-	free(domain);
-
 	return new_fd;
 }
 
 int so_socket_close(int fd, struct so_value * config) {
-	char * domain = NULL;
-	if (so_value_unpack(config, "{ss}", "domain", &domain) < 1)
+	const char * domain = NULL;
+	if (so_value_unpack(config, "{sS}", "domain", &domain) < 1)
 		return -1;
 
 	int failed = 0;
@@ -84,14 +80,12 @@ int so_socket_close(int fd, struct so_value * config) {
 	else if (!strcmp(domain, "unix"))
 		failed = so_socket_unix_close(fd, config);
 
-	free(domain);
-
 	return failed;
 }
 
 bool so_socket_server(struct so_value * config, so_socket_accept_f accept_callback) {
-	char * domain = NULL;
-	if (so_value_unpack(config, "{ss}", "domain", &domain) < 1)
+	const char * domain = NULL;
+	if (so_value_unpack(config, "{sS}", "domain", &domain) < 1)
 		return false;
 
 	bool ok = false;
@@ -102,14 +96,12 @@ bool so_socket_server(struct so_value * config, so_socket_accept_f accept_callba
 	else if (!strcmp(domain, "unix"))
 		ok = so_socket_unix_server(config, accept_callback);
 
-	free(domain);
-
 	return ok;
 }
 
 bool so_socket_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) {
-	char * domain = NULL;
-	if (so_value_unpack(socket_template, "{ss}", "domain", &domain) < 1)
+	const char * domain = NULL;
+	if (so_value_unpack(socket_template, "{sS}", "domain", &domain) < 1)
 		return false;
 
 	bool ok = false;
@@ -120,14 +112,12 @@ bool so_socket_from_template(struct so_value * socket_template, so_socket_accept
 	else if (!strcmp(domain, "unix"))
 		ok = so_socket_unix_from_template(socket_template, accept_callback);
 
-	free(domain);
-
 	return ok;
 }
 
 int so_socket_server_temp(struct so_value * config) {
-	char * domain = NULL;
-	if (so_value_unpack(config, "{ss}", "domain", &domain) < 1)
+	const char * domain = NULL;
+	if (so_value_unpack(config, "{sS}", "domain", &domain) < 1)
 		return -1;
 
 	int fd = -1;
@@ -137,8 +127,6 @@ int so_socket_server_temp(struct so_value * config) {
 		fd = so_socket_server_temp_tcp6(config);
 	else if (!strcmp(domain, "unix"))
 		fd = so_socket_server_temp_unix(config);
-
-	free(domain);
 
 	return fd;
 }

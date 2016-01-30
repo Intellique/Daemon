@@ -215,14 +215,12 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	so_value_unpack(job->option, "{sb}", "check_archive", &check_archive);
 
 	if (check_archive) {
-		char * mode = NULL;
-		so_value_unpack(job->option, "{ss}", "check_archive_mode", &mode);
+		const char * mode = NULL;
+		so_value_unpack(job->option, "{sS}", "check_archive_mode", &mode);
 
 		bool quick_mode = true;
-		if (mode != NULL) {
+		if (mode != NULL)
 			quick_mode = strcmp(mode, "quick_mode") == 0;
-			free(mode);
-		}
 
 		soj_create_archive_worker_create_check_archive(quick_mode, db_connect);
 	}

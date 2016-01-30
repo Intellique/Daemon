@@ -89,16 +89,14 @@ static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * e
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * elt = so_value_iterator_get_value(iter, false);
 
-		char * elt_name = NULL;
-		so_value_unpack(elt, "{ss}", "name", &elt_name);
+		const char * elt_name = NULL;
+		so_value_unpack(elt, "{sS}", "name", &elt_name);
 
 		if (elt_name == NULL)
 			continue;
 
 		if (strcmp(elt_name, "extent") == 0)
 			nb_extents++;
-
-		free(elt_name);
 	}
 	so_value_iterator_free(iter);
 
@@ -128,8 +126,8 @@ static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_valu
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * elt = so_value_iterator_get_value(iter, false);
 
-		char * elt_name = NULL;
-		so_value_unpack(elt, "{ss}", "name", &elt_name);
+		const char * elt_name = NULL;
+		so_value_unpack(elt, "{sS}", "name", &elt_name);
 
 		if (elt_name == NULL)
 			continue;
@@ -138,8 +136,6 @@ static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_valu
 
 		if (strcmp(elt_name, "directory") == 0)
 			nb_files += sodr_tape_drive_format_ltfs_count_files_inner(elt);
-
-		free(elt_name);
 	}
 	so_value_iterator_free(iter);
 
@@ -197,13 +193,11 @@ static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * inde
 	while (elt == NULL && so_value_iterator_has_next(iter)) {
 		elt = so_value_iterator_get_value(iter, false);
 
-		char * elt_name = NULL;
-		so_value_unpack(elt, "{ss}", "name", &elt_name);
+		const char * elt_name = NULL;
+		so_value_unpack(elt, "{sS}", "name", &elt_name);
 
 		if (strcmp(elt_name, node) != 0)
 			elt = NULL;
-
-		free(elt_name);
 	}
 	so_value_iterator_free(iter);
 
@@ -377,9 +371,9 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 
 	struct so_value * config = so_config_get();
 	unsigned int uid = 0, gid = 0, file_mask = 0644, directory_mask = 0755;
-	char * base_directory;
+	const char * base_directory;
 
-	so_value_unpack(config, "{s{s{sususususs}}}",
+	so_value_unpack(config, "{s{s{sususususS}}}",
 		"format",
 			"ltfs",
 				"user id", &uid,
@@ -408,7 +402,6 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 
 	free(default_value.user);
 	free(default_value.group);
-	free(base_directory);
 }
 
 static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value) {
@@ -431,42 +424,37 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * elt = so_value_iterator_get_value(iter, false);
 
-		char * elt_name = NULL;
-		so_value_unpack(elt, "{ss}", "name", &elt_name);
+		const char * elt_name = NULL;
+		so_value_unpack(elt, "{sS}", "name", &elt_name);
 
 		if (elt_name == NULL)
 			continue;
 
 		if (strcmp(elt_name, "name") == 0) {
-			char * file_name = NULL;
-			so_value_unpack(elt, "{ss}", "value", &file_name);
+			const char * file_name = NULL;
+			so_value_unpack(elt, "{sS}", "value", &file_name);
 
 			int size = asprintf(&file->file.filename, "%s/%s", path, file_name);
-
-			if (size < 0) {
-				free(file_name);
+			if (size < 0)
 				continue;
-			}
-
-			free(file_name);
 		} else if (strcmp(elt_name, "creationtime") == 0) {
-			char * ctime = NULL;
-			so_value_unpack(elt, "{ss}", "value", &ctime);
+			const char * ctime = NULL;
+			so_value_unpack(elt, "{sS}", "value", &ctime);
+
 			if (ctime != NULL)
 				file->file.ctime = sodr_tape_drive_format_ltfs_parse_time(ctime);
-			free(ctime);
 		} else if (strcmp(elt_name, "modifytime") == 0) {
-			char * mtime = NULL;
-			so_value_unpack(elt, "{ss}", "value", &mtime);
+			const char * mtime = NULL;
+			so_value_unpack(elt, "{sS}", "value", &mtime);
+
 			if (mtime != NULL)
 				file->file.mtime = sodr_tape_drive_format_ltfs_parse_time(mtime);
-			free(mtime);
 		} else if (strcmp(elt_name, "length") == 0) {
-			char * length = NULL;
-			so_value_unpack(elt, "{ss}", "value", &length);
+			const char * length = NULL;
+			so_value_unpack(elt, "{sS}", "value", &length);
+
 			if (length != NULL)
 				sscanf(length, "%zd", &file->file.size);
-			free(length);
 		} else if (strcmp(elt_name, "extentinfo") == 0) {
 			file->nb_extents = sodr_tape_drive_format_ltfs_count_extent(elt);
 			file->extents = calloc(file->nb_extents, sizeof(struct sodr_tape_drive_format_ltfs_extent));
@@ -479,18 +467,14 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			for (i = 0; so_value_iterator_has_next(iter); i++) {
 				struct so_value * vextent = so_value_iterator_get_value(iter, false);
 
-				char * child_name = NULL;
-				so_value_unpack(vextent, "{ss}", "name", &child_name);
+				const char * child_name = NULL;
+				so_value_unpack(vextent, "{sS}", "name", &child_name);
 
 				if (child_name == NULL)
 					continue;
 
-				if (strcmp(child_name, "extent") != 0) {
-					free(child_name);
+				if (strcmp(child_name, "extent") != 0)
 					continue;
-				}
-
-				free(child_name);
 
 				struct sodr_tape_drive_format_ltfs_extent * ext = file->extents + i;
 
@@ -501,16 +485,14 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 				while (so_value_iterator_has_next(iter_extent_info)) {
 					struct so_value * info = so_value_iterator_get_value(iter_extent_info, false);
 
-					char * info_name = NULL, * info_value = NULL;
-					so_value_unpack(info, "{ssss}", "name", &info_name, "value", &info_value);
+					const char * info_name = NULL, * info_value = NULL;
+					so_value_unpack(info, "{sSsS}", "name", &info_name, "value", &info_value);
 
 					if (info_name == NULL)
 						continue;
 
-					if (info_value == NULL) {
-						free(info_name);
+					if (info_value == NULL)
 						continue;
-					}
 
 					if (strcmp(info_name, "fileoffset") == 0) {
 						sscanf(info_value, "%zd", &file->file.position);
@@ -523,9 +505,6 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 						sscanf(info_value, "%zd", &ext->byte_offset);
 					else if (strcmp(info_name, "bytecount") == 0)
 						sscanf(info_value, "%zd", &ext->byte_count);
-
-					free(info_name);
-					free(info_value);
 				}
 				so_value_iterator_free(iter_extent_info);
 			}
@@ -534,8 +513,6 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			so_value_unpack(elt, "{ss}", "value", &file->file.link);
 			file->file.mode = S_IFLNK | default_value->file_mask;
 		}
-
-		free(elt_name);
 	}
 	so_value_iterator_free(iter);
 
@@ -544,8 +521,8 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 	file->file.group = strdup(default_value->group);
 	file->file.gid = default_value->group_id;
 
-	char * elt_name = NULL;
-	so_value_unpack(index, "{ss}", "name", &elt_name);
+	const char * elt_name = NULL;
+	so_value_unpack(index, "{sS}", "name", &elt_name);
 
 	if (strcmp(elt_name, "directory") == 0) {
 		struct so_value * contents = sodr_tape_drive_format_ltfs_find(index, "contents");
@@ -562,8 +539,6 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 		file->file.mode = S_IFDIR | default_value->directory_mask;
 	}
-
-	free(elt_name);
 }
 
 time_t sodr_tape_drive_format_ltfs_parse_time(const char * date) {

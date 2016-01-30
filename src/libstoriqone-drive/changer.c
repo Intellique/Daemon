@@ -77,15 +77,14 @@ bool sodr_changer_is_stopped() {
 
 static void sodr_changer_process(int fd, short event __attribute__((unused)), void * data) {
 	struct so_value * request = so_json_parse_fd(fd, -1);
-	char * command = NULL;
-	if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+	const char * command = NULL;
+	if (request == NULL || so_value_unpack(request, "{sS}", "command", &command) < 0) {
 		if (request != NULL)
 			so_value_free(request);
 		return;
 	}
 
 	const unsigned long hash = so_string_compute_hash2(command);
-	free(command);
 
 	unsigned int i;
 	for (i = 0; commands[i].name != NULL; i++)
@@ -189,10 +188,9 @@ static void sodr_changer_process_lock(struct so_value * request, struct so_datab
 		return;
 	}
 
-	char * job_id = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "job id", &job_id);
 	sodr_listen_set_peer_id(job_id);
-	free(job_id);
 
 	struct so_value * returned = so_value_pack("{sb}", "returned", true);
 	so_json_encode_to_fd(returned, 1, true);

@@ -550,8 +550,8 @@ static int so_database_postgresql_delete_changer(struct so_database_connection *
 	struct so_value * db = so_value_hashtable_get(changer->db_data, key, false, false);
 	so_value_free(key);
 
-	char * changer_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &changer_id);
+	const char * changer_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &changer_id);
 
 	const char * query = "delete_changer_by_id";
 	so_database_postgresql_prepare(self, query, "DELETE FROM changer WHERE id = $1");
@@ -564,7 +564,6 @@ static int so_database_postgresql_delete_changer(struct so_database_connection *
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(changer_id);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -579,8 +578,8 @@ static int so_database_postgresql_delete_drive(struct so_database_connection * c
 	struct so_value * db = so_value_hashtable_get(drive->db_data, key, false, false);
 	so_value_free(key);
 
-	char * drive_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &drive_id);
+	const char * drive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &drive_id);
 
 	const char * query = "delete_drive_by_id";
 	so_database_postgresql_prepare(self, query, "DELETE FROM drive WHERE id = $1");
@@ -593,7 +592,6 @@ static int so_database_postgresql_delete_drive(struct so_database_connection * c
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(drive_id);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -780,7 +778,7 @@ static struct so_media * so_database_postgresql_get_media(struct so_database_con
 	const char * query;
 	PGresult * result;
 
-	char * job_id = NULL;
+	const char * job_id = NULL;
 
 	if (medium_serial_number != NULL) {
 		query = "select_id_from_media_by_medium_serial_number";
@@ -801,7 +799,7 @@ static struct so_media * so_database_postgresql_get_media(struct so_database_con
 
 		struct so_value * key = so_value_new_custom(connect->config, NULL);
 		struct so_value * job_data = so_value_hashtable_get(job->db_data, key, false, false);
-		so_value_unpack(job_data, "{ss}", "id", &job_id);
+		so_value_unpack(job_data, "{sS}", "id", &job_id);
 		so_value_free(key);
 
 		const char * param[] = { job_id };
@@ -821,7 +819,6 @@ static struct so_media * so_database_postgresql_get_media(struct so_database_con
 	}
 
 	PQclear(result);
-	free(job_id);
 	return media;
 }
 
@@ -1012,17 +1009,15 @@ static struct so_pool * so_database_postgresql_get_pool(struct so_database_conne
 		query = "select_pool_by_job";
 		so_database_postgresql_prepare(self, query, "SELECT pool FROM job WHERE id = $1 LIMIT 1");
 
-		char * job_id = NULL;
+		const char * job_id = NULL;
 
 		struct so_value * key = so_value_new_custom(connect->config, NULL);
 		struct so_value * job_data = so_value_hashtable_get(job->db_data, key, false, false);
-		so_value_unpack(job_data, "{ss}", "id", &job_id);
+		so_value_unpack(job_data, "{sS}", "id", &job_id);
 		so_value_free(key);
 
 		const char * param[] = { job_id };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-
-		free(job_id);
 	}
 
 	struct so_pool * pool = NULL;
@@ -2361,8 +2356,8 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 	so_value_free(key);
 
-	char * jobrun_id = NULL;
-	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+	const char * jobrun_id = NULL;
+	so_value_unpack(db, "{sS}", "jobrun id", &jobrun_id);
 
 	const char * query = "insert_new_jobrecord_by_jobrun";
 	so_database_postgresql_prepare(self, query, "INSERT INTO jobrecord(jobrun, status, level, message, notif) VALUES ($1, $2, $3, $4, $5)");
@@ -2375,7 +2370,6 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(jobrun_id);
 
 	return status != PGRES_TUPLES_OK;
 }
@@ -2422,12 +2416,12 @@ static int so_database_postgresql_add_report(struct so_database_connection * con
 		db_media = so_value_hashtable_get(media->db_data, key, false, false);
 	so_value_free(key);
 
-	char * jobrun_id = NULL, * archive_id = NULL, * media_id = NULL;
-	so_value_unpack(db_job, "{ss}", "jobrun id", &jobrun_id);
+	const char * jobrun_id = NULL, * archive_id = NULL, * media_id = NULL;
+	so_value_unpack(db_job, "{sS}", "jobrun id", &jobrun_id);
 	if (db_archive != NULL)
-		so_value_unpack(db_archive, "{ss}", "id", &archive_id);
+		so_value_unpack(db_archive, "{sS}", "id", &archive_id);
 	if (db_media != NULL)
-		so_value_unpack(db_media, "{ss}", "id", &media_id);
+		so_value_unpack(db_media, "{sS}", "id", &media_id);
 
 	const char * query = "insert_new_report";
 	so_database_postgresql_prepare(self, query, "INSERT INTO report(jobrun, archive, media, data) VALUES ($1, $2, $3, $4)");
@@ -2440,9 +2434,6 @@ static int so_database_postgresql_add_report(struct so_database_connection * con
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(jobrun_id);
-	free(archive_id);
-	free(media_id);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -2457,8 +2448,8 @@ static char * so_database_postgresql_get_restore_path(struct so_database_connect
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 	so_value_free(key);
 
-	char * job_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &job_id);
 
 	const char * query = "select_restore_path";
 	so_database_postgresql_prepare(self, query, "SELECT path FROM restoreto WHERE job = $1 LIMIT 1");
@@ -2474,7 +2465,6 @@ static char * so_database_postgresql_get_restore_path(struct so_database_connect
 		so_database_postgresql_get_string_dup(result, 0, 0, &path);
 
 	PQclear(result);
-	free(job_id);
 
 	return path;
 }
@@ -2489,18 +2479,16 @@ static int so_database_postgresql_start_job(struct so_database_connection * conn
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 	so_value_free(key);
 
-	char * job_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &job_id);
 
 	const char * query = "insert_new_jobrun";
 	so_database_postgresql_prepare(self, query, "INSERT INTO jobrun(job, numrun) VALUES ($1, $2) RETURNING id");
 
 	char * numrun = NULL;
 	int size = asprintf(&numrun, "%ld", job->num_runs);
-	if (size < 0) {
-		free(job_id);
+	if (size < 0)
 		return -2;
-	}
 
 	const char * param[] = { job_id, numrun };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -2514,7 +2502,6 @@ static int so_database_postgresql_start_job(struct so_database_connection * conn
 	}
 
 	PQclear(result);
-	free(job_id);
 	free(numrun);
 
 	return status != PGRES_TUPLES_OK;
@@ -2528,8 +2515,8 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 	so_value_free(key);
 
-	char * job_id = NULL, * jobrun_id = NULL;
-	so_value_unpack(db, "{ssss}", "id", &job_id, "jobrun id", &jobrun_id);
+	const char * job_id = NULL, * jobrun_id = NULL;
+	so_value_unpack(db, "{sSsS}", "id", &job_id, "jobrun id", &jobrun_id);
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
@@ -2544,7 +2531,6 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(job_id);
 
 	query = "finish_jobrun";
 	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET endtime = NOW(), status = $1, done = $2, exitcode = $3, stoppedbyuser = $4 WHERE id = $5");
@@ -2567,7 +2553,6 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 	PQclear(result);
 	free(exitcode);
 	free(done);
-	free(jobrun_id);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -2619,8 +2604,11 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	char * repetition = NULL;
 	int size = asprintf(&repetition, "%ld", job->repetition);
-	if (size < 0)
+	if (size < 0) {
+		free(job_id);
+		free(jobrun_id);
 		return -2;
+	}
 
 	const char * param2[] = { so_job_status_to_string(job->status, false), repetition, job_id };
 	result = PQexecPrepared(self->connect, query, 3, param2, NULL, NULL, 0);
@@ -2914,12 +2902,12 @@ static int so_database_postgresql_check_archive_file(struct so_database_connecti
 	struct so_database_postgresql_connection_private * self = connect->data;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
-	char * archive_id = NULL, * file_id = NULL;
+	const char * archive_id = NULL, * file_id = NULL;
 	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &archive_id);
+	so_value_unpack(db, "{sS}", "id", &archive_id);
 
 	db = so_value_hashtable_get(file->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &file_id);
+	so_value_unpack(db, "{sS}", "id", &file_id);
 
 	const char * query = "update_check_archive_file";
 	so_database_postgresql_prepare(self, query, "UPDATE archivefiletoarchivevolume SET checktime = $1, checksumok = $2 WHERE archivefile = $3 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $4)");
@@ -2946,9 +2934,9 @@ static int so_database_postgresql_check_archive_volume(struct so_database_connec
 	struct so_database_postgresql_connection_private * self = connect->data;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
-	char * volume_id = NULL;
+	const char * volume_id = NULL;
 	struct so_value * db = so_value_hashtable_get(volume->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &volume_id);
+	so_value_unpack(db, "{sS}", "id", &volume_id);
 
 	const char * query = "update_check_archive_volume";
 	so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET checktime = $1, checksumok = $2 WHERE id = $3");
@@ -2980,13 +2968,13 @@ static int so_database_postgresql_create_check_archive_job(struct so_database_co
 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
-	char * job_id = NULL;
+	const char * job_id = NULL;
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &job_id);
+	so_value_unpack(db, "{sS}", "id", &job_id);
 
-	char * archive_id = NULL;
+	const char * archive_id = NULL;
 	db = so_value_hashtable_get(archive->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &archive_id);
+	so_value_unpack(db, "{sS}", "id", &archive_id);
 
 	so_value_free(key);
 
@@ -3008,8 +2996,6 @@ static int so_database_postgresql_create_check_archive_job(struct so_database_co
 	PQclear(result);
 	free(str_option);
 	so_value_free(option);
-	free(archive_id);
-	free(job_id);
 	free(job_name);
 
 	return status != PGRES_COMMAND_OK;
@@ -3024,8 +3010,8 @@ static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(s
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
 
-	char * archive_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &archive_id);
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
 	so_value_free(key);
 
 	const char * query = "select_archive_by_archive_mirror";
@@ -3048,7 +3034,6 @@ static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(s
 	}
 
 	PQclear(result);
-	free(archive_id);
 
 	return archives;
 }
@@ -3282,10 +3267,10 @@ static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_d
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	char * job_id = NULL;
+	const char * job_id = NULL;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &job_id);
+	so_value_unpack(db, "{sS}", "id", &job_id);
 
 	struct so_archive * archive = NULL;
 
@@ -3302,7 +3287,6 @@ static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_d
 		archive = so_database_postgresql_get_archive_by_id(connect, PQgetvalue(result, 0, 0));
 
 	PQclear(result);
-	free(job_id);
 
 	return archive;
 }
@@ -3373,10 +3357,10 @@ static struct so_value * so_database_postgresql_get_archives_by_media(struct so_
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	char * media_id = NULL;
+	const char * media_id = NULL;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(media->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &media_id);
+	so_value_unpack(db, "{sS}", "id", &media_id);
 
 	const char * query = "select_archive_by_media";
 	so_database_postgresql_prepare(self, query, "SELECT DISTINCT archive FROM archivevolume WHERE media = $1");
@@ -3398,7 +3382,6 @@ static struct so_value * so_database_postgresql_get_archives_by_media(struct so_
 	}
 
 	PQclear(result);
-	free(media_id);
 
 	return archives;
 }
@@ -3410,12 +3393,12 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 	struct so_database_postgresql_connection_private * self = connect->data;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
-	char * archive_id = NULL, * file_id = NULL;
+	const char * archive_id = NULL, * file_id = NULL;
 	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &archive_id);
+	so_value_unpack(db, "{sS}", "id", &archive_id);
 
 	db = so_value_hashtable_get(file->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &file_id);
+	so_value_unpack(db, "{sS}", "id", &file_id);
 
 	const char * query = "select_nb_volumes_of_file";
 	so_database_postgresql_prepare(self, query, "SELECT COUNT(*) FROM archivefiletoarchivevolume afv INNER JOIN archivevolume av ON afv.archivefile = $2 AND afv.archivevolume = av.id AND av.archive = $1");
@@ -3429,7 +3412,6 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 		so_database_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) > 0)
 		so_database_postgresql_get_uint(result, 0, 0, &nb_volumes);
-
 
 	PQclear(result);
 
@@ -3445,8 +3427,8 @@ static bool so_database_postgresql_is_archive_synchronized(struct so_database_co
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
 
-	char * archive_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &archive_id);
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
 	so_value_free(key);
 
 	const char * query = "select_check_synchronized_archive";
@@ -3464,7 +3446,6 @@ static bool so_database_postgresql_is_archive_synchronized(struct so_database_co
 		so_database_postgresql_get_bool(result, 0, 0, &synchronized_archive);
 
 	PQclear(result);
-	free(archive_id);
 
 	return synchronized_archive;
 }
@@ -3475,17 +3456,18 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	char * jobrun_id = NULL, * src_archive_id = NULL, * copy_archive_id = NULL, * copy_poolmirror_id = NULL, * archivemirror_id = NULL, * last_update = NULL;
+	const char * jobrun_id = NULL, * src_archive_id = NULL, * copy_archive_id = NULL;
+	char * copy_poolmirror_id = NULL, * archivemirror_id = NULL, * last_update = NULL;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+	so_value_unpack(db, "{sS}", "jobrun id", &jobrun_id);
 
 	db = so_value_hashtable_get(source->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &src_archive_id);
+	so_value_unpack(db, "{sS}", "id", &src_archive_id);
 
 	db = so_value_hashtable_get(copy->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &copy_archive_id);
+	so_value_unpack(db, "{sS}", "id", &copy_archive_id);
 
 	so_value_free(key);
 
@@ -3504,12 +3486,8 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 
 	PQclear(result);
 
-	if (status == PGRES_FATAL_ERROR) {
-		free(jobrun_id);
-		free(src_archive_id);
-		free(copy_archive_id);
+	if (status == PGRES_FATAL_ERROR)
 		return 1;
-	}
 
 	if (copy_poolmirror_id != NULL) {
 		query = "select_archivemirror_by_archive_and_poolmirror";
@@ -3527,9 +3505,6 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 		}
 
 		if (status == PGRES_FATAL_ERROR) {
-			free(jobrun_id);
-			free(src_archive_id);
-			free(copy_archive_id);
 			free(copy_poolmirror_id);
 			return 2;
 		}
@@ -3549,9 +3524,6 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 
 			PQclear(result);
 
-			free(jobrun_id);
-			free(src_archive_id);
-			free(copy_archive_id);
 			free(archivemirror_id);
 			free(last_update);
 
@@ -3590,10 +3562,6 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 		free(archivemirror_id);
 	}
 
-	free(jobrun_id);
-	free(src_archive_id);
-	free(copy_archive_id);
-
 	return status != PGRES_COMMAND_OK;
 }
 
@@ -3603,13 +3571,13 @@ static int so_database_postgresql_mark_archive_as_purged(struct so_database_conn
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	char * jobrun_id = NULL, * media_id = NULL;
+	const char * jobrun_id = NULL, * media_id = NULL;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(media->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &media_id);
+	so_value_unpack(db, "{sS}", "id", &media_id);
 
 	db = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+	so_value_unpack(db, "{sS}", "jobrun id", &jobrun_id);
 
 
 	const char * query = "mark_archive_as_purged";
@@ -3623,8 +3591,6 @@ static int so_database_postgresql_mark_archive_as_purged(struct so_database_conn
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(jobrun_id);
-	free(media_id);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -3638,8 +3604,8 @@ static struct so_value * so_database_postgresql_get_synchronized_archive(struct 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
 
-	char * archive_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &archive_id);
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
 
 	so_value_free(key);
 
@@ -3664,7 +3630,6 @@ static struct so_value * so_database_postgresql_get_synchronized_archive(struct 
 	}
 
 	PQclear(result);
-	free(archive_id);
 
 	return archives;
 }
@@ -4113,15 +4078,15 @@ static int so_database_postgresql_update_link_archive(struct so_database_connect
 	if (connect == NULL || archive == NULL || job == NULL)
 		return -1;
 
-	char * archive_id = NULL, * jobrun_id = NULL;
+	const char * archive_id = NULL, * jobrun_id = NULL;
 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
 	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &archive_id);
+	so_value_unpack(db, "{sS}", "id", &archive_id);
 
 	db = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+	so_value_unpack(db, "{sS}", "jobrun id", &jobrun_id);
 
 	so_value_free(key);
 
@@ -4139,8 +4104,6 @@ static int so_database_postgresql_update_link_archive(struct so_database_connect
 		so_database_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(archive_id);
-	free(jobrun_id);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -4194,19 +4157,16 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 	struct so_value * db = so_value_hashtable_get(backup->job->db_data, key, false, false);
 	so_value_free(key);
 
-	char * jobrun_id = NULL;
-	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+	const char * jobrun_id = NULL;
+	so_value_unpack(db, "{sS}", "jobrun id", &jobrun_id);
 
 	char * backup_id = NULL, * nbmedia, * nbarchives;
 	int size = asprintf(&nbmedia, "%ld", backup->nb_medias);
-	if (size < 0) {
-		free(jobrun_id);
+	if (size < 0)
 		return -2;
-	}
 
 	size = asprintf(&nbarchives, "%ld", backup->nb_archives);
 	if (size < 0) {
-		free(jobrun_id);
 		free(nbmedia);
 		return -2;
 	}
@@ -4223,7 +4183,6 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 	}
 
 	PQclear(result);
-	free(jobrun_id);
 	free(nbmedia);
 	free(nbarchives);
 
@@ -4245,7 +4204,8 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 		struct so_value * media_db = so_value_hashtable_get(bv->media->db_data, key, false, false);
 		so_value_free(key);
 
-		char * seq, * size, * media_id, * media_position;
+		const char * media_id = NULL;
+		char * seq, * size, * media_position;
 		int str_size = asprintf(&seq, "%u", i);
 		if (str_size < 0) {
 			free(seq);
@@ -4265,7 +4225,7 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 			return -2;
 		}
 
-		so_value_unpack(media_db, "{ss}", "id", &media_id);
+		so_value_unpack(media_db, "{sS}", "id", &media_id);
 
 		const char * param[] = { seq, size, media_id, media_position, backup_id };
 		result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
@@ -4280,7 +4240,6 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 
 		PQclear(result);
 		free(media_position);
-		free(media_id);
 		free(seq);
 		free(size);
 
@@ -4327,8 +4286,8 @@ static struct so_backup * so_database_postgresql_get_backup(struct so_database_c
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 
-	char * job_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &job_id);
+	const char * job_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &job_id);
 
 	const char * query = "select_backup_by_job";
 	so_database_postgresql_prepare(self, query, "SELECT b.id, b.timestamp, b.nbmedia, b.nbarchive FROM backup b INNER JOIN job j ON j.id = $1 AND b.id = j.backup LIMIT 1");
@@ -4358,7 +4317,6 @@ static struct so_backup * so_database_postgresql_get_backup(struct so_database_c
 	}
 
 	PQclear(result);
-	free(job_id);
 
 	if (status == PGRES_FATAL_ERROR) {
 		so_value_free(key);
@@ -4434,8 +4392,8 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(volume->db_data, key, false, false);
 
-	char * backup_volume_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &backup_volume_id);
+	const char * backup_volume_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &backup_volume_id);
 
 	char * query = "update_backup_volume";
 	so_database_postgresql_prepare(self, query, "UPDATE backupvolume SET checktime = $1, checksumok = $2 WHERE id = $3");
@@ -4450,7 +4408,7 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
 
-	free(backup_volume_id);
+	PQclear(result);
 
 	return status == PGRES_FATAL_ERROR ? 1 : 0;
 }
@@ -4589,10 +4547,10 @@ static struct so_value * so_database_postgresql_get_selected_files_by_job(struct
 	const char * query = "select_selected_path_by_job";
 	so_database_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1) ORDER BY path");
 
-	char * job_id = NULL;
+	const char * job_id = NULL;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * job_data = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_unpack(job_data, "{ss}", "id", &job_id);
+	so_value_unpack(job_data, "{sS}", "id", &job_id);
 	so_value_free(key);
 
 	const char * param[] = { job_id };
@@ -4609,7 +4567,6 @@ static struct so_value * so_database_postgresql_get_selected_files_by_job(struct
 	}
 
 	PQclear(result);
-	free(job_id);
 
 	return selected_files;
 }

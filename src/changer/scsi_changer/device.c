@@ -287,8 +287,8 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		while (so_value_iterator_has_next(iter)) {
 			struct so_value * dr = so_value_iterator_get_value(iter, true);
 
-			char * vendor = NULL, * model = NULL, * serial_number = NULL;
-			so_value_unpack(dr, "{ssssss}",
+			const char * vendor = NULL, * model = NULL, * serial_number = NULL;
+			so_value_unpack(dr, "{sSsSsS}",
 				"vendor", &vendor,
 				"model", &model,
 				"serial number", &serial_number
@@ -305,10 +305,6 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 			strncpy(dev + 24, serial_number, 10);
 
 			so_value_hashtable_put2(sochgr_scsi_changer_available_drives, dev, dr, false);
-
-			free(vendor);
-			free(model);
-			free(serial_number);
 		}
 		so_value_iterator_free(iter);
 	}

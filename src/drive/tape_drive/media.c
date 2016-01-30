@@ -278,8 +278,8 @@ int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_da
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * node = so_value_iterator_get_value(iter, false);
 
-		char * name = NULL, * value = NULL;
-		so_value_unpack(node, "{ssss}", "name", &name, "value", &value);
+		const char * name = NULL, * value = NULL;
+		so_value_unpack(node, "{sSsS}", "name", &name, "value", &value);
 
 		if (name == NULL)
 			continue;
@@ -291,9 +291,6 @@ int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_da
 			strncpy(media->uuid, value, 37);
 		else if (!strcmp(name, "blocksize"))
 			sscanf(value, "%zd", &media->block_size);
-
-		free(name);
-		free(value);
 	}
 	so_value_iterator_free(iter);
 

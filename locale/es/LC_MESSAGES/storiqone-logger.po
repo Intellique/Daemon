@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:25+0100\n"
+        "POT-Creation-Date: 2016-01-29 22:56+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/logger/file.c:147
+#: src/logger/file.c:146
 msgid   "Log: file: logrotate detected"
 msgstr  "Log: file: logrotate detectado"
 
@@ -46,25 +46,25 @@ msgstr  "Loader: fallo al cargar de \"%s\" porque %s"
 msgid   "Storiqoned has hang up"
 msgstr  "el demonio se ha cerrado inesperadamente"
 
-#: src/logger/main.c:83
+#: src/logger/main.c:82
 #, c-format
 msgid   "Starting logger process (pid: %d, ppid: %d, sid: %d)"
 msgstr  "Arranque o del proceso de jornalización (pid: %d, ppid: %d, sid: %d)"
 
-#: src/logger/main.c:86
+#: src/logger/main.c:85
 #, c-format
 msgid   "Checksum: %s, last commit: %s"
 msgstr  "huellas: %s, último commit: %s "
 
-#: src/logger/main.c:92
+#: src/logger/main.c:91
 msgid   "No configuration received from daemon, will now quit"
 msgstr  "Ho hay configuración de parte del demonio, salir ahora"
 
-#: src/logger/main.c:104
+#: src/logger/main.c:103
 msgid   "Modules loaded"
 msgstr  "Módulos cargados"
 
-#: src/logger/main.c:118
+#: src/logger/main.c:117
 #, c-format
 msgid   "Logger process (pid: %d) exiting normally"
 msgstr  "Proceso de jornalización (pid: %d) apagado"
