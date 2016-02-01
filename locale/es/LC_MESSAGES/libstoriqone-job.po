@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 20:04+0100\n"
+        "POT-Creation-Date: 2016-02-01 12:41+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -28,22 +28,22 @@ msgstr  "El demonio se ha cerrado inesperadamente"
 #: src/libstoriqone-job/main.c:107
 #, c-format
 msgid   "Starting warm up job (type: %s, id: %s, name: %s)"
-msgstr  ""
+msgstr  "Arranque de la preparación de la tarea (type: %s, id: %s, nombre: %s)"
 
 #: src/libstoriqone-job/main.c:116
 #, c-format
 msgid   "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"
-msgstr  ""
+msgstr  "Preparación de la tarea (type: %s, id: %s, nombre: %s) "
 
 #: src/libstoriqone-job/main.c:135
 #, c-format
 msgid   "Starting job (type: %s, id: %s, name: %s)"
-msgstr  ""
+msgstr  "Arranque de la tarea (type: %s, id: %s, nombre: %s)"
 
 #: src/libstoriqone-job/main.c:139
 #, c-format
 msgid   "Job exit (type: %s, id: %s, name: %s), exit code: %d"
-msgstr  ""
+msgstr  "Tarea terminada (type: %s, id: %s, name: %s), codigo de salida: %d"
 
 #: src/libstoriqone-job/main.c:188
 #, c-format
@@ -72,19 +72,19 @@ msgstr  "Fallo de formateo del media"
 #: src/libstoriqone-job/media.c:224
 #, c-format
 msgid   "Checking media header '%s' was successful"
-msgstr  "verificación del encabezamiento del media  \"%s\" en curso"
+msgstr  "Verificación del encabezamiento del media  \"%s\" en curso"
 
 #: src/libstoriqone-job/media.c:228
 #, c-format
 msgid   "Checking media header '%s': failed"
-msgstr  "verificación del encabezamiento del media \"%s\" fallo"
+msgstr  "Verificación del encabezamiento del media \"%s\": fallo"
 
 #: src/libstoriqone-job/script.c:46
 #, c-format
 msgid   "run script: %d script found, type: %s"
 msgid_plural    "run script: %d scripts found, type: %s"
 msgstr[0]       "Ejecución del script: %d script encontrado, tipo: %s"
-msgstr[1]       "Ejecución del script: %d scripts encontrados; tipo: %s"
+msgstr[1]       "Ejecución del script: %d scripts encontrados, tipo: %s"
 
 #: src/libstoriqone-job/script.c:62
 #, c-format
@@ -119,16 +119,16 @@ msgstr  "el script \"%s\" no ha renviado \"shuold run\""
 #: src/libstoriqone-job/script.c:165
 #, c-format
 msgid   "script '%s' return message: %s"
-msgstr  "el script \"%s\" a enviado el mensaje: %s"
+msgstr  "el script \"%s\" ha enviado el mensaje: %s"
 
-#~ msgid        "Job exit (type: %s, key: %s, name: %s), exit code: %d"
-#~ msgstr       "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"
-
-#~ msgid        "Starting job (type: %s, key: %s, name: %s)"
-#~ msgstr       "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
+#~ msgid        "Starting simulation of job (type: %s, key: %s, name: %s)"
+#~ msgstr       "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
 
 #~ msgid        "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
 #~ msgstr       "Simulación de la tarea (tipo: %s, llave: %s, nombre: %s) a fallado con el codigo: %d  "
 
-#~ msgid        "Starting simulation of job (type: %s, key: %s, name: %s)"
-#~ msgstr       "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
+#~ msgid        "Starting job (type: %s, key: %s, name: %s)"
+#~ msgstr       "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
+
+#~ msgid        "Job exit (type: %s, key: %s, name: %s), exit code: %d"
+#~ msgstr       "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"

@@ -44,7 +44,7 @@ msgstr  "[%s %s #%u]: abertura de el media \"%s\" lectura de la posición #%d"
 #: src/libstoriqone-drive/listen.c:684
 #, c-format
 msgid   "[%s %s #%u]: New connection from job (id: %s, num runs: %u)"
-msgstr  ""
+msgstr  "[%s %s #%u]: Nueva conexión de la tarea (id: %s, # ejecución: %u)"
 
 #: src/libstoriqone-drive/listen.c:827
 #, c-format

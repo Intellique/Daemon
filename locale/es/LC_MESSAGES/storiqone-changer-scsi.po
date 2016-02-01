@@ -38,7 +38,7 @@ msgstr  "[%s | %s]: descargar del media \"%s\" desde el lector #%d terminado con
 #: src/changer/scsi_changer/device.c:200
 #, c-format
 msgid   "Critical, scsi changer %s %s (serial: %s) is not enabled"
-msgstr  ""
+msgstr  "Critico, el brazo artículado scsi \"%s\" \"%s\" (número de serie: %s) no está activo"
 
 #: src/changer/scsi_changer/device.c:215 src/changer/scsi_changer/device.c:234
 #, c-format
@@ -48,17 +48,17 @@ msgstr  "Fallo leyendo el enlace simbólico del fichero \"%s\" porque %m"
 #: src/changer/scsi_changer/device.c:267
 #, c-format
 msgid   "Found scsi changer %s %s, serial: %s"
-msgstr  "Encontró el brazo mecánico scsi %s %s, número de serie: %s"
+msgstr  "Encontró el brazo artículado scsi %s %s, número de serie: %s"
 
 #: src/changer/scsi_changer/device.c:276
 #, c-format
 msgid   "Critical, scsi changer %s %s (serial: %s) was not found"
-msgstr  ""
+msgstr  "Critico, el brazo artículado scsi \"%s\" \"%s\" (número de serie: %s) no ha sido encontrado"
 
 #: src/changer/scsi_changer/device.c:335
 #, c-format
 msgid   "Warning, scsi changer %s %s (serial: %s) is offline"
-msgstr  ""
+msgstr  "Attención, el brazo articulado \"%s\" \"%s\" (número de serie: %s) está fuera de linea"
 
 #: src/changer/scsi_changer/device.c:354
 #, c-format

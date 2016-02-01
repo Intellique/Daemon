@@ -39,12 +39,12 @@ msgstr  "[%s | %s]: el lector (%s#%u) no puede utilizar los medias de formato (%
 #: src/libstoriqone-changer/listen.c:282 src/libstoriqone-changer/listen.c:410
 #, c-format
 msgid   "[%s | %s]: job (id: %s) gets media '%s'"
-msgstr  ""
+msgstr  "[%s | %s]: tarea (id: %s) obtiene los medias \"%s\""
 
 #: src/libstoriqone-changer/listen.c:299
 #, c-format
 msgid   "[%s | %s]: no free drive available"
-msgstr  ""
+msgstr  "[%s | %s]: ningún disco disponible"
 
 #: src/libstoriqone-changer/listen.c:373
 #, c-format

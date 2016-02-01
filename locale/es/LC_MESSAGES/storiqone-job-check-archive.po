@@ -42,36 +42,36 @@ msgstr  "Arranque del hilo de ejecución #%u"
 #: src/job/check-archive/quick_mode.c:184
 #, c-format
 msgid   "Worker #%u has finished with %s and %s"
-msgstr  ""
+msgstr  "El trabajador #%u ha terminado \"%s\" y \"%s\""
 
 #: src/job/check-archive/quick_mode.c:185
 #, c-format
 msgid   "%u warning"
 msgid_plural    "%u warnings"
-msgstr[0]       ""
-msgstr[1]       ""
+msgstr[0]       "%u alerta"
+msgstr[1]       "%u alertas"
 
 #: src/job/check-archive/quick_mode.c:186
 #, c-format
 msgid   "%u error"
 msgid_plural    "%u errors"
-msgstr[0]       ""
-msgstr[1]       ""
+msgstr[0]       "%u error"
+msgstr[1]       "%u errores"
 
 #: src/job/check-archive/quick_mode.c:236
 #, c-format
 msgid   "Worker #%u : error while reading from media '%s'"
-msgstr  ""
+msgstr  "El trabajador #%u: error al leer desde el media \"%s\""
 
 #: src/job/check-archive/quick_mode.c:257
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is correct"
-msgstr  ""
+msgstr  "El trabajador #%u: la integridad de los datos del volumen \"%s\" es correcto"
 
 #: src/job/check-archive/quick_mode.c:261
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is not correct"
-msgstr  ""
+msgstr  "El trabajador #%u: la integridad de los daros del volumen \"%s\" no es correcto"
 
 #: src/job/check-archive/thorough_mode.c:52
 #, c-format
@@ -81,24 +81,24 @@ msgstr  "Arranque de la verificacón del archivo (%s) en modo minucioso"
 #: src/job/check-archive/thorough_mode.c:134
 #, c-format
 msgid   "Error while reading from media '%s'"
-msgstr  ""
+msgstr  "Error de lectira desde el media \"%s\""
 
 #: src/job/check-archive/thorough_mode.c:153
 #, c-format
 msgid   "Data integrity of file '%s' is correct"
-msgstr  ""
+msgstr  "La integridad de los datos del fichero \"%s\" es correcto"
 
 #: src/job/check-archive/thorough_mode.c:157
 #, c-format
 msgid   "Data integrity of file '%s' is not correct"
-msgstr  ""
+msgstr  "La integridad de los datos del fichero \"%s\" no es correcto"
 
 #: src/job/check-archive/thorough_mode.c:194
 #, c-format
 msgid   "Data integrity of volume '%s' is correct"
-msgstr  ""
+msgstr  "La integridad de los datos del volumen \"%s\" es correcto"
 
 #: src/job/check-archive/thorough_mode.c:198
 #, c-format
 msgid   "Data integrity of volume '%s' is not correct"
-msgstr  ""
+msgstr  "La integridad de los datos del volumen \"%s\" no es correcto"

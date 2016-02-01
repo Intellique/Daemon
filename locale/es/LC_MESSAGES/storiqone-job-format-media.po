@@ -121,7 +121,7 @@ msgstr  "Utilise el tamaño del boque predeterminado \"%s\" defina el formato de
 #: src/job/format-media/format-media.c:328
 #, c-format
 msgid   "Will use default block size '%s' defined by media format '%s' because type of media '%s' is WORM"
-msgstr  "Utilizará el tamaño del bloque \"%s\" predeterminado por el formato de media \"%s\" porque el tipo de media \"%s\" es "
+msgstr  "Utilizará el tamaño del bloque \"%s\" predeterminado por el formato de media \"%s\" porque el tipo de media \"%s\" "
         "WORM"
 
 #: src/job/format-media/format-media.c:334
