@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 19:42+0100\n"
+        "POT-Creation-Date: 2016-01-30 19:55+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -109,20 +109,20 @@ msgstr  "Arranque del lector (tipo: %s, fabricante: %s, modelo: %s, número de s
 msgid   "Drive (type: %s) will stop"
 msgstr  "El lector (type : %s) va a detenerse"
 
-#: src/libstoriqone-drive/media.c:144 src/libstoriqone-drive/media.c:231 src/libstoriqone-drive/media.c:318
+#: src/libstoriqone-drive/media.c:144 src/libstoriqone-drive/media.c:230 src/libstoriqone-drive/media.c:316
 #, c-format
 msgid   "Checking Storiq One header in media: %s"
 msgstr  "Verificación del encabezamiento de Storiq One en el media: %s"
 
-#: src/libstoriqone-drive/media.c:148 src/libstoriqone-drive/media.c:235 src/libstoriqone-drive/media.c:322
+#: src/libstoriqone-drive/media.c:148 src/libstoriqone-drive/media.c:234 src/libstoriqone-drive/media.c:320
 #, c-format
 msgid   "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"
 msgstr  "Situar el encabezamiento de Storiq One en el media (uuid : %s, etiqueta : %s, tamaño del bloque: %zd) "
 
-#: src/libstoriqone-drive/media.c:163 src/libstoriqone-drive/media.c:250 src/libstoriqone-drive/media.c:337
+#: src/libstoriqone-drive/media.c:162 src/libstoriqone-drive/media.c:248 src/libstoriqone-drive/media.c:334
 msgid   "Checking Storiq One header in media: Failed"
 msgstr  "Verificación del encabezamiento de Storiq One en el media: fallo"
 
-#: src/libstoriqone-drive/media.c:383
+#: src/libstoriqone-drive/media.c:380
 msgid   "Failed to compute digest before writing media header"
 msgstr  "Fallo de cálculo de las huellas antes de escribir en el encabezamiento de el media"
