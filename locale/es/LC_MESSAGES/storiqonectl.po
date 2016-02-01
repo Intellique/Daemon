@@ -19,7 +19,7 @@ msgstr  "Project-Id-Version: storiqonectl v1.2\n"
 #: src/storiqonectl/config.c:75
 #, c-format
 msgid   "storiqonectl config : basic configuration\n"
-msgstr  "storiqonectl config: configuración básica\n"
+msgstr  "storiqonectl config : configuración básica\n"
 
 #: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:130 src/storiqonectl/daemon.c:186 src/storiqonectl/daemon.c:230
 #, c-format
@@ -62,14 +62,14 @@ msgstr  "storiqonectl stop : detener el demonio\n"
 #, c-format
 msgid   "storiqonectl: Found %zd drive\n"
 msgid_plural    "storiqonectl: Found %zd drives\n"
-msgstr[0]       "storiqonectl :%zd lector encontrado\n"
-msgstr[1]       "storiqonectl :%zd lectores encontrados\n"
+msgstr[0]       "storiqonectl: %zd lector encontrado\n"
+msgstr[1]       "storiqonectl: %zd lectores encontrados\n"
 
 #: src/storiqonectl/hardware.c:88 src/storiqonectl/hardware.c:100 src/storiqonectl/hardware.c:121
 #: src/storiqonectl/hardware.c:165 src/storiqonectl/hardware.c:181
 #, c-format
 msgid   "storiqonectl: Failed while reading file link '%s' because %m\n"
-msgstr  "storiqonectl : Fallo leyendo el enlace del fichero \"%s\" porque %m\n"
+msgstr  "storiqonectl: Fallo leyendo el enlace del fichero \"%s\" porque %m\n"
 
 #: src/storiqonectl/hardware.c:159
 #, c-format

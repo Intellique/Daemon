@@ -102,7 +102,7 @@ msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion 
 #: src/drive/tape_drive/device.c:919
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
-msgstr  "[ %s | %s | #°%u ]: Verificación del encabezamiento del media \"%s\""
+msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
 #: src/drive/tape_drive/device.c:928
 #, c-format
