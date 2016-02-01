@@ -39,7 +39,7 @@ struct so_drive;
 struct so_media;
 struct sodr_peer;
 
-bool sodr_media_check_header(struct sodr_peer * peer, struct so_media * media, const char * buffer, struct so_database_connection * db);
+bool sodr_media_check_header(struct sodr_peer * peer, struct so_media * media, const char * buffer, bool restore_data, struct so_database_connection * db);
 bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, char * buffer, size_t length);
 
 unsigned int sodr_media_storiqone_count_files(struct sodr_peer * peer, struct so_drive * drive, const bool * const disconnected, struct so_database_connection * db_connection);

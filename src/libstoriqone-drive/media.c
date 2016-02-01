@@ -53,12 +53,12 @@
 
 #include "storiqone.version"
 
-static bool sodr_media_read_header_v1(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed, bool check, struct so_database_connection * db);
-static bool sodr_media_read_header_v2(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed, bool check, struct so_database_connection * db);
-static bool sodr_media_read_header_v3(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed, bool check, struct so_database_connection * db);
+static bool sodr_media_read_header_v1(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed, bool restore_data, struct so_database_connection * db);
+static bool sodr_media_read_header_v2(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed, bool restore_data, struct so_database_connection * db);
+static bool sodr_media_read_header_v3(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed, bool restore_data, struct so_database_connection * db);
 
 
-bool sodr_media_check_header(struct sodr_peer * peer, struct so_media * media, const char * buffer, struct so_database_connection * db) {
+bool sodr_media_check_header(struct sodr_peer * peer, struct so_media * media, const char * buffer, bool restore_data, struct so_database_connection * db) {
 	char storiqone_version[65];
 	int media_format_version = 0;
 	int nb_parsed = 0;
@@ -71,15 +71,15 @@ bool sodr_media_check_header(struct sodr_peer * peer, struct so_media * media, c
 	if (nb_params == 2) {
 		switch (media_format_version) {
 			case 1:
-				ok = sodr_media_read_header_v1(peer, media, buffer, nb_parsed, true, db);
+				ok = sodr_media_read_header_v1(peer, media, buffer, nb_parsed, restore_data, db);
 				break;
 
 			case 2:
-				ok = sodr_media_read_header_v2(peer, media, buffer, nb_parsed, true, db);
+				ok = sodr_media_read_header_v2(peer, media, buffer, nb_parsed, restore_data, db);
 				break;
 
 			case 3:
-				ok = sodr_media_read_header_v3(peer, media, buffer, nb_parsed, true, db);
+				ok = sodr_media_read_header_v3(peer, media, buffer, nb_parsed, restore_data, db);
 				break;
 		}
 	}
@@ -87,7 +87,7 @@ bool sodr_media_check_header(struct sodr_peer * peer, struct so_media * media, c
 	return ok;
 }
 
-static bool sodr_media_read_header_v1(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed2, bool check, struct so_database_connection * db) {
+static bool sodr_media_read_header_v1(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed2, bool restore_data, struct so_database_connection * db) {
 	// M | STone (v0.1)
 	// M | Tape format: version=1
 	// O | Label: A0000002
@@ -138,10 +138,10 @@ static bool sodr_media_read_header_v1(struct sodr_peer * peer, struct so_media *
 	}
 
 	if (ok) {
-		if (check) {
+		if (!restore_data) {
 			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+			sodr_log_add_record(peer, so_job_status_running, db, ok ? so_log_level_info : so_log_level_warning, so_job_record_notif_normal,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
 				ok ? "OK" : "Failed");
 		} else {
@@ -156,10 +156,9 @@ static bool sodr_media_read_header_v1(struct sodr_peer * peer, struct so_media *
 			}
 			free(media->name);
 			media->name = strdup(name);
-			media->status = so_media_status_in_use;
 			media->block_size = block_size;
 		}
-	} else if (check)
+	} else if (!restore_data)
 		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
@@ -168,7 +167,7 @@ static bool sodr_media_read_header_v1(struct sodr_peer * peer, struct so_media *
 	return ok;
 }
 
-static bool sodr_media_read_header_v2(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed2, bool check, struct so_database_connection * db) {
+static bool sodr_media_read_header_v2(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed2, bool restore_data, struct so_database_connection * db) {
 	// M | STone (v0.2)
 	// M | Tape format: version=2
 	// M | Host: name=kazoo, uuid=40e576d7-cb14-42c2-95c5-edd14fbb638d
@@ -225,10 +224,10 @@ static bool sodr_media_read_header_v2(struct sodr_peer * peer, struct so_media *
 	}
 
 	if (ok) {
-		if (check) {
+		if (!restore_data) {
 			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+			sodr_log_add_record(peer, so_job_status_running, db, ok ? so_log_level_info : so_log_level_warning, so_job_record_notif_normal,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
 				ok ? "OK" : "Failed");
 		} else {
@@ -243,10 +242,9 @@ static bool sodr_media_read_header_v2(struct sodr_peer * peer, struct so_media *
 			}
 			free(media->name);
 			media->name = strdup(name);
-			media->status = so_media_status_in_use;
 			media->block_size = block_size;
 		}
-	} else if (check)
+	} else if (!restore_data)
 		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
@@ -255,7 +253,7 @@ static bool sodr_media_read_header_v2(struct sodr_peer * peer, struct so_media *
 	return ok;
 }
 
-static bool sodr_media_read_header_v3(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed2, bool check, struct so_database_connection * db) {
+static bool sodr_media_read_header_v3(struct sodr_peer * peer, struct so_media * media, const char * buffer, int nb_parsed2, bool restore_data, struct so_database_connection * db) {
 	// M | Storiq One (v1.2)
 	// M | Media format: version=3
 	// M | Host: name="kazoo", uuid="40e576d7-cb14-42c2-95c5-edd14fbb638d"
@@ -312,10 +310,10 @@ static bool sodr_media_read_header_v3(struct sodr_peer * peer, struct so_media *
 	}
 
 	if (ok) {
-		if (check) {
+		if (!restore_data) {
 			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+			sodr_log_add_record(peer, so_job_status_running, db, ok ? so_log_level_info : so_log_level_warning, so_job_record_notif_normal,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
 				ok ? "OK" : "Failed");
 		} else {
@@ -330,10 +328,9 @@ static bool sodr_media_read_header_v3(struct sodr_peer * peer, struct so_media *
 			}
 			free(media->name);
 			media->name = strdup(name);
-			media->status = so_media_status_in_use;
 			media->block_size = block_size;
 		}
-	} else if (check)
+	} else if (!restore_data)
 		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else

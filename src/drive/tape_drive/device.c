@@ -74,6 +74,7 @@
 #include "scsi.h"
 
 static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db);
+static bool sodr_tape_drive_check_header2(struct sodr_peer * peer, bool restore_data, struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
 static unsigned int sodr_tape_drive_count_archives(struct sodr_peer * peer, const bool * const disconnected, struct so_database_connection * db);
 static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
@@ -142,6 +143,10 @@ static struct so_drive sodr_tape_drive = {
 
 
 static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db) {
+	return sodr_tape_drive_check_header2(peer, false, db);
+}
+
+static bool sodr_tape_drive_check_header2(struct sodr_peer * peer, bool restore_data, struct so_database_connection * db) {
 	size_t block_size = sodr_tape_drive_get_block_size();
 
 	int fd = sodr_tape_drive_open_drive();
@@ -175,7 +180,7 @@ static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_data
 
 	struct so_media * media = sodr_tape_drive.slot->media;
 	// check header
-	bool ok = sodr_media_check_header(peer, media, buffer, db);
+	bool ok = sodr_media_check_header(peer, media, buffer, restore_data, db);
 	if (!ok)
 		ok = sodr_tape_drive_media_check_header(media, buffer);
 
@@ -247,10 +252,6 @@ static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct so
 }
 
 static void sodr_tape_drive_create_media(struct so_database_connection * db) {
-	int fd = sodr_tape_drive_open_drive();
-	if (fd < 0)
-		return;
-
 	struct so_media * media = malloc(sizeof(struct so_media));
 	bzero(media, sizeof(struct so_media));
 	sodr_tape_drive.slot->media = media;
@@ -263,20 +264,11 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
 	media->media_format = db->ops->get_media_format(db, (unsigned char) density_code, so_media_format_mode_linear);
 
-	sodr_tape_drive.status = so_drive_status_rewinding;
+	media->block_size = sodr_tape_drive_get_block_size();
+	if (media->block_size > 0 && media->block_size < 1024)
+		media->block_size = 1024;
 
-	static struct mtop rewind = { MTREW, 1 };
-	sodr_time_start();
-	ioctl(fd, MTIOCTOP, &rewind);
-	close(fd);
-	sodr_time_stop(&sodr_tape_drive);
-
-	sodr_tape_drive.status = so_drive_status_loaded_idle;
-
-	static char buffer[1048576];
-	ssize_t nb_read = read(fd, buffer, 1048576);
-
-	if (nb_read > 0) {
+	if (media->block_size > 0) {
 		media->status = so_media_status_foreign;
 		media->append = false;
 	} else {
@@ -287,10 +279,6 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	media->use_before = media->first_used + media->media_format->life_span;
 
 	media->load_count = 1;
-
-	media->block_size = sodr_tape_drive_get_block_size();
-	if (media->block_size < 1024)
-		media->block_size = 1024;
 
 	if (media->media_format != NULL && media->media_format->support_mam) {
 		int fd = open(scsi_device, O_RDWR);
@@ -303,7 +291,7 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 	}
 
-	sodr_tape_drive_check_header(NULL, db);
+	sodr_tape_drive_check_header2(NULL, true, db);
 }
 
 static int sodr_tape_drive_erase_media(struct sodr_peer * peer, bool quick_mode, struct so_database_connection * db) {
@@ -396,8 +384,8 @@ ssize_t sodr_tape_drive_get_block_size() {
 	unsigned int i;
 	ssize_t nb_read;
 	block_size = 1 << 16;
-	char * buffer = malloc(block_size);
-	for (i = 0; i < 4 && buffer != NULL && failed == 0; i++) {
+	static char buffer[1048576];
+	for (i = 0; i < 4 && buffer != NULL && failed == 0; i++, block_size <<= 1) {
 		sodr_tape_drive.status = so_drive_status_reading;
 
 		sodr_time_start();
@@ -424,7 +412,6 @@ ssize_t sodr_tape_drive_get_block_size() {
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: found block size: %zd"),
 				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, nb_read);
 
-			free(buffer);
 			close(fd);
 			return nb_read;
 		}
@@ -436,18 +423,8 @@ ssize_t sodr_tape_drive_get_block_size() {
 		sodr_time_stop(&sodr_tape_drive);
 
 		sodr_tape_drive.status = so_drive_status_loaded_idle;
-
-		if (failed == 0) {
-			block_size <<= 1;
-			void * new_addr = realloc(buffer, block_size);
-			if (new_addr == NULL)
-				free(buffer);
-			buffer = new_addr;
-		} else
-			break;
 	}
 
-	free(buffer);
 	close(fd);
 
 	if (media != NULL && media->media_format != NULL)
@@ -891,8 +868,10 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 			struct so_media * media = slot->media;
 
 			if (sodr_tape_drive.is_empty) {
-				sodr_tape_drive_media_free(media->private_data);
-				media->private_data = NULL;
+				if (media->private_data != NULL) {
+					sodr_tape_drive_media_free(media->private_data);
+					media->private_data = NULL;
+				}
 
 				if (slot->media != NULL) {
 					so_media_free(slot->media);

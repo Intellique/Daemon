@@ -151,7 +151,7 @@ static bool sodr_vtl_drive_check_header(struct sodr_peer * peer, struct so_datab
 
 	bool ok = true;
 	if (header != NULL) {
-		ok = sodr_media_check_header(peer, sodr_vtl_drive.slot->media, header, db);
+		ok = sodr_media_check_header(peer, sodr_vtl_drive.slot->media, header, false, db);
 		free(header);
 	}
 
