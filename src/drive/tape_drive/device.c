@@ -485,19 +485,19 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct sodr_peer
 }
 
 static struct so_format_reader * sodr_tape_drive_get_reader(struct sodr_peer * peer, int file_position, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(peer, file_position, db);
-	if (reader == NULL)
-		return NULL;
-
 	struct so_media * media = sodr_tape_drive.slot->media;
 	if (media == NULL)
 		return NULL;
 
 	struct sodr_tape_drive_media * mp = media->private_data;
-
 	switch (mp->format) {
-		case sodr_tape_drive_media_storiq_one:
+		case sodr_tape_drive_media_storiq_one: {
+			struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(peer, file_position, db);
+			if (reader == NULL)
+				return NULL;
+
 			return so_format_tar_new_reader(reader, checksums);
+		}
 
 		case sodr_tape_drive_media_ltfs: {
 			int fd = sodr_tape_drive_open_drive();
