@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-02-02 22:10+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -25,32 +25,37 @@ msgstr  "fallo al leer el enlace simbólico del fichero \"%s\" porque %m"
 msgid   "Daemon unexpectedly quit"
 msgstr  "El demonio se ha cerrado inesperadamente"
 
-#: src/libstoriqone-job/main.c:107
+#: src/libstoriqone-job/main.c:108
+#, c-format
+msgid   "Error, user '%s' is disabled otherwise job (type: %s, key: %s, name: %s) cannot be proceed with"
+msgstr  ""
+
+#: src/libstoriqone-job/main.c:117
 #, c-format
 msgid   "Starting simulation of job (type: %s, key: %s, name: %s)"
 msgstr  "Arranque de la simulación de la tarea (tipo: %s, llave: %s, nombre: %s)"
 
-#: src/libstoriqone-job/main.c:113
+#: src/libstoriqone-job/main.c:123
 #, c-format
 msgid   "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
 msgstr  "Simulación de la tarea (tipo: %s, llave: %s, nombre: %s) a fallado con el codigo: %d  "
 
-#: src/libstoriqone-job/main.c:127
+#: src/libstoriqone-job/main.c:138
 #, c-format
 msgid   "Starting job (type: %s, key: %s, name: %s)"
 msgstr  "Arranque de la tarea (tipo: %s, llave: %s, nombre: %s) "
 
-#: src/libstoriqone-job/main.c:131
+#: src/libstoriqone-job/main.c:142
 #, c-format
 msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
 msgstr  "Fin de la tarea (tipo: %s, llave: %s, nombre: %s), codigo de salida: %d"
 
-#: src/libstoriqone-job/main.c:175
+#: src/libstoriqone-job/main.c:186
 #, c-format
 msgid   "Starting job (type: %s)"
 msgstr  "Arranque de la tarea (tipo: %s)"
 
-#: src/libstoriqone-job/main.c:206
+#: src/libstoriqone-job/main.c:217
 #, c-format
 msgid   "Initializing job (type: %s)"
 msgstr  "Inicializanción de la tarea (tipo : %s)"

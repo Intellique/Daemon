@@ -106,6 +106,7 @@ static struct so_value * so_database_postgresql_update_vtl(struct so_database_co
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
 static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job);
+static bool so_database_postgresql_get_is_user_disabled(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_stop_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_sync_job(struct so_database_connection * connect, struct so_job * job);
@@ -187,6 +188,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.add_job_record   = so_database_postgresql_add_job_record,
 	.add_report       = so_database_postgresql_add_report,
 	.get_restore_path = so_database_postgresql_get_restore_path,
+	.is_user_disabled = so_database_postgresql_get_is_user_disabled,
 	.start_job        = so_database_postgresql_start_job,
 	.stop_job         = so_database_postgresql_stop_job,
 	.sync_job         = so_database_postgresql_sync_job,
@@ -2454,6 +2456,38 @@ static char * so_database_postgresql_get_restore_path(struct so_database_connect
 	free(job_id);
 
 	return path;
+}
+
+static bool so_database_postgresql_get_is_user_disabled(struct so_database_connection * connect, struct so_job * job) {
+	if (connect == NULL || job == NULL)
+		return false;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_free(key);
+
+	char * job_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &job_id);
+
+	const char * query = "check_user_is_enabled";
+	so_database_postgresql_prepare(self, query, "SELECT disabled FROM users wWHERE id = (SELECT login FROM job WHERE id = $1 LIMIT 1)");
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool disabled = true;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_bool(result, 0, 0, &disabled);
+
+	PQclear(result);
+	free(job_id);
+
+	return disabled;
 }
 
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job) {
