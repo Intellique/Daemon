@@ -47,7 +47,9 @@
 #include <libstoriqone-drive/time.h>
 
 #include "ltfs.h"
+#include "../../io/io.h"
 #include "../../util/st.h"
+#include "../../util/xml.h"
 
 int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, struct so_value * option, struct so_database_connection * db) {
 	ssize_t block_size = 0, partition_size = 0;
@@ -145,9 +147,11 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 	char label[81];
 	snprintf(label, 81, "VOL1%6sL             LTFS                                                   4", media->label != NULL ? media->label : "");
 
-	failed = sodr_tape_drive_st_set_position(drive, fd, 0, 0, db);
+	struct so_stream_writer * writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 0, 0, false, db);
+	if (writer == NULL)
+		return 1;
 
-	ssize_t nb_write = write(fd, label, 80);
+	ssize_t nb_write = writer->ops->write(writer, label, 80);
 	if (nb_write < 0) {
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while writing label on first partition because %m"),
@@ -156,19 +160,33 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 		return nb_write;
 	}
 
-	failed = sodr_tape_drive_st_write_end_of_file(drive, fd);
+	failed = sodr_tape_drive_writer_close2(writer, false);
 	if (failed != 0)
 		return failed;
 
-	// time_t format_time = time(NULL);
+	/**
+	 * Write ltfs label on first partition
+	 */
+	time_t format_time = time(NULL);
 
 	uuid_t raw_uuid;
 	uuid_generate(raw_uuid);
 
 	char uuid[37];
-	 uuid_unparse_lower(raw_uuid, uuid);
+	uuid_unparse_lower(raw_uuid, uuid);
 
-	// struct so_value * ltfs_label = sodr_tape_drive_format_ltfs_create_label(format_time, uuid, block_size);
+	struct so_value * ltfs_label = sodr_tape_drive_format_ltfs_create_label(format_time, uuid, block_size);
+
+	failed = writer->ops->create_new_file(writer);
+	if (failed != 0)
+		return failed;
+
+	nb_write = sodr_tape_drive_xml_encode_stream(writer, ltfs_label);
+	if (nb_write < 0) {
+		writer->ops->close(writer);
+		writer->ops->free(writer);
+		return 1;
+	}
 
 	return 0;
 }

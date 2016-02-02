@@ -86,6 +86,10 @@ static void sodr_tape_drive_xml_character_data(void * userData, const XML_Char *
 }
 
 ssize_t sodr_tape_drive_xml_encode_fd(int fd, struct so_value * xml) {
+	ssize_t nb_write = dprintf(fd, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	if (nb_write < 0)
+		return nb_write;
+
 	struct sodr_tape_drive_xml_encoder encoder = {
 		.write = sodr_tape_drive_xml_encode_fd_write,
 
@@ -93,7 +97,11 @@ ssize_t sodr_tape_drive_xml_encode_fd(int fd, struct so_value * xml) {
 		.writer = NULL
 	};
 
-	return sodr_tape_drive_xml_encode_inner(&encoder, xml);
+	ssize_t nb_write2 = sodr_tape_drive_xml_encode_inner(&encoder, xml);
+	if (nb_write2)
+		return nb_write2;
+
+	return nb_write + nb_write2;
 }
 
 ssize_t sodr_tape_drive_xml_encode_fd_write(struct sodr_tape_drive_xml_encoder * context, const char * buffer, ssize_t length) {
@@ -184,6 +192,10 @@ ssize_t sodr_tape_drive_xml_encode_inner_write(struct sodr_tape_drive_xml_encode
 }
 
 ssize_t sodr_tape_drive_xml_encode_stream(struct so_stream_writer * writer, struct so_value * xml) {
+	ssize_t nb_write = writer->ops->write(writer, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", 39);
+	if (nb_write < 0)
+		return nb_write;
+
 	struct sodr_tape_drive_xml_encoder encoder = {
 		.write = sodr_tape_drive_xml_encode_stream_write,
 
@@ -191,7 +203,11 @@ ssize_t sodr_tape_drive_xml_encode_stream(struct so_stream_writer * writer, stru
 		.writer = writer
 	};
 
-	return sodr_tape_drive_xml_encode_inner(&encoder, xml);
+	ssize_t nb_write2 =  sodr_tape_drive_xml_encode_inner(&encoder, xml);
+	if (nb_write2)
+		return nb_write2;
+
+	return nb_write + nb_write2;
 }
 
 ssize_t sodr_tape_drive_xml_encode_stream_write(struct sodr_tape_drive_xml_encoder * context, const char * buffer, ssize_t length) {
