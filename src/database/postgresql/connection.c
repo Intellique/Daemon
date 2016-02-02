@@ -765,6 +765,7 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 	}
 
 	PQclear(result);
+	free(density_code);
 
 	return medias;
 }
@@ -1109,6 +1110,8 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 			so_value_list_push(pools, so_value_new_custom(new_pool, so_pool_free2), true);
 		}
 	}
+
+	PQclear(result);
 
 	return pools;
 }
@@ -3260,6 +3263,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_d
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 	so_value_unpack(db, "{ss}", "id", &job_id);
+	so_value_free(key);
 
 	struct so_archive * archive = NULL;
 
