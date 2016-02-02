@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 19:27+0100\n"
+        "POT-Creation-Date: 2016-02-18 11:07+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -120,12 +120,12 @@ msgstr  "Error al añadir un fichero (%s) o pool%s"
 msgid   "Archive continue on media (%s)"
 msgstr  "Archivo continua en el media (%s)"
 
-#: src/job/create-archive/worker.c:666
+#: src/job/create-archive/worker.c:671
 #, c-format
 msgid   "Warning, not archiving to pool '%s': not enough space (space reserved: %s, space required: %s)"
 msgstr  "Atención, imposible de archivar en el pool \"%s\": no hay suficiente espacio (espacio reservado: %s, espacio "
         "\"requerido: %s\""
 
-#: src/job/create-archive/worker.c:676
+#: src/job/create-archive/worker.c:681
 msgid   "Failed to start database transaction"
 msgstr  "Fallo al iniciar una nueva transacción de base de datos"
