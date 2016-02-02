@@ -138,13 +138,14 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Succeed to format media '%s' with two partition"),
 			drive->vendor, drive->model, drive->index, media->name);
 
+
 	/**
-	 * Write volume label
+	 * Write volume label on first partition
 	 */
 	char label[81];
 	snprintf(label, 81, "VOL1%6sL             LTFS                                                   4", media->label != NULL ? media->label : "");
 
-	failed = sodr_tape_drive_st_set_position(drive, fd, 0, 0, NULL, db);
+	failed = sodr_tape_drive_st_set_position(drive, fd, 0, 0, db);
 
 	ssize_t nb_write = write(fd, label, 80);
 	if (nb_write < 0) {
@@ -159,10 +160,15 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 	if (failed != 0)
 		return failed;
 
-	time_t format_time = time(NULL);
+	// time_t format_time = time(NULL);
 
-	uuid_t uuid;
-	uuid_generate(uuid);
+	uuid_t raw_uuid;
+	uuid_generate(raw_uuid);
+
+	char uuid[37];
+	 uuid_unparse_lower(raw_uuid, uuid);
+
+	// struct so_value * ltfs_label = sodr_tape_drive_format_ltfs_create_label(format_time, uuid, block_size);
 
 	return 0;
 }

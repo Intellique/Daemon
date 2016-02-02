@@ -51,15 +51,15 @@
 
 #include "storiqone.h"
 
-static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct sodr_peer * peer, struct so_drive * drive, int fd, struct so_database_connection * db);
+static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_drive * drive, int fd, struct so_database_connection * db);
 
 
-static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct sodr_peer * peer, struct so_drive * drive, int fd, struct so_database_connection * db) {
+static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct so_drive * drive, int fd, struct so_database_connection * db) {
 	struct so_media * media = drive->slot->media;
 	if (media == NULL)
 		return -1;
 
-	sodr_log_add_record(peer, so_job_status_running, db, so_log_level_notice, so_job_record_notif_normal,
+	sodr_log_add_record(so_job_status_running, db, so_log_level_notice, so_job_record_notif_normal,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Finding best block size"),
 		drive->vendor, drive->model, drive->index);
 
@@ -84,7 +84,7 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct sodr
 	for (current_block_size = media->media_format->block_size; current_block_size < 1048576; current_block_size <<= 1) {
 		so_file_convert_size_to_string(current_block_size, buf_size, 24);
 
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Test (block size: %s)"),
 			drive->vendor, drive->model, drive->index, buf_size);
 
@@ -125,7 +125,7 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct sodr
 
 		char buf_speed[24];
 		so_file_convert_size_to_string((ssize_t) speed, buf_speed, 24);
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Test (block size: %s), throughput: %s/s"),
 			drive->vendor, drive->model, drive->index, buf_size, buf_speed);
 
@@ -143,7 +143,7 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct sodr
 	}
 	free(buffer);
 
-	sodr_log_add_record(peer, so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Found best block size: %s"),
 		drive->vendor, drive->model, drive->index, buf_size);
 
@@ -153,7 +153,7 @@ static ssize_t sodr_tape_drive_format_storiqone_find_best_block_size(struct sodr
 	return current_block_size;
 }
 
-int sodr_tape_drive_format_storiqone_format_media(struct sodr_peer * peer, struct so_drive * drive, int fd, struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
+int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int fd, struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
 	ssize_t block_size = 0;
 	so_value_unpack(option, "{sz}", "block size", &block_size);
 
@@ -161,7 +161,7 @@ int sodr_tape_drive_format_storiqone_format_media(struct sodr_peer * peer, struc
 		return 1;
 
 	if (block_size == 0)
-		block_size = sodr_tape_drive_format_storiqone_find_best_block_size(peer, drive, fd, db);
+		block_size = sodr_tape_drive_format_storiqone_find_best_block_size(drive, fd, db);
 
 	if (block_size < 0)
 		return 1;

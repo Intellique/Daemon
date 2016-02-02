@@ -122,7 +122,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 	struct so_media * media = drive->slot->media;
 	struct sodr_tape_drive_media * mp = media->private_data;
 
-	struct so_stream_reader * reader = drive->ops->get_raw_reader(NULL, 0, db_connect);
+	struct so_stream_reader * reader = drive->ops->get_raw_reader(0, db_connect);
 
 	char buffer_label[82];
 	ssize_t nb_read = reader->ops->read(reader, buffer_label, 82);
@@ -138,7 +138,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 		so_string_rtrim(mp->data.ltfs.owner_identifier, ' ');
 
 
-	reader = drive->ops->get_raw_reader(NULL, 3, db_connect);
+	reader = drive->ops->get_raw_reader(3, db_connect);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "Failed to read LTFS index from media '%s'"),
@@ -209,7 +209,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_database_connection * db_connect) {
 	struct so_media * media = drive->slot->media;
 
-	struct so_stream_reader * reader = drive->ops->get_raw_reader(NULL, 1, db_connect);
+	struct so_stream_reader * reader = drive->ops->get_raw_reader(1, db_connect);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "Failed to read LTFS label from media '%s'"),

@@ -37,8 +37,9 @@
 
 #include "peer.h"
 
-int sodr_log_add_record(const struct sodr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
+int sodr_log_add_record(enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
 	char * message = NULL;
+	struct sodr_peer * peer = sodr_peer_get();
 
 	va_list va;
 	va_start(va, format);

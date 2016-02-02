@@ -138,6 +138,7 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 	}
 
 	peer->owned = false;
+	sodr_peer_set(NULL);
 	sodr_listen_remove_peer(peer);
 
 	sodr_listen_reset_peer();

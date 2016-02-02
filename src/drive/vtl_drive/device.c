@@ -64,20 +64,20 @@
 #include "device.h"
 #include "io.h"
 
-static bool sodr_vtl_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db);
+static bool sodr_vtl_drive_check_header(struct so_database_connection * db);
 static bool sodr_vtl_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
-static unsigned int sodr_vtl_drive_count_archives(struct sodr_peer * peer, const bool * const disconnected, struct so_database_connection * db);
-static struct so_format_writer * sodr_vtl_drive_create_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
+static unsigned int sodr_vtl_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
+static struct so_format_writer * sodr_vtl_drive_create_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 static bool sodr_vtl_drive_erase_file(const char * path);
-static int sodr_vtl_drive_erase_media(struct sodr_peer * peer, bool quick_mode, struct so_database_connection * db);
-static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool * pool, struct so_value * option, struct so_database_connection * db);
-static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(struct sodr_peer * peer, int file_position, struct so_database_connection * db);
-static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct sodr_peer * peer, struct so_database_connection * db);
-static struct so_format_reader * sodr_vtl_drive_get_reader(struct sodr_peer * peer, int file_position, struct so_value * checksums, struct so_database_connection * db);
-static struct so_format_writer * sodr_vtl_drive_get_writer(struct sodr_peer * peer, struct so_value * checksums, struct so_database_connection * db);
+static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connection * db);
+static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_value * option, struct so_database_connection * db);
+static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db);
+static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db);
+static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
+static struct so_format_writer * sodr_vtl_drive_get_writer(struct so_value * checksums, struct so_database_connection * db);
 static int sodr_vtl_drive_init(struct so_value * config, struct so_database_connection * db_connect);
-static struct so_format_reader * sodr_vtl_drive_open_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
-static struct so_archive * sodr_vtl_drive_parse_archive(struct sodr_peer * peer, const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
+static struct so_format_reader * sodr_vtl_drive_open_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
+static struct so_archive * sodr_vtl_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_vtl_drive_reset(struct so_database_connection * db);
 static int sodr_vtl_drive_update_status(struct so_database_connection * db);
 
@@ -127,7 +127,7 @@ static struct so_drive sodr_vtl_drive = {
 };
 
 
-static bool sodr_vtl_drive_check_header(struct sodr_peer * peer, struct so_database_connection * db) {
+static bool sodr_vtl_drive_check_header(struct so_database_connection * db) {
 	sodr_vtl_drive.status = so_drive_status_reading;
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
@@ -151,7 +151,7 @@ static bool sodr_vtl_drive_check_header(struct sodr_peer * peer, struct so_datab
 
 	bool ok = true;
 	if (header != NULL) {
-		ok = sodr_media_check_header(peer, sodr_vtl_drive.slot->media, header, db);
+		ok = sodr_media_check_header(sodr_vtl_drive.slot->media, header, db);
 		free(header);
 	}
 
@@ -165,16 +165,16 @@ static bool sodr_vtl_drive_check_support(struct so_media_format * format, bool f
 	return so_media_format_cmp(format, sodr_vtl_media_format) == 0;
 }
 
-static unsigned int sodr_vtl_drive_count_archives(struct sodr_peer * peer, const bool * const disconnected, struct so_database_connection * db) {
+static unsigned int sodr_vtl_drive_count_archives(const bool * const disconnected, struct so_database_connection * db) {
 	struct so_media * media = sodr_vtl_drive.slot->media;
 	if (media == NULL)
 		return 0;
 
-	return sodr_media_storiqone_count_files(peer, &sodr_vtl_drive, disconnected, db);
+	return sodr_media_storiqone_count_files(&sodr_vtl_drive, disconnected, db);
 }
 
-static struct so_format_writer * sodr_vtl_drive_create_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_writer * raw_writer = sodr_vtl_drive_get_raw_writer(peer, db);
+static struct so_format_writer * sodr_vtl_drive_create_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_writer * raw_writer = sodr_vtl_drive_get_raw_writer(db);
 	if (raw_writer == NULL)
 		return NULL;
 
@@ -194,7 +194,7 @@ static bool sodr_vtl_drive_erase_file(const char * path) {
 	return failed == 0;
 }
 
-static int sodr_vtl_drive_erase_media(struct sodr_peer * peer, bool quick_mode, struct so_database_connection * db) {
+static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connection * db) {
 	char * files;
 	int size = asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
 	if (size < 0)
@@ -207,7 +207,7 @@ static int sodr_vtl_drive_erase_media(struct sodr_peer * peer, bool quick_mode, 
 	int ret = glob(files, 0, NULL, &gl);
 	if (ret != 0 && ret != GLOB_NOMATCH) {
 		struct so_media * media = sodr_vtl_drive.slot->media;
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to list files from media '%s'"),
 				sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index,
 				media != NULL ? media->name : dgettext("storiqone-drive-vtl", "NULL"));
@@ -238,13 +238,13 @@ static int sodr_vtl_drive_erase_media(struct sodr_peer * peer, bool quick_mode, 
 
 				if (command.exited_code != 0) {
 					ok = false;
-					sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+					sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-drive-vtl", "[%s %s %d]: Command 'shred' ended with code '%d' while removing file '%s'"),
 						sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, command.exited_code, gl.gl_pathv[i]);
 				}
 			} else {
 				ok = false;
-				sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+				sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to start 'shred' command to remove file '%s'"),
 					sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, gl.gl_pathv[i]);
 			}
@@ -277,7 +277,7 @@ static int sodr_vtl_drive_erase_media(struct sodr_peer * peer, bool quick_mode, 
 	return ok ? 0 : 1;
 }
 
-static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
+static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
 	ssize_t block_size = 0;
 	so_value_unpack(option, "{sz}", "block size", &block_size);
 
@@ -285,7 +285,7 @@ static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool *
 		return 1;
 
 	if (pool->archive_format == NULL || pool->archive_format->name == NULL || strcmp(pool->archive_format->name, "Storiq One (TAR)") != 0) {
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: VTL does only support Storiq One format"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index);
 		return 1;
@@ -303,7 +303,7 @@ static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool *
 	int ret = glob(files, 0, NULL, &gl);
 	if (ret != 0 && ret != GLOB_NOMATCH) {
 		struct so_media * media = sodr_vtl_drive.slot->media;
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to list files from media '%s'"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index,
 			media != NULL ? media->name : dgettext("storiqone-drive-vtl", "NULL"));
@@ -326,7 +326,7 @@ static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool *
 		int failed = stat(sodr_vtl_media_dir, &st);
 		if (failed != 0) {
 			struct so_media * media = sodr_vtl_drive.slot->media;
-			sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to find optimal block size for media '%s'"),
 				sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index,
 				media != NULL ? media->name : dgettext("storiqone-drive-vtl", "NULL"));
@@ -348,7 +348,7 @@ static int sodr_vtl_drive_format_media(struct sodr_peer * peer, struct so_pool *
 	media->append = true;
 
 	if (!sodr_media_write_header(media, pool, header, block_size)) {
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to write media header '%s'"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, sodr_vtl_drive.slot->media->name);
 
@@ -420,7 +420,7 @@ char * sodr_vtl_drive_get_next_filename() {
 	return filename;
 }
 
-static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(struct sodr_peer * peer, int file_position, struct so_database_connection * db) {
+static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db) {
 	char * filename;
 	int size = asprintf(&filename, "%s/file_%d", sodr_vtl_media_dir, file_position);
 	if (size < 0)
@@ -435,7 +435,7 @@ static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(struct sodr_peer 
 
 		reader = sodr_vtl_drive_reader_get_raw_reader(fd, file_position);
 	} else
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to open file from media '%s' at position '%d' because %m"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, sodr_vtl_drive.slot->media->name, file_position);
 
@@ -444,7 +444,7 @@ static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(struct sodr_peer 
 	return reader;
 }
 
-static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct sodr_peer * peer, struct so_database_connection * db) {
+static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db) {
 	char * files;
 	int size = asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
 	if (size < 0)
@@ -454,7 +454,7 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct sodr_peer 
 	int ret = glob(files, 0, NULL, &gl);
 	if (ret != 0) {
 		struct so_media * media = sodr_vtl_drive.slot->media;
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to list files from media '%s'"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index,
 			media != NULL ? media->name : dgettext("storiqone-drive-vtl", "NULL"));
@@ -480,16 +480,16 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct sodr_peer 
 	return writer;
 }
 
-static struct so_format_reader * sodr_vtl_drive_get_reader(struct sodr_peer * peer, int file_position, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_reader * raw_reader = sodr_vtl_drive_get_raw_reader(peer, file_position, db);
+static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_reader * raw_reader = sodr_vtl_drive_get_raw_reader(file_position, db);
 	if (raw_reader == NULL)
 		return NULL;
 
 	return so_format_tar_new_reader(raw_reader, checksums);
 }
 
-static struct so_format_writer * sodr_vtl_drive_get_writer(struct sodr_peer * peer, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_writer * raw_writer = sodr_vtl_drive_get_raw_writer(peer, db);
+static struct so_format_writer * sodr_vtl_drive_get_writer(struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_writer * raw_writer = sodr_vtl_drive_get_raw_writer(db);
 	if (raw_writer == NULL)
 		return NULL;
 
@@ -528,20 +528,20 @@ static int sodr_vtl_drive_init(struct so_value * config, struct so_database_conn
 	return 0;
 }
 
-static struct so_format_reader * sodr_vtl_drive_open_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_reader * raw_reader = sodr_vtl_drive_get_raw_reader(peer, volume->media_position, db);
+static struct so_format_reader * sodr_vtl_drive_open_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_reader * raw_reader = sodr_vtl_drive_get_raw_reader(volume->media_position, db);
 	if (raw_reader == NULL)
 		return NULL;
 
 	return so_format_tar_new_reader(raw_reader, checksums);
 }
 
-static struct so_archive * sodr_vtl_drive_parse_archive(struct sodr_peer * peer, const bool * const disconnected, unsigned int archive_position, struct so_value * checksums __attribute__((unused)), struct so_database_connection * db) {
+static struct so_archive * sodr_vtl_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums __attribute__((unused)), struct so_database_connection * db) {
 	struct so_media * media = sodr_vtl_drive.slot->media;
 	if (media == NULL)
 		return NULL;
 
-	return sodr_media_storiqone_parse_archive(peer, &sodr_vtl_drive, disconnected, archive_position, db);
+	return sodr_media_storiqone_parse_archive(&sodr_vtl_drive, disconnected, archive_position, db);
 }
 
 static int sodr_vtl_drive_reset(struct so_database_connection * db) {
@@ -575,7 +575,7 @@ static int sodr_vtl_drive_reset(struct so_database_connection * db) {
 		slot->volume_name = strdup(media->label);
 		slot->full = true;
 
-		bool ok = sodr_vtl_drive_check_header(NULL, db);
+		bool ok = sodr_vtl_drive_check_header(db);
 		if (!ok)
 			return -1;
 	} else {

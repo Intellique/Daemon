@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-30 10:48+0100\n"
+        "POT-Creation-Date: 2016-02-02 13:26+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -54,37 +54,37 @@ msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode:
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:471
+#: src/drive/tape_drive/device.c:466
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:497
+#: src/drive/tape_drive/device.c:492
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:643
+#: src/drive/tape_drive/device.c:638
 #, c-format
 msgid   "[%s | %s | #%u]: Trying to recover from error"
 msgstr  "[ %s | %s | #%u ]: Intenta recuperar un error"
 
-#: src/drive/tape_drive/device.c:654
+#: src/drive/tape_drive/device.c:649
 #, c-format
 msgid   "[%s | %s | #%u]: retry #%uh to open tape drive"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:663
+#: src/drive/tape_drive/device.c:658
 #, c-format
 msgid   "[%s | %s | #%u]: failed to open tape drive because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:851
+#: src/drive/tape_drive/device.c:846
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #°%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:860
+#: src/drive/tape_drive/device.c:855
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -124,7 +124,7 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:152
+#: src/drive/tape_drive/format/ltfs/ltfs.c:153
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on first partition because %m"
 msgstr  ""
@@ -149,12 +149,12 @@ msgstr  "[ %s | %s | #%u ]: Prueba (tamaño del bloque: %s), throughput: %s/s"
 msgid   "[%s | %s | #%u]: Found best block size: %s"
 msgstr  "[ %s | %s | #%u ]: Mejor tamaño de bloque encontrado: %s"
 
-#: src/drive/tape_drive/io/reader.c:145
+#: src/drive/tape_drive/io/reader.c:146
 #, c-format
 msgid   "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"
 msgstr  "[ %s | %s | #%u ]: Avanzar en el media \"%s\" en la posición #%u y el número de matrícula %ld"
 
-#: src/drive/tape_drive/io/writer.c:203
+#: src/drive/tape_drive/io/writer.c:204
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
@@ -269,11 +269,11 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  ""
 
-#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
-#~ msgstr       "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
+#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d"
+#~ msgstr       "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
 
 #~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 #~ msgstr       "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
 
-#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d"
-#~ msgstr       "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
+#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
+#~ msgstr       "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"

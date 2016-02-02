@@ -39,7 +39,7 @@
 
 #include "st.h"
 
-int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct sodr_peer * peer, struct so_database_connection * db) {
+int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct so_database_connection * db) {
 	sodr_time_start();
 	int failed = ioctl(fd, MTIOCGET, status);
 	sodr_time_stop(drive);
@@ -47,7 +47,7 @@ int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget 
 	if (failed != 0) {
 		struct so_media * media = drive->slot->media;
 
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to get information of media '%s'"),
 			drive->vendor, drive->model, drive->index, media->name);
 	}
@@ -72,14 +72,14 @@ int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_databas
 	return failed;
 }
 
-int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, struct sodr_peer * peer, struct so_database_connection * db) {
+int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, struct so_database_connection * db) {
 	struct so_media * media = drive->slot->media;
 
 	struct mtget status;
-	int failed = sodr_tape_drive_st_get_status(drive, fd, &status, peer, db);
+	int failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
 
 	if (partition != status.mt_resid) {
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partion from %lu to %u on media '%s'"),
 			drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
 		drive->status = so_drive_status_positioning;
@@ -94,13 +94,13 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		if (failed != 0) {
-			sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partion from %lu to %u on media '%s' because %m"),
 				drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
 
 			return failed;
 		} else
-			sodr_log_add_record(peer, so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+			sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Partition changed from %lu to %u on media '%s'"),
 				drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
 
@@ -109,7 +109,7 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			if (failed != 0)
 				return failed;
 
-			failed = sodr_tape_drive_st_get_status(drive, fd, &status, peer, db);
+			failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
 			if (failed != 0)
 				return failed;
 		}

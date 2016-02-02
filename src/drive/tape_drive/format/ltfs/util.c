@@ -142,7 +142,7 @@ static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_valu
 	return nb_files;
 }
 
-struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const char * uuid, ssize_t block_size) {
+struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const char * uuid, size_t block_size) {
 	struct tm gmt;
 	gmtime_r(&time, &gmt);
 
@@ -204,11 +204,11 @@ static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * inde
 	return elt;
 }
 
-struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, struct sodr_peer * peer, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db) {
+struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db) {
 	struct so_media * media = drive->slot->media;
 	struct sodr_tape_drive_media * mp = media->private_data;
 
-	struct so_format_reader * reader = drive->ops->get_reader(peer, 0, NULL, db);
+	struct so_format_reader * reader = drive->ops->get_reader(0, NULL, db);
 	if (reader == NULL)
 		return NULL;
 

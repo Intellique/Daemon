@@ -48,6 +48,7 @@
 #include <libstoriqone-drive/time.h>
 
 #include "io.h"
+#include "../util/st.h"
 
 struct sodr_tape_drive_reader {
 	int fd;
@@ -239,9 +240,13 @@ static ssize_t sodr_tape_drive_reader_get_block_size(struct so_stream_reader * i
 	return self->block_size;
 }
 
-struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int file_position, struct so_database_connection * db) {
+struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int partition, int file_position, struct so_database_connection * db) {
 	ssize_t block_size = sodr_tape_drive_get_block_size(db);
 	if (block_size < 0)
+		return NULL;
+
+	int failed = sodr_tape_drive_st_set_position(drive, fd, partition, file_position, db);
+	if (failed != 0)
 		return NULL;
 
 	drive->status = so_drive_status_reading;

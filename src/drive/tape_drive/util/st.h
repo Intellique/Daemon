@@ -29,13 +29,12 @@
 
 struct so_drive;
 struct so_database_connection;
-struct sodr_peer;
 
 struct mtget;
 
-int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct sodr_peer * peer, struct so_database_connection * db);
+int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct so_database_connection * db);
 int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_database_connection * db);
-int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, struct sodr_peer * peer, struct so_database_connection * db);
+int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, struct so_database_connection * db);
 int sodr_tape_drive_st_write_end_of_file(struct so_drive * drive, int fd);
 
 #endif
