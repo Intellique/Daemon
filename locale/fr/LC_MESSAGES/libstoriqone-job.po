@@ -27,8 +27,8 @@ msgstr  "Le démon a inopinément quitté"
 
 #: src/libstoriqone-job/main.c:108
 #, c-format
-msgid   "Error, user '%s' has been disabled otherwise job (type: %s, key: %s, name: %s) cannot be proceed with"
-msgstr  "Erreur, l’utilisateur « %s » est désactivé sans quoi la tâche (type : %s, clef : %s, nom : %s) ne peut pas poursuivre"
+msgid   "Error, user '%s' has been disabled consequently job (type: %s, key: %s, name: %s) cannot proceed"
+msgstr  "Erreur, l’utilisateur « %s » a été désactivé en conséquence la tâche (type : %s, clef : %s, nom : %s) ne peut pas s’exécuter"
 
 #: src/libstoriqone-job/main.c:117
 #, c-format
