@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-02 22:10+0100\n"
+        "POT-Creation-Date: 2016-02-03 09:04+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -27,7 +27,7 @@ msgstr  "Le démon a inopinément quitté"
 
 #: src/libstoriqone-job/main.c:108
 #, c-format
-msgid   "Error, user '%s' is disabled otherwise job (type: %s, key: %s, name: %s) cannot be proceed with"
+msgid   "Error, user '%s' has been disabled otherwise job (type: %s, key: %s, name: %s) cannot be proceed with"
 msgstr  "Erreur, l’utilisateur « %s » est désactivé sans quoi la tâche (type : %s, clef : %s, nom : %s) ne peut pas poursuivre"
 
 #: src/libstoriqone-job/main.c:117
