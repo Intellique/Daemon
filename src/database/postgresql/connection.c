@@ -2472,7 +2472,7 @@ static bool so_database_postgresql_get_is_user_disabled(struct so_database_conne
 	so_value_unpack(db, "{ss}", "id", &job_id);
 
 	const char * query = "check_user_is_enabled";
-	so_database_postgresql_prepare(self, query, "SELECT disabled FROM users wWHERE id = (SELECT login FROM job WHERE id = $1 LIMIT 1)");
+	so_database_postgresql_prepare(self, query, "SELECT disabled FROM users WHERE id = (SELECT login FROM job WHERE id = $1 LIMIT 1)");
 
 	const char * param[] = { job_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
