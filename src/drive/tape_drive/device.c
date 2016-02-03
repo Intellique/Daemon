@@ -456,7 +456,11 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_databa
 		return NULL;
 	}
 
-	if (sodr_tape_drive_update_status(db) != 0) {
+	sodr_time_start();
+	int failed = ioctl(fd, MTIOCGET, &status);
+	sodr_time_stop(&sodr_tape_drive);
+
+	if (failed != 0) {
 		close(fd);
 		return NULL;
 	}
