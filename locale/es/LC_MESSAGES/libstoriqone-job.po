@@ -28,7 +28,7 @@ msgstr  "El demonio se ha cerrado inesperadamente"
 #: src/libstoriqone-job/main.c:108
 #, c-format
 msgid   "Error, user '%s' has been disabled consequently job (type: %s, key: %s, name: %s) cannot proceed"
-msgstr  ""
+msgstr  "Error, el usuario \"%s\" ha sido desactivado en consecuancia la tarea (tipo: %s, llave: %s, nombre: %s) no pude ejecutarse"
 
 #: src/libstoriqone-job/main.c:117
 #, c-format
