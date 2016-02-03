@@ -105,7 +105,7 @@ static void job_worker(void * arg) {
 
 	if (db_connect->ops->is_user_disabled(db_connect, job)) {
 		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("libstoriqone-job", "Error, user '%s' has been disabled otherwise job (type: %s, key: %s, name: %s) cannot be proceed with"),
+			dgettext("libstoriqone-job", "Error, user '%s' has been disabled consequently job (type: %s, key: %s, name: %s) cannot proceed"),
 			j->user, j->type, j->key, j->name);
 
 		job->exit_code = 1;

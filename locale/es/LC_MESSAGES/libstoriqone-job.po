@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-03 09:04+0100\n"
+        "POT-Creation-Date: 2016-02-03 09:49+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -27,7 +27,7 @@ msgstr  "El demonio se ha cerrado inesperadamente"
 
 #: src/libstoriqone-job/main.c:108
 #, c-format
-msgid   "Error, user '%s' has been disabled otherwise job (type: %s, key: %s, name: %s) cannot be proceed with"
+msgid   "Error, user '%s' has been disabled consequently job (type: %s, key: %s, name: %s) cannot proceed"
 msgstr  ""
 
 #: src/libstoriqone-job/main.c:117
