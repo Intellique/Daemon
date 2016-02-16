@@ -156,10 +156,24 @@ static bool sodr_tape_drive_check_header2(struct sodr_peer * peer, bool restore_
 	sodr_tape_drive.status = so_drive_status_rewinding;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
+	sodr_time_start();
+	int failed = sodr_tape_drive_scsi_rewind(fd);
+	sodr_time_stop(&sodr_tape_drive);
+
+	if (failed != 0) {
+		close(fd);
+		return false;
+	}
+
 	static struct mtop rewind = { MTREW, 1 };
 	sodr_time_start();
-	int failed = ioctl(fd, MTIOCTOP, &rewind);
+	failed = ioctl(fd, MTIOCTOP, &rewind);
 	sodr_time_stop(&sodr_tape_drive);
+
+	if (failed != 0) {
+		close(fd);
+		return false;
+	}
 
 	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_reading;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
