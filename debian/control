@@ -29,6 +29,16 @@ Depends: storiqone-plugin-db, ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one daemon
  This package contains daemon
 
+Package: storiqone-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}, storiqone-daemon (= ${binary:Version})
+Description: StoriqOne daemon (debug files)
+ .
+ This package contains the debugging symbols.
+
 Package: storiqone-plugin-db-postgresql
 Section: libs
 Architecture: any
