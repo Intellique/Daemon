@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-01 12:41+0100\n"
+        "POT-Creation-Date: 2016-02-17 20:42+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -33,7 +33,7 @@ msgstr  "Arranque de la preparación de la tarea (type: %s, id: %s, nombre: %s)"
 #: src/libstoriqone-job/main.c:116
 #, c-format
 msgid   "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"
-msgstr  "Preparación de la tarea (type: %s, id: %s, nombre: %s) "
+msgstr  "Preparación de la tarea (type: %s, id: %s, nombre: %s)  a fallado con el codigo: %d"
 
 #: src/libstoriqone-job/main.c:135
 #, c-format
