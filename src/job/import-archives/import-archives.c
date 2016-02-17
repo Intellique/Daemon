@@ -109,9 +109,25 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 	job->status = so_job_status_running;
 
-	drive->ops->sync(drive);
+	int failed = drive->ops->sync(drive);
+	if (failed != 0) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-import-archives", "Failed to update status of drive (%s %s %s)"),
+			drive->vendor, drive->model, drive->serial_number);
+		job->status = so_job_status_error;
+		return 1;
+	}
 
-	job->done = 0.33;
+	failed = drive->ops->scan_media(drive);
+	if (failed != 0) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-import-archives", "Failed to start importation of media '%s'"),
+			soj_importarchives_media->name);
+		job->status = so_job_status_error;
+		return 1;
+	}
+
+	job->done = 0.20;
 	if (job->stopped_by_user)
 		return 1;
 
@@ -165,13 +181,16 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 		float done = i;
 		done /= nb_archives;
-		job->done = done * 0.33 + 0.33;
+		job->done = done * 0.4 + 0.2;
 	}
 	nb_archives = i;
 
-	job->done = 0.66;
+	job->done = 0.60;
 
-	int failed = 0;
+	failed = drive->ops->finish_import_media(drive, soj_importarchives_pool);
+
+	job->done = 0.80;
+
 	db_connect->ops->start_transaction(db_connect);
 
 	struct so_value_iterator * iter = so_value_list_get_iterator(soj_importarchives_archives);
@@ -196,9 +215,13 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 		float done = i;
 		done /= nb_archives;
-		job->done = done * 0.33 + 0.66;
+		job->done = done * 0.2 + 0.8;
 	}
 	so_value_iterator_free(iter);
+
+	if (failed == 0) {
+		failed = drive->ops->finish_import_media(drive, soj_importarchives_pool);
+	}
 
 	if (failed == 0) {
 		db_connect->ops->finish_transaction(db_connect);

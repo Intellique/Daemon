@@ -31,6 +31,7 @@
 // close
 #include <unistd.h>
 
+#include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
 
@@ -57,6 +58,11 @@ void sodr_peer_free(struct sodr_peer * peer) {
 	if (peer->format_writer != NULL) {
 		peer->format_writer->ops->close(peer->format_writer);
 		peer->format_writer->ops->free(peer->format_writer);
+	}
+
+	if (peer->db_connection != NULL) {
+		peer->db_connection->ops->close(peer->db_connection);
+		peer->db_connection = NULL;
 	}
 
 	if (peer->fd_cmd >= 0)
@@ -89,6 +95,8 @@ struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous) {
 	peer->buffer = NULL;
 	peer->buffer_length = 0;
 	peer->has_checksums = false;
+
+	peer->db_connection = NULL;
 
 	peer->disconnected = false;
 	peer->owned = false;
