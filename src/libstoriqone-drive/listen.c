@@ -76,7 +76,6 @@ static void sodr_socket_message(int fd, short event, void * data);
 
 static void sodr_socket_command_check_header(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_check_support(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_count_archives(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd);
@@ -84,14 +83,12 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_release(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_scan_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * request, int fd);
 
-static void sodr_worker_command_count_archives(void * peer);
 static void sodr_worker_command_erase_media(void * peer);
 static void sodr_worker_command_format_media(void * params);
-static void sodr_worker_command_parse_archive(void * params);
 
 static struct sodr_socket_command {
 	unsigned long hash;
@@ -100,7 +97,6 @@ static struct sodr_socket_command {
 } commands[] = {
 	{ 0, "check header",   sodr_socket_command_check_header },
 	{ 0, "check support",  sodr_socket_command_check_support },
-	{ 0, "count archives", sodr_socket_command_count_archives },
 	{ 0, "erase media",    sodr_socket_command_erase_media },
 	{ 0, "format media",   sodr_socket_command_format_media },
 	{ 0, "get raw reader", sodr_socket_command_get_raw_reader },
@@ -108,8 +104,8 @@ static struct sodr_socket_command {
 	{ 0, "get reader",     sodr_socket_command_get_reader },
 	{ 0, "get writer",     sodr_socket_command_get_writer },
 	{ 0, "init peer",      sodr_socket_command_init_peer },
-	{ 0, "parse archive",  sodr_socket_command_parse_archive },
 	{ 0, "release",        sodr_socket_command_release },
+	{ 0, "scan media",     sodr_socket_command_scan_media },
 	{ 0, "sync",           sodr_socket_command_sync },
 
 	{ 0, NULL, NULL }
@@ -309,24 +305,6 @@ static void sodr_socket_command_check_support(struct sodr_peer * peer __attribut
 	struct so_value * returned = so_value_pack("{sb}", "returned", ok);
 	so_json_encode_to_fd(returned, fd, true);
 	so_value_free(returned);
-}
-
-static void sodr_socket_command_count_archives(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
-
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
-		struct so_value * response = so_value_pack("{si}", "returned", 0);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		free(job_key);
-		return;
-	}
-
-	free(job_key);
-
-	peer->owned = true;
-	so_thread_pool_run("count archives", sodr_worker_command_count_archives, peer);
 }
 
 static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -678,61 +656,59 @@ static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_val
 	so_value_free(response);
 }
 
-static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
-
-	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
-		struct so_value * response = so_value_pack("{sn}", "returned");
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		free(job_key);
-		return;
-	}
-
-	free(job_key);
-
-	int archive_position = -1;
-	struct so_value * checksums = NULL;
-
-	so_value_unpack(request, "{s{sisO}}",
-		"params",
-			"archive position", &archive_position,
-			"checksums", &checksums
-	);
-
-	if (checksums == NULL) {
-		struct so_value * response = so_value_pack("{sn}", "returned");
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		return;
-	}
-
-	struct sodr_socket_params_parse_archive * params = malloc(sizeof(struct sodr_socket_params_parse_archive));
-	bzero(params, sizeof(struct sodr_socket_params_parse_archive));
-	params->peer = peer;
-	params->archive_position = archive_position;
-	params->checksums = checksums;
-
-	char * thread_name = NULL;
-	int size = asprintf(&thread_name, "parse archive #%d", archive_position);
-
-	if (size < 0)
-		thread_name = "parse archive";
-
-	peer->owned = true;
-	so_thread_pool_run(thread_name, sodr_worker_command_parse_archive, params);
-
-	if (size >= 0)
-		free(thread_name);
-}
-
 static void sodr_socket_command_release(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
 	sodr_listen_reset_peer();
 
 	struct so_value * response = so_value_pack("{sb}", "status", true);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
+}
+
+static void sodr_socket_command_scan_media(struct sodr_peer * peer, struct so_value * request, int fd) {
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+
+	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
+		struct so_value * response = so_value_pack("{sb}", "status", false);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+		return;
+	}
+
+	free(job_key);
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	struct so_media * media = drive->slot->media;
+
+	const char * media_name = NULL;
+	if (media != NULL)
+		media_name = media->name;
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for importing archives"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
+	int cmd_socket = so_socket_server_temp(socket_cmd_config);
+
+	struct so_value * response = so_value_pack("{sbs{sO}}",
+		"status", true,
+		"socket",
+			"command", socket_cmd_config
+	);
+	so_json_encode_to_fd(response, fd, true);
+	so_value_free(response);
+
+	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
+
+	so_value_free(socket_cmd_config);
+
+	peer->db_connection = sodr_db->config->ops->connect(sodr_db->config);
+
+	peer->owned = true;
+	so_thread_pool_run("import media", sodr_io_import_media, peer);
 }
 
 static void sodr_socket_command_sync(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
@@ -744,35 +720,6 @@ static void sodr_socket_command_sync(struct sodr_peer * peer __attribute__((unus
 	so_value_free(response);
 }
 
-
-static void sodr_worker_command_count_archives(void * arg) {
-	struct sodr_peer * peer = arg;
-
-	struct so_drive_driver * driver = sodr_drive_get();
-	struct so_drive * drive = driver->device;
-	struct so_media * media = drive->slot->media;
-
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
-
-	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: counting archives from media '%s'"),
-		drive->vendor, drive->model, drive->index, media_name);
-
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
-
-	unsigned int nb_archives = drive->ops->count_archives(&peer->disconnected, db_connect);
-
-	struct so_value * response = so_value_pack("{su}", "returned", nb_archives);
-	so_json_encode_to_fd(response, peer->fd, true);
-	so_value_free(response);
-
-	peer->owned = false;
-	sodr_listen_remove_peer(peer);
-
-	db_connect->ops->free(db_connect);
-}
 
 static void sodr_worker_command_erase_media(void * arg) {
 	struct sodr_socket_params_erase_media * params = arg;
@@ -850,40 +797,6 @@ static void sodr_worker_command_format_media(void * data) {
 
 	free(media_name);
 	db_connect->ops->free(db_connect);
-	free(params);
-}
-
-static void sodr_worker_command_parse_archive(void * data) {
-	struct sodr_socket_params_parse_archive * params = data;
-
-	struct so_drive_driver * driver = sodr_drive_get();
-	struct so_drive * drive = driver->device;
-	struct so_media * media = drive->slot->media;
-
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
-
-	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: Parsing archive from media '%s' at position #%u"),
-		drive->vendor, drive->model, drive->index, media_name, params->archive_position);
-
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
-
-	struct so_archive * archive = drive->ops->parse_archive(&params->peer->disconnected, params->archive_position, params->checksums, db_connect);
-
-	struct so_value * response = so_value_pack("{so}", "returned", so_archive_convert(archive));
-	so_json_encode_to_fd(response, params->peer->fd, true);
-	so_value_free(response);
-
-	params->peer->owned = false;
-	sodr_listen_remove_peer(params->peer);
-
-	if (archive != NULL)
-		so_archive_free(archive);
-	db_connect->ops->free(db_connect);
-
-	so_value_free(params->checksums);
 	free(params);
 }
 

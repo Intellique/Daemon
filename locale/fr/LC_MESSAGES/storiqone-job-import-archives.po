@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-format-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 11:32+0100\n"
+        "POT-Creation-Date: 2016-02-17 10:28+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -21,50 +21,60 @@ msgstr  "Project-Id-Version: job-format-media v1.2\n"
 msgid   "Failed to load media '%s'"
 msgstr  "Échec lors du chargement du média « %s »"
 
-#: src/job/import-archives/import-archives.c:119
+#: src/job/import-archives/import-archives.c:115
+#, c-format
+msgid   "Failed to update status of drive (%s %s %s)"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:124
+#, c-format
+msgid   "Failed to start importation of media '%s'"
+msgstr  ""
+
+#: src/job/import-archives/import-archives.c:135
 msgid   "Counting archives"
 msgstr  "Calcul du nombre d’archives"
 
-#: src/job/import-archives/import-archives.c:126
+#: src/job/import-archives/import-archives.c:142
 #, c-format
 msgid   "Parsing archive #%u"
 msgstr  "Analyse de l’archive n°%u"
 
-#: src/job/import-archives/import-archives.c:218
+#: src/job/import-archives/import-archives.c:241
 msgid   "Critical error: no media linked to current job"
 msgstr  "Erreur critique: aucun média lié à la tâche actuelle"
 
-#: src/job/import-archives/import-archives.c:223
+#: src/job/import-archives/import-archives.c:246
 #, c-format
 msgid   "Trying to import a cleaning media '%s'"
 msgstr  "Tentative d’importation d’une média de netoyage « %s »"
 
-#: src/job/import-archives/import-archives.c:229
+#: src/job/import-archives/import-archives.c:252
 #, c-format
 msgid   "Trying to import a media '%s' which is a member of pool '%s'"
 msgstr  "Tentative d’importation d’un média « %s » qui est membre du pool « %s »"
 
-#: src/job/import-archives/import-archives.c:235
+#: src/job/import-archives/import-archives.c:258
 #, c-format
 msgid   "Trying to import a media '%s' with error status"
 msgstr  "Tentative d’importation d’un média « %s » qui est en erreur"
 
-#: src/job/import-archives/import-archives.c:241
+#: src/job/import-archives/import-archives.c:264
 msgid   "Pool not found"
 msgstr  "Pool non trouvé"
 
-#: src/job/import-archives/import-archives.c:246
+#: src/job/import-archives/import-archives.c:269
 #, c-format
 msgid   "Trying to import to a deleted pool '%s'"
 msgstr  "Tentative d’importation dans un pool supprimé « %s »"
 
-#: src/job/import-archives/import-archives.c:255
+#: src/job/import-archives/import-archives.c:278
 #, c-format
 msgid   "Trying to import archives from media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
 msgstr  "Tentative d’importation d’archives depuis un média « %s » (média format : %s) dont le format ne correspond pas au "
         "format du pool « %s » (format du pool : %s)"
 
-#: src/job/import-archives/import-archives.c:262
+#: src/job/import-archives/import-archives.c:285
 #, c-format
 msgid   "Failed to find a suitable drive to import media '%s'"
 msgstr  "Échec lors de la recherche d’un lecteur pour importer le média « %s »"
