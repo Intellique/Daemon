@@ -24,12 +24,12 @@ msgstr  "Échec lors du chargement du média « %s »"
 #: src/job/import-archives/import-archives.c:115
 #, c-format
 msgid   "Failed to update status of drive (%s %s %s)"
-msgstr  ""
+msgstr  "Échec lors de la mise à jour du statut du lecteur (%s %s %s)"
 
 #: src/job/import-archives/import-archives.c:124
 #, c-format
 msgid   "Failed to start importation of media '%s'"
-msgstr  ""
+msgstr  "Échec lors du démarrage de l’imporation du média « %s »"
 
 #: src/job/import-archives/import-archives.c:135
 msgid   "Counting archives"
