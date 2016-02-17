@@ -118,6 +118,7 @@ static void soj_create_archive_meta_worker_do(void * arg) {
 
 			struct meta_worker_list * next = files->next;
 			free(files->filename);
+			free(files->selected_file);
 			free(files);
 			files = next;
 		}

@@ -116,6 +116,7 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 		if (type == so_script_type_pre_job && !should_run)
 			status = 1;
 
+		so_value_free(returned);
 		free(path);
 	}
 

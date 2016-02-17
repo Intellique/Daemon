@@ -484,16 +484,21 @@ void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archi
 void soj_create_archive_worker_init_pool(struct so_job * job, struct so_pool * primary_pool, struct so_value * pool_mirrors) {
 	primary_worker = soj_create_archive_worker_new(job, NULL, primary_pool); 
 
-	unsigned int i;
 	nb_mirror_workers = so_value_list_get_length(pool_mirrors);
-	mirror_workers = calloc(nb_mirror_workers, sizeof(struct soj_create_archive_worker *));
-	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
-	for (i = 0; so_value_iterator_has_next(iter); i++) {
-		struct so_value * vpool = so_value_iterator_get_value(iter, false);
-		struct so_pool * pool = so_value_custom_get(vpool);
-		mirror_workers[i] = soj_create_archive_worker_new(job, NULL, pool);
+	mirror_workers = NULL;
+
+	if (nb_mirror_workers > 0) {
+		mirror_workers = calloc(nb_mirror_workers, sizeof(struct soj_create_archive_worker *));
+
+		struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
+		unsigned int i;
+		for (i = 0; so_value_iterator_has_next(iter); i++) {
+			struct so_value * vpool = so_value_iterator_get_value(iter, false);
+			struct so_pool * pool = so_value_custom_get(vpool);
+			mirror_workers[i] = soj_create_archive_worker_new(job, NULL, pool);
+		}
+		so_value_iterator_free(iter);
 	}
-	so_value_iterator_free(iter);
 }
 
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool) {

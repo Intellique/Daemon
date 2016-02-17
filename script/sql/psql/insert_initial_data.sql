@@ -27,7 +27,7 @@ INSERT INTO DriveFormatSupport(driveFormat, mediaFormat, read, write) VALUES
 	(5, 5, TRUE, TRUE);
 
 INSERT INTO ArchiveFormat(name, readable, writable) VALUES
-    ('Storiq One', TRUE, TRUE);
+    ('Storiq One (TAR)', TRUE, TRUE);
 
 INSERT INTO Pool(uuid, name, archiveFormat, mediaFormat, backupPool) VALUES
 	('b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', 1, 1, FALSE),
