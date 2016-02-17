@@ -29,7 +29,7 @@ msgstr  "[%s %s #%u]: contaje de los archivos del media \"%s\""
 #: src/libstoriqone-drive/io/import_media.c:113
 #, c-format
 msgid   "[%s %s #%u]: attach media '%s' to pool '%s'"
-msgstr  ""
+msgstr  "[%s %s #%u]: relaciona el media \"%s\" al pool \"%s\""
 
 #: src/libstoriqone-drive/io/import_media.c:148
 #, c-format
@@ -54,12 +54,12 @@ msgstr  "[%s %s #%u]: abertura de el media \"%s\" lectura de la posición #%d"
 #: src/libstoriqone-drive/listen.c:468 src/libstoriqone-drive/listen.c:611
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for writing"
-msgstr  "[%s %s #%u]: abertura del media \"%s\" en escritura"
+msgstr  "[%s %s #%u]: apertura del media \"%s\" en escritura"
 
 #: src/libstoriqone-drive/listen.c:690
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for importing archives"
-msgstr  ""
+msgstr  "[%s %s #%u]: apertura del media \"%s\" para importar archivos"
 
 #: src/libstoriqone-drive/listen.c:736
 #, c-format
