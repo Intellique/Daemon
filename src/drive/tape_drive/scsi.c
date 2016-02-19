@@ -54,6 +54,14 @@
 
 #include "scsi.h"
 
+struct scsi_command {
+	const char * name;
+	unsigned char op_code;
+	unsigned char cdb_length;
+	unsigned int timeout;
+	bool available;
+};
+
 struct scsi_density {
 	unsigned short available_density_descriptor_length;
 	unsigned char reserved[2];
@@ -144,8 +152,91 @@ enum scsi_mam_attribute {
 	scsi_mam_unique_cardtrige_identity = 0x1000,
 };
 
+static int sodr_tape_drive_scsi_locate10(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
+/**
+ * \brief Set position on tape
+ * \remark Require LTO-4 drive at least
+ */
+static int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
+static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_command);
+
+static struct scsi_command scsi_command_erase = {
+	.name = "ERASE",
+	.op_code = 0x19,
+	.cdb_length = 6,
+	.timeout = 10800,
+	.available = true
+};
+
+static struct scsi_command scsi_command_inquiry = {
+	.name = "INQUIRY",
+	.op_code = 0x12,
+	.cdb_length = 6,
+	.timeout = 60,
+	.available = true
+};
+
+static struct scsi_command scsi_command_locate10 = {
+	.name = "LOCATE (10)",
+	.op_code = 0x2B,
+	.cdb_length = 10,
+	.timeout = 1260,
+	.available = true
+};
+
+static struct scsi_command scsi_command_locate16 = {
+	.name = "LOCATE (16)",
+	.op_code = 0x92,
+	.cdb_length = 16,
+	.timeout = 1260,
+	.available = true
+};
+
+static struct scsi_command scsi_command_log_sense = {
+	.name = "LOG SENSE",
+	.op_code = 0x4D,
+	.cdb_length = 10,
+	.timeout = 60,
+	.available = true
+};
+
+static struct scsi_command scsi_command_read_attribute = {
+	.name = "READ ATTRIBUTE",
+	.op_code = 0x8C,
+	.cdb_length = 16,
+	.timeout = 60,
+	.available = true
+};
+
+static struct scsi_command scsi_command_read_position = {
+	.name = "READ POSITION",
+	.op_code = 0x34,
+	.cdb_length = 16,
+	.timeout = 60,
+	.available = true
+};
+
+static struct scsi_command scsi_command_report_density_support = {
+	.name = "REPORT DENSITY SUPPORT",
+	.op_code = 0x44,
+	.cdb_length = 10,
+	.timeout = 60,
+	.available = true
+};
+
+static struct scsi_command scsi_command_rewind = {
+	.name = "REWIND",
+	.op_code = 0x01,
+	.cdb_length = 6,
+	.timeout = 540,
+	.available = true
+};
+
 
 bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path) {
+	if (!scsi_command_inquiry.available)
+		return false;
+
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;
@@ -211,7 +302,7 @@ bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path
 	header.cmdp = (unsigned char *) &command_inquiry;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result_inquiry;
-	header.timeout = 60000; // 1 minute
+	header.timeout = 1000 * scsi_command_inquiry.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -265,7 +356,7 @@ bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path
 	header.cmdp = (unsigned char *) &command_serial_number;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result_serial_number;
-	header.timeout = 60000;
+	header.timeout = 1000 * scsi_command_inquiry.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	status = ioctl(fd, SG_IO, &header);
@@ -294,6 +385,9 @@ bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path
 }
 
 bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path) {
+	if (!scsi_command_report_density_support.available)
+		return false;
+
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;
@@ -328,7 +422,7 @@ bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool fo
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result;
-	header.timeout = 60000; // 1 minutes
+	header.timeout = 1000 * scsi_command_report_density_support.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int failed = ioctl(fd, SG_IO, &header);
@@ -347,6 +441,9 @@ bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool fo
 }
 
 int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
+	if (!scsi_command_erase.available)
+		return -1;
+
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return 1;
@@ -377,7 +474,7 @@ int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = NULL;
-	header.timeout = 10240000; // 204 minutes
+	header.timeout = 1000 * scsi_command_erase.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -386,7 +483,58 @@ int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
 	return status;
 }
 
-int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position) {
+int sodr_tape_drive_scsi_locate(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format) {
+	if (!format->support_partition && position->partition > 0)
+		return -1;
+
+	if (scsi_command_locate16.available)
+		return sodr_tape_drive_scsi_locate16(fd, position, format);
+	else
+		return sodr_tape_drive_scsi_locate10(fd, position, format);
+}
+
+static int sodr_tape_drive_scsi_locate10(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format) {
+	struct {
+		unsigned char op_code;
+		bool immed:1;
+		bool change_partition:1;
+		bool block_type:1;
+		unsigned char reserved0:2;
+		unsigned char obsolete:3;
+		unsigned char reserved1;
+		unsigned int block_address;
+		unsigned char reserved2;
+		unsigned char partition;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x2B, // LOCATE (10)
+		.immed = false,
+		.change_partition = format->support_partition,
+		.partition = position->partition,
+		.block_address = htobe32(position->block_position),
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = NULL;
+	header.timeout = 10380000; // 173 minutes
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	return status != 0 || sense.sense_key;
+}
+
+static int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format) {
 	struct {
 		unsigned char op_code;
 		bool immed:1;
@@ -411,7 +559,7 @@ int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position *
 		.bam = false,
 		.partition = position->partition,
 		.block_address = htobe64(position->block_position),
-		.change_partition = true,
+		.change_partition = format->support_partition,
 	};
 
 	struct scsi_request_sense sense;
@@ -435,6 +583,9 @@ int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position *
 }
 
 int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path) {
+	if (!scsi_command_report_density_support.available)
+		return -1;
+
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return 1;
@@ -469,7 +620,7 @@ int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result;
-	header.timeout = 60000; // 1 minutes
+	header.timeout = 1000 * scsi_command_report_density_support.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int failed = ioctl(fd, SG_IO, &header);
@@ -488,6 +639,9 @@ int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path
 }
 
 int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_position * position) {
+	if (!scsi_command_read_attribute.available)
+		return -1;
+
 	struct {
 		bool reserved0:1;
 		bool perr:1;
@@ -519,7 +673,7 @@ int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_posit
 		unsigned short parameter_length;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x34, // READ ATTRIBUTE (16)
+		.operation_code = 0x34, // READ POSITION (10)
 		.service_action = scsi_read_attribute_service_action_attributes_values,
 		.parameter_length = 0,
 		.control = 0,
@@ -538,7 +692,7 @@ int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_posit
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result;
-	header.timeout = 60000; // 1 minute
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -555,6 +709,9 @@ int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_posit
 }
 
 int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length) {
+	if (!scsi_command_read_attribute.available)
+		return -1;
+
 	struct {
 		unsigned char operation_code;
 		enum {
@@ -597,7 +754,7 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = buffer;
-	header.timeout = 60000; // 1 minute
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -649,6 +806,9 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 }
 
 int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
+	if (!scsi_command_read_attribute.available)
+		return -1;
+
 	struct {
 		unsigned char operation_code;
 		enum {
@@ -691,7 +851,7 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = buffer;
-	header.timeout = 60000; // 1 minute
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -807,16 +967,142 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 }
 
 int sodr_tape_drive_scsi_rewind(int fd) {
-	struct sodr_tape_drive_scsi_position position = {
-		.partition = 0,
-		.block_position = 0,
-		.end_of_partition = false,
+	if (!scsi_command_rewind.available)
+		return -1;
+
+	struct {
+		unsigned char op_code;
+		bool immed:1;
+		unsigned char reserved0:4;
+		unsigned char obsolete:3;
+		unsigned int reserved1:24;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x01, // REWIND (6)
+		.immed = false,
 	};
 
-	return sodr_tape_drive_scsi_locate16(fd, &position);
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = NULL;
+	header.timeout = 1000 * scsi_command_rewind.timeout;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	return status != 0 || sense.sense_key;
+}
+
+int sodr_tape_drive_scsi_setup(const char * path) {
+	int fd = open(path, O_RDWR);
+	if (fd < 0)
+		return -1;
+
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_erase);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_inquiry);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_locate10);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_locate16);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_log_sense);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_read_attribute);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_read_position);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_report_density_support);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_rewind);
+
+	close(fd);
+
+	return 0;
+}
+
+static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_command) {
+	struct report_result {
+		unsigned char reserved0;
+		enum {
+			unsupported_command = 0x1,
+			supported_command_scsi_standard = 0x3,
+			supported_command_vendor_specific = 0x5
+		} support:3;
+		unsigned char reserved1:4;
+		bool command_timeout_descriptor:1;
+		unsigned short cdb_length;
+		unsigned char cdb_usage_data[scsi_command->cdb_length];
+		struct timeout_descriptor {
+			unsigned short descriptor_length;
+			unsigned char reserved0;
+			unsigned char command_specific;
+			unsigned int nominal_command_processing_timeout;
+			unsigned int recommended_command_timeout;
+		} timeout;
+	} result;
+
+	struct {
+		unsigned char op_code;
+		unsigned char service_action:5;
+		unsigned char reserved0:3;
+		enum {
+			reporting_options_list_op_codes = 0x0,
+			reporting_options_single_op_code = 0x1,
+			reporting_options_single_op_code_and_service_action = 0x2
+		} reporting_options:3;
+		unsigned char reserved1:4;
+		bool return_command_timeouts_descriptor:1;
+		unsigned char requested_operation_code;
+		unsigned short requested_service_action;
+		unsigned int allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0xA3, // REPORT SUPPORTED OPCODES (A3 (0C))
+		.service_action = 0x0C,
+		.reporting_options = reporting_options_single_op_code,
+		.return_command_timeouts_descriptor = true,
+		.requested_operation_code = 0x92,
+		.requested_service_action = 0x0,
+		.allocation_length = htobe32(sizeof(result)),
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+
+	struct scsi_request_sense sense;
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result;
+	header.timeout = 60000; // 1 minutes
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	if (status == 0) {
+		scsi_command->available = result.support != unsupported_command;
+		scsi_command->timeout = be32toh(result.timeout.recommended_command_timeout);
+
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "SCSI supported command: '%s', available: %s, timeout: %d seconds"),
+			scsi_command->name, scsi_command->available ? dgettext("storiqone-drive-tape", "yes") : dgettext("storiqone-drive-tape", "no"), scsi_command->timeout);
+	}
+
+	return status;
 }
 
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
+	if (!scsi_command_log_sense.available)
+		return -1;
+
 	struct {
 		unsigned char page_code:6;
 		unsigned char reserved0:2;
@@ -877,7 +1163,7 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result;
-	header.timeout = 60000; // 1 minute
+	header.timeout = 1000 * scsi_command_log_sense.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);

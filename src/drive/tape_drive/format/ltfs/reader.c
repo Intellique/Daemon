@@ -255,7 +255,7 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 		};
 
 		sodr_time_start();
-		int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+		int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 		sodr_time_stop(self->drive);
 
 		if (failed != 0)
@@ -391,7 +391,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 			};
 
 			sodr_time_start();
-			int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+			int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 			sodr_time_stop(self->drive);
 
 			if (failed != 0)
@@ -444,7 +444,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 				};
 
 				sodr_time_start();
-				int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+				int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 				sodr_time_stop(self->drive);
 
 				if (failed != 0)
