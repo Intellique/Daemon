@@ -21,7 +21,17 @@ msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
 msgid   "[%s %s #%u]: reopen media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : réouverture du média « %s » en lecture à la position n°%d"
 
-#: src/libstoriqone-drive/io/io.c:72
+#: src/libstoriqone-drive/io/import_media.c:82
+#, c-format
+msgid   "[%s %s #%u]: counting archives from media '%s'"
+msgstr  "[ %s %s #%u ] : comptage des archives du média « %s »"
+
+#: src/libstoriqone-drive/io/import_media.c:113
+#, c-format
+msgid   "[%s %s #%u]: attach media '%s' to pool '%s'"
+msgstr  "[ %s %s #%u ] : relie le média « %s » au pool « %s »"
+
+#: src/libstoriqone-drive/io/io.c:73
 #, c-format
 msgid   "[%s | %s | #%u]: Throughput: %s/s"
 msgstr  "[ %s %s #%u ] : Débit %s/s"
@@ -48,8 +58,8 @@ msgstr  "[ %s %s #%u ] : Nouvelle connexion depuis la tâche (id: %s, n°exé
 
 #: src/libstoriqone-drive/listen.c:855
 #, c-format
-msgid   "[%s %s #%u]: counting archives from media '%s'"
-msgstr  "[ %s %s #%u ] : comptage des archives du média « %s »"
+msgid   "[%s %s #%u]: open media '%s' for importing archives"
+msgstr  "[ %s %s #%u ] : ouverture du média « %s » pour l’imporatation d'archives"
 
 #: src/libstoriqone-drive/listen.c:885
 #, c-format
@@ -114,20 +124,20 @@ msgstr  "Démarrage du lecteur (type : %s, fabricant : %s, modèle : %s, num�
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
 
-#: src/libstoriqone-drive/media.c:145 src/libstoriqone-drive/media.c:232 src/libstoriqone-drive/media.c:319
+#: src/libstoriqone-drive/media.c:145 src/libstoriqone-drive/media.c:231 src/libstoriqone-drive/media.c:317
 #, c-format
 msgid   "Checking Storiq One header in media: %s"
 msgstr  "Vérification de l’entête Storiq One dans le média : %s"
 
-#: src/libstoriqone-drive/media.c:149 src/libstoriqone-drive/media.c:236 src/libstoriqone-drive/media.c:323
+#: src/libstoriqone-drive/media.c:149 src/libstoriqone-drive/media.c:235 src/libstoriqone-drive/media.c:321
 #, c-format
 msgid   "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"
 msgstr  "Une entête Storiq One a été trouvé sur le média avec (uuid : %s, étiquette : %s, taille de bloc : %zd)"
 
-#: src/libstoriqone-drive/media.c:164 src/libstoriqone-drive/media.c:251 src/libstoriqone-drive/media.c:338
+#: src/libstoriqone-drive/media.c:163 src/libstoriqone-drive/media.c:249 src/libstoriqone-drive/media.c:335
 msgid   "Checking Storiq One header in media: Failed"
 msgstr  "Vérification de l’entête Storiq One sur le média : échec"
 
-#: src/libstoriqone-drive/media.c:384
+#: src/libstoriqone-drive/media.c:381
 msgid   "Failed to compute digest before writing media header"
 msgstr  "Échec du calcul de l’empreinte avant l’écriture de l’entête du média"

@@ -107,6 +107,7 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 static int so_database_postgresql_add_job_record2(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status status, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
 static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job);
+static bool so_database_postgresql_get_is_user_disabled(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_stop_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_sync_job(struct so_database_connection * connect, struct so_job * job);
@@ -189,6 +190,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.add_job_record2  = so_database_postgresql_add_job_record2,
 	.add_report       = so_database_postgresql_add_report,
 	.get_restore_path = so_database_postgresql_get_restore_path,
+	.is_user_disabled = so_database_postgresql_get_is_user_disabled,
 	.start_job        = so_database_postgresql_start_job,
 	.stop_job         = so_database_postgresql_stop_job,
 	.sync_job         = so_database_postgresql_sync_job,
@@ -382,7 +384,7 @@ static int so_database_postgresql_finish_transaction(struct so_database_connecti
 		case PQTRANS_INERROR: {
 			so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Rolling back transaction because current transaction encountered an error"));
 
-			PGresult * result = PQexec(self->connect, "ROLL BACK");
+			PGresult * result = PQexec(self->connect, "ROLLBACK");
 			PQclear(result);
 			return 1;
 		}
@@ -606,7 +608,7 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_real_changer_by_host";
-	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1) AND c.enable");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -765,6 +767,7 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 	}
 
 	PQclear(result);
+	free(density_code);
 
 	return medias;
 }
@@ -1107,6 +1110,8 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 		}
 	}
 
+	PQclear(result);
+
 	return pools;
 }
 
@@ -1120,7 +1125,7 @@ static struct so_value * so_database_postgresql_get_standalone_drives(struct so_
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_standalone_drives_by_host";
-	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1) AND c.enable");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1211,7 +1216,7 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, NULL FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id WHERE v.host = $1 AND NOT v.deleted AND v.uuid::TEXT NOT IN (SELECT serialnumber FROM changer)");
 	} else {
 		query = "select_vtls";
-		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1 AND NOT v.deleted");
+		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1 AND c.enable AND NOT v.deleted");
 	}
 
 	const char * params[] = { host_id };
@@ -1392,6 +1397,7 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 
 			if (status == PGRES_FATAL_ERROR) {
 				free(hostid);
+				free(changer_id);
 
 				if (transStatus == PQTRANS_IDLE)
 					so_database_postgresql_cancel_transaction(connect);
@@ -1420,6 +1426,8 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 
 			if (status == PGRES_FATAL_ERROR) {
 				free(hostid);
+				free(changer_id);
+
 				if (transStatus == PQTRANS_IDLE)
 					so_database_postgresql_cancel_transaction(connect);
 				return -1;
@@ -2469,6 +2477,38 @@ static char * so_database_postgresql_get_restore_path(struct so_database_connect
 	return path;
 }
 
+static bool so_database_postgresql_get_is_user_disabled(struct so_database_connection * connect, struct so_job * job) {
+	if (connect == NULL || job == NULL)
+		return false;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_free(key);
+
+	char * job_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &job_id);
+
+	const char * query = "check_user_is_enabled";
+	so_database_postgresql_prepare(self, query, "SELECT disabled FROM users WHERE id = (SELECT login FROM job WHERE id = $1 LIMIT 1)");
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool disabled = true;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_bool(result, 0, 0, &disabled);
+
+	PQclear(result);
+	free(job_id);
+
+	return disabled;
+}
+
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job) {
 	if (connect == NULL || job == NULL)
 		return 1;
@@ -3271,6 +3311,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_d
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 	so_value_unpack(db, "{sS}", "id", &job_id);
+	so_value_free(key);
 
 	struct so_archive * archive = NULL;
 

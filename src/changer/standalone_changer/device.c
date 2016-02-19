@@ -41,6 +41,7 @@
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
 #include <libstoriqone-changer/drive.h>
+#include <libstoriqone-changer/media.h>
 
 #include "device.h"
 
@@ -97,6 +98,8 @@ static int sochgr_standalone_changer_check(unsigned int nb_clients __attribute__
 	if (has_media != !dr->is_empty) {
 		struct so_slot * slot = sochgr_standalone_changer.slots;
 		if (dr->is_empty) {
+			sochgr_media_release(&sochgr_standalone_changer);
+
 			so_media_free(slot->media);
 			slot->media = NULL;
 
@@ -119,6 +122,8 @@ static int sochgr_standalone_changer_check(unsigned int nb_clients __attribute__
 			slot->full = true;
 
 			has_media = true;
+
+			sochgr_media_init_slot(slot);
 		}
 
 		sochgr_standalone_changer.status = dr->is_empty ? so_changer_status_offline : so_changer_status_idle;

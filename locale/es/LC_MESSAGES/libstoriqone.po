@@ -107,7 +107,7 @@ msgstr  "estado desconocido"
 #: src/libstoriqone/checksum.c:63
 #, c-format
 msgid   "so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd)"
-msgstr  "so_cheksum_compute: parámetros inválidos (checksum : %p, data : %p, length : %zd)"
+msgstr  "so_cheksum_compute: parámetros inválidos (checksum : %p, data : %p, length : %zd)"
 
 #: src/libstoriqone/checksum.c:69
 #, c-format
@@ -180,7 +180,7 @@ msgstr  "so_checksum_salt_password: parámetro invalido (contraseña: %p, sal: %
 #: src/libstoriqone/crash.c:62
 #, c-format
 msgid   "Oops!!!, programs '%s' catch signal: %s"
-msgstr  ""
+msgstr  "Vaya!!!, programas \"%s\" capta la señal: %s"
 
 #: src/libstoriqone/database.c:61
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
@@ -213,7 +213,7 @@ msgstr  "so_database_register_driver: el controlador de base de datos \"%s\" est
 #: src/libstoriqone/database.c:146
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is now registered"
-msgstr  "so_database_register_driver: el controlor de la base de datos \" %s\" ahora está cargado"
+msgstr  "so_database_register_driver: el controlor de la base de datos \"%s\" ahora está cargado"
 
 #: src/libstoriqone/debug.c:59
 #, c-format
@@ -640,7 +640,7 @@ msgstr  "fallo al definir el nombre del hilo de ejecución \"%s\" porque %m"
 #: src/libstoriqone/thread_pool.c:247
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "so_thread_pool_work: iniciar un nuevo hilo de ejecución #%ld (pid : %d) a la función:%p con parámetro: %p"
+msgstr  "so_thread_pool_work: iniciar un nuevo hilo de ejecución #%ld (pid : %d) a la función: %p con parámetro: %p"
 
 #: src/libstoriqone/thread_pool.c:274
 #, c-format

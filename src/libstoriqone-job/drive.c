@@ -31,6 +31,8 @@
 #include <stdlib.h>
 // bzero
 #include <strings.h>
+// close
+#include <unistd.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/json.h>
@@ -45,6 +47,8 @@ struct soj_drive {
 	int fd;
 	struct so_value * config;
 
+	int fd_scan_media;
+
 	pthread_mutex_t lock;
 };
 
@@ -53,12 +57,14 @@ static bool soj_drive_check_support(struct so_drive * drive, struct so_media_for
 static unsigned int soj_drive_count_archives(struct so_drive * drive);
 static struct so_format_writer * soj_drive_create_archive_volume(struct so_drive * drive, struct so_archive_volume * volume, struct so_value * checksums);
 static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode);
+static int soj_drive_finish_import_media(struct so_drive * drive, struct so_pool * pool);
 static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool, struct so_value * option);
 static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position);
 static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive);
 static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, struct so_value * checksums);
 static struct so_format_reader * soj_drive_open_archive_volume(struct so_drive * drive, struct so_archive_volume * volume, struct so_value * checksums);
 static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int archive_position, struct so_value * checksums);
+static int soj_drive_scan_media(struct so_drive * drive);
 static int soj_drive_sync(struct so_drive * drive);
 
 static struct so_drive_ops soj_drive_ops = {
@@ -67,12 +73,14 @@ static struct so_drive_ops soj_drive_ops = {
 	.count_archives        = soj_drive_count_archives,
 	.create_archive_volume = soj_drive_create_archive_volume,
 	.erase_media           = soj_drive_erase_media,
+	.finish_import_media   = soj_drive_finish_import_media,
 	.format_media          = soj_drive_format_media,
 	.get_raw_reader        = soj_drive_get_raw_reader,
 	.get_raw_writer        = soj_drive_get_raw_writer,
 	.get_writer            = soj_drive_get_writer,
 	.open_archive_volume   = soj_drive_open_archive_volume,
 	.parse_archive         = soj_drive_parse_archive,
+	.scan_media            = soj_drive_scan_media,
 	.sync                  = soj_drive_sync,
 };
 
@@ -137,20 +145,18 @@ static unsigned int soj_drive_count_archives(struct so_drive * drive) {
 	struct soj_drive * self = drive->data;
 	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sss{ss}}",
-		"command", "count archives",
-		"params",
-			"job id", job->id
+	struct so_value * request = so_value_pack("{ss}",
+		"command", "count archives"
 	);
 
 	pthread_mutex_lock(&self->lock);
 
-	so_json_encode_to_fd(request, self->fd, true);
+	so_json_encode_to_fd(request, self->fd_scan_media, true);
 	so_value_free(request);
 
-	struct so_value * response = so_json_parse_fd(self->fd, 5000);
+	struct so_value * response = so_json_parse_fd(self->fd_scan_media, 5000);
 	while (response == NULL && !job->stopped_by_user)
-		response = so_json_parse_fd(self->fd, 5000);
+		response = so_json_parse_fd(self->fd_scan_media, 5000);
 
 	pthread_mutex_unlock(&self->lock);
 
@@ -238,6 +244,38 @@ static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {
 		so_value_unpack(response, "{si}", "returned", &failed);
 		so_value_free(response);
 	}
+
+	return failed;
+}
+
+static int soj_drive_finish_import_media(struct so_drive * drive, struct so_pool * pool) {
+	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
+
+	struct so_value * request = so_value_pack("{sss{ssso}}",
+		"command", "finish import media",
+		"params",
+			"job key", job->id,
+			"pool", so_pool_convert(pool)
+	);
+
+	pthread_mutex_lock(&self->lock);
+
+	so_json_encode_to_fd(request, self->fd_scan_media, true);
+	so_value_free(request);
+
+	int failed = -1;
+	struct so_value * response = so_json_parse_fd(self->fd_scan_media, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
+	if (response != NULL) {
+		so_value_unpack(response, "{si}", "returned", &failed);
+		so_value_free(response);
+	}
+
+	close(self->fd_scan_media);
+	self->fd_scan_media = -1;
 
 	return failed;
 }
@@ -434,6 +472,7 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 
 	self->fd = so_socket(config);
 	self->config = so_value_share(config);
+	self->fd_scan_media = -1;
 
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
@@ -475,12 +514,12 @@ static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int 
 
 	pthread_mutex_lock(&self->lock);
 
-	so_json_encode_to_fd(request, self->fd, true);
+	so_json_encode_to_fd(request, self->fd_scan_media, true);
 	so_value_free(request);
 
-	struct so_value * response = so_json_parse_fd(self->fd, 5000);
+	struct so_value * response = so_json_parse_fd(self->fd_scan_media, 5000);
 	while (response == NULL && !job->stopped_by_user)
-		response = so_json_parse_fd(self->fd, 5000);
+		response = so_json_parse_fd(self->fd_scan_media, 5000);
 
 	pthread_mutex_unlock(&self->lock);
 
@@ -503,6 +542,50 @@ static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int 
 	}
 
 	return NULL;
+}
+
+static int soj_drive_scan_media(struct so_drive * drive) {
+	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
+
+	struct so_value * request = so_value_pack("{sss{ss}}",
+		"command", "scan media",
+		"params",
+			"job key", job->id
+	);
+
+	pthread_mutex_lock(&self->lock);
+
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
+	if (response == NULL)
+		return -1;
+
+	bool ok = false;
+	so_value_unpack(response, "{sb}", "status", &ok);
+
+	if (!ok) {
+		so_value_free(response);
+		return -1;
+	}
+
+	struct so_value * socket_cmd = NULL;
+	so_value_unpack(response, "{s{so}}",
+		"socket",
+			"command", &socket_cmd
+	);
+
+	if (socket_cmd != NULL)
+		self->fd_scan_media = so_socket(socket_cmd);
+
+	so_value_free(response);
+
+	return self->fd_scan_media < -1;
 }
 
 static int soj_drive_sync(struct so_drive * drive) {

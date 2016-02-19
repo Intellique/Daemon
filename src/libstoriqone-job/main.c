@@ -103,9 +103,20 @@ static void job_worker(void * arg) {
 	if (db_connect == NULL)
 		goto error;
 
+	if (db_connect->ops->is_user_disabled(db_connect, job)) {
+		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("libstoriqone-job", "Error, user '%s' has been disabled consequently job (type: %s, key: %s, name: %s) cannot proceed"),
+			j->user, j->type, j->id, j->name);
+
+		job->exit_code = 1;
+		job->status = so_job_status_error;
+		goto error;
+	}
+
 	soj_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
 		dgettext("libstoriqone-job", "Starting warm up job (type: %s, id: %s, name: %s)"),
 		j->type, j->id, j->name);
+
 
 	job->step = so_job_run_step_warm_up;
 	job->done = 0;
@@ -115,6 +126,7 @@ static void job_worker(void * arg) {
 		soj_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("libstoriqone-job", "Warm up job (type: %s, id: %s, name: %s) failed with code: %d"),
 			j->type, j->id, j->name, failed);
+
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;

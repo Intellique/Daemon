@@ -126,7 +126,7 @@ msgstr  ""
 #, c-format
 msgid   "Trying to format a media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
 msgstr  "Tratando de formatear un media \"%s\" (formato del media: %s) donde el nombre no corresponde al formato del pool \"%s"
-        "\" (format du pool: %s)"
+        "\" (formato del pool: %s)"
 
 #: src/job/format-media/format-media.c:358
 #, c-format

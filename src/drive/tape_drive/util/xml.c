@@ -126,7 +126,7 @@ ssize_t sodr_tape_drive_xml_encode_inner(struct sodr_tape_drive_xml_encoder * co
 		struct so_value_iterator * iter = so_value_hashtable_get_iterator(attributes);
 		while (so_value_iterator_has_next(iter)) {
 			struct so_value * key = so_value_iterator_get_key(iter, false, false);
-			struct so_value * value = so_value_iterator_get_value(iter, value);
+			struct so_value * value = so_value_iterator_get_value(iter, false);
 
 			nb_write = sodr_tape_drive_xml_encode_inner_write(context, " %s=\"%s\"", so_value_string_get(key), so_value_string_get(value));
 			if (nb_write < 0) {

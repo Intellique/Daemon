@@ -79,11 +79,6 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: failed to open tape drive because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:836
-#, c-format
-msgid   "[%s | %s | #%u]: Checking media header '%s'"
-msgstr  "[ %s | %s | #°%u ]: Verificación del encabezamiento del media \"%s\""
-
 #: src/drive/tape_drive/device.c:845
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
@@ -104,7 +99,12 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:112
+#: src/drive/tape_drive/device.c:916
+#, c-format
+msgid   "[%s | %s | #%u]: Checking media header '%s'"
+msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
+
+#: src/drive/tape_drive/device.c:925
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
 msgstr  ""

@@ -30,7 +30,7 @@
 #include <string.h>
 // bzero
 #include <strings.h>
-// read
+// close, read
 #include <unistd.h>
 
 #include <libstoriqone/config.h>
@@ -149,7 +149,11 @@ static int sodr_tape_drive_format_ltfs_reader_close(struct so_format_reader * fr
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 
 	if (self->fd > -1) {
+		close(self->fd);
+		close(self->scsi_fd);
+
 		self->fd = -1;
+		self->scsi_fd = -1;
 		self->last_errno = 0;
 	}
 
