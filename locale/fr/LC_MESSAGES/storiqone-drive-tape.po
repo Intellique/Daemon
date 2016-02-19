@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-16 18:00+0100\n"
+        "POT-Creation-Date: 2016-02-19 11:06+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -179,15 +179,28 @@ msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média �
 msgid   "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"
 msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la position n°%u et le numéro d’enregistrement %ld"
 
-#: src/drive/tape_drive/scsi.c:760
+#: src/drive/tape_drive/scsi.c:920
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Information du média %s, Fabricant du média: %s"
 
-#: src/drive/tape_drive/scsi.c:778
+#: src/drive/tape_drive/scsi.c:938
 #, c-format
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Information du média %s, date du média: %s"
+
+#: src/drive/tape_drive/scsi.c:1095
+#, c-format
+msgid   "SCSI supported command: '%s', available: %s, timeout: %d seconds"
+msgstr  "Command SCSI supportée : « %s », disponible : %s, temps morts : %d secondes"
+
+#: src/drive/tape_drive/scsi.c:1096
+msgid   "no"
+msgstr  "no"
+
+#: src/drive/tape_drive/scsi.c:1096
+msgid   "yes"
+msgstr  "yes"
 
 #: src/drive/tape_drive/writer.c:200
 #, c-format
