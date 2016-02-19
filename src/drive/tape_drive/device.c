@@ -610,6 +610,7 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 
 	if (found) {
 		sodr_tape_drive_scsi_read_density(&sodr_tape_drive, scsi_device);
+		sodr_tape_drive_scsi_setup(scsi_device);
 
 		sodr_time_start();
 		int fd = open(so_device, O_RDWR | O_NONBLOCK);
