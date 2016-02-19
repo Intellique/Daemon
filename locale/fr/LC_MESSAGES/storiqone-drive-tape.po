@@ -196,11 +196,11 @@ msgstr  "Command SCSI supportée : « %s », disponible : %s, temps morts :
 
 #: src/drive/tape_drive/scsi.c:1096
 msgid   "no"
-msgstr  "no"
+msgstr  "non"
 
 #: src/drive/tape_drive/scsi.c:1096
 msgid   "yes"
-msgstr  "yes"
+msgstr  "oui"
 
 #: src/drive/tape_drive/writer.c:205
 #, c-format

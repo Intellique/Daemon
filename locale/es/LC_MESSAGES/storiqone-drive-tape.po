@@ -192,15 +192,15 @@ msgstr  "Información del media %s, Fecha del media: %s"
 #: src/drive/tape_drive/scsi.c:1095
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %d seconds"
-msgstr  ""
+msgstr  "Comando SCSI soportado: \"%s\", disponible: %s, tiempo de inactividad: %d segundos"
 
 #: src/drive/tape_drive/scsi.c:1096
 msgid   "no"
-msgstr  ""
+msgstr  "no"
 
 #: src/drive/tape_drive/scsi.c:1096
 msgid   "yes"
-msgstr  ""
+msgstr  "si"
 
 #: src/drive/tape_drive/writer.c:205
 #, c-format
