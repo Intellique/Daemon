@@ -477,22 +477,12 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_databa
 	if (fd < 0)
 		return NULL;
 
-	if (sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, -1, db)) {
-		close(fd);
-		return NULL;
-	}
-
-	if (sodr_tape_drive_update_status(db) != 0) {
-		close(fd);
-		return NULL;
-	}
-
 	sodr_tape_drive.slot->media->write_count++;
 	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is open for writing"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
-	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd, 0, status.mt_fileno, db);
+	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd, 0, -1, db);
 }
 
 static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db) {

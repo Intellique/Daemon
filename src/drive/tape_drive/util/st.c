@@ -39,6 +39,15 @@
 
 #include "st.h"
 
+int sodr_tape_drive_st_get_posititon(struct so_drive * drive, int fd, struct so_database_connection * db) {
+	struct mtget status;
+	int failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
+	if (failed < 0)
+		return -1;
+
+	return status.mt_fileno;
+}
+
 int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct so_database_connection * db) {
 	sodr_time_start();
 	int failed = ioctl(fd, MTIOCGET, status);

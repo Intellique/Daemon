@@ -188,6 +188,14 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 		return 1;
 	}
 
+	failed = sodr_tape_drive_writer_close2(writer, false);
+	writer->ops->free(writer);
+
+	if (failed != 0)
+		return failed;
+
+	failed = sodr_tape_drive_st_write_end_of_file(drive, fd);
+
 	return 0;
 }
 
