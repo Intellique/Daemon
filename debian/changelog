@@ -1,3 +1,11 @@
+storiqone (1.2.12-2+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - typo fix, wrong format, use %d instead of %u
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Feb 2016 13:43:16 +0100
+
 storiqone (1.2.12-1+wheezy) polisher; urgency=low
 
   * New bug fix release

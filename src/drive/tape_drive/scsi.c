@@ -1092,7 +1092,7 @@ static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_comman
 		scsi_command->timeout = be32toh(result.timeout.recommended_command_timeout);
 
 		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "SCSI supported command: '%s', available: %s, timeout: %d seconds"),
+			dgettext("storiqone-drive-tape", "SCSI supported command: '%s', available: %s, timeout: %u seconds"),
 			scsi_command->name, scsi_command->available ? dgettext("storiqone-drive-tape", "yes") : dgettext("storiqone-drive-tape", "no"), scsi_command->timeout);
 	}
 
