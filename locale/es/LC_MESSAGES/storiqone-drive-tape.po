@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-19 13:34+0100\n"
+        "POT-Creation-Date: 2016-02-22 13:57+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -191,8 +191,8 @@ msgstr  "Información del media %s, Fecha del media: %s"
 
 #: src/drive/tape_drive/scsi.c:1095
 #, c-format
-msgid   "SCSI supported command: '%s', available: %s, timeout: %d seconds"
-msgstr  "Comando SCSI soportado: \"%s\", disponible: %s, tiempo de inactividad: %d segundos"
+msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
+msgstr  ""
 
 #: src/drive/tape_drive/scsi.c:1096
 msgid   "no"
@@ -206,3 +206,6 @@ msgstr  "si"
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
+
+#~ msgid        "SCSI supported command: '%s', available: %s, timeout: %d seconds"
+#~ msgstr       "Comando SCSI soportado: \"%s\", disponible: %s, tiempo de inactividad: %d segundos"
