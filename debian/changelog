@@ -1,3 +1,15 @@
+storiqone (1.2.12-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - SCSI command REWIND
+    - from LTO-5, we can detect timeout command and check if SCSI command is
+      available
+  * Bug fix:
+    - #93: LOCATE(10) & LOCATE(16)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Feb 2016 10:29:30 +0100
+
 storiqone (1.2.11-1+wheezy) polisher; urgency=low
 
   * New bug fix release
