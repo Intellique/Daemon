@@ -1,3 +1,11 @@
+storiqone (1.2.12-2+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Change:
+    - Disable scsi_setup
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Feb 2016 19:13:24 +0100
+
 storiqone (1.2.12-1+jessie) polisher; urgency=low
 
   * New bug fix release
