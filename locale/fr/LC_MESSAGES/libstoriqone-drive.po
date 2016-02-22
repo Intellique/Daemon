@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-10-08 12:00+0200\n"
+        "POT-Creation-Date: 2016-02-17 09:13+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -21,73 +21,83 @@ msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
 msgid   "[%s %s #%u]: reopen media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : réouverture du média « %s » en lecture à la position n°%d"
 
-#: src/libstoriqone-drive/io/io.c:72
-#, c-format
-msgid   "[%s | %s | #%u]: Throughput: %s/s"
-msgstr  "[ %s %s #%u ] : Débit %s/s"
-
-#: src/libstoriqone-drive/listen.c:278
-#, c-format
-msgid   "[%s %s #%u]: checking header of media '%s'"
-msgstr  "[ %s %s #%u ] : vérification de l’entête du média « %s »"
-
-#: src/libstoriqone-drive/listen.c:423 src/libstoriqone-drive/listen.c:562
-#, c-format
-msgid   "[%s %s #%u]: open media '%s' for reading at position #%d"
-msgstr  "[ %s %s #%u ] : ouverture du média « %s » en lecture à la position #%d"
-
-#: src/libstoriqone-drive/listen.c:489 src/libstoriqone-drive/listen.c:632
-#, c-format
-msgid   "[%s %s #%u]: open media '%s' for writing"
-msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
-
-#: src/libstoriqone-drive/listen.c:759
+#: src/libstoriqone-drive/io/import_media.c:82
 #, c-format
 msgid   "[%s %s #%u]: counting archives from media '%s'"
 msgstr  "[ %s %s #%u ] : comptage des archives du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:788
+#: src/libstoriqone-drive/io/import_media.c:113
+#, c-format
+msgid   "[%s %s #%u]: attach media '%s' to pool '%s'"
+msgstr  "[ %s %s #%u ] : relie le média « %s » au pool « %s »"
+
+#: src/libstoriqone-drive/io/import_media.c:148
+#, c-format
+msgid   "[%s %s #%u]: Parsing archive from media '%s' at position #%u"
+msgstr  "[ %s %s #%u ] : Analyse de l’archive depuis le média « %s » à la position n°%u"
+
+#: src/libstoriqone-drive/io/io.c:73
+#, c-format
+msgid   "[%s | %s | #%u]: Throughput: %s/s"
+msgstr  "[ %s %s #%u ] : Débit %s/s"
+
+#: src/libstoriqone-drive/listen.c:275
+#, c-format
+msgid   "[%s %s #%u]: checking header of media '%s'"
+msgstr  "[ %s %s #%u ] : vérification de l’entête du média « %s »"
+
+#: src/libstoriqone-drive/listen.c:402 src/libstoriqone-drive/listen.c:541
+#, c-format
+msgid   "[%s %s #%u]: open media '%s' for reading at position #%d"
+msgstr  "[ %s %s #%u ] : ouverture du média « %s » en lecture à la position #%d"
+
+#: src/libstoriqone-drive/listen.c:468 src/libstoriqone-drive/listen.c:611
+#, c-format
+msgid   "[%s %s #%u]: open media '%s' for writing"
+msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
+
+#: src/libstoriqone-drive/listen.c:690
+#, c-format
+msgid   "[%s %s #%u]: open media '%s' for importing archives"
+msgstr  "[ %s %s #%u ] : ouverture du média « %s » pour l’imporatation d'archives"
+
+#: src/libstoriqone-drive/listen.c:736
 #, c-format
 msgid   "[%s %s #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s %s #%u ]: Effacement du média « %s » (mode : %s)"
 
-#: src/libstoriqone-drive/listen.c:790
+#: src/libstoriqone-drive/listen.c:738
 msgid   "long"
 msgstr  "long"
 
-#: src/libstoriqone-drive/listen.c:790
+#: src/libstoriqone-drive/listen.c:738
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/libstoriqone-drive/listen.c:801
+#: src/libstoriqone-drive/listen.c:749
 #, c-format
 msgid   "[%s %s #%u]: media '%s' erased successfully"
 msgstr  "[ %s %s #%u ] : média « %s » effacé avec succès"
 
-#: src/libstoriqone-drive/listen.c:805
+#: src/libstoriqone-drive/listen.c:753
 #, c-format
 msgid   "[%s %s #%u]: failed to erase media '%s'"
 msgstr  "[ %s %s #%u ] : échec lors de l’effacement du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:828
+#: src/libstoriqone-drive/listen.c:776
 #, c-format
 msgid   "[%s %s #%u]: formatting media '%s'"
 msgstr  "[ %s %s #%u ] : formatage du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:840
+#: src/libstoriqone-drive/listen.c:788
 #, c-format
 msgid   "[%s %s #%u]: media '%s' formatted successfully"
 msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
 
-#: src/libstoriqone-drive/listen.c:844
+#: src/libstoriqone-drive/listen.c:792
 #, c-format
 msgid   "[%s %s #%u]: failed to format media '%s'"
 msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
-
-#: src/libstoriqone-drive/listen.c:867
-#, c-format
-msgid   "[%s %s #%u]: Parsing archive from media '%s' at position #%u"
-msgstr  "[ %s %s #%u ] : Analyse de l’archive depuis le média « %s » à la position n°%u"
 
 #: src/libstoriqone-drive/main.c:72
 #, c-format
@@ -109,20 +119,20 @@ msgstr  "Démarrage du lecteur (type : %s, fabricant : %s, modèle : %s, num�
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
 
-#: src/libstoriqone-drive/media.c:144 src/libstoriqone-drive/media.c:231 src/libstoriqone-drive/media.c:318
+#: src/libstoriqone-drive/media.c:144 src/libstoriqone-drive/media.c:230 src/libstoriqone-drive/media.c:316
 #, c-format
 msgid   "Checking Storiq One header in media: %s"
 msgstr  "Vérification de l’entête Storiq One dans le média : %s"
 
-#: src/libstoriqone-drive/media.c:148 src/libstoriqone-drive/media.c:235 src/libstoriqone-drive/media.c:322
+#: src/libstoriqone-drive/media.c:148 src/libstoriqone-drive/media.c:234 src/libstoriqone-drive/media.c:320
 #, c-format
 msgid   "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"
 msgstr  "Une entête Storiq One a été trouvé sur le média avec (uuid : %s, étiquette : %s, taille de bloc : %zd)"
 
-#: src/libstoriqone-drive/media.c:163 src/libstoriqone-drive/media.c:250 src/libstoriqone-drive/media.c:337
+#: src/libstoriqone-drive/media.c:162 src/libstoriqone-drive/media.c:248 src/libstoriqone-drive/media.c:334
 msgid   "Checking Storiq One header in media: Failed"
 msgstr  "Vérification de l’entête Storiq One sur le média : échec"
 
-#: src/libstoriqone-drive/media.c:383
+#: src/libstoriqone-drive/media.c:380
 msgid   "Failed to compute digest before writing media header"
 msgstr  "Échec du calcul de l’empreinte avant l’écriture de l’entête du média"

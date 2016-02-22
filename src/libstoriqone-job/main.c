@@ -103,6 +103,16 @@ static void job_worker(void * arg) {
 	if (db_connect == NULL)
 		goto error;
 
+	if (db_connect->ops->is_user_disabled(db_connect, job)) {
+		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("libstoriqone-job", "Error, user '%s' has been disabled consequently job (type: %s, key: %s, name: %s) cannot proceed"),
+			j->user, j->type, j->key, j->name);
+
+		job->exit_code = 1;
+		job->status = so_job_status_error;
+		goto error;
+	}
+
 	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important,
 		dgettext("libstoriqone-job", "Starting simulation of job (type: %s, key: %s, name: %s)"),
 		j->type, j->key, j->name);
@@ -112,6 +122,7 @@ static void job_worker(void * arg) {
 		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("libstoriqone-job", "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"),
 			j->type, j->key, j->name, failed);
+
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;

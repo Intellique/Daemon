@@ -44,16 +44,13 @@ struct sodr_tape_drive_scsi_position {
 bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path);
 bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path);
 int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode);
-/**
- * \brief Set position on tape
- * \remark Require LTO-4 drive at least
- */
-int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position);
+int sodr_tape_drive_scsi_locate(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
 int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path);
 int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_position * position);
 int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
 int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media);
 int sodr_tape_drive_scsi_rewind(int fd);
+int sodr_tape_drive_scsi_setup(const char * path);
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);
 
 #endif

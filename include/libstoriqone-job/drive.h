@@ -38,6 +38,7 @@ struct so_drive_ops {
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 	unsigned int (*count_archives)(struct so_drive * drive);
 	int (*erase_media)(struct so_drive * drive, bool quick_mode);
+	int (*finish_import_media)(struct so_drive * drive, struct so_pool * pool);
 	int (*format_media)(struct so_drive * drive, ssize_t block_size, struct so_pool * pool);
 	struct so_stream_reader * (*get_raw_reader)(struct so_drive * drive, int file_position);
 	struct so_stream_writer * (*get_raw_writer)(struct so_drive * drive);
@@ -45,6 +46,7 @@ struct so_drive_ops {
 	struct so_format_writer * (*get_writer)(struct so_drive * drive, struct so_value * checksums);
 	struct so_archive * (*parse_archive)(struct so_drive * drive, int archive_position, struct so_value * checksums);
 	void (*release)(struct so_drive * drive);
+	int (*scan_media)(struct so_drive * drive);
 	int (*sync)(struct so_drive * drive);
 };
 

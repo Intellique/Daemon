@@ -52,12 +52,12 @@
 
 #include "storiqone.version"
 
-static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed, bool check);
-static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed, bool check);
-static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed, bool check);
+static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed, bool restore_data);
+static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed, bool restore_data);
+static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed, bool restore_data);
 
 
-bool sodr_media_check_header(struct so_media * media, const char * buffer) {
+bool sodr_media_check_header(struct so_media * media, const char * buffer, bool restore_data) {
 	char storiqone_version[65];
 	int media_format_version = 0;
 	int nb_parsed = 0;
@@ -70,15 +70,15 @@ bool sodr_media_check_header(struct so_media * media, const char * buffer) {
 	if (nb_params == 2) {
 		switch (media_format_version) {
 			case 1:
-				ok = sodr_media_read_header_v1(media, buffer, nb_parsed, true);
+				ok = sodr_media_read_header_v1(media, buffer, nb_parsed, restore_data);
 				break;
 
 			case 2:
-				ok = sodr_media_read_header_v2(media, buffer, nb_parsed, true);
+				ok = sodr_media_read_header_v2(media, buffer, nb_parsed, restore_data);
 				break;
 
 			case 3:
-				ok = sodr_media_read_header_v3(media, buffer, nb_parsed, true);
+				ok = sodr_media_read_header_v3(media, buffer, nb_parsed, restore_data);
 				break;
 		}
 	}
@@ -86,7 +86,7 @@ bool sodr_media_check_header(struct so_media * media, const char * buffer) {
 	return ok;
 }
 
-static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed2, bool check) {
+static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed2, bool restore_data) {
 	// M | STone (v0.1)
 	// M | Tape format: version=1
 	// O | Label: A0000002
@@ -137,10 +137,10 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 	}
 
 	if (ok) {
-		if (check) {
+		if (!restore_data) {
 			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info,
+			so_log_write(ok ? so_log_level_info : so_log_level_warning,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
 				ok ? "OK" : "Failed");
 		} else {
@@ -155,10 +155,9 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 			}
 			free(media->name);
 			media->name = strdup(name);
-			media->status = so_media_status_in_use;
 			media->block_size = block_size;
 		}
-	} else if (check)
+	} else if (!restore_data)
 		so_log_write(so_log_level_info,
 			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
@@ -167,7 +166,7 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 	return ok;
 }
 
-static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed2, bool check) {
+static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed2, bool restore_data) {
 	// M | STone (v0.2)
 	// M | Tape format: version=2
 	// M | Host: name=kazoo, uuid=40e576d7-cb14-42c2-95c5-edd14fbb638d
@@ -224,10 +223,10 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 	}
 
 	if (ok) {
-		if (check) {
+		if (!restore_data) {
 			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info,
+			so_log_write(ok ? so_log_level_info : so_log_level_warning,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
 				ok ? "OK" : "Failed");
 		} else {
@@ -242,10 +241,9 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 			}
 			free(media->name);
 			media->name = strdup(name);
-			media->status = so_media_status_in_use;
 			media->block_size = block_size;
 		}
-	} else if (check)
+	} else if (!restore_data)
 		so_log_write(so_log_level_info,
 			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
@@ -254,7 +252,7 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 	return ok;
 }
 
-static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed2, bool check) {
+static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed2, bool restore_data) {
 	// M | Storiq One (v1.2)
 	// M | Media format: version=3
 	// M | Host: name="kazoo", uuid="40e576d7-cb14-42c2-95c5-edd14fbb638d"
@@ -311,10 +309,10 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 	}
 
 	if (ok) {
-		if (check) {
+		if (!restore_data) {
 			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info,
+			so_log_write(ok ? so_log_level_info : so_log_level_warning,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
 				ok ? "OK" : "Failed");
 		} else {
@@ -329,10 +327,9 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 			}
 			free(media->name);
 			media->name = strdup(name);
-			media->status = so_media_status_in_use;
 			media->block_size = block_size;
 		}
-	} else if (check)
+	} else if (!restore_data)
 		so_log_write(so_log_level_info,
 			dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else

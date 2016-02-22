@@ -30,7 +30,7 @@
 #include <string.h>
 // bzero
 #include <strings.h>
-// read
+// close, read
 #include <unistd.h>
 
 #include <libstoriqone/config.h>
@@ -149,7 +149,11 @@ static int sodr_tape_drive_format_ltfs_reader_close(struct so_format_reader * fr
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 
 	if (self->fd > -1) {
+		close(self->fd);
+		close(self->scsi_fd);
+
 		self->fd = -1;
+		self->scsi_fd = -1;
 		self->last_errno = 0;
 	}
 
@@ -251,7 +255,7 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 		};
 
 		sodr_time_start();
-		int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+		int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 		sodr_time_stop(self->drive);
 
 		if (failed != 0)
@@ -387,7 +391,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 			};
 
 			sodr_time_start();
-			int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+			int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 			sodr_time_stop(self->drive);
 
 			if (failed != 0)
@@ -440,7 +444,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 				};
 
 				sodr_time_start();
-				int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+				int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 				sodr_time_stop(self->drive);
 
 				if (failed != 0)

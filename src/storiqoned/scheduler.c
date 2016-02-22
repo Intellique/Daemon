@@ -172,8 +172,8 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			 * char * path = NULL;
 			 * asprintf(&path, "--log-file=valgrind/%s_%s_%s", job->key, job->type, job->name);
 			 *
-			 * const char * params[] = { "-v", "--log-file=valgrind.log", "--track-fds=yes", "--time-stamp=yes", "--num-callers=24", "--leak-check=full", "--show-reachable=yes", "--track-origins=yes", "--fullpath-after=/home/guillaume/prog/StoriqOne/", process_name };
-			 * so_process_new(&self->process, "valgrind", params, 10);
+			 * const char * params[] = { "-v", path, "--track-fds=yes", "--time-stamp=yes", "--num-callers=24", "--leak-check=full", "--show-reachable=yes", "--track-origins=yes", "--fullpath-after=/home/guillaume/prog/StoriqOne/", "--db-attach=yes", "--read-var-info=yes", "--fair-sched=try", process_name };
+			 * so_process_new(&self->process, "valgrind", params, 13);
 			 *
 			 * free(path)
 			 */

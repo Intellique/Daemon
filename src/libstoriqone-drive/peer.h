@@ -53,6 +53,8 @@ struct sodr_peer {
 	struct timespec start_time;
 	ssize_t nb_total_bytes;
 
+	struct so_database_connection * db_connection;
+
 	bool disconnected;
 	volatile bool owned;
 

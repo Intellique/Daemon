@@ -35,6 +35,7 @@
 // close
 #include <unistd.h>
 
+#include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/log.h>
@@ -127,6 +128,11 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 	if (peer->format_writer != NULL) {
 		peer->format_writer->ops->free(peer->format_writer);
 		peer->format_writer = NULL;
+	}
+
+	if (peer->db_connection != NULL) {
+		peer->db_connection->ops->close(peer->db_connection);
+		peer->db_connection = NULL;
 	}
 
 	if (peer->fd_cmd > -1) {
