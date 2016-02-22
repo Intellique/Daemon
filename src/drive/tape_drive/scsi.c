@@ -1023,6 +1023,9 @@ int sodr_tape_drive_scsi_setup(const char * path) {
 }
 
 static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_command) {
+	unsigned char buffer[48];
+	memset(&buffer, 0, 48);
+
 	struct report_result {
 		unsigned char reserved0;
 		enum {
@@ -1033,15 +1036,16 @@ static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_comman
 		unsigned char reserved1:4;
 		bool command_timeout_descriptor:1;
 		unsigned short cdb_length;
-		unsigned char cdb_usage_data[scsi_command->cdb_length];
-		struct timeout_descriptor {
-			unsigned short descriptor_length;
-			unsigned char reserved0;
-			unsigned char command_specific;
-			unsigned int nominal_command_processing_timeout;
-			unsigned int recommended_command_timeout;
-		} timeout;
-	} result;
+		// unsigned char cdb_usage_data[scsi_command->cdb_length];
+	} __attribute__((packed));
+
+	struct timeout_descriptor {
+		unsigned short descriptor_length;
+		unsigned char reserved2;
+		unsigned char command_specific;
+		unsigned int nominal_command_processing_timeout;
+		unsigned int recommended_command_timeout;
+	} __attribute__((packed));
 
 	struct {
 		unsigned char op_code;
@@ -1064,9 +1068,9 @@ static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_comman
 		.service_action = 0x0C,
 		.reporting_options = reporting_options_single_op_code,
 		.return_command_timeouts_descriptor = true,
-		.requested_operation_code = 0x92,
+		.requested_operation_code = scsi_command->op_code,
 		.requested_service_action = 0x0,
-		.allocation_length = htobe32(sizeof(result)),
+		.allocation_length = htobe32(48),
 	};
 
 	sg_io_hdr_t header;
@@ -1078,18 +1082,23 @@ static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_comman
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(result);
+	header.dxfer_len = 48;
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = (unsigned char *) &result;
+	header.dxferp = buffer;
 	header.timeout = 60000; // 1 minutes
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
 
 	if (status == 0) {
-		scsi_command->available = result.support != unsupported_command;
-		scsi_command->timeout = be32toh(result.timeout.recommended_command_timeout);
+		struct report_result * result = (struct report_result *) &buffer;
+		result->cdb_length = be16toh(result->cdb_length);
+
+		struct timeout_descriptor * timeout = (struct timeout_descriptor *) (buffer + result->cdb_length + 4);
+
+		scsi_command->available = result->support != unsupported_command;
+		scsi_command->timeout = be32toh(timeout->recommended_command_timeout);
 
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "SCSI supported command: '%s', available: %s, timeout: %u seconds"),
