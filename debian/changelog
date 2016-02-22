@@ -1,3 +1,34 @@
+storiqone (1.2.12-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - SCSI command REWIND
+    - from LTO-5, we can detect timeout command and check if SCSI command is
+      available
+  * Bug fix:
+    - #93: LOCATE(10) & LOCATE(16)
+    - typo fix, wrong format, use %d instead of %u
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Feb 2016 13:53:09 +0100
+
+storiqone (1.2.11-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - #84: jobs of disabled users will not be executed
+    - debug symbol package (storiqone-dbg)
+  * Bug fix:
+    - #82: create check archive task after copy
+    - #80: do not start disabled device
+    - small memory leaks
+    - #74: fix support for standalone drives
+    - fix: create databse script
+    - #91: correctly close file descriptor
+    - #92: fix starting tape drive
+    - #83: fix import media (LTFS and other)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 17 Feb 2016 16:37:25 +0100
+
 storiqone (1.2.10-1+jessie) polisher; urgency=low
 
   * New bug fix release

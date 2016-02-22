@@ -16,6 +16,8 @@ export DH_VERBOSE=1
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
+.PHONY: override_dh_strip
+
 override_dh_auto_configure:
 	@echo 'fake auto configure'
 
@@ -34,6 +36,9 @@ override_dh_installinit:
 
 override_dh_fixperms:
 	dh_fixperms -X bin -X lib
+
+override_dh_strip:
+	dh_strip --dbg-package=storiqone-dbg
 
 %:
 	dh $@ 
