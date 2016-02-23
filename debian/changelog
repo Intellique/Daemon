@@ -1,3 +1,11 @@
+storiqone (1.2.12.1-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #95: Import media: programming error
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 23 Feb 2016 18:29:53 +0100
+
 storiqone (1.2.12-2+jessie) polisher; urgency=low
 
   * New bug fix release
