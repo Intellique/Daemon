@@ -220,10 +220,6 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 	so_value_iterator_free(iter);
 
 	if (failed == 0) {
-		failed = drive->ops->finish_import_media(drive, soj_importarchives_pool);
-	}
-
-	if (failed == 0) {
 		db_connect->ops->finish_transaction(db_connect);
 		job->done = 1;
 	} else {

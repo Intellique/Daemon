@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-22 13:57+0100\n"
+        "POT-Creation-Date: 2016-02-23 17:28+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -189,16 +189,16 @@ msgstr  "Information du média %s, Fabricant du média: %s"
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Information du média %s, date du média: %s"
 
-#: src/drive/tape_drive/scsi.c:1095
+#: src/drive/tape_drive/scsi.c:1104
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
-msgstr  ""
+msgstr  "Commande SCSI supportée : « %s », disponible : %s, temps morts : %u secondes"
 
-#: src/drive/tape_drive/scsi.c:1096
+#: src/drive/tape_drive/scsi.c:1105
 msgid   "no"
 msgstr  "non"
 
-#: src/drive/tape_drive/scsi.c:1096
+#: src/drive/tape_drive/scsi.c:1105
 msgid   "yes"
 msgstr  "oui"
 
@@ -206,6 +206,3 @@ msgstr  "oui"
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | n°%u ] : le lecteur est fermé"
-
-#~ msgid        "SCSI supported command: '%s', available: %s, timeout: %d seconds"
-#~ msgstr       "Commande SCSI supportée : « %s », disponible : %s, temps morts : %d secondes"
