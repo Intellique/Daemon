@@ -136,6 +136,9 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 	soj_importarchives_archives = so_value_new_linked_list();
 
+	struct so_value * archive_metadata = NULL, * files_metadata = NULL;
+	so_value_unpack(job->meta, "{soso}", "archive", &archive_metadata, "files", &files_metadata);
+
 	unsigned int i, nb_archives = drive->ops->count_archives(drive);
 	for (i = 0; i < nb_archives && !job->stopped_by_user; i++) {
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
@@ -164,6 +167,14 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 		} else
 			archive->owner = strdup(job->user);
 
+		// Manage metadata
+		if (archive->metadata != NULL)
+			so_value_free(archive->metadata);
+		archive->metadata = NULL;
+
+		if (archive_metadata != NULL)
+			archive->metadata = so_value_share(archive_metadata);
+
 		unsigned int j;
 		for (j = 0; j < archive->nb_volumes; j++) {
 			struct so_archive_volume * vol = archive->volumes + j;
@@ -175,6 +186,16 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 			if (media->pool != NULL)
 				so_pool_free(media->pool);
 			media->pool = db_connect->ops->get_pool(db_connect, NULL, job);
+
+			unsigned int k;
+			for (k = 0; k < vol->nb_files; k++) {
+				struct so_archive_files * ptr_file = vol->files + k;
+				struct so_archive_file * file = ptr_file->file;
+
+				if (file->metadata != NULL)
+					so_value_free(file->metadata);
+				file->metadata = so_value_hashtable_get2(files_metadata, file->path, true, false);
+			}
 		}
 
 		so_value_list_push(soj_importarchives_archives, so_value_new_custom(archive, so_archive_free2), true);
