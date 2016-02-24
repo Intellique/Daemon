@@ -891,11 +891,11 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 		char * space;
 		char buf[33];
 		switch (attr->attribute_identifier) {
-			case scsi_mam_remaining_capacity:
-				media->free_block = be64toh(attr->attribute_value.be64);
-				media->free_block <<= 10;
-				media->free_block /= (media->block_size >> 10);
-				break;
+//			case scsi_mam_remaining_capacity:
+//				media->free_block = be64toh(attr->attribute_value.be64);
+//				media->free_block <<= 10;
+//				media->free_block /= (media->block_size >> 10);
+//				break;
 
 			case scsi_mam_load_count:
 				media->load_count = be64toh(attr->attribute_value.be64);
@@ -1186,11 +1186,15 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 		result.values[i].value = be32toh(result.values[i].value);
 	}
 
-	media->free_block = result.values[0].value << 10;
-	media->free_block /= (media->block_size >> 10);
+	unsigned long long int free_block = result.values[0].value;
+	if (result.values[3].value > 0)
+		free_block = result.values[1].value;
+	free_block <<= 20;
+	media->free_block = free_block / media->block_size;
 
-	media->total_block = result.values[2].value << 10;
-	media->total_block /= (media->block_size >> 10);
+	unsigned long long int total_block = result.values[2].value + result.values[3].value;
+	total_block <<= 20;
+	media->total_block = total_block / media->block_size;
 
 	return 0;
 }
