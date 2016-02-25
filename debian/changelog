@@ -1,3 +1,23 @@
+storiqone (1.2.12.2-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - default configuration
+    - #94: checking foreign ST1 media failed because media has no pool
+    - #96: update drive status while reading LTFS tape
+    - #75: import metadata when importing media
+    - #97: fix remaing size of partitioned tape (LTFS)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 25 Feb 2016 11:56:01 +0100
+
+storiqone (1.2.12.1-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #95: Import media: programming error
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 23 Feb 2016 18:29:53 +0100
+
 storiqone (1.2.12.1-1+jessie) polisher; urgency=low
 
   * New bug fix release
@@ -239,64 +259,3 @@ storiqone (1.2rc1-1) polisher; urgency=low
   * First release candidate
 
  -- Guillaume Clercin <gclercin@intellique.com>  Mon, 14 Sep 2015 12:18:24 +0200
-
-storiqone (1.2b2-9) polisher; urgency=low
-
-  * Ajout: mesure des débit moyen par lecteur
-
- -- Guillaume Clercin <gclercin@intellique.com>  Thu, 03 Sep 2015 11:55:43 +0200
-
-storiqone (1.2b2-8) polisher; urgency=low
-
-  * Correctif tape_drive, mauvais file info
-
- -- Guillaume Clercin <gclercin@intellique.com>  Wed, 02 Sep 2015 00:21:37 +0200
-
-storiqone (1.2b2-7) polisher; urgency=low
-
-  * Correctif formattage des bandes lto
-
- -- Guillaume Clercin <gclercin@intellique.com>  Tue, 01 Sep 2015 10:26:07 +0200
-
-storiqone (1.2b2-6) polisher; urgency=low
-
-  * Séparation des jobs et d'autres exécutables en deux répertoires
-
- -- Guillaume Clercin <gclercin@intellique.com>  Mon, 31 Aug 2015 13:39:12 +0200
-
-storiqone (1.2b2-5) polisher; urgency=low
-
-  * Changement du chemin du fichier de configuration
-
- -- Guillaume Clercin <gclercin@intellique.com>  Mon, 31 Aug 2015 10:36:21 +0200
-
-storiqone (1.2b2-4) polisher; urgency=low
-
-  * Changement du chemin pour démarrer le démon
-
- -- Guillaume Clercin <gclercin@intellique.com>  Fri, 28 Aug 2015 11:15:39 +0200
-
-storiqone (1.2b2-3) polisher; urgency=low
-
-  * Petit oubli
-
- -- Guillaume Clercin <gclercin@intellique.com>  Thu, 27 Aug 2015 13:38:44 +0200
-
-storiqone (1.2b2-2) polisher; urgency=low
-
-  * Suppression de l'attribut 'nonnull'
-
- -- Guillaume Clercin <gclercin@intellique.com>  Thu, 27 Aug 2015 10:35:15 +0200
-
-storiqone (1.2b2-1) polisher; urgency=low
-
-  * Ajout des locales
-
- -- Guillaume Clercin <gclercin@intellique.com>  Wed, 26 Aug 2015 09:18:57 +0200
-
-storiqone (1.2b2) polisher; urgency=low
-
-  * New version (multi-process)
-  * LTFS (read only)
-
- -- Guillaume Clercin <gclercin@intellique.com>  Tue, 25 Aug 2015 10:50:40 +0200
