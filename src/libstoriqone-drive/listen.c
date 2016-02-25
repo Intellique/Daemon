@@ -267,9 +267,7 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute
 	struct so_drive * drive = driver->device;
 	struct so_media * media = drive->slot->media;
 
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: checking header of media '%s'"),
@@ -394,9 +392,7 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 
 	struct so_media * media = drive->slot->media;
 
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
@@ -460,9 +456,7 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 
 	struct so_media * media = drive->slot->media;
 
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
@@ -533,9 +527,7 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 
 	struct so_media * media = drive->slot->media;
 
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
@@ -603,9 +595,7 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 
 	struct so_media * media = drive->slot->media;
 
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
@@ -682,9 +672,7 @@ static void sodr_socket_command_scan_media(struct sodr_peer * peer, struct so_va
 
 	struct so_media * media = drive->slot->media;
 
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for importing archives"),
@@ -728,9 +716,7 @@ static void sodr_worker_command_erase_media(void * arg) {
 	struct so_drive * drive = driver->device;
 	struct so_media * media = drive->slot->media;
 
-	char * media_name = NULL;
-	if (media != NULL)
-		media_name = strdup(media->name);
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: Erasing media '%s' (mode: %s)"),
@@ -756,7 +742,6 @@ static void sodr_worker_command_erase_media(void * arg) {
 	params->peer->owned = false;
 	sodr_listen_remove_peer(params->peer);
 
-	free(media_name);
 	free(params);
 	db_connect->ops->free(db_connect);
 }
@@ -768,9 +753,7 @@ static void sodr_worker_command_format_media(void * data) {
 	struct so_drive * drive = driver->device;
 	struct so_media * media = drive->slot->media;
 
-	char * media_name = NULL;
-	if (media != NULL)
-		media_name = strdup(media->name);
+	const char * media_name = so_media_get_name(media);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: formatting media '%s'"),
@@ -795,7 +778,6 @@ static void sodr_worker_command_format_media(void * data) {
 	params->peer->owned = false;
 	sodr_listen_remove_peer(params->peer);
 
-	free(media_name);
 	db_connect->ops->free(db_connect);
 	free(params);
 }
