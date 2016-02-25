@@ -138,7 +138,9 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 
 	if (ok) {
 		if (!restore_data) {
-			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
+			ok = !strcmp(media->uuid, uuid);
+			if (media->pool != NULL && ok)
+				ok = !strcmp(media->pool->uuid, pool_id);
 
 			so_log_write(ok ? so_log_level_info : so_log_level_warning,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
@@ -224,7 +226,9 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 
 	if (ok) {
 		if (!restore_data) {
-			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
+			ok = !strcmp(media->uuid, uuid);
+			if (media->pool != NULL && ok)
+				ok = !strcmp(media->pool->uuid, pool_id);
 
 			so_log_write(ok ? so_log_level_info : so_log_level_warning,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
@@ -310,7 +314,9 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 
 	if (ok) {
 		if (!restore_data) {
-			ok = !strcmp(media->uuid, uuid) && media->pool != NULL && !strcmp(media->pool->uuid, pool_id);
+			ok = !strcmp(media->uuid, uuid);
+			if (media->pool != NULL && ok)
+				ok = !strcmp(media->pool->uuid, pool_id);
 
 			so_log_write(ok ? so_log_level_info : so_log_level_warning,
 				dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"),
