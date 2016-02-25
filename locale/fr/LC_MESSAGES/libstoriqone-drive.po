@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-26 17:43+0100\n"
+        "POT-Creation-Date: 2016-02-26 17:47+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -41,65 +41,65 @@ msgstr  "[ %s %s #%u ] : Analyse de l’archive depuis le média « %s » �
 msgid   "[%s | %s | #%u]: Throughput: %s/s"
 msgstr  "[ %s %s #%u ] : Débit %s/s"
 
-#: src/libstoriqone-drive/listen.c:272
+#: src/libstoriqone-drive/listen.c:270
 #, c-format
 msgid   "[%s %s #%u]: checking header of media '%s'"
 msgstr  "[ %s %s #%u ] : vérification de l’entête du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:350 src/libstoriqone-drive/listen.c:543 src/libstoriqone-drive/listen.c:612
+#: src/libstoriqone-drive/listen.c:348 src/libstoriqone-drive/listen.c:537 src/libstoriqone-drive/listen.c:604
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for writing"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
 
-#: src/libstoriqone-drive/listen.c:479 src/libstoriqone-drive/listen.c:701
+#: src/libstoriqone-drive/listen.c:475 src/libstoriqone-drive/listen.c:691
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en lecture à la position #%d"
 
-#: src/libstoriqone-drive/listen.c:665
+#: src/libstoriqone-drive/listen.c:657
 #, c-format
 msgid   "[%s %s #%u]: New connection from job (id: %s, num runs: %u)"
 msgstr  "[ %s %s #%u ] : Nouvelle connexion depuis la tâche (id: %s, n°exécution: %u)"
 
-#: src/libstoriqone-drive/listen.c:759
+#: src/libstoriqone-drive/listen.c:747
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for importing archives"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » pour l’imporatation d'archives"
 
-#: src/libstoriqone-drive/listen.c:807
+#: src/libstoriqone-drive/listen.c:793
 #, c-format
 msgid   "[%s %s #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s %s #%u ]: Effacement du média « %s » (mode : %s)"
 
-#: src/libstoriqone-drive/listen.c:809
+#: src/libstoriqone-drive/listen.c:795
 msgid   "long"
 msgstr  "long"
 
-#: src/libstoriqone-drive/listen.c:809
+#: src/libstoriqone-drive/listen.c:795
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/libstoriqone-drive/listen.c:818
+#: src/libstoriqone-drive/listen.c:804
 #, c-format
 msgid   "[%s %s #%u]: media '%s' erased successfully"
 msgstr  "[ %s %s #%u ] : média « %s » effacé avec succès"
 
-#: src/libstoriqone-drive/listen.c:822
+#: src/libstoriqone-drive/listen.c:808
 #, c-format
 msgid   "[%s %s #%u]: failed to erase media '%s'"
 msgstr  "[ %s %s #%u ] : échec lors de l’effacement du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:847
+#: src/libstoriqone-drive/listen.c:830
 #, c-format
 msgid   "[%s %s #%u]: formatting media '%s'"
 msgstr  "[ %s %s #%u ] : formatage du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:857
+#: src/libstoriqone-drive/listen.c:840
 #, c-format
 msgid   "[%s %s #%u]: media '%s' formatted successfully"
 msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
 
-#: src/libstoriqone-drive/listen.c:861
+#: src/libstoriqone-drive/listen.c:844
 #, c-format
 msgid   "[%s %s #%u]: failed to format media '%s'"
 msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
