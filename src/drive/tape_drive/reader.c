@@ -200,7 +200,9 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 static void sodr_tape_drive_reader_free(struct so_stream_reader * io) {
 	struct sodr_tape_drive_reader * self = io->data;
 	if (self != NULL) {
-		self->fd = -1;
+		if (self->fd > -1)
+			sodr_tape_drive_reader_close(io);
+
 		free(self->buffer);
 		free(self);
 	}
