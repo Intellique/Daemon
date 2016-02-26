@@ -321,6 +321,22 @@ struct so_value * so_media_format_convert(struct so_media_format * format) {
 	);
 }
 
+const char * so_media_get_name(const struct so_media * media) {
+	if (media == NULL)
+		return NULL;
+
+	if (media->name != NULL)
+		return media->name;
+
+	if (media->label != NULL)
+		return media->label;
+
+	if (media->medium_serial_number != NULL)
+		return media->medium_serial_number;
+
+	return NULL;
+}
+
 void so_media_format_sync(struct so_media_format * format, struct so_value * new_format) {
 	const char * name = NULL;
 

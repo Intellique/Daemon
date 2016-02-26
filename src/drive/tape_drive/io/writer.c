@@ -243,8 +243,10 @@ static void sodr_tape_drive_writer_free(struct so_stream_writer * sw) {
 		return;
 
 	struct sodr_tape_drive_writer * self = sw->data;
-	if (self) {
-		self->fd = -1;
+	if (self != NULL) {
+		if (self->fd > -1)
+			sodr_tape_drive_writer_close(sw);
+
 		free(self->buffer);
 		free(self);
 	}

@@ -141,6 +141,8 @@ struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive
 	reader->ops = &sodr_tape_drive_format_ltfs_reader_ops;
 	reader->data = self;
 
+	drive->status = so_drive_status_reading;
+
 	return reader;
 }
 
@@ -156,6 +158,8 @@ static int sodr_tape_drive_format_ltfs_reader_close(struct so_format_reader * fr
 		self->scsi_fd = -1;
 		self->last_errno = 0;
 	}
+
+	self->drive->status = so_drive_status_loaded_idle;
 
 	return 0;
 }
@@ -254,9 +258,13 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 			.end_of_partition = false,
 		};
 
+		self->drive->status = so_drive_status_positioning;
+
 		sodr_time_start();
-		int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+		int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 		sodr_time_stop(self->drive);
+
+		self->drive->status = so_drive_status_reading;
 
 		if (failed != 0)
 			return so_format_reader_header_not_found;
@@ -390,9 +398,13 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 				.end_of_partition = false,
 			};
 
+			self->drive->status = so_drive_status_positioning;
+
 			sodr_time_start();
-			int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+			int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 			sodr_time_stop(self->drive);
+
+			self->drive->status = so_drive_status_reading;
 
 			if (failed != 0)
 				return -1;
@@ -443,9 +455,13 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 					.end_of_partition = false,
 				};
 
+				self->drive->status = so_drive_status_positioning;
+
 				sodr_time_start();
-				int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+				int failed = sodr_tape_drive_scsi_locate(self->scsi_fd, &position, self->media->media_format);
 				sodr_time_stop(self->drive);
+
+				self->drive->status = so_drive_status_reading;
 
 				if (failed != 0)
 					return -1;
