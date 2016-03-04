@@ -995,7 +995,7 @@ int sodr_tape_drive_scsi_rewind(int fd) {
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = NULL;
 	header.timeout = 1000 * scsi_command_rewind.timeout;
-	header.dxfer_direction = SG_DXFER_FROM_DEV;
+	header.dxfer_direction = SG_DXFER_NONE;
 
 	int status = ioctl(fd, SG_IO, &header);
 

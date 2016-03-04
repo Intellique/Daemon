@@ -1883,7 +1883,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			if (media->media_format->db_data != NULL) {
 				struct so_value * format_db = so_value_hashtable_get(media->media_format->db_data, key, false, false);
 				so_value_unpack(format_db, "{ss}", "id", &mediaformat_id);
-				so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
+				if (mediaformat_id != NULL)
+					so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
 			} else {
 				const char * query = "select_media_format_by_density";
 				so_database_postgresql_prepare(self, query, "SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2");
@@ -1903,7 +1904,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 					so_database_postgresql_get_error(result, query);
 				else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 					so_database_postgresql_get_string_dup(result, 0, 0, &mediaformat_id);
-					so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
+					if (mediaformat_id != NULL)
+						so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
 				}
 
 				free(densitycode);

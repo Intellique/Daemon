@@ -142,20 +142,20 @@ static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_valu
 	return nb_files;
 }
 
-struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const char * uuid, size_t block_size) {
+struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const char * uuid, size_t block_size, const char * partition) {
 	struct tm gmt;
 	gmtime_r(&time, &gmt);
 
 	char buf_time[64];
-	strftime(buf_time, 64, "%FT%TZ", &gmt);
+	strftime(buf_time, 64, "%FT%T.000000000Z", &gmt);
 
 	return so_value_pack("{sss{ss}s[{ssss}{ssss}{ssss}{s[{ssss}]ss}{s[{ssss}{ssss}]ss}{sssz}{ssss}]}",
-		"name", "ltfsindex",
+		"name", "ltfslabel",
 		"attributes",
 			"version", "2.2.0",
 		"children",
 			"name", "creator",
-			"value", "Storiq One v" STORIQONE_VERSION,
+			"value", "Intellique StoriqOne " STORIQONE_VERSION " - Linux - tape_drive",
 
 			"name", "formattime",
 			"value", buf_time,
@@ -165,7 +165,7 @@ struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const ch
 
 			"children",
 				"name", "partition",
-				"value", "a",
+				"value", partition,
 			"name", "location",
 
 			"children",
@@ -174,7 +174,7 @@ struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const ch
 
 				"name", "data",
 				"value", "b",
-			"name", "partition",
+			"name", "partitions",
 
 			"name", "blocksize",
 			"value", block_size,
@@ -182,6 +182,143 @@ struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const ch
 			"name", "compression",
 			"value", "false"
 	);
+}
+
+struct so_value * sodr_tape_drive_format_ltfs_create_empty_fs(time_t time, const char * uuid, const char * partition, unsigned long long position, const char * previous_partiton, unsigned long long previous_position) {
+	struct tm gmt;
+	gmtime_r(&time, &gmt);
+
+	char buf_time[64];
+	strftime(buf_time, 64, "%FT%T.000000000Z", &gmt);
+
+	if (previous_partiton != NULL)
+		return so_value_pack("{sss{ss}s[{ssss}{ssss}{ssss}{ssss}{s[{ssss}{sssI}]ss}{s[{ssss}{sssI}]ss}{sssb}{sssi}{s[{ssss}{ssss}{ssss}{ssss}{ssss}{ssss}{ssss}{sssb}{ss}]ss}]}",
+			"name", "ltfsindex",
+			"attributes",
+				"version", "2.2.0",
+			"children",
+				"name", "creator",
+				"value", "Intellique StoriqOne " STORIQONE_VERSION " - Linux - tape_drive",
+
+				"name", "volumeuuid",
+				"value", uuid,
+
+				"name", "generationnumber",
+				"value", "1",
+
+				"name", "updatetime",
+				"value", buf_time,
+
+				"children",
+					"name", "partition",
+					"value", partition,
+
+					"name", "startblock",
+					"value", position,
+				"name", "location",
+
+				"children",
+					"name", "partition",
+					"value", previous_partiton,
+
+					"name", "startblock",
+					"value", previous_position,
+				"name", "previousgenerationlocation",
+
+				"name", "allowpolicyupdate",
+				"value", false,
+
+				"name", "highestfileuid",
+				"value", 1,
+
+				"children",
+					"name", "fileuid",
+					"value", "1",
+
+					"name", "name",
+					"value", "root",
+
+					"name", "creationtime",
+					"value", buf_time,
+
+					"name", "changetime",
+					"value", buf_time,
+
+					"name", "modifytime",
+					"value", buf_time,
+
+					"name", "accesstime",
+					"value", buf_time,
+
+					"name", "backuptime",
+					"value", buf_time,
+
+					"name", "readonly",
+					"value", false,
+
+					"name", "contents",
+				"name", "directory"
+		);
+	else
+		return so_value_pack("{sss{ss}s[{ssss}{ssss}{ssss}{ssss}{s[{ssss}{sssI}]ss}{sssb}{sssi}{s[{ssss}{ssss}{ssss}{ssss}{ssss}{ssss}{ssss}{sssb}{ss}]ss}]}",
+			"name", "ltfsindex",
+			"attributes",
+				"version", "2.2.0",
+			"children",
+				"name", "creator",
+				"value", "Intellique StoriqOne " STORIQONE_VERSION " - Linux - tape_drive",
+
+				"name", "volumeuuid",
+				"value", uuid,
+
+				"name", "generationnumber",
+				"value", "1",
+
+				"name", "updatetime",
+				"value", buf_time,
+
+				"children",
+					"name", "partition",
+					"value", partition,
+
+					"name", "startblock",
+					"value", position,
+				"name", "location",
+
+				"name", "allowpolicyupdate",
+				"value", false,
+
+				"name", "highestfileuid",
+				"value", 1,
+
+				"children",
+					"name", "fileuid",
+					"value", "1",
+
+					"name", "name",
+					"value", "root",
+
+					"name", "creationtime",
+					"value", buf_time,
+
+					"name", "changetime",
+					"value", buf_time,
+
+					"name", "modifytime",
+					"value", buf_time,
+
+					"name", "accesstime",
+					"value", buf_time,
+
+					"name", "backuptime",
+					"value", buf_time,
+
+					"name", "readonly",
+					"value", false,
+
+					"name", "contents",
+				"name", "directory"
+		);
 }
 
 static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * index, const char * node) {

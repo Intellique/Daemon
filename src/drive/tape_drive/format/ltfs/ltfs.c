@@ -37,6 +37,7 @@
 // uuid
 #include <uuid/uuid.h>
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
 #include <libstoriqone/file.h>
@@ -48,16 +49,19 @@
 
 #include "ltfs.h"
 #include "../../io/io.h"
+#include "../../util/scsi.h"
 #include "../../util/st.h"
 #include "../../util/xml.h"
 
-int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, struct so_value * option, struct so_database_connection * db) {
+static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * drive, struct so_stream_writer * writer, int fd, ssize_t block_size, const char * partition, time_t format_time, const char * uuid);
+
+int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, int scsi_fd, struct so_pool * pool, struct so_value * option, struct so_database_connection * db) {
 	ssize_t block_size = 0, partition_size = 0;
 	so_value_unpack(option, "{sz}", "block size", &block_size);
 	so_value_unpack(option, "{sz}", "partition size", &partition_size);
 
-	if (partition_size == 0)
-		partition_size = 524288;
+	if (block_size == 0)
+		block_size = 524288;
 
 	static const struct default_parition_size {
 		unsigned char density_code;
@@ -141,32 +145,6 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 			drive->vendor, drive->model, drive->index, media->name);
 
 
-	/**
-	 * Write volume label on first partition
-	 */
-	char label[81];
-	snprintf(label, 81, "VOL1%6sL             LTFS                                                   4", media->label != NULL ? media->label : "");
-
-	struct so_stream_writer * writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 0, 0, false, db);
-	if (writer == NULL)
-		return 1;
-
-	ssize_t nb_write = writer->ops->write(writer, label, 80);
-	if (nb_write < 0) {
-		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while writing label on first partition because %m"),
-			drive->vendor, drive->model, drive->index);
-
-		return nb_write;
-	}
-
-	failed = sodr_tape_drive_writer_close2(writer, false);
-	if (failed != 0)
-		return failed;
-
-	/**
-	 * Write ltfs label on first partition
-	 */
 	time_t format_time = time(NULL);
 
 	uuid_t raw_uuid;
@@ -175,26 +153,107 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, st
 	char uuid[37];
 	uuid_unparse_lower(raw_uuid, uuid);
 
-	struct so_value * ltfs_label = sodr_tape_drive_format_ltfs_create_label(format_time, uuid, block_size);
+	struct so_stream_writer * writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, 0, false, db);
+	if (writer == NULL)
+		return 1;
+
+	/**
+	 * Write volume label on second partition
+	 */
+	failed = sodr_tape_drive_format_ltfs_format_media_partition(drive, writer, fd, block_size, "b", format_time, uuid);
+	if (failed != 0)
+		return failed;
+
+	failed = writer->ops->create_new_file(writer);
+	if (failed != 0)
+		return failed;
+
+	struct sodr_tape_drive_scsi_position position;
+	failed = sodr_tape_drive_scsi_read_position(scsi_fd, &position);
+
+	struct so_value * empty_fs = sodr_tape_drive_format_ltfs_create_empty_fs(format_time, uuid, "b", position.block_position, NULL, 0);
+	ssize_t nb_write = sodr_tape_drive_xml_encode_stream(writer, empty_fs);
+	if (nb_write < 0)
+		return failed;
+
+	sodr_tape_drive_writer_close2(writer, false);
+	writer->ops->free(writer);
+
+	so_value_free(empty_fs);
+
+	writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 0, 0, false, db);
+
+	/**
+	 * Write volume label on first partition
+	 */
+	failed = sodr_tape_drive_format_ltfs_format_media_partition(drive, writer, fd, block_size, "a", format_time, uuid);
+
+	long long int previous_position = position.block_position;
+	failed = sodr_tape_drive_scsi_read_position(scsi_fd, &position);
+	empty_fs = sodr_tape_drive_format_ltfs_create_empty_fs(format_time, uuid, "a", position.block_position, "b", previous_position);
+	nb_write = sodr_tape_drive_xml_encode_stream(writer, empty_fs);
+	if (nb_write < 0)
+		return failed;
+
+	sodr_tape_drive_writer_close2(writer, false);
+	writer->ops->free(writer);
+
+	if (failed != 0) {
+		media->status = so_media_status_in_use;
+
+		media->last_write = time(NULL);
+
+		so_pool_free(media->pool);
+		media->pool = pool;
+	} else
+		so_pool_free(pool);
+
+	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
+	db->ops->sync_drive(db, drive, true, so_database_sync_default);
+
+	if (failed == 0)
+		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
+
+	return 0;
+}
+
+static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * drive, struct so_stream_writer * writer, int fd, ssize_t block_size, const char * partition, time_t format_time, const char * uuid) {
+	struct so_media * media = drive->slot->media;
+
+	char label[81];
+	snprintf(label, 81, "VOL1%6sL             LTFS                                                   4", media->label != NULL ? media->label : "");
+
+	ssize_t nb_write = writer->ops->write(writer, label, 80);
+	if (nb_write < 0) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"),
+			drive->vendor, drive->model, drive->index, partition);
+
+		return nb_write;
+	}
+
+	int failed = sodr_tape_drive_writer_close2(writer, false);
+	if (failed != 0)
+		return failed;
+
+	struct so_value * ltfs_label = sodr_tape_drive_format_ltfs_create_label(format_time, uuid, block_size, partition);
 
 	failed = writer->ops->create_new_file(writer);
 	if (failed != 0)
 		return failed;
 
 	nb_write = sodr_tape_drive_xml_encode_stream(writer, ltfs_label);
-	if (nb_write < 0) {
-		writer->ops->close(writer);
-		writer->ops->free(writer);
+	if (nb_write < 0)
 		return 1;
-	}
 
 	failed = sodr_tape_drive_writer_close2(writer, false);
-	writer->ops->free(writer);
 
 	if (failed != 0)
 		return failed;
 
 	failed = sodr_tape_drive_st_write_end_of_file(drive, fd);
+
+	so_value_free(ltfs_label);
 
 	return 0;
 }
