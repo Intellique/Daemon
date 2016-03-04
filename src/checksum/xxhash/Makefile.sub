@@ -1,0 +1,11 @@
+STORIQONE_CHECKSUM_XXHASH_SRC_DIR		:= src/checksum/xxhash
+
+STORIQONE_CHECKSUM_XXHASH_BIN			:= lib/libchecksum-xxhash.so
+STORIQONE_CHECKSUM_XXHASH_CFLAG			 = -pthread -fPIC -fvisibility=hidden
+STORIQONE_CHECKSUM_XXHASH_LD			 = -pthread -shared -Llib
+
+STORIQONE_CHECKSUM_XXHASH_DEPEND_LIB	:=
+
+STORIQONE_CHECKSUM_XXHASH_CHCKSUM_FILE	:= libchecksum-xxhash.chcksum
+
+BIN_SYMS								+= STORIQONE_CHECKSUM_XXHASH
