@@ -35,8 +35,7 @@
 
 #include <libchecksum-xxhash.chcksum>
 
-struct XXH64_state_s
-{
+struct XXH64_state_s {
     unsigned long long total_len;
     unsigned long long seed;
     unsigned long long v1;
@@ -60,18 +59,18 @@ static void so_checksum_xxhash_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_xxhash_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_xxhash_driver = {
-	.name			  = "xxhash",
+	.name             = "xxhash",
 	.default_checksum = false,
-	.new_checksum	  = so_checksum_xxhash_new_checksum,
-	.cookie			  = NULL,
+	.new_checksum     = so_checksum_xxhash_new_checksum,
+	.cookie           = NULL,
 	.src_checksum     = STORIQONE_CHECKSUM_XXHASH_SRCSUM,
 };
 
 static struct so_checksum_ops so_checksum_xxhash_ops = {
-	.digest	= so_checksum_xxhash_digest,
-	.free	= so_checksum_xxhash_free,
+	.digest = so_checksum_xxhash_digest,
+	.free   = so_checksum_xxhash_free,
 	.reset  = so_checksum_xxhash_reset,
-	.update	= so_checksum_xxhash_update,
+	.update = so_checksum_xxhash_update,
 };
 
 
