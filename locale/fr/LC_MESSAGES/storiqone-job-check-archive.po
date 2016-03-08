@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-11-19 18:03+0100\n"
+        "POT-Creation-Date: 2016-03-08 12:20+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -38,6 +38,11 @@ msgstr  "Échec lors de la définition du nom du fil d’exécution"
 #, c-format
 msgid   "Starting worker #%u"
 msgstr  "Démarrage du fil d’exécution #%u"
+
+#: src/job/check-archive/quick_mode.c:200 src/job/check-archive/thorough_mode.c:67
+#, c-format
+msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
+msgstr  "Pas d’empreinte pour le volume n°%u de l’archive « %s », passe ce volume"
 
 #: src/job/check-archive/thorough_mode.c:51
 #, c-format

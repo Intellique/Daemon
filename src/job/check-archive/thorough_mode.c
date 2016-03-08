@@ -59,6 +59,19 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 	for (i = 0; ok && i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
 
+		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
+		if (so_value_list_get_length(checksums) == 0) {
+			so_value_free(checksums);
+
+			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "No checksums for volume #%u of archive '%s', ignore this volume"),
+				i, vol->archive->name);
+
+			total_read += vol->size;
+
+			continue;
+		}
+
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
 		if (drive == NULL) {
 			// TODO: print error
@@ -77,7 +90,6 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 		drive->ops->sync(drive);
 
-		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
 		struct so_format_reader * reader = drive->ops->get_reader(drive, vol->media_position, checksums);
 		so_value_free(checksums);
 
