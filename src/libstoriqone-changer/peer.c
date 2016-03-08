@@ -48,7 +48,7 @@ struct sochgr_peer * sochgr_peer_new(int fd, bool defer) {
 
 	peer->fd = fd;
 	peer->key = NULL;
-	peer->waiting = false;
+	peer->nb_waiting_medias = 0;
 
 	peer->defer = defer;
 	peer->request = NULL;
