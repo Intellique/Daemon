@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-30 09:26+0100\n"
+        "POT-Creation-Date: 2016-03-11 08:16+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -58,17 +58,22 @@ msgid_plural    "%u errors"
 msgstr[0]       "%u erreur"
 msgstr[1]       "%u erreurs"
 
-#: src/job/check-archive/quick_mode.c:236
+#: src/job/check-archive/quick_mode.c:216 src/job/check-archive/thorough_mode.c:69
+#, c-format
+msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
+msgstr  "Pas d’empreinte pour le volume n°%u de l’archive « %s », passe ce volume"
+
+#: src/job/check-archive/quick_mode.c:243
 #, c-format
 msgid   "Worker #%u : error while reading from media '%s'"
 msgstr  "Travailler n°%u : erreur en lisant depuis le média « %s »"
 
-#: src/job/check-archive/quick_mode.c:257
+#: src/job/check-archive/quick_mode.c:264
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is correct"
 msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » est correcte"
 
-#: src/job/check-archive/quick_mode.c:261
+#: src/job/check-archive/quick_mode.c:268
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is not correct"
 msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » n’est pas correcte"
@@ -78,27 +83,27 @@ msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » n
 msgid   "Starting check archive (%s) in thorough mode"
 msgstr  "Démarrage de la vérification de l’archive (%s) en mode minutieux"
 
-#: src/job/check-archive/thorough_mode.c:134
+#: src/job/check-archive/thorough_mode.c:146
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Erreur en lisant depuis le média « %s »"
 
-#: src/job/check-archive/thorough_mode.c:153
+#: src/job/check-archive/thorough_mode.c:165
 #, c-format
 msgid   "Data integrity of file '%s' is correct"
 msgstr  "L’intégrité des données du fichier « %s » est correcte"
 
-#: src/job/check-archive/thorough_mode.c:157
+#: src/job/check-archive/thorough_mode.c:169
 #, c-format
 msgid   "Data integrity of file '%s' is not correct"
 msgstr  "L’intégrité des données du fichier « %s » n’est pas correcte"
 
-#: src/job/check-archive/thorough_mode.c:194
+#: src/job/check-archive/thorough_mode.c:206
 #, c-format
 msgid   "Data integrity of volume '%s' is correct"
 msgstr  "L’intégrité des données du volume « %s » est correcte"
 
-#: src/job/check-archive/thorough_mode.c:198
+#: src/job/check-archive/thorough_mode.c:210
 #, c-format
 msgid   "Data integrity of volume '%s' is not correct"
 msgstr  "L’intégrité des données du volume « %s » n’est pas correcte"
