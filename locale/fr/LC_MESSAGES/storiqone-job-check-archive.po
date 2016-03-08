@@ -61,7 +61,7 @@ msgstr[1]       "%u erreurs"
 #: src/job/check-archive/quick_mode.c:216 src/job/check-archive/thorough_mode.c:69
 #, c-format
 msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
-msgstr  "Pas d’empreinte pour le volume n°%u de l’archive « %s », passe ce volume"
+msgstr  "Pas d’empreinte pour le volume n°%u de l’archive « %s », ignore ce volume"
 
 #: src/job/check-archive/quick_mode.c:243
 #, c-format
