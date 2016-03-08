@@ -47,6 +47,8 @@
 #include "config.h"
 #include "hardware.h"
 
+#include "storiqone.version"
+
 enum {
 	OPT_HELP = 'h',
 };
@@ -117,7 +119,7 @@ int soctl_config(int argc, char ** argv) {
 			domaine++;
 		}
 
-		db_connection->ops->add_host(db_connection, uuid, name.nodename, domaine, NULL);
+		db_connection->ops->add_host(db_connection, uuid, name.nodename, domaine, NULL, STORIQONE_VERSION);
 	}
 
 	struct so_value * changers = soctl_detect_hardware();

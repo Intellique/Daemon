@@ -341,6 +341,8 @@ CREATE TABLE Host (
     domaine VARCHAR(255) NULL,
 
     description TEXT,
+
+    daemonVersion TEXT NOT NULL,
     updated TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
 
     UNIQUE (name, domaine)

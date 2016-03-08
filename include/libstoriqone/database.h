@@ -134,10 +134,10 @@ struct so_database_connection {
 		 */
 		int (*start_transaction)(struct so_database_connection * connect);
 
-		int (*add_host)(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+		int (*add_host)(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description, const char * daemon_version);
 		bool (*find_host)(struct so_database_connection * connect, const char * uuid, const char * hostname);
 		int (*get_host_by_name)(struct so_database_connection * connect, struct so_host * host, const char * name);
-		int (*update_host)(struct so_database_connection * connect, const char * uuid);
+		int (*update_host)(struct so_database_connection * connect, const char * uuid, const char * daemon_version);
 
 		int (*delete_changer)(struct so_database_connection * connect, struct so_changer * changer);
 		int (*delete_drive)(struct so_database_connection * connect, struct so_drive * drive);
