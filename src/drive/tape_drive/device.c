@@ -86,7 +86,6 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct sodr_peer
 static struct so_format_reader * sodr_tape_drive_get_reader(struct sodr_peer * peer, int file_position, struct so_value * checksums, struct so_database_connection * db);
 static struct so_format_writer * sodr_tape_drive_get_writer(struct sodr_peer * peer, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_init(struct so_value * config, struct so_database_connection * db_connect);
-static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static struct so_format_reader * sodr_tape_drive_open_archive_volume(struct sodr_peer * peer, struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_open_drive(void);
 static struct so_archive * sodr_tape_drive_parse_archive(struct sodr_peer * peer, const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
@@ -149,21 +148,25 @@ static bool sodr_tape_drive_check_header(struct sodr_peer * peer, struct so_data
 static bool sodr_tape_drive_check_header2(struct sodr_peer * peer, bool restore_data, struct so_database_connection * db) {
 	size_t block_size = sodr_tape_drive_get_block_size();
 
-	int fd = sodr_tape_drive_open_drive();
-	if (fd < 0)
-		return false;
-
 	sodr_tape_drive.status = so_drive_status_rewinding;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
+
+	int fd = open(scsi_device, O_RDWR);
+	if (fd < 0)
+		return false;
 
 	sodr_time_start();
 	int failed = sodr_tape_drive_scsi_rewind(fd);
 	sodr_time_stop(&sodr_tape_drive);
 
-	if (failed != 0) {
-		close(fd);
+	close(fd);
+
+	if (failed != 0)
 		return false;
-	}
+
+	fd = sodr_tape_drive_open_drive();
+	if (fd < 0)
+		return false;
 
 	static struct mtop rewind = { MTREW, 1 };
 	sodr_time_start();
@@ -268,7 +271,6 @@ static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct so
 static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	struct so_media * media = malloc(sizeof(struct so_media));
 	bzero(media, sizeof(struct so_media));
-	sodr_tape_drive.slot->media = media;
 
 	if (sodr_tape_drive.slot->volume_name != NULL) {
 		media->label = strdup(sodr_tape_drive.slot->volume_name);
@@ -277,6 +279,12 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 
 	unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
 	media->media_format = db->ops->get_media_format(db, (unsigned char) density_code, so_media_format_mode_linear);
+
+	media->first_used = time(NULL);
+	media->use_before = media->first_used + media->media_format->life_span;
+
+	media->load_count = 1;
+	media->type = so_media_type_rewritable;
 
 	media->block_size = sodr_tape_drive_get_block_size();
 	if (media->block_size > 0 && media->block_size < 1024)
@@ -289,11 +297,6 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 		media->status = so_media_status_new;
 		media->append = true;
 	}
-	media->first_used = time(NULL);
-	media->use_before = media->first_used + media->media_format->life_span;
-
-	media->load_count = 1;
-
 	if (media->media_format != NULL && media->media_format->support_mam) {
 		int fd = open(scsi_device, O_RDWR);
 		int failed = sodr_tape_drive_scsi_read_mam(fd, media);
@@ -305,6 +308,7 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 	}
 
+	sodr_tape_drive.slot->media = media;
 	sodr_tape_drive_check_header2(NULL, true, db);
 }
 
@@ -640,15 +644,6 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 	return found ? 0 : 1;
 }
 
-static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
-	if (verbose)
-		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Trying to recover from error"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
-
-	sleep(sleep_time);
-}
-
 static int sodr_tape_drive_open_drive() {
 	sodr_time_start();
 	int fd = open(so_device, O_RDWR | O_NONBLOCK);
@@ -712,7 +707,6 @@ static struct so_archive * sodr_tape_drive_parse_archive(struct sodr_peer * peer
 }
 
 static int sodr_tape_drive_reset(struct so_database_connection * db) {
-	sodr_tape_drive_on_failed(false, 1);
 	return sodr_tape_drive_update_status(db);
 }
 
@@ -806,7 +800,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 
 	unsigned int i;
 	for (i = 0; i < 5 && failed != 0; i++) {
-		sodr_tape_drive_on_failed(true, 20);
+		sleep(5);
 
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCGET, &status);
@@ -832,7 +826,13 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 			break;
 
 		// get the tape status again
-		sodr_tape_drive_on_failed(true, 5);
+		close(fd);
+
+		sleep(5);
+
+		fd = sodr_tape_drive_open_drive();
+		if (fd < 0)
+			return -1;
 
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCGET, &status);
