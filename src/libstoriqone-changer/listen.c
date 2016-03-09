@@ -146,7 +146,7 @@ static void sochgr_socket_message(int fd, short event, void * data) {
 
 		if (first_peer != NULL) {
 			sleep(1);
-			sochgr_socket_unlock(peer, false);
+			sochgr_socket_unlock(NULL, false);
 		}
 
 		return;
