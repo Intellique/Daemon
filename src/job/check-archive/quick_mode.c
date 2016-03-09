@@ -169,8 +169,11 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 	job->done = 0.99;
 
-	for (i = 0; i < archive->nb_volumes; i++)
-		db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
+	for (i = 0; i < archive->nb_volumes; i++) {
+		struct so_archive_volume * volume = archive->volumes + i;
+		if (volume->check_time > 0)
+			db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
+	}
 
 	unsigned int nb_errors = 0;
 	ptr_worker = workers;
