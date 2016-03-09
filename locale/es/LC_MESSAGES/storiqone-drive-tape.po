@@ -97,7 +97,7 @@ msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion 
 #: src/drive/tape_drive/device.c:878
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
-msgstr  ""
+msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
 #: src/drive/tape_drive/device.c:931
 #, c-format
