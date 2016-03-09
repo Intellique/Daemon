@@ -49,12 +49,12 @@ msgstr  "[%s %s #%u]: verificación del encabezamiento del media \"%s\""
 #: src/libstoriqone-drive/listen.c:398 src/libstoriqone-drive/listen.c:555
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for reading at position #%d"
-msgstr  "[%s %s #%u]: abertura de el media \"%s\" lectura de la posición #%d"
+msgstr  "[%s %s #%u]: apertura de el media \"%s\" lectura de la posición #%d"
 
 #: src/libstoriqone-drive/listen.c:405 src/libstoriqone-drive/listen.c:562
 #, c-format
 msgid   "[%s %s #%u]: failed to open media '%s' for reading at position #%d"
-msgstr  ""
+msgstr  "[%s %s #%u]: Fallo a la apertura del media \"%s\" lectura de la posición #%d"
 
 #: src/libstoriqone-drive/listen.c:473 src/libstoriqone-drive/listen.c:634
 #, c-format
@@ -64,7 +64,7 @@ msgstr  "[%s %s #%u]: apertura del media \"%s\" en escritura"
 #: src/libstoriqone-drive/listen.c:480 src/libstoriqone-drive/listen.c:641
 #, c-format
 msgid   "[%s %s #%u]: failed to open media '%s' for writing"
-msgstr  ""
+msgstr  "[%s %s #%u]: fallo a la pertura del media \"%s\" en escritura"
 
 #: src/libstoriqone-drive/listen.c:722
 #, c-format
