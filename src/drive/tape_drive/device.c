@@ -294,6 +294,7 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 		media->status = so_media_status_foreign;
 		media->append = false;
 	} else {
+		media->block_size = media->media_format->block_size;
 		media->status = so_media_status_new;
 		media->append = true;
 	}
@@ -309,7 +310,9 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	}
 
 	sodr_tape_drive.slot->media = media;
-	sodr_tape_drive_check_header2(NULL, true, db);
+
+	if (media->status == so_media_status_foreign)
+		sodr_tape_drive_check_header2(NULL, true, db);
 }
 
 static int sodr_tape_drive_erase_media(struct sodr_peer * peer, bool quick_mode, struct so_database_connection * db) {
@@ -383,7 +386,7 @@ ssize_t sodr_tape_drive_get_block_size() {
 		return block_size;
 
 	struct so_media * media = sodr_tape_drive.slot->media;
-	if (sodr_tape_drive.slot->media != NULL && media->block_size > 0)
+	if (media != NULL && media->block_size > 0)
 		return media->block_size;
 
 	int fd = sodr_tape_drive_open_drive();
@@ -448,7 +451,7 @@ ssize_t sodr_tape_drive_get_block_size() {
 	if (media != NULL && media->media_format != NULL)
 		return media->media_format->block_size;
 
-	return -1;
+	return 0;
 }
 
 struct so_drive * sodr_tape_drive_get_device() {
@@ -800,7 +803,14 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 
 	unsigned int i;
 	for (i = 0; i < 5 && failed != 0; i++) {
+		close(fd);
+
 		sleep(5);
+
+		fd = sodr_tape_drive_open_drive();
+		if (fd < 0)
+			return -1;
+
 
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCGET, &status);
@@ -864,6 +874,10 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 				slot->media = db->ops->get_media(db, medium_serial_number, NULL, NULL);
 
 			if (slot->media == NULL) {
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Create new media (medium serial number: %s)"),
+					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, medium_serial_number);
+
 				sodr_tape_drive_create_media(db);
 
 				struct so_media * media = slot->media;
