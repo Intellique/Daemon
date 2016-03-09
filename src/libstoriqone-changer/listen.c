@@ -204,7 +204,7 @@ static void sochgr_socket_remove_peer(struct sochgr_peer * peer) {
 		first_peer = peer->next;
 	else {
 		struct sochgr_peer * ptr;
-		for (ptr = first_peer; ptr->next != NULL; ptr = ptr->next)
+		for (ptr = first_peer; ptr != NULL; ptr = ptr->next)
 			if (ptr->next == peer) {
 				ptr->next = peer->next;
 				if (peer == last_peer)
