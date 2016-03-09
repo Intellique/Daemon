@@ -74,11 +74,11 @@ static int so_database_postgresql_create_checkpoint(struct so_database_connectio
 static int so_database_postgresql_finish_transaction(struct so_database_connection * connect);
 static int so_database_postgresql_start_transaction(struct so_database_connection * connect);
 
-static int so_database_postgresql_add_host(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+static int so_database_postgresql_add_host(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description, const char * daemon_version);
 static bool so_database_postgresql_find_host(struct so_database_connection * connect, const char * uuid, const char * hostname);
 static char * so_database_postgresql_get_host(struct so_database_connection * connect);
 static int so_database_postgresql_get_host_by_name(struct so_database_connection * connect, struct so_host * host, const char * name);
-static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid);
+static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid, const char * daemon_version);
 
 static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive);
@@ -428,17 +428,17 @@ static int so_database_postgresql_start_transaction(struct so_database_connectio
 }
 
 
-static int so_database_postgresql_add_host(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description) {
+static int so_database_postgresql_add_host(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description, const char * daemon_version) {
 	if (connect == NULL || uuid == NULL || name == NULL)
 		return 1;
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "insert_host";
-	so_database_postgresql_prepare(self, query, "INSERT INTO host(uuid, name, domaine, description) VALUES ($1, $2, $3, $4)");
+	so_database_postgresql_prepare(self, query, "INSERT INTO host(uuid, name, domaine, description, daemonversion) VALUES ($1, $2, $3, $4, $5)");
 
-	const char * param[] = { uuid, name, domaine, description };
-	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+	const char * param[] = { uuid, name, domaine, description, daemon_version };
+	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -524,14 +524,14 @@ static int so_database_postgresql_get_host_by_name(struct so_database_connection
 	return status != PGRES_TUPLES_OK;
 }
 
-static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid) {
+static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid, const char * daemon_version) {
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "update_host_by_uuid";
-	so_database_postgresql_prepare(self, query, "UPDATE host SET updated = NOW() WHERE uuid = $1");
+	so_database_postgresql_prepare(self, query, "UPDATE host SET updated = NOW(), daemonversion = $2 WHERE uuid = $1");
 
-	const char * param[] = { uuid };
-	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	const char * param[] = { uuid, daemon_version };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)

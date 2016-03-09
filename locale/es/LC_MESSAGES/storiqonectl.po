@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqonectl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:25+0100\n"
+        "POT-Creation-Date: 2016-03-08 23:34+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,12 +16,12 @@ msgstr  "Project-Id-Version: storiqonectl v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/storiqonectl/config.c:75
+#: src/storiqonectl/config.c:77
 #, c-format
 msgid   "storiqonectl config : basic configuration\n"
 msgstr  "storiqonectl config : configuración básica\n"
 
-#: src/storiqonectl/config.c:76 src/storiqonectl/daemon.c:130 src/storiqonectl/daemon.c:186 src/storiqonectl/daemon.c:230
+#: src/storiqonectl/config.c:78 src/storiqonectl/daemon.c:130 src/storiqonectl/daemon.c:186 src/storiqonectl/daemon.c:230
 #, c-format
 msgid   "  -h, --help    : show this and exit\n"
 msgstr  "  -h, --help    : muestra esto y finaliza\n"
