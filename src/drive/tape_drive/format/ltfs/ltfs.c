@@ -214,6 +214,10 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	if (failed == 0)
 		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
 
+	/**
+	 * Update Medium auxiliary memory
+	 */
+
 	return 0;
 }
 

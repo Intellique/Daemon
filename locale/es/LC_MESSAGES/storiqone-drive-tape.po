@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-11 10:52+0100\n"
+        "POT-Creation-Date: 2016-03-11 15:15+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -124,7 +124,7 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:229
+#: src/drive/tape_drive/format/ltfs/ltfs.c:233
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  ""
@@ -204,26 +204,26 @@ msgstr  "Encontró una etiqueta LTFS corrupto en el media \"%s\""
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/util/scsi.c:920
+#: src/drive/tape_drive/util/scsi.c:865
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Información del media %s, Frabricante del media: %s"
 
-#: src/drive/tape_drive/util/scsi.c:938
+#: src/drive/tape_drive/util/scsi.c:883
 #, c-format
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Información del media %s, Fecha del media: %s"
 
-#: src/drive/tape_drive/util/scsi.c:1104
+#: src/drive/tape_drive/util/scsi.c:1050
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
 msgstr  "Comando SCSI soportado: \"%s\", disponible: %s, tiempo de inactividad: %u segundos"
 
-#: src/drive/tape_drive/util/scsi.c:1105
+#: src/drive/tape_drive/util/scsi.c:1051
 msgid   "no"
 msgstr  "no"
 
-#: src/drive/tape_drive/util/scsi.c:1105
+#: src/drive/tape_drive/util/scsi.c:1051
 msgid   "yes"
 msgstr  "si"
 

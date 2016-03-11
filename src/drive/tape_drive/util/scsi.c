@@ -117,41 +117,6 @@ struct scsi_request_sense {
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 
-enum scsi_mam_attribute {
-	scsi_mam_remaining_capacity  = 0x0000,
-	scsi_mam_maximum_capacity    = 0x0001,
-	scsi_mam_load_count          = 0x0003,
-	scsi_mam_mam_space_remaining = 0x0004,
-
-	scsi_mam_device_at_last_load           = 0x020A,
-	scsi_mam_device_at_last_load_2         = 0x020B,
-	scsi_mam_device_at_last_load_3         = 0x020C,
-	scsi_mam_device_at_last_load_4         = 0x020D,
-	scsi_mam_total_written_in_medium_life  = 0x0220,
-	scsi_mam_total_read_in_medium_life     = 0x0221,
-	scsi_mam_total_written_in_current_load = 0x0222,
-	scsi_mam_total_read_current_load       = 0x0223,
-
-	scsi_mam_medium_manufacturer      = 0x0400,
-	scsi_mam_medium_serial_number     = 0x0401,
-	scsi_mam_medium_manufacturer_date = 0x0406,
-	scsi_mam_mam_capacity             = 0x0407,
-	scsi_mam_medium_type              = 0x0408,
-	scsi_mam_medium_type_information  = 0x0409,
-
-	scsi_mam_application_vendor           = 0x0800,
-	scsi_mam_application_name             = 0x0801,
-	scsi_mam_application_version          = 0x0802,
-	scsi_mam_user_medium_text_label       = 0x0803,
-	scsi_mam_date_and_time_last_written   = 0x0804,
-	scsi_mam_text_localization_identifier = 0x0805,
-	scsi_mam_barcode                      = 0x0806,
-	scsi_mam_owning_host_textual_name     = 0x0807,
-	scsi_mam_media_pool                   = 0x0808,
-
-	scsi_mam_unique_cardtrige_identity = 0x1000,
-};
-
 static int sodr_tape_drive_scsi_locate10(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
 /**
  * \brief Set position on tape
@@ -229,6 +194,14 @@ static struct scsi_command scsi_command_rewind = {
 	.op_code = 0x01,
 	.cdb_length = 6,
 	.timeout = 540,
+	.available = true
+};
+
+static struct scsi_command scsi_command_write_attribute = {
+	.name = "WRITE ATTRIBUTE",
+	.op_code = 0x8d,
+	.cdb_length = 16,
+	.timeout = 60,
 	.available = true
 };
 
@@ -761,25 +734,11 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 	if (status)
 		return status;
 
-	struct scsi_mam {
-		enum scsi_mam_attribute attribute_identifier:16;
-		unsigned char format:2;
-		unsigned char reserved:5;
-		bool read_only:1;
-		unsigned short attribute_length;
-		union {
-			unsigned char int8;
-			unsigned short be16;
-			unsigned long long be64;
-			char text[160];
-		} attribute_value;
-	} __attribute__((packed));
-
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
 	unsigned char * ptr = buffer + 4;
 
 	for (ptr = buffer + 4; ptr < buffer + data_available;) {
-		struct scsi_mam * attr = (struct scsi_mam *) ptr;
+		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
 		attr->attribute_identifier = be16toh(attr->attribute_identifier);
 		attr->attribute_length = be16toh(attr->attribute_length);
 
@@ -790,7 +749,7 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 
 		char * space;
 		switch (attr->attribute_identifier) {
-			case scsi_mam_medium_serial_number:
+			case sodr_tape_drive_scsi_mam_medium_serial_number:
 				strncpy(medium_serial_number, attr->attribute_value.text, length);
 				space = strchr(medium_serial_number, ' ');
 				if (space)
@@ -858,20 +817,6 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	if (status)
 		return status;
 
-	struct scsi_mam {
-		enum scsi_mam_attribute attribute_identifier:16;
-		unsigned char format:2;
-		unsigned char reserved:5;
-		bool read_only:1;
-		unsigned short attribute_length;
-		union {
-			unsigned char int8;
-			unsigned short be16;
-			unsigned long long be64;
-			char text[160];
-		} attribute_value;
-	} __attribute__((packed));
-
 	static unsigned long last_hash = 0;
 	const unsigned long hash = so_string_compute_hash2(media->name);
 
@@ -879,7 +824,7 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	unsigned char * ptr = buffer + 4;
 
 	for (ptr = buffer + 4; ptr < buffer + data_available;) {
-		struct scsi_mam * attr = (struct scsi_mam *) ptr;
+		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
 		attr->attribute_identifier = be16toh(attr->attribute_identifier);
 		attr->attribute_length = be16toh(attr->attribute_length);
 
@@ -891,27 +836,27 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 		char * space;
 		char buf[33];
 		switch (attr->attribute_identifier) {
-			case scsi_mam_remaining_capacity:
+			case sodr_tape_drive_scsi_mam_remaining_capacity:
 				media->free_block = be64toh(attr->attribute_value.be64);
 				media->free_block <<= 10;
 				media->free_block /= (media->block_size >> 10);
 				break;
 
-			case scsi_mam_load_count:
+			case sodr_tape_drive_scsi_mam_load_count:
 				media->load_count = be64toh(attr->attribute_value.be64);
 				break;
 
-			case scsi_mam_total_written_in_medium_life:
+			case sodr_tape_drive_scsi_mam_total_written_in_medium_life:
 				media->nb_total_write = be64toh(attr->attribute_value.be64);
 				media->nb_total_write <<= 10;
 				break;
 
-			case scsi_mam_total_read_in_medium_life:
+			case sodr_tape_drive_scsi_mam_total_read_in_medium_life:
 				media->nb_total_read = be64toh(attr->attribute_value.be64);
 				media->nb_total_read <<= 10;
 				break;
 
-			case scsi_mam_medium_manufacturer:
+			case sodr_tape_drive_scsi_mam_medium_manufacturer:
 				if (last_hash != hash) {
 					strncpy(buf, attr->attribute_value.text, 8);
 					buf[8] = '\0';
@@ -922,14 +867,14 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 				}
 				break;
 
-			case scsi_mam_medium_serial_number:
+			case sodr_tape_drive_scsi_mam_medium_serial_number:
 				media->medium_serial_number = strdup(attr->attribute_value.text);
 				space = strchr(media->medium_serial_number, ' ');
 				if (space)
 					*space = '\0';
 				break;
 
-			case scsi_mam_medium_manufacturer_date:
+			case sodr_tape_drive_scsi_mam_medium_manufacturer_date:
 				if (last_hash != hash) {
 					strncpy(buf, attr->attribute_value.text, 8);
 					buf[8] = '\0';
@@ -940,7 +885,7 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 				}
 				break;
 
-			case scsi_mam_medium_type:
+			case sodr_tape_drive_scsi_mam_medium_type:
 				switch (attr->attribute_value.int8) {
 					case 0x01:
 						media->type = so_media_type_cleaning;
@@ -1016,6 +961,7 @@ int sodr_tape_drive_scsi_setup(const char * path) {
 	sodr_tape_drive_scsi_setup2(fd, &scsi_command_read_position);
 	sodr_tape_drive_scsi_setup2(fd, &scsi_command_report_density_support);
 	sodr_tape_drive_scsi_setup2(fd, &scsi_command_rewind);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_write_attribute);
 
 	close(fd);
 
@@ -1192,6 +1138,74 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	unsigned long long int total_block = result.values[2].value + result.values[3].value;
 	total_block <<= 20;
 	media->total_block = total_block / media->block_size;
+
+	return 0;
+}
+
+int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute) {
+	if (!scsi_command_write_attribute.available)
+		return -1;
+
+	attribute->attribute_identifier = htobe16(attribute->attribute_identifier);
+	attribute->attribute_length = htobe16(attribute->attribute_length);
+
+	if (attribute->format == sodr_tape_drive_scsi_mam_attribute_format_binary) {
+		if (attribute->attribute_length == 2)
+			attribute->attribute_value.be16 = htobe16(attribute->attribute_value.be16);
+		else if (attribute->attribute_length == 4)
+			attribute->attribute_value.be32 = htobe32(attribute->attribute_value.be32);
+		else if (attribute->attribute_length == 8)
+			attribute->attribute_value.be64 = htobe64(attribute->attribute_value.be64);
+	}
+
+	struct {
+		unsigned int data_available;
+		struct sodr_tape_drive_scsi_mam_attribute attr;
+	} __attribute__((packed)) data = {
+		.data_available = sizeof(*attribute),
+		.attr = *attribute
+	};
+
+	struct {
+		unsigned char operation_code;
+		bool write_through_cache:1;
+		unsigned char reserved0:7;
+		unsigned char reserved1[3];
+		unsigned char volume_number;
+		unsigned char reserved2;
+		unsigned char partition_number;
+		unsigned short reserved3;
+		unsigned int parameter_list_length;
+		unsigned char reserved4;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8D, // WRITE ATTRIBUTE (16)
+		.write_through_cache = true,
+		.volume_number = 0,
+		.partition_number = 0,
+		.parameter_list_length = sizeof(data),
+		.control = 0,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+
+	struct scsi_request_sense sense;
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(data);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &data;
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
+	header.dxfer_direction = SG_DXFER_TO_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
 
 	return 0;
 }
