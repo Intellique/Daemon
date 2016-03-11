@@ -61,6 +61,23 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 	for (i = 0; ok && i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
 
+		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
+		if (so_value_list_get_length(checksums) == 0) {
+			struct so_archive_file * file = vol->files->file;
+
+			if (so_value_hashtable_get_length(file->digests) == 0) {
+				so_value_free(checksums);
+
+				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					dgettext("storiqone-job-check-archive", "No checksums for volume #%u of archive '%s', ignore this volume"),
+					i, vol->archive->name);
+
+				total_read += vol->size;
+
+				continue;
+			}
+		}
+
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
 		if (drive == NULL) {
 			// TODO: print error
@@ -79,9 +96,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 		drive->ops->sync(drive);
 
-		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
 		struct so_format_reader * reader = drive->ops->open_archive_volume(drive, vol, checksums);
-		so_value_free(checksums);
 
 		enum so_format_reader_header_status status;
 		struct so_format_file file_in;
@@ -141,9 +156,11 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 					struct so_value * digests = so_io_checksum_writer_get_checksums(chcksum_writer);
 					file->check_ok = so_value_equals(file->digests, digests);
 					file->check_time = time(NULL);
-					so_value_free(digests);
 
-					db_connect->ops->check_archive_file(db_connect, archive, file);
+					if (so_value_hashtable_get_length(digests) > 0)
+						db_connect->ops->check_archive_file(db_connect, archive, file);
+
+					so_value_free(digests);
 
 					chcksum_writer->ops->free(chcksum_writer);
 					chcksum_writer = NULL;
@@ -182,7 +199,8 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		reader->ops->close(reader);
 		if (ok) {
 			struct so_value * digests = reader->ops->get_digests(reader);
-			ok = so_value_equals(vol->digests, digests);
+			if (so_value_list_get_length(digests) > 0)
+				ok = so_value_equals(vol->digests, digests);
 		}
 
 		vol->check_ok = ok;
@@ -198,7 +216,10 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 				dgettext("storiqone-job-check-archive", "Data integrity of volume '%s' is not correct"),
 				vol->media->name);
 
-		db_connect->ops->check_archive_volume(db_connect, vol);
+		if (so_value_list_get_length(checksums) == 0)
+			db_connect->ops->check_archive_volume(db_connect, vol);
+
+		so_value_free(checksums);
 	}
 
 	job->done = 1;

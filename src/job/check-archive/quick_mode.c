@@ -127,7 +127,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		int size = asprintf(&name, "worker #%u", i);
 
 		if (size < 0) {
-			so_log_write(so_log_level_error,
+			so_log_write(so_log_level_warning,
 				dgettext("storiqone-job-check-archive", "Failed to set worker thread name"));
 
 			free(name);
@@ -169,8 +169,11 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 	job->done = 0.99;
 
-	for (i = 0; i < archive->nb_volumes; i++)
-		db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
+	for (i = 0; i < archive->nb_volumes; i++) {
+		struct so_archive_volume * volume = archive->volumes + i;
+		if (volume->check_time > 0)
+			db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
+	}
 
 	unsigned int nb_errors = 0;
 	ptr_worker = workers;
@@ -208,16 +211,23 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		if (strcmp(vol->media->medium_serial_number, worker->media->medium_serial_number) != 0)
 			continue;
 
+		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
+		if (so_value_list_get_length(checksums) == 0) {
+			so_value_free(checksums);
+
+			soj_job_add_record(worker->job, worker->db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "No checksums for volume #%u of archive '%s', ignore this volume"),
+				i, vol->archive->name);
+
+			worker->nb_total_read += vol->size;
+
+			continue;
+		}
+
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, worker->db_connect);
 		if (drive == NULL) {
 			// TODO: print error
 			break;
-		}
-
-		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
-		if (so_value_list_get_length(checksums) == 0) {
-			so_value_free(checksums);
-			continue;
 		}
 
 		struct so_stream_reader * reader = drive->ops->get_raw_reader(drive, vol->media_position);
