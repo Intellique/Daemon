@@ -36,7 +36,7 @@ msgstr  "PSQL : erreur lors de la création d’un point de sauvegarde => %s"
 
 #: src/database/postgresql/connection.c:383
 msgid   "PSQL: Rolling back transaction because current transaction encountered an error"
-msgstr  "PSQL : Annulation de la transcation parce qu’elle est en erreur"
+msgstr  "PSQL : Annulation de la transaction parce qu’elle est en erreur"
 
 #: src/database/postgresql/connection.c:492
 #, c-format
