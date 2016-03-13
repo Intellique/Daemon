@@ -171,6 +171,7 @@ struct so_changer {
 
 	/**
 	 * \brief method of changer
+	 *
 	 * \note definition of <em>struct so_changer_ops</em> is define into others files.
 	 * And there can be define is multiple files. See libstoriq-one-*\/changer.h
 	 */
@@ -188,6 +189,7 @@ struct so_changer {
 
 /**
  * \brief Convert an enumeration into static allocated string
+ *
  * \param[in] action : a value of enum so_changer_action
  * \param[in] translate : translate returned value
  * \return a static allocated string representing \a action
@@ -196,8 +198,10 @@ const char * so_changer_action_to_string(enum so_changer_action action, bool tra
 
 /**
  * \brief Convert an instance of \a changer into an object
+ *
  * \param[in] changer : a changer
  * \return a value
+ *
  * \note To encode an archive into JSON, we need to call so_json_encode with
  * returned value
  * \see so_json_encode_to_fd
@@ -208,14 +212,17 @@ struct so_value * so_changer_convert(struct so_changer * changer) __attribute__(
 
 /**
  * \brief Release memory allocated for \a changer
+ *
  * \param[in] changer : a changer
  */
 void so_changer_free(struct so_changer * changer);
 
 /**
  * \brief Function to pass to so_value_new_custom
+ *
  * This function is a wrapper to so_changer_free used by so_value_free
  * \param[in] changer : a changer
+ *
  * \see so_changer_free
  * \see so_value_free
  * \see so_value_new_custom
@@ -224,6 +231,7 @@ void so_changer_free2(void * changer);
 
 /**
  * \brief Convert a status to string
+ *
  * \param[in] status : a status
  * \param[in] translate : translate result into current locale by using gettext
  * \return a statically allocated string representing \a status
@@ -232,6 +240,7 @@ const char * so_changer_status_to_string(enum so_changer_status status, bool tra
 
 /**
  * \brief Convert an action to an enumeration
+ *
  * \param[in] action : action name
  * \param[in] translate : compare with translated value
  * \return an enumeration value of \a action
@@ -240,6 +249,7 @@ enum so_changer_action so_changer_string_to_action(const char * action, bool tra
 
 /**
  * \brief Convert a status to an enumeration
+ *
  * \param[in] status : status name
  * \param[in] translate : compare with translated value
  * \return an enumeration value of \a status
@@ -248,6 +258,7 @@ enum so_changer_status so_changer_string_to_status(const char * status, bool tra
 
 /**
  * \brief Synchronize data of \a changer with \a new_changer
+ *
  * \param[in,out] changer : update this \a changer
  * \param[in] new_changer : new data for \a changer
  */

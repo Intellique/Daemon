@@ -88,116 +88,7 @@
  * This page show how to write a checksum module
  *
  * This example show you how the md5 checksum is implemeted
- * \code
- * // free, malloc
- * #include <stdlib.h>
- * // MD5_Final, MD5_Init, MD5_Update
- * #include <openssl/md5.h>
- * // strdup
- * #include <string.h>
- *
- * #include <libstone/checksum.h>
- *
- * #include <libchecksum-md5.chcksum>
- *
- * struct so_checksum_md5_private {
- * 	  MD5_CTX md5;
- * 	  char digest[MD5_DIGEST_LENGTH * 2 + 1];
- * };
- *
- * static char * so_checksum_md5_digest(struct so_checksum * checksum);
- * static void so_checksum_md5_free(struct so_checksum * checksum);
- * static struct so_checksum * so_checksum_md5_new_checksum(void);
- * static void so_checksum_md5_init(void) __attribute__((constructor));
- * static ssize_t so_checksum_md5_update(struct so_checksum * checksum, const void * data, ssize_t length);
- *
- * static struct so_checksum_driver so_checksum_md5_driver = {
- *    .name             = "md5",
- *    .default_checksum = false,
- *    .new_checksum     = so_checksum_md5_new_checksum,
- *    .cookie           = NULL,
- *    .api_level        = {
- *        .checksum = STONE_CHECKSUM_API_LEVEL,
- *        .database = 0,
- *        .job      = 0,
- *    },
- *    .src_checksum     = STONE_CHECKSUM_MD5_SRCSUM,
- * };
- *
- * static struct so_checksum_ops so_checksum_md5_ops = {
- *    .digest = so_checksum_md5_digest,
- *    .free   = so_checksum_md5_free,
- *    .update = so_checksum_md5_update,
- * };
- *
- *
- * char * so_checksum_md5_digest(struct so_checksum * checksum) {
- *    if (checksum == NULL)
- *       return NULL;
- *
- *    struct so_checksum_md5_private * self = checksum->data;
- *    if (self->digest[0] != '\0')
- *       return strdup(self->digest);
- *
- *    MD5_CTX md5 = self->md5;
- *    unsigned char digest[MD5_DIGEST_LENGTH];
- *    if (!MD5_Final(digest, &md5))
- *       return NULL;
- *
- *    so_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);
- *
- *    return strdup(self->digest);
- * }
- *
- * void so_checksum_md5_free(struct so_checksum * checksum) {
- *    if (checksum == NULL)
- *       return;
- *
- *    struct so_checksum_md5_private * self = checksum->data;
- *
- *    unsigned char digest[MD5_DIGEST_LENGTH];
- *    MD5_Final(digest, &self->md5);
- *
- *    free(self);
- *
- *    checksum->data = NULL;
- *    checksum->ops = NULL;
- *    checksum->driver = NULL;
- *
- *    free(checksum);
- * }
- *
- * void so_checksum_md5_init() {
- *    so_checksum_register_driver(&so_checksum_md5_driver);
- * }
- *
- * struct so_checksum * so_checksum_md5_new_checksum(struct so_checksum * checksum) {
- *    struct so_checksum * checksum = malloc(sizeof(struct so_checksum));
- *    checksum->ops = &so_checksum_md5_ops;
- *    checksum->driver = &so_checksum_md5_driver;
- *
- *    struct so_checksum_md5_private * self = malloc(sizeof(struct so_checksum_md5_private));
- *    MD5_Init(&self->md5);
- *    *self->digest = '\0';
- *
- *    checksum->data = self;
- *    return checksum;
- * }
- *
- * ssize_t so_checksum_md5_update(struct so_checksum * checksum, const void * data, ssize_t length) {
- *    if (!checksum || !data || length < 1)
- *       return -1;
- *
- *    struct so_checksum_md5_private * self = checksum->data;
- *    if (MD5_Update(&self->md5, data, length)) {
- *       *self->digest = '\0';
- *       return length;
- *    }
- *
- *    return -1;
- * }
- *
- * \endcode
+ * \include src/checksum/md5/md5.c
  */
 
 /**
@@ -208,6 +99,9 @@ struct so_checksum {
 	/**
 	 * \struct so_checksum_ops
 	 * \brief This structure contains all functions associated to one checksum handler
+	 *
+	 * \var so_checksum::ops
+	 * \brief pointer to checksum's operation
 	 */
 	struct so_checksum_ops {
 		/**
@@ -223,6 +117,11 @@ struct so_checksum {
 		 * \param[in] checksum a checksum handler
 		 */
 		void (*free)(struct so_checksum * checksum);
+		/**
+		 * \brief This function reset checksum state
+		 *
+		 * \param[in] checksum a checksum handler
+		 */
 		void (*reset)(struct so_checksum * checksum);
 		/**
 		 * \brief This function reads some data
@@ -245,6 +144,7 @@ struct so_checksum {
 	 * \note Should not be NULL
 	 */
 	struct so_checksum_driver * driver;
+
 	/**
 	 * \brief Private data of one checksum
 	 */
@@ -259,7 +159,7 @@ struct so_checksum_driver {
 	/**
 	 * \brief Name of the driver
 	 *
-	 * \note Should be unique and equals to libchecksum-name.so where name is the name of driver.
+	 * \note Should be unique and equals to libchecksum-<i>name</i>.so where name is the name of driver.
 	 */
 	const char * name;
 	/**
@@ -292,6 +192,7 @@ struct so_checksum_driver {
  * \param[in] data compute with this \a data
  * \param[in] length length of \a data
  * \return a malloc allocated string which contains checksum or \b NULL if failed
+ *
  * \note Returned value should be release with \a free
  */
 char * so_checksum_compute(const char * checksum, const void * data, ssize_t length) __attribute__((warn_unused_result));
@@ -308,8 +209,24 @@ char * so_checksum_compute(const char * checksum, const void * data, ssize_t len
  */
 void so_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest);
 
+/**
+ * \brief Generate salt
+ *
+ * \param[in] checksum : hash salt with \a checksum
+ * \param[in] length : length of salt in bytes
+ * \return dynamic allocated memory which contains salt
+ *
+ * \warning \a length should be greater or equal to 8 bytes
+ * \note if \a checksum is NULL, so_checksum_gen_salt do not hash the salt with \a checksum
+ */
 char * so_checksum_gen_salt(const char * checksum, size_t length) __attribute__((warn_unused_result));
 
+/**
+ * \brief Get checksum driver
+ *
+ * \param[in] driver : driver's name
+ * \return NULL on failure or checksum's driver on success
+ */
 struct so_checksum_driver * so_checksum_get_driver(const char * driver);
 
 /**
@@ -326,6 +243,14 @@ struct so_checksum_driver * so_checksum_get_driver(const char * driver);
  */
 void so_checksum_register_driver(struct so_checksum_driver * driver);
 
+/**
+ * \brief concatenate \a password with \a salt and hash the result with \a checksum
+ *
+ * \param[in] checksum : a checksum
+ * \param[in] password : a password
+ * \param[in] salt : salt
+ * \return dynamic allocated memory which contains digest of checksum
+ */
 char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) __attribute__((warn_unused_result));
 
 #endif

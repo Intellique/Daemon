@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 20:09+0100\n"
+        "POT-Creation-Date: 2016-03-13 14:18+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -119,60 +119,60 @@ msgstr  "so_checksum_compute : échec lors du chargement du module de calcul d�
 msgid   "so_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"
 msgstr  "so_checksum_convert_to_hex : paramètres invalides (digest : %p, length : %zd, hex_digest : %s)"
 
-#: src/libstoriqone/checksum.c:102
+#: src/libstoriqone/checksum.c:103
 #, c-format
 msgid   "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"
 msgstr  "so_checksum_gen_salt : longueur du paramètre « length » doit être supérieur à 8 (au lieu de %zd)"
 
-#: src/libstoriqone/checksum.c:108
+#: src/libstoriqone/checksum.c:111
 #, c-format
 msgid   "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt because %m"
 msgstr  "so_checksum_gen_salt : erreur lors de l’ouverture de « /dev/urandom » pour générer un sel parce que %m"
 
-#: src/libstoriqone/checksum.c:118
+#: src/libstoriqone/checksum.c:122
 #, c-format
 msgid   "so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"
 msgstr  "so_checksum_gen_salt : attention, error lors de la fermeture de « /dev/urandom » (fd : %d) parce que %m"
 
-#: src/libstoriqone/checksum.c:122
+#: src/libstoriqone/checksum.c:128
 #, c-format
 msgid   "so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"
 msgstr  "so_checksum_gen_salt : erreur lors de la lecture depuis « /dev/urandom » parce que %m"
 
-#: src/libstoriqone/checksum.c:128
+#: src/libstoriqone/checksum.c:135
 #, c-format
 msgid   "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, expected: %zd)"
 msgstr  "so_checksum_gen_salt : a lu moins qu’attendu depuis « /dev/urandom » (nb read : %zd, read expected : %zd)"
 
-#: src/libstoriqone/checksum.c:146
+#: src/libstoriqone/checksum.c:155
 msgid   "so_checksum_get_driver: invalid parameter, 'driver' should not be NULL"
 msgstr  "so_checksum_get_driver : paramètre invalide, « driver » ne doit pas être null"
 
-#: src/libstoriqone/checksum.c:159
+#: src/libstoriqone/checksum.c:168
 #, c-format
 msgid   "so_checksum_get_driver: failed to load checksum driver '%s'"
 msgstr  "so_checksum_get_driver : échec de chargement du module de calcul d’empreinte « %s »"
 
-#: src/libstoriqone/checksum.c:167
+#: src/libstoriqone/checksum.c:176
 #, c-format
 msgid   "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"
 msgstr  "so_checksum_get_driver : le pilote « %s » n’a pas appelé « so_checksum_register_driver »"
 
-#: src/libstoriqone/checksum.c:190
+#: src/libstoriqone/checksum.c:200
 msgid   "so_checksum_register_driver: trying to register a NULL driver"
 msgstr  "so_checksum_register_driver : tentative d’enregistrer un pilote « NULL »"
 
-#: src/libstoriqone/checksum.c:199
+#: src/libstoriqone/checksum.c:209
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is already registered"
 msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s » est déjà chargé"
 
-#: src/libstoriqone/checksum.c:210
+#: src/libstoriqone/checksum.c:220
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is now registered"
 msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s » est maintenant chargé"
 
-#: src/libstoriqone/checksum.c:216
+#: src/libstoriqone/checksum.c:227
 #, c-format
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
 msgstr  "so_checksum_salt_password : paramètre invalide (password : %p, salt : %p)"

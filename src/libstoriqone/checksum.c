@@ -99,13 +99,16 @@ static void so_checksum_exit() {
 
 char * so_checksum_gen_salt(const char * checksum, size_t length) {
 	if (length < 8) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"), length);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"),
+			length);
 		return NULL;
 	}
 
 	int fd = open("/dev/urandom", O_RDONLY);
 	if (fd < 0) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt because %m"));
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt because %m"));
 		return NULL;
 	}
 
@@ -115,17 +118,22 @@ char * so_checksum_gen_salt(const char * checksum, size_t length) {
 	int failed = close(fd);
 
 	if (failed != 0)
-		so_log_write(so_log_level_warning, dgettext("libstoriqone", "so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"), fd);
+		so_log_write(so_log_level_warning,
+			dgettext("libstoriqone", "so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"),
+			fd);
 
 	if (nb_read < 0) {
 		free(buffer);
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"));
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"));
 		return NULL;
 	}
 
 	if (nb_read < half_len) {
 		free(buffer);
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, expected: %zd)"), nb_read, half_len);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, expected: %zd)"),
+			nb_read, half_len);
 		return NULL;
 	}
 
@@ -143,7 +151,8 @@ char * so_checksum_gen_salt(const char * checksum, size_t length) {
 
 struct so_checksum_driver * so_checksum_get_driver(const char * driver) {
 	if (driver == NULL) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_get_driver: invalid parameter, 'driver' should not be NULL"));
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_checksum_get_driver: invalid parameter, 'driver' should not be NULL"));
 		return NULL;
 	}
 
@@ -187,7 +196,8 @@ static void so_checksum_init() {
 
 void so_checksum_register_driver(struct so_checksum_driver * driver) {
 	if (driver == NULL) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_register_driver: trying to register a NULL driver"));
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_checksum_register_driver: trying to register a NULL driver"));
 		return;
 	}
 
@@ -213,7 +223,9 @@ void so_checksum_register_driver(struct so_checksum_driver * driver) {
 
 char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) {
 	if (password == NULL || salt == NULL) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"), password, salt);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"),
+			password, salt);
 		return NULL;
 	}
 

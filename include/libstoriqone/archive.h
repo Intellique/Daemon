@@ -365,14 +365,17 @@ struct so_archive_format {
 
 /**
  * \brief Create a new volume into archive
+ *
  * \param[in,out] archive : an archive
  * \return a new volume
  */
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
 /**
  * \brief Convert an archive into a so_value
+ *
  * \param[in] archive : an archive
  * \return a value
+ *
  * \note To encode an archive into JSON, we need to call so_json_encode with
  * returned value
  * \see so_json_encode_to_fd
@@ -382,6 +385,7 @@ struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
 struct so_value * so_archive_convert(struct so_archive * archive);
 /**
  * \brief Release memory used by \a archive
+ *
  * \param[in] archive : an archive
  */
 void so_archive_free(struct so_archive * archive);
@@ -390,6 +394,7 @@ void so_archive_free(struct so_archive * archive);
  *
  * This function is a wrapper to so_archive_free used by so_value_free
  * \param[in] archive : an archive
+ *
  * \note you may need this function when you pass an archive to so_value_new_custom
  * \see so_archive_free
  * \see so_value_free
@@ -398,11 +403,13 @@ void so_archive_free(struct so_archive * archive);
 void so_archive_free2(void * archive);
 /**
  * \brief Create new archive
+ *
  * \return new archive
  */
 struct so_archive * so_archive_new(void);
 /**
  * \brief synchronize an \a archive with \a new_archive
+ *
  * \param[in,out] archive : an archive
  * \param[in] new_archive : values of one archive
  */
@@ -410,14 +417,17 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 
 /**
  * \brief Deep copy of an archive file
+ *
  * \param[in] file : an archive file
  * \return copy an \a file
  */
 struct so_archive_file * so_archive_file_copy(struct so_archive_file * file);
 /**
  * \brief Create an archive file from a format file
+ *
  * \param[in] file : a format file
  * \return an archive file
+ *
  * \see so_format_file
  */
 struct so_archive_file * so_archive_file_import(struct so_format_file * file);
@@ -432,6 +442,7 @@ struct so_archive_file * so_archive_file_import(struct so_format_file * file);
 enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode);
 /**
  * \brief parse a string and convert it into an archive file type
+ *
  * \param[in] type : a string representing an archive file type
  * \param[in] translate : translate \a type into internal form
  * \return an archive file type or so_archive_file_type_unknown if not found
@@ -439,6 +450,7 @@ enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode);
 enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);
 /**
  * \brief an archive file type into string
+ *
  * \param[in] type : an archive file type
  * \param[in] translate : translate the returned value
  * \return a string representing an archive file type
@@ -447,8 +459,10 @@ const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool
 
 /**
  * \brief Convert an archive format into a value
+ *
  * \param[in] archive_format : an archive format
  * \return a value
+ *
  * \note To encode an archive format into JSON, we need to call so_json_encode with
  * returned value
  * \see so_json_encode_to_fd
@@ -458,17 +472,20 @@ const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool
 struct so_value * so_archive_format_convert(struct so_archive_format * archive_format) __attribute__((warn_unused_result));
 /**
  * \brief Duplicate an archive format
+ *
  * \param[in] archive_format : an archive format
  * \return a copy of \a archive_format
  */
 struct so_archive_format * so_archive_format_dup(struct so_archive_format * archive_format) __attribute__((warn_unused_result));
 /**
  * \brief Release memory used by an archive format
+ *
  * \param[in] archive_format : an archive format
  */
 void so_archive_format_free(struct so_archive_format * archive_format);
 /**
  * \brief synchronize an <a>archive format</a> with \a new_archive_format
+ *
  * \param[in,out] archive_format : an archive format
  * \param[in] new_archive_format : values of one archive format
  */
@@ -476,8 +493,10 @@ void so_archive_format_sync(struct so_archive_format * archive_format, struct so
 
 /**
  * \brief Convert an archive volume into a value
+ *
  * \param[in] volume : an archive volume
  * \return a value
+ *
  * \note To encode an archive volume into JSON, we need to call so_json_encode with
  * returned value
  * \see so_json_encode_to_fd
@@ -487,11 +506,13 @@ void so_archive_format_sync(struct so_archive_format * archive_format, struct so
 struct so_value * so_archive_volume_convert(struct so_archive_volume * volume);
 /**
  * \brief Release memory used by an archive volume
+ *
  * \param[in] volume : an archive volume
  */
 void so_archive_volume_free(struct so_archive_volume * volume);
 /**
  * \brief synchronize an <a>archive volume</a> with \a new_volume
+ *
  * \param[in,out] volume : an archive volume
  * \param[in] new_volume : values of one archive volume
  */
