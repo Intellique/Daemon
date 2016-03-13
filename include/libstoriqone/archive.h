@@ -43,7 +43,7 @@ struct so_value;
 
 /**
  * \enum so_archive_file_type
- * \brief Represents a type of file
+ * \brief Represents a file type
  */
 enum so_archive_file_type {
 	/**
@@ -178,7 +178,7 @@ struct so_archive_volume {
 	 *
 	 * \note Time is store as Unix timestamp.
 	 *
-	 * \note If \a check_time equals to zero then it means
+	 * \note If \a check_time equals to \b 0 then it means
 	 * than this volume has never been checked
 	 */
 	time_t check_time;
@@ -216,7 +216,7 @@ struct so_archive_volume {
 	 * \brief file's information related to this volume
 	 *
 	 * \var so_archive_volume::files
-	 * \brief files in current files
+	 * \brief files in current volume
 	 */
 	struct so_archive_files {
 		/**
@@ -237,6 +237,9 @@ struct so_archive_volume {
 	 */
 	unsigned int nb_files;
 
+	/**
+	 * \brief private data used by database
+	 */
 	struct so_value * db_data;
 };
 
@@ -290,7 +293,18 @@ struct so_archive_file {
 	 */
 	time_t modify_time;
 
+	/**
+	 * \brief result of last check
+	 */
 	bool check_ok;
+	/**
+	 * \brief Last time this file has been checked
+	 *
+	 * \note Time is store as Unix timestamp.
+	 *
+	 * \note if \a check_time is equals to \b 0 then
+	 * no check has been performed.
+	 */
 	time_t check_time;
 
 	/**
@@ -306,6 +320,9 @@ struct so_archive_file {
 	 * \brief Mime type of file
 	 */
 	char * mime_type;
+	/**
+	 * \brief path which led to archiving this file
+	 */
 	char * selected_path;
 
 	/**
@@ -315,6 +332,9 @@ struct so_archive_file {
 	 */
 	struct so_value * digests;
 
+	/**
+	 * \brief private data used by database
+	 */
 	struct so_value * db_data;
 };
 
