@@ -48,18 +48,18 @@ static void so_checksum_md5_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_md5_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_md5_driver = {
-	.name			  = "md5",
+	.name             = "md5",
 	.default_checksum = false,
-	.new_checksum	  = so_checksum_md5_new_checksum,
-	.cookie			  = NULL,
+	.new_checksum     = so_checksum_md5_new_checksum,
+	.cookie           = NULL,
 	.src_checksum     = STORIQONE_CHECKSUM_MD5_SRCSUM,
 };
 
 static struct so_checksum_ops so_checksum_md5_ops = {
-	.digest	= so_checksum_md5_digest,
-	.free	= so_checksum_md5_free,
+	.digest = so_checksum_md5_digest,
+	.free   = so_checksum_md5_free,
 	.reset  = so_checksum_md5_reset,
-	.update	= so_checksum_md5_update,
+	.update = so_checksum_md5_update,
 };
 
 
