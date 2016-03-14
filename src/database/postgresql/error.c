@@ -40,14 +40,19 @@
 
 void so_database_postgresql_get_error(PGresult * result, const char * prepared_query) {
 	char * error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
-	if (error_code != NULL && !strcmp("55P03", error_code))
-		return;
+	if (error_code != NULL) {
+		so_log_write2(so_log_level_error, so_log_type_plugin_db,
+			gettext("PSQL: error code => %s"),
+			error_code);
+	}
 
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
-	if (prepared_query != NULL)
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error {%s} => %s"), prepared_query, error);
-	else
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error => %s"), error);
+	if (error != NULL) {
+		if (prepared_query != NULL)
+			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error {%s} => %s"), prepared_query, error);
+		else
+			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error => %s"), error);
+	}
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
 	if (error != NULL) {
@@ -73,6 +78,7 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		free(error);
 	}
 
-	so_debug_log_stack(16);
+	if (error_code != NULL && strcmp("55P03", error_code) == 0)
+		so_debug_log_stack(16);
 }
 

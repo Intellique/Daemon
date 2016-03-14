@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-11 15:15+0100\n"
+        "POT-Creation-Date: 2016-03-14 16:01+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -154,7 +154,7 @@ msgstr  "[ %s | %s | n°%u ] : Meilleure taille de bloc trouvé : %s"
 msgid   "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"
 msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la position n°%u et le numéro d’enregistrement %ld"
 
-#: src/drive/tape_drive/io/writer.c:215
+#: src/drive/tape_drive/io/writer.c:217
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | n°%u ] : le lecteur est fermé"

@@ -139,7 +139,8 @@ static ssize_t sodr_tape_drive_writer_before_close(struct so_stream_writer * sw,
 
 			self->buffer_used = 0;
 			self->media->nb_total_write++;
-			self->media->free_block--;
+			if (self->media->free_block > 0)
+				self->media->free_block--;
 		}
 
 		return will_copy;
@@ -190,7 +191,8 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 		self->position += nb_write;
 		self->buffer_used = 0;
 		self->media->nb_total_write++;
-		self->media->free_block--;
+		if (self->media->free_block > 0)
+			self->media->free_block--;
 	}
 
 	if (!self->closed) {
