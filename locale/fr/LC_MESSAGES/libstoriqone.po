@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-13 14:18+0100\n"
+        "POT-Creation-Date: 2016-03-13 15:02+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -186,31 +186,31 @@ msgstr  "Oops!!!, le programme « %s » a reçu le signale : %s"
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
 msgstr  "so_database_get_driver : paramètre invalide, « driver » ne doit pas être « NULL »"
 
-#: src/libstoriqone/database.c:73
+#: src/libstoriqone/database.c:74
 #, c-format
 msgid   "so_database_get_driver: failed to load database driver '%s'"
 msgstr  "so_database_get_driver : échec de chargement du module de base de données « %s »"
 
-#: src/libstoriqone/database.c:79
+#: src/libstoriqone/database.c:82
 #, c-format
 msgid   "so_database_get_driver: driver '%s' did not call 'so_database_register_driver'"
 msgstr  "so_database_get_driver : le pilote « %s » n’a pas appelé « so_database_register_driver »"
 
-#: src/libstoriqone/database.c:101
+#: src/libstoriqone/database.c:106
 #, c-format
 msgid   "so_database_load_config: invalid parameters (config: %p)"
 msgstr  "so_database_load_config : paramètres invalides (config : %p)"
 
-#: src/libstoriqone/database.c:123
+#: src/libstoriqone/database.c:129
 msgid   "so_database_register_driver: trying to register a NULL driver"
 msgstr  "so_database_register_driver : tentative d’enregistrer un pilote « NULL »"
 
-#: src/libstoriqone/database.c:132
+#: src/libstoriqone/database.c:138
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is already registered"
 msgstr  "so_database_register_driver : le pilote de base de données « %s » est déjà chargé"
 
-#: src/libstoriqone/database.c:146
+#: src/libstoriqone/database.c:152
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is now registered"
 msgstr  "so_database_register_driver : le pilote de base de données « %s » est maintenant chargé"

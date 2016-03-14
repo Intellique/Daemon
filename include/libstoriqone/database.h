@@ -67,14 +67,14 @@ struct so_database_connection {
 	 * \struct so_database_connection_ops
 	 * \brief Operations on a database connection
 	 *
-	 * \var ops
+	 * \var so_database_connection::ops
 	 * \brief Operations
 	 */
 	struct so_database_connection_ops {
 		/**
 		 * \brief close \a db connection
 		 *
-		 * \param[in] db a database connection
+		 * \param[in] connect : a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li < 0 if error
@@ -83,7 +83,7 @@ struct so_database_connection {
 		/**
 		 * \brief free memory associated with database connection
 		 *
-		 * \param[in] db a database connection
+		 * \param[in] connect : a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li < 0 if error
@@ -97,8 +97,7 @@ struct so_database_connection {
 		/**
 		 * \brief check if the connection to database is closed
 		 *
-		 * \param[in] db a database connection
-		 * \param[in] db a database connection
+		 * \param[in] connect : a database connection
 		 * \return 0 if the connection is not closed
 		 */
 		bool (*is_connected)(struct so_database_connection * connect);
@@ -106,7 +105,7 @@ struct so_database_connection {
 		/**
 		 * \brief Rool back a transaction
 		 *
-		 * \param[in] db a database connection
+		 * \param[in] connect : a database connection
 		 * \li 0 if ok
 		 * \li 1 if noop
 		 * \li < 0 if error
@@ -115,7 +114,7 @@ struct so_database_connection {
 		/**
 		 * \brief Finish a transaction
 		 *
-		 * \param[in] db a database connection
+		 * \param[in] connect : a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li 1 if noop
@@ -125,8 +124,7 @@ struct so_database_connection {
 		/**
 		 * \brief Starts a transaction
 		 *
-		 * \param[in] connection a database connection
-		 * \param[in] readOnly is a read only transaction
+		 * \param[in] connection : a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li 1 if noop
@@ -134,32 +132,234 @@ struct so_database_connection {
 		 */
 		int (*start_transaction)(struct so_database_connection * connect);
 
+		/**
+		 * \brief add an host to database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] uuid : a uuid of host
+		 * \param[in] name : name of host without domaine name
+		 * \param[in] domaine : domaine name of host. can be NULL.
+		 * \param[in] description : description of host. can be NULL.
+		 * \param[in] daemon_version : version of storiqone
+		 * \return 0 on success
+		 */
 		int (*add_host)(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description, const char * daemon_version);
+		/**
+		 * \brief find a host by name
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] uuid : find by its uuid
+		 * \param[in] hostname : find by its name
+		 * \return \b true if found
+		 */
 		bool (*find_host)(struct so_database_connection * connect, const char * uuid, const char * hostname);
+		/**
+		 * \brief get host information by name
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[out] host : host information
+		 * \param[in] name : hostname
+		 * \return 0 on success
+		 */
 		int (*get_host_by_name)(struct so_database_connection * connect, struct so_host * host, const char * name);
+		/**
+		 * \brief update host
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] uuid : uuid of host
+		 * \param[in] daemon_version : version of daemon
+		 * \return 0 on success
+		 */
 		int (*update_host)(struct so_database_connection * connect, const char * uuid, const char * daemon_version);
 
+		/**
+		 * \brief delete changer from database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] changer : remove this \a changer
+		 * \return 0 on success
+		 */
 		int (*delete_changer)(struct so_database_connection * connect, struct so_changer * changer);
+		/**
+		 * \brief delete drive from database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] drive : remove this \a drive
+		 * \return 0 on success
+		 */
 		int (*delete_drive)(struct so_database_connection * connect, struct so_drive * drive);
+		/**
+		 * \brief get a list of scsi changers
+		 *
+		 * \param[in] connection : a database connection
+		 * \return a value which contains a list of scsi changers
+		 */
 		struct so_value * (*get_changers)(struct so_database_connection * connect);
+		/**
+		 * \brief get a list of checksums of pool
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] pool : a pool
+		 * \return a value which contains a list of checksums
+		 */
 		struct so_value * (*get_checksums_from_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((warn_unused_result));
+		/**
+		 * \brief get a list of free medias
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] media_format : format of media
+		 * \param[in] online : if \b true then returned list contains only online medias else only offline medias
+		 * \return a value which contains a list of (on/off)line medias
+		 */
 		struct so_value * (*get_free_medias)(struct so_database_connection * connect, struct so_media_format * media_format, bool online) __attribute__((warn_unused_result));
+		/**
+		 * \brief get a media by his medium serial number or label or associated with job
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] medium_serial_number : serial number of media
+		 * \param[in] label : media label
+		 * \param[in] job : media associated with this job
+		 * \return \b NULL on failure or a media
+		 *
+		 * \note only one parameter in \a medium_serial_number or \a label or \a job should not be \b NULL
+		 */
 		struct so_media * (*get_media)(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job) __attribute__((warn_unused_result));
+		/**
+		 * \brief get a list of medias which are members of pool
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] pool : a pool
+		 * \return a list of medias in \a pool
+		 */
 		struct so_value * (*get_medias_of_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((warn_unused_result));
+		/**
+		 * /brief get a media format by its density code and mode
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] density_code : a density code
+		 * \param[in] mode : a media format mode
+		 * \return \b NULL on failure
+		 */
 		struct so_media_format * (*get_media_format)(struct so_database_connection * connect, unsigned int density_code, enum so_media_format_mode mode);
+		/**
+		 * \brief get pool by its uuid or associated to this job
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] uuid : uuid of pool
+		 * \param[in] job : pool associated with this job
+		 * \return \b NULL on failure
+		 */
 		struct so_pool * (*get_pool)(struct so_database_connection * connect, const char * uuid, struct so_job * job) __attribute__((warn_unused_result));
+		/**
+		 * \brief get a list of pool which are also member of pool mirror minus \a pool
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] pool : pool of reference
+		 * \return a list of pool
+		 */
 		struct so_value * (*get_pool_by_pool_mirror)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((warn_unused_result));
+		/**
+		 * \brief get a list of standalone drives
+		 *
+		 * \param[in] connection : a database connection
+		 * \return a list of changer which manage a standalone drive
+		 */
 		struct so_value * (*get_standalone_drives)(struct so_database_connection * connect);
+		/**
+		 * \brief get a list of VTLs
+		 *
+		 * \param[in] connection : a database connection
+		 * \return a list of VTLs
+		 */
 		struct so_value * (*get_vtls)(struct so_database_connection * connect, bool new_vtl);
+		/**
+		 * \brief synchronize the status of \a changer with database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in,out] changer : a changer
+		 * \param[in] method : synchronize strategy
+		 * \return 0 on success
+		 *
+		 * \note the field \a next_action of \a changer can be updated
+		 */
 		int (*sync_changer)(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
+		/**
+		 * \brief synchronize the status of \a drive with database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] drive : a drive
+		 * \param[in] sync_drive : should synchronize media in this drive
+		 * \param[in] method : synchronize strategy
+		 * \return 0 on success
+		 */
 		int (*sync_drive)(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
+		/**
+		 * \brief synchronize the status of \a media with database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] media : a media
+		 * \param[in] method : synchronize strategy
+		 * \return 0 on success
+		 */
 		int (*sync_media)(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
+		/**
+		 * \brief get new status of vtl
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] vtl : a vtl
+		 * \return a value which contains new values of vtl
+		 */
 		struct so_value * (*update_vtl)(struct so_database_connection * connect, struct so_changer * vtl);
 
+		/**
+		 * \brief add job record
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \param[in] level : level of record
+		 * \param[in] notif : should notify user
+		 * \param[in] message : a message
+		 * \return 0 on success
+		 */
 		int (*add_job_record)(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
+		/**
+		 * \brief add job record
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job_id : a job's id
+		 * \param[in] num_run : number of instance of job
+		 * \param[in] level : level of record
+		 * \param[in] notif : should notify user
+		 * \param[in] message : a message
+		 * \return 0 on success
+		 */
 		int (*add_job_record2)(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status status, enum so_log_level level, enum so_job_record_notif notif, const char * message);
+		/**
+		 * \brief add report into database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job :
+		 * \param[in] archive :
+		 * \param[in] media :
+		 * \param[in] data : a json formatted report
+		 * \return 0 on success
+		 */
 		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
+		/**
+		 * \brief get alternative path of restore-archive job
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \return \b NULL on failure or if there is no restore path
+		 */
 		char * (*get_restore_path)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
+		/**
+		 * \brief check if user of \a job has been disactivated
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \return \b true on failure or if user has been disactivated
+		 */
 		bool (*is_user_disabled)(struct so_database_connection * connect, struct so_job * job);
 		int (*start_job)(struct so_database_connection * connect, struct so_job * job);
 		int (*stop_job)(struct so_database_connection * connect, struct so_job * job);
@@ -227,7 +427,7 @@ struct so_database_config {
 	/**
 	 * \struct so_database_config_ops
 	 *
-	 * \var ops
+	 * \var so_database_config::ops
 	 * \brief Database operations which require a configuration
 	 */
 	struct so_database_config_ops {
@@ -276,7 +476,7 @@ struct so_database {
 	 * \struct so_database_ops
 	 * \brief Operations on one database driver
 	 *
-	 * \var ops
+	 * \var so_database::ops
 	 * \brief Database operation
 	 */
 	struct so_database_ops {
@@ -320,7 +520,7 @@ struct so_database * so_database_get_default_driver(void);
 /**
  * \brief get a database driver
  *
- * \param[in] database database name
+ * \param[in] driver : driver's name
  * \return NULL if failed
  *
  * \note if this driver is not loaded, this function will load it
@@ -328,16 +528,24 @@ struct so_database * so_database_get_default_driver(void);
  */
 struct so_database * so_database_get_driver(const char * driver);
 
+/**
+ * \brief Load database configuration
+ *
+ * \param[in] config : database configuration
+ *
+ * \note this function is intent to be used by libstoriqone-changer, libstoriqone-drive and libstoriqone-job
+ */
 void so_database_load_config(struct so_value * config);
 
 /**
  * \brief Register a database driver
  *
- * \param[in] database a statically allocated struct so_database
+ * \param[in] driver :a statically allocated struct so_database
  *
  * \note Each database driver should call this function only one time
  * \code
  * static void database_myDb_init() __attribute__((constructor)) {
+ * \endcode
  */
 void so_database_register_driver(struct so_database * driver);
 
