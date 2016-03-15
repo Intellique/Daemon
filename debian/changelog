@@ -1,3 +1,19 @@
+storiqone (1.2.13-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #99: Implicite close in free functions
+    - #110: Bug fix when archiving in pool mirror
+    - #111: Improve archive checking with archive which has no checksum computed
+    - #112: Improve checking of media header
+    - #113: Infinit loop in libstoriqone-changer
+    - #101: Blank media are no longer recognized as foreign media
+    - #117: Remove unix socket before use
+    - #116: Fix media with negative number of free block
+    - #119: Wrong type in database for table MetadataLog
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 15 Mar 2016 15:36:16 +0100
+
 storiqone (1.2.12.2-1+wheezy) polisher; urgency=low
 
   * New bug fix release
