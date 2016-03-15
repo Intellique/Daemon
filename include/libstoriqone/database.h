@@ -52,9 +52,21 @@ struct so_pool;
 enum so_script_type;
 struct so_value;
 
+/**
+ * \brief Synchronize method
+ */
 enum so_database_sync_method {
+	/**
+	 * \brief default method
+	 */
 	so_database_sync_default,
+	/**
+	 * \brief initial synchro
+	 */
 	so_database_sync_init,
+	/**
+	 * \brief Retrieve only id
+	 */
 	so_database_sync_id_only,
 };
 
@@ -361,17 +373,92 @@ struct so_database_connection {
 		 * \return \b true on failure or if user has been disactivated
 		 */
 		bool (*is_user_disabled)(struct so_database_connection * connect, struct so_job * job);
+		/**
+		 * \brief Create new jobrun
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \return 0 on success
+		 */
 		int (*start_job)(struct so_database_connection * connect, struct so_job * job);
+		/**
+		 * \brief Update new jobrun
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \return 0 on success
+		 */
 		int (*stop_job)(struct so_database_connection * connect, struct so_job * job);
+		/**
+		 * \brief Update job's information
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \return 0 on success
+		 */
 		int (*sync_job)(struct so_database_connection * connect, struct so_job * job);
+		/**
+		 * \brief Get new jobs from database and remove old
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in,out] jobs : a set of jobs
+		 * \return 0 on success
+		 */
 		int (*sync_jobs)(struct so_database_connection * connect, struct so_value * jobs);
 
+		/**
+		 * \brief Get the number of scripts related to pool
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job_type : type of job
+		 * \param[in] type : type of script
+		 * \param[in] pool : a pool
+		 * \return < 0 on failure or the number of scripts
+		 */
 		int (*get_nb_scripts)(struct so_database_connection * connect, const char * job_type, enum so_script_type type, struct so_pool * pool);
+		/**
+		 * \brief Get the path of one script
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job_type : type of job
+		 * \param[in] sequence : nth script
+		 * \param[in] type : type of script
+		 * \param[in] pool : a pool
+		 * return NULL on failure or a dynamically allocated string
+		 */
 		char * (*get_script)(struct so_database_connection * connect, const char * job_type, unsigned int sequence, enum so_script_type type, struct so_pool * pool);
 
+		/**
+		 * \brief Find a checksum plugin by its name
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] checksum : name of checksum
+		 * \return \b false on failure
+		 */
 		bool (*find_plugin_checksum)(struct so_database_connection * connect, const char * checksum);
+		/**
+		 * \brief Insert new checksum into database if not found
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] driver : a checksum's driver
+		 * \return 0 on success
+		 */
 		int (*sync_plugin_checksum)(struct so_database_connection * connect, struct so_checksum_driver * driver);
+		/**
+		 * \brief Insert new job's type into database if not found
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job's type
+		 * \return 0 on success
+		 */
 		int (*sync_plugin_job)(struct so_database_connection * connect, const char * job);
+		/**
+		 * \brief Insert new script into database if not found
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] script_path : path of script
+		 * \return 0 on success
+		 */
 		int (*sync_plugin_script)(struct so_database_connection * connect, const char * script_path);
 
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
