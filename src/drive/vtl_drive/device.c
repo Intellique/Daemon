@@ -500,7 +500,7 @@ static int sodr_vtl_drive_init(struct so_value * config, struct so_database_conn
 
 	const char * root_dir = NULL;
 	struct so_value * format = NULL;
-	so_value_unpack(config, "{ssSssosu}",
+	so_value_unpack(config, "{sssSsosu}",
 		"serial number", &sodr_vtl_drive.serial_number,
 		"device", &root_dir,
 		"format", &format,
