@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-03-15 20:28+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,40 +16,40 @@ msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/changer/vtl_changer/device.c:133
+#: src/changer/vtl_changer/device.c:134
 #, c-format
 msgid   "[%s | %s]: will update VTL"
 msgstr  "[ %s | %s ]: va a actualizar la VTL"
 
-#: src/changer/vtl_changer/device.c:143
+#: src/changer/vtl_changer/device.c:144
 #, c-format
 msgid   "[%s | %s]: will remove %u drive"
 msgid_plural    "[%s | %s]: will remove %u drives"
 msgstr[0]       "[ %s | %s ]: va a suprimir %u lector"
 msgstr[1]       "[ %s | %s ]: va a suprimir %u lectores"
 
-#: src/changer/vtl_changer/device.c:195
+#: src/changer/vtl_changer/device.c:196
 #, c-format
 msgid   "[%s | %s]: will remove %u slot"
 msgid_plural    "[%s | %s]: will remove %u slots"
 msgstr[0]       "[ %s | %s ]: va a suprimir %u ranura"
 msgstr[1]       "[ %s | %s ]: va a suprimir %u ranuras"
 
-#: src/changer/vtl_changer/device.c:224
+#: src/changer/vtl_changer/device.c:225
 #, c-format
 msgid   "[%s | %s]: will add %u slot"
 msgid_plural    "[%s | %s]: will add %u slots"
 msgstr[0]       "[ %s | %s ]: va a agregar %u ranura"
 msgstr[1]       "[ %s | %s ]: va a agregar %u ranuras"
 
-#: src/changer/vtl_changer/device.c:261
+#: src/changer/vtl_changer/device.c:262
 #, c-format
 msgid   "[%s | %s]: will add %u drive"
 msgid_plural    "[%s | %s]: will add %u drives"
 msgstr[0]       "[ %s | %s ]: va a agregar %u lector"
 msgstr[1]       "[ %s | %s ]: va a agregar %u lectores"
 
-#: src/changer/vtl_changer/device.c:332
+#: src/changer/vtl_changer/device.c:333
 #, c-format
 msgid   "[%s | %s]: will delete VTL"
 msgstr  "[ %s | %s ]: va a suprimir la VTL"
