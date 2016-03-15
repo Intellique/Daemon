@@ -606,7 +606,7 @@ CREATE TABLE MetadataLog (
     type MetaType NOT NULL,
 
     key TEXT NOT NULL,
-    value JSON NOT NULL,
+    value JSONB NOT NULL,
 
     login INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
