@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-02 20:30+0100\n"
+        "POT-Creation-Date: 2016-03-14 15:38+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -61,22 +61,27 @@ msgstr  "Verificación \"%s\""
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL: nueva consulta preparada (%s) => {%s}, status: %s"
 
-#: src/database/postgresql/error.c:48
+#: src/database/postgresql/error.c:45
+#, c-format
+msgid   "PSQL: error code => %s"
+msgstr  "PSQL: codigo de error => %s"
+
+#: src/database/postgresql/error.c:52
 #, c-format
 msgid   "PSQL: error {%s} => %s"
 msgstr  "PSQL: error {%s} => %s"
 
-#: src/database/postgresql/error.c:50
+#: src/database/postgresql/error.c:54
 #, c-format
 msgid   "PSQL: error => %s"
 msgstr  "PSQL: error => %s"
 
-#: src/database/postgresql/error.c:58
+#: src/database/postgresql/error.c:63
 #, c-format
 msgid   "PSQL: detail => %s"
 msgstr  "PSQL: detalle => %s"
 
-#: src/database/postgresql/error.c:70
+#: src/database/postgresql/error.c:75
 #, c-format
 msgid   "PSQL: hint => %s"
 msgstr  "PSQL: sugerencia => %s"
