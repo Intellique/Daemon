@@ -19,7 +19,7 @@ msgstr  "Project-Id-Version: storiqone-job-restore-archive v1.2\n"
 #: src/job/restore-archive/check_worker.c:118
 #, c-format
 msgid   "Skipping verifying '%s' because there are no checksums availables"
-msgstr  "No hay verificación de \"%s\" porque no hay huellas disponibles"
+msgstr  "No hay verificación de \"%s\" porque no hay suma de verificación disponibles"
 
 #: src/job/restore-archive/check_worker.c:126
 #, c-format
@@ -40,7 +40,7 @@ msgstr  "El fichero \"%s\" es ignorado"
 #: src/job/restore-archive/data_worker.c:178
 #, c-format
 msgid   "Error while reading header from media '%s'"
-msgstr  "Error al leer el emcabezamiento desde el media  \"%s\""
+msgstr  "Error al leer el emcabezamiento desde el media \"%s\""
 
 #: src/job/restore-archive/data_worker.c:204
 #, c-format

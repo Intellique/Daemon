@@ -146,7 +146,7 @@ static void sochgr_socket_message(int fd, short event, void * data) {
 
 		if (first_peer != NULL) {
 			sleep(1);
-			sochgr_socket_unlock(peer, false);
+			sochgr_socket_unlock(NULL, false);
 		}
 
 		return;
@@ -204,7 +204,7 @@ static void sochgr_socket_remove_peer(struct sochgr_peer * peer) {
 		first_peer = peer->next;
 	else {
 		struct sochgr_peer * ptr;
-		for (ptr = first_peer; ptr->next != NULL; ptr = ptr->next)
+		for (ptr = first_peer; ptr != NULL; ptr = ptr->next)
 			if (ptr->next == peer) {
 				ptr->next = peer->next;
 				if (peer == last_peer)
@@ -275,8 +275,8 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 		drive->ops->lock(drive, peer->key);
 
-		lp->waiting = lp->peer->waiting = false;
-		sochgr_socket_remove_peer(lp->peer);
+		peer->nb_waiting_medias--;
+		lp->waiting = false;
 
 		struct so_value * response = so_value_pack("{sbsuso}",
 			"error", false,
@@ -286,7 +286,8 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 		so_json_encode_to_fd(response, peer->fd, true);
 		so_value_free(response);
 
-		return true;
+		if (peer == current_peer)
+			return true;
 	}
 
 	if (nb_free_drives == 0) {
@@ -303,7 +304,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 	struct sochgr_peer * peer;
 	for (peer = first_peer; peer != NULL && nb_free_drives > 0; peer = peer->next) {
-		if (!peer->waiting)
+		if (peer->nb_waiting_medias == 0)
 			continue;
 
 		for (i = changer->nb_drives; i < changer->nb_slots && nb_free_drives > 0; i++) {
@@ -319,6 +320,14 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 			unsigned int j;
 			struct so_drive * drive = NULL;
+			for (j = 0; j < changer->nb_drives && drive == NULL; j++) {
+				struct so_drive * dr = changer->drives + j;
+				if (!dr->enable || !dr->ops->check_support(dr, media->media_format, lp->size_need > 0))
+					continue;
+
+				if (dr->ops->is_free(dr) && !dr->slot->full)
+					drive = dr;
+			}
 			for (j = 0; j < changer->nb_drives && drive == NULL; j++) {
 				struct so_drive * dr = changer->drives + j;
 				if (!dr->enable || !dr->ops->check_support(dr, media->media_format, lp->size_need > 0))
@@ -352,7 +361,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 					free(volume_name);
 
-					return false;
+					if (current_peer == peer)
+						return false;
+					else
+						continue;
 				} else
 					so_log_write(so_log_level_notice,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"),
@@ -374,7 +386,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				so_json_encode_to_fd(response, peer->fd, true);
 				so_value_free(response);
 
-				return false;
+				if (current_peer == peer)
+					return false;
+				else
+					continue;
 			} else
 				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"), changer->vendor, changer->model, drive->slot->volume_name, sl->index, drive->index);
 
@@ -388,11 +403,13 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			so_json_encode_to_fd(response, peer->fd, true);
 			so_value_free(response);
 
-			lp->waiting = lp->peer->waiting = false;
-			sochgr_socket_remove_peer(lp->peer);
-			nb_free_drives--;
+			peer->nb_waiting_medias--;
+			lp->waiting = false;
 
-			return true;
+			if (current_peer == peer)
+				return true;
+			else
+				continue;
 		}
 	}
 
@@ -442,15 +459,24 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 	if (lp == NULL)
 		goto error;
 
-	peer->waiting = lp->waiting = true;
-	if (first_peer == NULL)
-		first_peer = last_peer = peer;
-	else
-		last_peer = last_peer->next = peer;
+	peer->nb_waiting_medias++;
+	lp->waiting = true;
+
+	bool found = false;
+	struct sochgr_peer * ptr;
+	for (ptr = first_peer; !found && ptr != NULL; ptr = ptr->next)
+		found = ptr == peer;
+
+	if (!found) {
+		if (first_peer == NULL)
+			first_peer = last_peer = peer;
+		else
+			last_peer = last_peer->next = peer;
+	}
 
 	if (!sochgr_socket_unlock(peer, no_wait) && no_wait) {
-		peer->waiting = lp->waiting = false;
-		sochgr_socket_remove_peer(peer);
+		peer->nb_waiting_medias--;
+		lp->waiting = false;
 	}
 	return;
 

@@ -33,7 +33,7 @@
 struct sochgr_peer {
 	int fd;
 	char * key;
-	bool waiting;
+	unsigned short nb_waiting_medias;
 
 	bool defer;
 	struct so_value * request;

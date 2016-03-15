@@ -41,11 +41,13 @@
 #include <strings.h>
 // accept, bind, connect, listen, socket
 #include <sys/socket.h>
-// accept, bind, connect, listen, socket
+// lstat
+#include <sys/stat.h>
+// accept, bind, connect, listen, lstat, socket
 #include <sys/types.h>
 // struct sockaddr_un
 #include <sys/un.h>
-// close, unlink
+// close, lstat, unlink
 #include <unistd.h>
 
 #include <libstoriqone/checksum.h>
@@ -131,6 +133,18 @@ bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_c
 	if (vpath->type != so_value_string)
 		return false;
 
+	const char * path = so_value_string_get(vpath);
+	if (access(path, F_OK | R_OK | W_OK | X_OK) == 0) {
+		struct stat info;
+		int failed = lstat(path, &info);
+		if (failed != 0 || !S_ISSOCK(info.st_mode))
+			return false;
+
+		failed = unlink(path);
+		if (failed != 0)
+			return false;
+	}
+
 	int fd = socket(AF_UNIX, type, 0);
 	if (fd < 0)
 		return false;
@@ -141,7 +155,7 @@ bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_c
 	struct sockaddr_un addr;
 	bzero(&addr, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", so_value_string_get(vpath));
+	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", path);
 
 	int failed = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
 	if (failed != 0) {

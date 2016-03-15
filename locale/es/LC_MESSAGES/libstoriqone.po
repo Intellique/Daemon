@@ -112,7 +112,7 @@ msgstr  "so_cheksum_compute: parámetros inválidos (checksum : %p, data : %p,
 #: src/libstoriqone/checksum.c:69
 #, c-format
 msgid   "so_checksum_compute: failed to load checksum plugin '%s'"
-msgstr  "so_checksum_compute: fallo al cargar el módulo de cálculo de comprobación de la huella« %s »  "
+msgstr  "so_checksum_compute: fallo al cargar el módulo del cálculo de comprobación de la huella« %s »  "
 
 #: src/libstoriqone/checksum.c:85
 #, c-format

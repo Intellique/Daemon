@@ -1107,7 +1107,7 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 			struct so_pool * new_pool = malloc(sizeof(struct so_pool));
 			bzero(new_pool, sizeof(struct so_pool));
 
-			so_database_postgresql_get_pool_by_id(connect, pool, PQgetvalue(result, i, 0));
+			so_database_postgresql_get_pool_by_id(connect, new_pool, PQgetvalue(result, i, 0));
 
 			so_value_list_push(pools, so_value_new_custom(new_pool, so_pool_free2), true);
 		}

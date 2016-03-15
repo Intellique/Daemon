@@ -585,11 +585,12 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 
 		if (worker->drive != NULL) {
 			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
+			worker->media = worker->drive->slot->media;
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
 			vol->media = so_media_dup(worker->media);
-			vol->media_position = primary_worker->writer->ops->file_position(worker->writer);
+			vol->media_position = worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
 		}
 
