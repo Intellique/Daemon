@@ -71,7 +71,7 @@ enum sodr_tape_drive_scsi_mam_attributes {
 };
 
 struct sodr_tape_drive_scsi_mam_attribute {
-	enum sodr_tape_drive_scsi_mam_attributes attribute_identifier:16;
+	enum sodr_tape_drive_scsi_mam_attributes identifier:16;
 	enum sodr_tape_drive_scsi_mam_attribute_format {
 		sodr_tape_drive_scsi_mam_attribute_format_binary   = 0x0,
 		sodr_tape_drive_scsi_mam_attribute_format_ascii    = 0x1,
@@ -80,14 +80,14 @@ struct sodr_tape_drive_scsi_mam_attribute {
 	} format:2;
 	unsigned char reserved:5;
 	bool read_only:1;
-	unsigned short attribute_length;
+	unsigned short length;
 	union {
 		unsigned char int8;
 		unsigned short be16;
 		unsigned int be32;
 		unsigned long long be64;
 		char text[160];
-	} attribute_value;
+	} value;
 } __attribute__((packed));
 
 struct sodr_tape_drive_scsi_position {

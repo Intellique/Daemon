@@ -28,6 +28,8 @@
 #include <libintl.h>
 // snprintf
 #include <stdio.h>
+// strcspn, strlen
+#include <string.h>
 // struct mtget
 #include <sys/mtio.h>
 // now
@@ -217,8 +219,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	/**
 	 * Update Medium auxiliary memory
 	 */
-
-	return 0;
+	return failed = sodr_tape_drive_format_ltfs_update_mam(scsi_fd, drive, media, db);
 }
 
 static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * drive, struct so_stream_writer * writer, int fd, ssize_t block_size, const char * partition, time_t format_time, const char * uuid) {

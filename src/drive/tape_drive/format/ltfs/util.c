@@ -26,6 +26,8 @@
 
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE
+// gettext
+#include <libintl.h>
 // magic_buffer, magic_close, magic_open
 #include <magic.h>
 // bool
@@ -53,9 +55,11 @@
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-drive/drive.h>
+#include <libstoriqone-drive/log.h>
 
 #include "ltfs.h"
 #include "../../media.h"
+#include "../../util/scsi.h"
 
 #include "storiqone.version"
 
@@ -73,6 +77,7 @@ static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * e
 static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_value * index);
 static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * index, const char * node);
 static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value);
+static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr);
 
 
 unsigned int sodr_tape_drive_format_ltfs_count_archives(struct so_media * media) {
@@ -685,5 +690,291 @@ time_t sodr_tape_drive_format_ltfs_parse_time(const char * date) {
 	strptime(date, "%FT%T", &tm);
 
 	return mktime(&tm) - timezone;
+}
+
+int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive, struct so_media * media, struct so_database_connection * db) {
+	const char * media_name = so_media_get_name(media);
+
+	static struct sodr_tape_drive_scsi_mam_attribute application_vendor = {
+		.identifier = sodr_tape_drive_scsi_mam_application_vendor,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.read_only  = false,
+		.length     = 8,
+		.value.text = "INTELLIQ"
+	};
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application vendor' with 'INTELLIQ' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	int failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &application_vendor);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application vendor' with 'INTELLIQ' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application vendor' updated with 'INTELLIQ' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	static struct sodr_tape_drive_scsi_mam_attribute application_name = {
+		.identifier = sodr_tape_drive_scsi_mam_application_name,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.read_only  = false,
+		.length     = 32,
+		.value.text = "STORIQ ONE                      "
+	};
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application name' with 'STORIQ ONE' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &application_name);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application name' with 'STORIQ ONE' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' updated with 'STORIQ ONE' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	struct sodr_tape_drive_scsi_mam_attribute application_version = {
+		.identifier = sodr_tape_drive_scsi_mam_application_version,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.read_only  = false,
+		.length     = 8,
+		.value.text = "        "
+	};
+
+	static const char * version = STORIQONE_VERSION + 1;
+	int version_length = strcspn(version, "-~");
+
+	if (version_length > 8)
+		version_length = 8;
+
+	strncpy(application_version.value.text, version, version_length);
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%*s' on media '%s'"),
+		drive->vendor, drive->model, drive->index, version_length, version, media_name);
+
+	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &application_version);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%*s' on media '%s'"),
+			drive->vendor, drive->model, drive->index, version_length, version, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%*s' on media '%s'"),
+			drive->vendor, drive->model, drive->index, version_length, version, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	static struct sodr_tape_drive_scsi_mam_attribute user_medium_text_label = {
+		.identifier = sodr_tape_drive_scsi_mam_user_medium_text_label,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.read_only  = false,
+		.length     = 160,
+		.value.text = "                                                                                                                                                                "
+	};
+
+	int media_name_length = strlen(media_name);
+	if (media_name_length > 160)
+		media_name_length = 160;
+
+	strncpy(user_medium_text_label.value.text, media_name, media_name_length);
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%*s' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
+
+	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &user_medium_text_label);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%*s' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%*s' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	if (media->label != NULL) {
+		static struct sodr_tape_drive_scsi_mam_attribute bar_code = {
+			.identifier = sodr_tape_drive_scsi_mam_user_medium_text_label,
+			.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+			.read_only  = false,
+			.length     = 32,
+			.value.text = "                                "
+		};
+
+		int media_label_length = strlen(media->label);
+		if (media_label_length > 32)
+			media_label_length = 32;
+
+		strncpy(bar_code.value.text, media->label, media_label_length);
+
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update 'bar code' with '%*s' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_label_length, media->label, media_name);
+
+		failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &bar_code);
+		if (failed != 0)
+			sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update 'bar code' with '%*s' on media '%s'"),
+				drive->vendor, drive->model, drive->index, media_label_length, media->label, media_name);
+		else
+			sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, update 'bar code' with '%*s' on media '%s'"),
+				drive->vendor, drive->model, drive->index, media_label_length, media->label, media_name);
+
+		if (failed != 0)
+			return failed;
+	} else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, skip update of attribute 'bar code' on media '%s' because there is no bar code available"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+
+	static struct sodr_tape_drive_scsi_mam_attribute application_format_version = {
+		.identifier = sodr_tape_drive_scsi_mam_application_name,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.read_only  = false,
+		.length     = 16,
+		.value.text = "2.2.0           "
+	};
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application format version' with '2.2.0' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &application_format_version);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application format version' with '2.2.0' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application format version' updated with '2.2.0' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	return failed;
+}
+
+int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive, struct so_media * media, struct so_database_connection * db) {
+	const char * media_name = so_media_get_name(media);
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application vendor' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	int failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_vendor);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application vendor' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application vendor' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_name);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application version' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_version);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application version' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'user medium text label' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_user_medium_text_label);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'user medium text label' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_name);
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	return failed;
+}
+
+static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr) {
+	struct sodr_tape_drive_scsi_mam_attribute attribute = {
+		.identifier = attr,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.read_only  = false,
+		.length     = 0,
+	};
+	return sodr_tape_drive_scsi_write_attribute(scsi_fd, &attribute);
 }
 
