@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-16 10:45+0100\n"
+        "POT-Creation-Date: 2016-03-16 12:41+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -54,39 +54,39 @@ msgstr[1]       "[ %s | %s ] : va ajouter %u lecteurs"
 msgid   "[%s | %s]: will delete VTL"
 msgstr  "[ %s | %s ] : va supprimer la VTL"
 
-#: src/changer/vtl_changer/script.c:106 src/changer/vtl_changer/script.c:148 src/changer/vtl_changer/script.c:190
-#: src/changer/vtl_changer/script.c:232
+#: src/changer/vtl_changer/script.c:142 src/changer/vtl_changer/script.c:194 src/changer/vtl_changer/script.c:246
+#: src/changer/vtl_changer/script.c:298
 #, c-format
 msgid   "[%s | %s]: there is no scripts to be run"
 msgstr  "[ %s | %s ] : il n’y a pas de scripts à exécuter"
 
-#: src/changer/vtl_changer/script.c:113 src/changer/vtl_changer/script.c:155
+#: src/changer/vtl_changer/script.c:149 src/changer/vtl_changer/script.c:201
 #, c-format
 msgid   "[%s | %s]: starting post-script"
 msgstr  "[ %s | %s ] : démarrage des scripts de post-exécution"
 
-#: src/changer/vtl_changer/script.c:127 src/changer/vtl_changer/script.c:169 src/changer/vtl_changer/script.c:211
-#: src/changer/vtl_changer/script.c:253
+#: src/changer/vtl_changer/script.c:163 src/changer/vtl_changer/script.c:215 src/changer/vtl_changer/script.c:267
+#: src/changer/vtl_changer/script.c:319
 #, c-format
 msgid   "[%s | %s]: no more scripts to be run"
 msgstr  "[ %s | %s ] : il n’y a plus de scripts à exécuter"
 
-#: src/changer/vtl_changer/script.c:197 src/changer/vtl_changer/script.c:239
+#: src/changer/vtl_changer/script.c:253 src/changer/vtl_changer/script.c:305
 #, c-format
 msgid   "[%s | %s]: starting pre-script"
 msgstr  "[ %s | %s ] : démarrage des scripts de pré-exécution"
 
-#: src/changer/vtl_changer/script.c:265
+#: src/changer/vtl_changer/script.c:331
 #, c-format
 msgid   "[%s | %s]: memory allocation failure"
 msgstr  "[ %s | %s ] : échec de l’allocation de mémoire"
 
-#: src/changer/vtl_changer/script.c:278
+#: src/changer/vtl_changer/script.c:344
 #, c-format
 msgid   "[%s | %s]: Starting #%d script '%s'"
 msgstr  "[ %s | %s ] : démarrage du script n°%d « %s »"
 
-#: src/changer/vtl_changer/script.c:285
+#: src/changer/vtl_changer/script.c:351
 #, c-format
 msgid   "[%s | %s]: script #%d '%s' has finished with exit code: %d"
 msgstr  "[ %s | %s ] : le script n°%d « %s » a terminé avec le code de retour : %d"

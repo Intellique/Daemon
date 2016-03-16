@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// faccessat, fstatat
+#include <fcntl.h>
 // dgettext
 #include <libintl.h>
 // scandir, versionsort
@@ -33,6 +35,12 @@
 #include <stdio.h>
 // free
 #include <stdlib.h>
+// fstatat
+#include <sys/stat.h>
+// fstatat
+#include <sys/types.h>
+// faccessat, fstatat
+#include <unistd.h>
 
 #include <libstoriqone/changer.h>
 #include <libstoriqone/file.h>
@@ -41,8 +49,26 @@
 
 #include "script.h"
 
+static int sochgr_vtl_script_filter(const struct dirent * d);
 static int sochgr_vtl_script_run(struct so_changer * changer, const char * path, const char * script, int i_script, const char * params[], unsigned int nb_params);
 
+static int sochgr_vtl_script_directory_fd = -1;
+
+
+static int sochgr_vtl_script_filter(const struct dirent * d) {
+	if (so_file_basic_scandir_filter(d) == 0)
+		return 0;
+
+	if (faccessat(sochgr_vtl_script_directory_fd, d->d_name, F_OK | R_OK | X_OK, 0) != 0)
+		return 0;
+
+	struct stat info;
+	int failed = fstatat(sochgr_vtl_script_directory_fd, d->d_name, &info, 0);
+	if (failed != 0)
+		return 0;
+
+	return S_ISREG(info.st_mode);
+}
 
 int sochgr_vtl_script_init(const char * root_directory) {
 	char * path = NULL;
@@ -95,8 +121,18 @@ int sochgr_vtl_script_post_offline(struct so_changer * changer, const char * roo
 	if (length < 0)
 		return -1;
 
+	sochgr_vtl_script_directory_fd = open(path, O_DIRECTORY);
+	if (sochgr_vtl_script_directory_fd < 0) {
+		free(path);
+		return -1;
+	}
+
 	struct dirent ** files = NULL;
-	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	int nb_files = scandir(path, &files, sochgr_vtl_script_filter, versionsort);
+
+	close(sochgr_vtl_script_directory_fd);
+	sochgr_vtl_script_directory_fd = -1;
+
 	if (nb_files < 0)
 		return nb_files;
 	if (nb_files == 0) {
@@ -137,8 +173,18 @@ int sochgr_vtl_script_post_online(struct so_changer * changer, const char * root
 	if (length < 0)
 		return -1;
 
+	sochgr_vtl_script_directory_fd = open(path, O_DIRECTORY);
+	if (sochgr_vtl_script_directory_fd < 0) {
+		free(path);
+		return -1;
+	}
+
 	struct dirent ** files = NULL;
-	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	int nb_files = scandir(path, &files, sochgr_vtl_script_filter, versionsort);
+
+	close(sochgr_vtl_script_directory_fd);
+	sochgr_vtl_script_directory_fd = -1;
+
 	if (nb_files < 0)
 		return nb_files;
 	if (nb_files == 0) {
@@ -179,8 +225,18 @@ int sochgr_vtl_script_pre_offline(struct so_changer * changer, const char * root
 	if (length < 0)
 		return -1;
 
+	sochgr_vtl_script_directory_fd = open(path, O_DIRECTORY);
+	if (sochgr_vtl_script_directory_fd < 0) {
+		free(path);
+		return -1;
+	}
+
 	struct dirent ** files = NULL;
-	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	int nb_files = scandir(path, &files, sochgr_vtl_script_filter, versionsort);
+
+	close(sochgr_vtl_script_directory_fd);
+	sochgr_vtl_script_directory_fd = -1;
+
 	if (nb_files < 0)
 		return nb_files;
 	if (nb_files == 0) {
@@ -221,8 +277,18 @@ int sochgr_vtl_script_pre_online(struct so_changer * changer, const char * root_
 	if (length < 0)
 		return -1;
 
+	sochgr_vtl_script_directory_fd = open(path, O_DIRECTORY);
+	if (sochgr_vtl_script_directory_fd < 0) {
+		free(path);
+		return -1;
+	}
+
 	struct dirent ** files = NULL;
-	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	int nb_files = scandir(path, &files, sochgr_vtl_script_filter, versionsort);
+
+	close(sochgr_vtl_script_directory_fd);
+	sochgr_vtl_script_directory_fd = -1;
+
 	if (nb_files < 0)
 		return nb_files;
 	if (nb_files == 0) {
