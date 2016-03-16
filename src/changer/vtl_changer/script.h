@@ -27,11 +27,13 @@
 #ifndef __STORIQONE_CHANGER_VTL_SCRIPT_H__
 #define __STORIQONE_CHANGER_VTL_SCRIPT_H__
 
+struct so_changer;
+
 int sochgr_vtl_script_init(const char * root_directory);
-int sochgr_vtl_script_post_offline(const char * root_directory);
-int sochgr_vtl_script_post_online(const char * root_directory);
-int sochgr_vtl_script_pre_offline(const char * root_directory);
-int sochgr_vtl_script_pre_online(const char * root_directory);
+int sochgr_vtl_script_post_offline(struct so_changer * changer, const char * root_directory);
+int sochgr_vtl_script_post_online(struct so_changer * changer, const char * root_directory);
+int sochgr_vtl_script_pre_offline(struct so_changer * changer, const char * root_directory);
+int sochgr_vtl_script_pre_online(struct so_changer * changer, const char * root_directory);
 
 #endif
 

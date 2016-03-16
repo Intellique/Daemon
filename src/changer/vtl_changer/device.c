@@ -512,7 +512,7 @@ static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_con
 	sochgr_vtl_changer.status = so_changer_status_go_offline;
 	db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
 
-	int failed = sochgr_vtl_script_pre_offline(sochgr_vtl_root_dir);
+	int failed = sochgr_vtl_script_pre_offline(&sochgr_vtl_changer, sochgr_vtl_root_dir);
 	if (failed != 0) {
 		sochgr_vtl_changer.status = so_changer_status_offline;
 		sochgr_vtl_changer.is_online = false;
@@ -547,7 +547,7 @@ retry:
 		sl->full = false;
 	}
 
-	failed = sochgr_vtl_script_post_offline(sochgr_vtl_root_dir);
+	failed = sochgr_vtl_script_post_offline(&sochgr_vtl_changer, sochgr_vtl_root_dir);
 
 	sochgr_vtl_changer.status = failed != 0 ? so_changer_status_error : so_changer_status_offline;
 	sochgr_vtl_changer.is_online = false;
@@ -561,7 +561,7 @@ static int sochgr_vtl_changer_put_online(struct so_database_connection * db_conn
 	sochgr_vtl_changer.status = so_changer_status_go_online;
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
 
-	int failed = sochgr_vtl_script_pre_online(sochgr_vtl_root_dir);
+	int failed = sochgr_vtl_script_pre_online(&sochgr_vtl_changer, sochgr_vtl_root_dir);
 	if (failed != 0) {
 		sochgr_vtl_changer.status = so_changer_status_offline;
 		sochgr_vtl_changer.is_online = false;
@@ -599,7 +599,7 @@ static int sochgr_vtl_changer_put_online(struct so_database_connection * db_conn
 		free(serial_file);
 	}
 
-	failed = sochgr_vtl_script_post_online(sochgr_vtl_root_dir);
+	failed = sochgr_vtl_script_post_online(&sochgr_vtl_changer, sochgr_vtl_root_dir);
 
 	sochgr_vtl_changer.status = failed != 0 ? so_changer_status_error : so_changer_status_idle;
 	sochgr_vtl_changer.is_online = failed == 0;

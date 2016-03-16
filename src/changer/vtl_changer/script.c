@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// dgettext
+#include <libintl.h>
 // scandir, versionsort
 #include <dirent.h>
 // asprintf
@@ -32,12 +34,14 @@
 // free
 #include <stdlib.h>
 
+#include <libstoriqone/changer.h>
 #include <libstoriqone/file.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/process.h>
 
 #include "script.h"
 
-static int sochgr_vtl_script_run(const char * path, const char * params[], unsigned int nb_params);
+static int sochgr_vtl_script_run(struct so_changer * changer, const char * path, const char * script, int i_script, const char * params[], unsigned int nb_params);
 
 
 int sochgr_vtl_script_init(const char * root_directory) {
@@ -85,93 +89,206 @@ int sochgr_vtl_script_init(const char * root_directory) {
 	return 0;
 }
 
-int sochgr_vtl_script_post_offline(const char * root_directory) {
+int sochgr_vtl_script_post_offline(struct so_changer * changer, const char * root_directory) {
 	char * path = NULL;
 	ssize_t length = asprintf(&path, "%s/script/post-offline", root_directory);
 	if (length < 0)
 		return -1;
 
-	static const char * params[] = { "post", "offline" };
-	int failed = sochgr_vtl_script_run(path, params, 2);
+	struct dirent ** files = NULL;
+	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	if (nb_files < 0)
+		return nb_files;
+	if (nb_files == 0) {
+		free(files);
+
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-changer-vtl", "[%s | %s]: there is no scripts to be run"),
+			changer->vendor, changer->model);
+
+		return 0;
+	}
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: starting post-script"),
+		changer->vendor, changer->model);
+
+	int i, failed = 0;
+	for (i = 0; i < nb_files; i++) {
+		if (failed == 0) {
+			static const char * params[] = { "post", "offline" };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+		}
+		free(files[i]);
+	}
+	free(files);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: no more scripts to be run"),
+		changer->vendor, changer->model);
 
 	free(path);
 	return failed;
 }
 
-int sochgr_vtl_script_post_online(const char * root_directory) {
+int sochgr_vtl_script_post_online(struct so_changer * changer, const char * root_directory) {
 	char * path = NULL;
 	ssize_t length = asprintf(&path, "%s/script/post-online", root_directory);
 	if (length < 0)
 		return -1;
 
-	static const char * params[] = { "post", "online" };
-	int failed = sochgr_vtl_script_run(path, params, 2);
+	struct dirent ** files = NULL;
+	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	if (nb_files < 0)
+		return nb_files;
+	if (nb_files == 0) {
+		free(files);
+
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-changer-vtl", "[%s | %s]: there is no scripts to be run"),
+			changer->vendor, changer->model);
+
+		return 0;
+	}
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: starting post-script"),
+		changer->vendor, changer->model);
+
+	int i, failed = 0;
+	for (i = 0; i < nb_files; i++) {
+		if (failed == 0) {
+			static const char * params[] = { "post", "online" };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+		}
+		free(files[i]);
+	}
+	free(files);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: no more scripts to be run"),
+		changer->vendor, changer->model);
 
 	free(path);
 	return failed;
 }
 
-int sochgr_vtl_script_pre_offline(const char * root_directory) {
+int sochgr_vtl_script_pre_offline(struct so_changer * changer, const char * root_directory) {
 	char * path = NULL;
 	ssize_t length = asprintf(&path, "%s/script/pre-offline", root_directory);
 	if (length < 0)
 		return -1;
 
-	static const char * params[] = { "pre", "offline" };
-	int failed = sochgr_vtl_script_run(path, params, 2);
+	struct dirent ** files = NULL;
+	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	if (nb_files < 0)
+		return nb_files;
+	if (nb_files == 0) {
+		free(files);
+
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-changer-vtl", "[%s | %s]: there is no scripts to be run"),
+			changer->vendor, changer->model);
+
+		return 0;
+	}
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: starting pre-script"),
+		changer->vendor, changer->model);
+
+	int i, failed = 0;
+	for (i = 0; i < nb_files; i++) {
+		if (failed == 0) {
+			static const char * params[] = { "pre", "offline" };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+		}
+		free(files[i]);
+	}
+	free(files);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: no more scripts to be run"),
+		changer->vendor, changer->model);
 
 	free(path);
 	return failed;
 }
 
-int sochgr_vtl_script_pre_online(const char * root_directory) {
+int sochgr_vtl_script_pre_online(struct so_changer * changer, const char * root_directory) {
 	char * path = NULL;
 	ssize_t length = asprintf(&path, "%s/script/pre-online", root_directory);
 	if (length < 0)
 		return -1;
 
-	static const char * params[] = { "pre", "online" };
-	int failed = sochgr_vtl_script_run(path, params, 2);
+	struct dirent ** files = NULL;
+	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+	if (nb_files < 0)
+		return nb_files;
+	if (nb_files == 0) {
+		free(files);
+
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-changer-vtl", "[%s | %s]: there is no scripts to be run"),
+			changer->vendor, changer->model);
+
+		return 0;
+	}
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: starting pre-script"),
+		changer->vendor, changer->model);
+
+	int i, failed = 0;
+	for (i = 0; i < nb_files; i++) {
+		if (failed == 0) {
+			static const char * params[] = { "pre", "online" };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+		}
+		free(files[i]);
+	}
+	free(files);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: no more scripts to be run"),
+		changer->vendor, changer->model);
 
 	free(path);
 	return failed;
 }
 
-static int sochgr_vtl_script_run(const char * path, const char * params[], unsigned int nb_params) {
-	struct dirent ** files = NULL;
-	int nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
-	if (nb_files < 0)
-		return nb_files;
+static int sochgr_vtl_script_run(struct so_changer * changer, const char * path, const char * script_name, int i_script, const char * params[], unsigned int nb_params) {
+	char * script_path = NULL;
+	int length = asprintf(&script_path, "%s/%s", path, script_name);
+	if (length < 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-changer-vtl", "[%s | %s]: memory allocation failure"),
+			changer->vendor, changer->model);
 
-	int i, failed = 0;
-	for (i = 0; i < nb_files; i++) {
-		if (failed == 0) {
-			char * script_path = NULL;
-			int length = asprintf(&script_path, "%s/%s", path, files[i]->d_name);
-			if (length < 0) {
-				failed = 1;
-				free(files[i]);
-				continue;
-			}
-
-			struct so_process script;
-			so_process_new(&script, script_path, params, nb_params);
-			so_process_set_null(&script, so_process_stdin);
-			so_process_set_null(&script, so_process_stdout);
-			so_process_set_null(&script, so_process_stderr);
-
-			free(script_path);
-
-			so_process_start(&script, 1);
-			so_process_wait(&script, 1, true);
-
-			failed = script.exited_code;
-
-			so_process_free(&script, 1);
-		}
-		free(files[i]);
+		return 1;
 	}
-	free(files);
+
+	struct so_process script;
+	so_process_new(&script, script_path, params, nb_params);
+	so_process_set_null(&script, so_process_stdin);
+	so_process_set_null(&script, so_process_stdout);
+	so_process_set_null(&script, so_process_stderr);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: Starting #%d script '%s'"),
+		changer->vendor, changer->model, i_script, script_path);
+
+	so_process_start(&script, 1);
+	so_process_wait(&script, 1, true);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-changer-vtl", "[%s | %s]: script #%d '%s' has finished with exit code: %d"),
+		changer->vendor, changer->model, i_script, script_path, script.exited_code);
+
+	int failed = script.exited_code;
+
+	so_process_free(&script, 1);
+	free(script_path);
 
 	return failed;
 }
