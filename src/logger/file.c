@@ -179,24 +179,26 @@ static void solgr_file_module_write(struct solgr_log_module * module, struct so_
 	struct logger_log_file_private * self = module->data;
 
 	const char * slevel = NULL, * stype = NULL, * smessage = NULL;
+	int pid = -1;
 	long long int iTimestamp;
 
-	int ret = so_value_unpack(message, "{sSsSsIsS}",
+	int ret = so_value_unpack(message, "{sSsSsIsisS}",
 		"level", &slevel,
 		"type", &stype,
 		"timestamp", &iTimestamp,
+		"pid", &pid,
 		"message", &smessage
 	);
 
 	enum so_log_level level = so_log_level_unknown;
-	if (ret == 4)
+	if (ret == 5)
 		level = so_log_string_to_level(slevel, false);
 
 	enum so_log_type type = so_log_type_unknown;
-	if (ret == 4)
+	if (ret == 5)
 		type = so_log_string_to_type(stype, false);
 
-	if (ret < 4 || level == so_log_level_unknown || type == so_log_type_unknown)
+	if (ret < 5 || level == so_log_level_unknown || type == so_log_type_unknown)
 		return;
 
 	solgr_file_module_check_logrotate(self);
@@ -208,6 +210,6 @@ static void solgr_file_module_write(struct solgr_log_module * module, struct so_
 	time_t timestamp = iTimestamp;
 	so_time_convert(&timestamp, "%c", strtime, 36);
 
-	dprintf(self->fd, "[L:%s | T:%s | %s]: %s\n", self->buf_level, self->buf_type, strtime, smessage);
+	dprintf(self->fd, "[L:%s | T:%s | P:%d | %s]: %s\n", self->buf_level, self->buf_type, pid, strtime, smessage);
 }
 
