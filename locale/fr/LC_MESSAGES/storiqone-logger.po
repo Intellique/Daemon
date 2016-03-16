@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-31 13:28+0200\n"
+        "POT-Creation-Date: 2016-03-16 13:21+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -23,11 +23,11 @@ msgstr  "Log : file : logrotate détecté"
 msgid   "New connection..."
 msgstr  "Nouvelle connexion..."
 
-#: src/logger/listen.c:60
+#: src/logger/listen.c:61
 msgid   "Connection closed"
 msgstr  "Connexion fermée"
 
-#: src/logger/listen.c:69
+#: src/logger/listen.c:71
 msgid   "Received incorrect message"
 msgstr  "Message incorrect reçu"
 
