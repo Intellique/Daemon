@@ -24,11 +24,11 @@ msgstr  "Log: file: logrotate detectado"
 msgid   "New connection..."
 msgstr  "Nueva conexión..."
 
-#: src/logger/listen.c:60
+#: src/logger/listen.c:61
 msgid   "Connection closed"
 msgstr  "Conexión cerrada"
 
-#: src/logger/listen.c:69
+#: src/logger/listen.c:71
 msgid   "Received incorrect message"
 msgstr  "Mensajes incorrectos recibidos"
 
