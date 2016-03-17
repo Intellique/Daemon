@@ -152,8 +152,8 @@ int sochgr_vtl_script_post_offline(struct so_changer * changer, const char * roo
 	int i, failed = 0;
 	for (i = 0; i < nb_files; i++) {
 		if (failed == 0) {
-			static const char * params[] = { "post", "offline" };
-			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+			const char * params[] = { "post", "offline", changer->serial_number };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 3);
 		}
 		free(files[i]);
 	}
@@ -204,8 +204,8 @@ int sochgr_vtl_script_post_online(struct so_changer * changer, const char * root
 	int i, failed = 0;
 	for (i = 0; i < nb_files; i++) {
 		if (failed == 0) {
-			static const char * params[] = { "post", "online" };
-			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+			const char * params[] = { "post", "online", changer->serial_number };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 3);
 		}
 		free(files[i]);
 	}
@@ -256,8 +256,8 @@ int sochgr_vtl_script_pre_offline(struct so_changer * changer, const char * root
 	int i, failed = 0;
 	for (i = 0; i < nb_files; i++) {
 		if (failed == 0) {
-			static const char * params[] = { "pre", "offline" };
-			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+			const char * params[] = { "pre", "offline", changer->serial_number };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 3);
 		}
 		free(files[i]);
 	}
@@ -308,8 +308,8 @@ int sochgr_vtl_script_pre_online(struct so_changer * changer, const char * root_
 	int i, failed = 0;
 	for (i = 0; i < nb_files; i++) {
 		if (failed == 0) {
-			static const char * params[] = { "pre", "online" };
-			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 2);
+			const char * params[] = { "pre", "online", changer->serial_number };
+			failed = sochgr_vtl_script_run(changer, path, files[i]->d_name, i, params, 3);
 		}
 		free(files[i]);
 	}
