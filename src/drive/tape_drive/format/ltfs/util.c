@@ -815,7 +815,7 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 
 	if (media->label != NULL) {
 		static struct sodr_tape_drive_scsi_mam_attribute bar_code = {
-			.identifier = sodr_tape_drive_scsi_mam_user_medium_text_label,
+			.identifier = sodr_tape_drive_scsi_mam_barcode,
 			.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
 			.read_only  = false,
 			.length     = 32,
@@ -851,7 +851,7 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 
 
 	static struct sodr_tape_drive_scsi_mam_attribute application_format_version = {
-		.identifier = sodr_tape_drive_scsi_mam_application_name,
+		.identifier = sodr_tape_drive_scsi_mam_application_format_version,
 		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
 		.read_only  = false,
 		.length     = 16,

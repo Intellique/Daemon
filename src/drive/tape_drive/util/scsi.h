@@ -36,26 +36,42 @@ struct so_drive;
 struct so_media_format;
 
 enum sodr_tape_drive_scsi_mam_attributes {
-	sodr_tape_drive_scsi_mam_remaining_capacity  = 0x0000,
-	sodr_tape_drive_scsi_mam_maximum_capacity    = 0x0001,
-	sodr_tape_drive_scsi_mam_load_count          = 0x0003,
-	sodr_tape_drive_scsi_mam_mam_space_remaining = 0x0004,
+	sodr_tape_drive_scsi_mam_remaining_capacity      = 0x0000,
+	sodr_tape_drive_scsi_mam_maximum_capacity        = 0x0001,
+	sodr_tape_drive_scsi_mam_load_count              = 0x0003,
+	sodr_tape_drive_scsi_mam_mam_space_remaining     = 0x0004,
+	sodr_tape_drive_scsi_mam_assigning_organisation  = 0x0005,
+	sodr_tape_drive_scsi_mam_formatted_density_code  = 0x0006,
+	sodr_tape_drive_scsi_mam_initialization_count    = 0x0007,
+	sodr_tape_drive_scsi_mam_volume_identifier       = 0x0008, // Not supported ?
+	sodr_tape_drive_scsi_mam_volume_change_reference = 0x0009,
 
-	sodr_tape_drive_scsi_mam_device_at_last_load           = 0x020A,
-	sodr_tape_drive_scsi_mam_device_at_last_load_2         = 0x020B,
-	sodr_tape_drive_scsi_mam_device_at_last_load_3         = 0x020C,
-	sodr_tape_drive_scsi_mam_device_at_last_load_4         = 0x020D,
+	// from 0x000A to 0x0209 : Reserved
+
+	sodr_tape_drive_scsi_mam_device_at_last_load   = 0x020A,
+	sodr_tape_drive_scsi_mam_device_at_last_load_2 = 0x020B,
+	sodr_tape_drive_scsi_mam_device_at_last_load_3 = 0x020C,
+	sodr_tape_drive_scsi_mam_device_at_last_load_4 = 0x020D,
+
+	// from 0x020E to 0x021F : Reserved
+
 	sodr_tape_drive_scsi_mam_total_written_in_medium_life  = 0x0220,
 	sodr_tape_drive_scsi_mam_total_read_in_medium_life     = 0x0221,
 	sodr_tape_drive_scsi_mam_total_written_in_current_load = 0x0222,
 	sodr_tape_drive_scsi_mam_total_read_current_load       = 0x0223,
 
-	sodr_tape_drive_scsi_mam_medium_manufacturer      = 0x0400,
-	sodr_tape_drive_scsi_mam_medium_serial_number     = 0x0401,
-	sodr_tape_drive_scsi_mam_medium_manufacturer_date = 0x0406,
-	sodr_tape_drive_scsi_mam_mam_capacity             = 0x0407,
-	sodr_tape_drive_scsi_mam_medium_type              = 0x0408,
-	sodr_tape_drive_scsi_mam_medium_type_information  = 0x0409,
+	// from 0x0226 to 0x033F : Reserved
+
+	sodr_tape_drive_scsi_mam_medium_manufacturer        = 0x0400,
+	sodr_tape_drive_scsi_mam_medium_serial_number       = 0x0401,
+	sodr_tape_drive_scsi_mam_medium_length              = 0x0402,
+	sodr_tape_drive_scsi_mam_medium_width               = 0x0403,
+	sodr_tape_drive_scsi_mam_medium_assign_organization = 0x0404,
+	sodr_tape_drive_scsi_mam_medium_density_code        = 0x0405,
+	sodr_tape_drive_scsi_mam_medium_manufacturer_date   = 0x0406,
+	sodr_tape_drive_scsi_mam_mam_capacity               = 0x0407,
+	sodr_tape_drive_scsi_mam_medium_type                = 0x0408,
+	sodr_tape_drive_scsi_mam_medium_type_information    = 0x0409,
 
 	sodr_tape_drive_scsi_mam_application_vendor           = 0x0800,
 	sodr_tape_drive_scsi_mam_application_name             = 0x0801,
@@ -66,6 +82,8 @@ enum sodr_tape_drive_scsi_mam_attributes {
 	sodr_tape_drive_scsi_mam_barcode                      = 0x0806,
 	sodr_tape_drive_scsi_mam_owning_host_textual_name     = 0x0807,
 	sodr_tape_drive_scsi_mam_media_pool                   = 0x0808,
+	sodr_tape_drive_scsi_mam_application_format_version   = 0x080B,
+	sodr_tape_drive_scsi_mam_volume_coherency_infomation  = 0x080C,
 
 	sodr_tape_drive_scsi_mam_unique_cardtrige_identity = 0x1000,
 };

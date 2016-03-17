@@ -219,7 +219,19 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	/**
 	 * Update Medium auxiliary memory
 	 */
-	return failed = sodr_tape_drive_format_ltfs_update_mam(scsi_fd, drive, media, db);
+	failed = sodr_tape_drive_format_ltfs_update_mam(scsi_fd, drive, media, db);
+	if (failed != 0)
+		return failed;
+
+	media->status = so_media_status_in_use;
+	media->last_write = time(NULL);
+	media->write_count++;
+	media->operation_count++;
+	media->nb_total_write++;
+	media->block_size = block_size;
+	media->pool = pool;
+
+	return 0;
 }
 
 static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * drive, struct so_stream_writer * writer, int fd, ssize_t block_size, const char * partition, time_t format_time, const char * uuid) {
