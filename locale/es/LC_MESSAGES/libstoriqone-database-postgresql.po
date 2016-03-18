@@ -64,7 +64,7 @@ msgstr  "PSQL: nueva consulta preparada (%s) => {%s}, status: %s"
 #: src/database/postgresql/error.c:45
 #, c-format
 msgid   "PSQL: error code => %s"
-msgstr  ""
+msgstr  "PSQL: codigo de error => %s"
 
 #: src/database/postgresql/error.c:52
 #, c-format

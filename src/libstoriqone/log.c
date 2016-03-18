@@ -41,11 +41,11 @@
 #include <string.h>
 // recv, send
 #include <sys/socket.h>
-// recv, send
+// getpid, recv, send
 #include <sys/types.h>
 // time
 #include <time.h>
-// close, sleep
+// getpid, close, sleep
 #include <unistd.h>
 
 #define gettext_noop(String) String
@@ -351,10 +351,15 @@ static void so_log_write_inner(enum so_log_level level, enum so_log_type type, c
 	if (size < 0)
 		return;
 
-	struct so_value * message = so_value_pack("{sssssIss}",
+	static pid_t pid = -1;
+	if (pid < 0)
+		pid = getpid();
+
+	struct so_value * message = so_value_pack("{sssssIsiss}",
 		"level", so_log_level_to_string(level, false),
 		"type", so_log_type_to_string(type, false),
 		"timestamp", timestamp,
+		"pid", pid,
 		"message", str_message
 	);
 
