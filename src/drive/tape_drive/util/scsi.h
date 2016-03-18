@@ -119,7 +119,7 @@ struct sodr_tape_drive_scsi_volume_coherency_information {
 	unsigned long long volume_change_reference_value;
 	unsigned long long volume_coherency_count;
 	unsigned long long volume_coherency_set_identifier;
-	unsigned short application_client_specific_information_lenth;
+	unsigned short application_client_specific_information_length;
 } __attribute__((packed));
 
 /**

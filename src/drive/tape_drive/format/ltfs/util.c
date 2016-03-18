@@ -26,6 +26,8 @@
 
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE
+// be*toh, htobe*
+#include <endian.h>
 // gettext
 #include <libintl.h>
 // magic_buffer, magic_close, magic_open
@@ -993,9 +995,10 @@ int sodr_tape_drive_format_ltfs_update_volume_coherency_info(int scsi_fd, struct
 
 	struct sodr_tape_drive_scsi_volume_coherency_information * ltfs_vol_coherency = (struct sodr_tape_drive_scsi_volume_coherency_information *) &volume_coherency.value.text;
 	ltfs_vol_coherency->volume_change_reference_value_length = 8;
-	ltfs_vol_coherency->volume_change_reference_value = vol_coherency->volume_change_reference;
-	ltfs_vol_coherency->volume_coherency_count = vol_coherency->generation_number;
-	ltfs_vol_coherency->volume_coherency_set_identifier = vol_coherency->block_position_of_last_index;
+	ltfs_vol_coherency->volume_change_reference_value = htobe64(vol_coherency->volume_change_reference);
+	ltfs_vol_coherency->volume_coherency_count = htobe64(vol_coherency->generation_number);
+	ltfs_vol_coherency->volume_coherency_set_identifier = htobe64(vol_coherency->block_position_of_last_index);
+	ltfs_vol_coherency->application_client_specific_information_length = htobe16(43);
 
 	struct sodr_tape_drive_scsi_ltfs_acsi * acsi = (struct sodr_tape_drive_scsi_ltfs_acsi *) (ltfs_vol_coherency + 1);
 	strcpy(acsi->header, "LTFS");
