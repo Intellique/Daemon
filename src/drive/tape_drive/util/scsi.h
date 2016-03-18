@@ -114,6 +114,23 @@ struct sodr_tape_drive_scsi_position {
 	bool end_of_partition;
 };
 
+struct sodr_tape_drive_scsi_volume_coherency_information {
+	unsigned char volume_change_reference_value_length;
+	unsigned long long volume_change_reference_value;
+	unsigned long long volume_coherency_count;
+	unsigned long long volume_coherency_set_identifier;
+	unsigned short application_client_specific_information_lenth;
+} __attribute__((packed));
+
+/**
+ * \brief application client specific information
+ */
+struct sodr_tape_drive_scsi_ltfs_acsi {
+	char header[5]; // must be "LTFS\0"
+	char volume_uuid[37]; // uuid of media
+	unsigned char version; // must be 0x01
+} __attribute__((packed));
+
 bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path);
 bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path);
 int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode);
@@ -136,10 +153,11 @@ int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path
 int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_position * position);
 int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
 int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media);
+int sodr_tape_drive_scsi_read_volume_change_reference(int fd, unsigned int * volume_change_reference);
 int sodr_tape_drive_scsi_rewind(int fd);
 int sodr_tape_drive_scsi_setup(const char * path);
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);
-int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute);
+int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part);
 
 #endif
 

@@ -39,6 +39,12 @@ struct so_database_connection;
 struct so_drive;
 struct so_media;
 
+struct sodr_tape_drive_ltfs_volume_coherency {
+	unsigned long long volume_change_reference;
+	unsigned long long generation_number;
+	off_t block_position_of_last_index; // block position of last index
+} __attribute__((packed));
+
 struct sodr_tape_drive_media {
 	enum sodr_tape_drive_media_format {
 		sodr_tape_drive_media_storiq_one = 0x1,
@@ -53,6 +59,9 @@ struct sodr_tape_drive_media {
 
 		struct sodr_tape_drive_format_ltfs {
 			char owner_identifier[15];
+
+			struct sodr_tape_drive_ltfs_volume_coherency index;
+			struct sodr_tape_drive_ltfs_volume_coherency data;
 
 			struct sodr_tape_drive_format_ltfs_file {
 				struct so_format_file file;

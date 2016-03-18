@@ -28,7 +28,7 @@
 #include <libintl.h>
 // snprintf
 #include <stdio.h>
-// strcspn, strlen
+// strcpy, strcspn, strlen
 #include <string.h>
 // struct mtget
 #include <sys/mtio.h>
@@ -50,6 +50,7 @@
 #include <libstoriqone-drive/time.h>
 
 #include "ltfs.h"
+#include "../../media.h"
 #include "../../io/io.h"
 #include "../../util/scsi.h"
 #include "../../util/st.h"
@@ -219,10 +220,38 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	/**
 	 * Update Medium auxiliary memory
 	 */
-	failed = sodr_tape_drive_format_ltfs_update_mam(scsi_fd, drive, media, db);
+	failed = sodr_tape_drive_format_ltfs_update_mam(scsi_fd, drive, db);
 	if (failed != 0)
 		return failed;
 
+	unsigned int vcr = 0;
+	failed = sodr_tape_drive_scsi_read_volume_change_reference(scsi_fd, &vcr);
+	if (failed != 0)
+		return failed;
+
+	struct sodr_tape_drive_media * mp = sodr_tape_drive_media_new(sodr_tape_drive_media_ltfs);
+	struct sodr_tape_drive_format_ltfs * ltfs = &mp->data.ltfs;
+
+	ltfs->index.volume_change_reference = vcr;
+	ltfs->index.generation_number = 1;
+	ltfs->index.block_position_of_last_index = position.block_position;
+	failed = sodr_tape_drive_format_ltfs_update_volume_coherency_info(scsi_fd, drive, uuid, 0, &ltfs->index, db);
+	if (failed != 0) {
+		sodr_tape_drive_media_free(mp);
+		return failed;
+	}
+
+	ltfs->data.volume_change_reference = vcr;
+	ltfs->data.generation_number = 1;
+	ltfs->data.block_position_of_last_index = previous_position;
+	failed = sodr_tape_drive_format_ltfs_update_volume_coherency_info(scsi_fd, drive, uuid, 1, &ltfs->data, db);
+	if (failed != 0) {
+		sodr_tape_drive_media_free(mp);
+		return failed;
+	}
+
+
+	strcpy(media->uuid, uuid);
 	media->status = so_media_status_in_use;
 	media->last_write = time(NULL);
 	media->write_count++;
@@ -230,6 +259,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	media->nb_total_write++;
 	media->block_size = block_size;
 	media->pool = pool;
+	media->private_data = mp;
 
 	return 0;
 }

@@ -498,7 +498,7 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_databa
 
 static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db) {
 	struct so_media * media = sodr_tape_drive.slot->media;
-	if (media == NULL)
+	if (media == NULL || media->private_data == NULL)
 		return NULL;
 
 	struct sodr_tape_drive_media * mp = media->private_data;
@@ -531,6 +531,10 @@ static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, s
 }
 
 static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * checksums, struct so_database_connection * db) {
+	struct so_media * media = sodr_tape_drive.slot->media;
+	if (media == NULL || media->private_data == NULL)
+		return NULL;
+
 	struct so_stream_writer * writer = sodr_tape_drive_get_raw_writer(db);
 	if (writer == NULL)
 		return NULL;
