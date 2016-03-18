@@ -201,16 +201,6 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	sodr_tape_drive_writer_close2(writer, false);
 	writer->ops->free(writer);
 
-	if (failed != 0) {
-		media->status = so_media_status_in_use;
-
-		media->last_write = time(NULL);
-
-		so_pool_free(media->pool);
-		media->pool = pool;
-	} else
-		so_pool_free(pool);
-
 	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
 

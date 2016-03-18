@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-19 00:14+0100\n"
+        "POT-Creation-Date: 2016-03-19 00:38+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -124,7 +124,7 @@ msgstr  "[ %s | %s | n°%u ] : Échec du formatage du média « %s » en de
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  "[ %s | %s | n°%u ] : Succès du formatage du média « %s » en deux partitions"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:276
+#: src/drive/tape_drive/format/ltfs/ltfs.c:266
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  "[ %s | %s | n°%u ] : Erreur lors de l’écriture de l’étiquette sur la partition « %s » parce que %m"
