@@ -5,7 +5,7 @@ bin/logger usr/lib/storiqone/1.2/bin
 bin/scsi_changer usr/lib/storiqone/1.2/bin
 bin/standalone_changer usr/lib/storiqone/1.2/bin
 bin/storiqonectl usr/sbin
-bin/storiqoned usr/sbin
+bin/storiqoned usr/lib/storiqone/1.2/bin
 bin/tape_drive usr/lib/storiqone/1.2/bin
 bin/vtl_changer usr/lib/storiqone/1.2/bin
 bin/vtl_drive usr/lib/storiqone/1.2/bin

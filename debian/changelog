@@ -1,3 +1,10 @@
+storiqone (1.2.13-2+jessie) polisher; urgency=low
+
+  * Test systemd script
+  * Move daemon to /usr/lib/storiqone/1.2/bin
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Sat, 19 Mar 2016 17:35:07 +0100
+
 storiqone (1.2.13-1+jessie) polisher; urgency=low
 
   * New bug fix release
