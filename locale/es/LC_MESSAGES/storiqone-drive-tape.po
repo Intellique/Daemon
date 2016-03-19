@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-19 00:38+0100\n"
+        "POT-Creation-Date: 2016-03-19 20:04+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -26,65 +26,65 @@ msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
-#: src/drive/tape_drive/device.c:334
+#: src/drive/tape_drive/device.c:340
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:336 src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:365
+#: src/drive/tape_drive/device.c:342 src/drive/tape_drive/device.c:351 src/drive/tape_drive/device.c:373
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:336 src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:365
+#: src/drive/tape_drive/device.c:342 src/drive/tape_drive/device.c:351 src/drive/tape_drive/device.c:373
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:341
+#: src/drive/tape_drive/device.c:349
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:363
+#: src/drive/tape_drive/device.c:371
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:439
+#: src/drive/tape_drive/device.c:447
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:477
+#: src/drive/tape_drive/device.c:485
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:493
+#: src/drive/tape_drive/device.c:501
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:646
+#: src/drive/tape_drive/device.c:654
 #, c-format
 msgid   "[%s | %s | #%u]: retry #%uh to open tape drive"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:655
+#: src/drive/tape_drive/device.c:663
 #, c-format
 msgid   "[%s | %s | #%u]: failed to open tape drive because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:808
+#: src/drive/tape_drive/device.c:816
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:861
+#: src/drive/tape_drive/device.c:869
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:870
+#: src/drive/tape_drive/device.c:878
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -124,7 +124,7 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:266
+#: src/drive/tape_drive/format/ltfs/ltfs.c:267
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  ""
@@ -388,26 +388,26 @@ msgstr  "Encontró una etiqueta LTFS corrupto en el media \"%s\""
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/util/scsi.c:865
+#: src/drive/tape_drive/util/scsi.c:858
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Información del media %s, Frabricante del media: %s"
 
-#: src/drive/tape_drive/util/scsi.c:883
+#: src/drive/tape_drive/util/scsi.c:876
 #, c-format
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Información del media %s, Fecha del media: %s"
 
-#: src/drive/tape_drive/util/scsi.c:1129
+#: src/drive/tape_drive/util/scsi.c:1122
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
 msgstr  "Comando SCSI soportado: \"%s\", disponible: %s, tiempo de inactividad: %u segundos"
 
-#: src/drive/tape_drive/util/scsi.c:1130
+#: src/drive/tape_drive/util/scsi.c:1123
 msgid   "no"
 msgstr  "no"
 
-#: src/drive/tape_drive/util/scsi.c:1130
+#: src/drive/tape_drive/util/scsi.c:1123
 msgid   "yes"
 msgstr  "si"
 

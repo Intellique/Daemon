@@ -133,7 +133,7 @@ struct sodr_tape_drive_scsi_ltfs_acsi {
 
 bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path);
 bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path);
-int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode);
+int sodr_tape_drive_scsi_erase_media(int fd, bool quick_mode);
 /**
  * \brief SCSI command to format medium
  * \pre The current logical position of tape should be bottom of partition in partition 0.

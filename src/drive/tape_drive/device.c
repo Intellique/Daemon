@@ -320,21 +320,29 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 	if (media == NULL)
 		return -1;
 
-	int fd = sodr_tape_drive_open_drive();
+	int fd = open(scsi_device, O_RDWR);
 	if (fd < 0)
 		return -1;
 
-	int failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, db);
-	close(fd);
-
-	if (failed != 0)
+	int failed = sodr_tape_drive_scsi_rewind(fd);
+	if (failed != 0) {
+		close(fd);
 		return failed;
+	}
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam(fd, &sodr_tape_drive, db);
+	if (failed != 0) {
+		close(fd);
+		return failed;
+	}
 
 	sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-	failed = sodr_tape_drive_scsi_erase_media(scsi_device, quick_mode);
+	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
+
+	close(fd);
 
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
