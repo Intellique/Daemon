@@ -461,16 +461,99 @@ struct so_database_connection {
 		 */
 		int (*sync_plugin_script)(struct so_database_connection * connect, const char * script_path);
 
+		/**
+		 * \brief update integrity of file
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] archive : an archive
+		 * \param[in] file : a file in \a archive
+		 * \return 0 on success
+		 */
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+		/**
+		 * \brief update integrity of volume
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] volume : a volume
+		 * \return 0 on success
+		 */
 		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume);
+		/**
+		 * \brief create job to check an archive
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] current_job : job which create new one
+		 * \param[in] archive : check this \a archive
+		 * \param[in] quick_mode : checking mode
+		 * \return 0 on success
+		 */
 		int (*create_check_archive_job)(struct so_database_connection * connect, struct so_job * current_job, struct so_archive * archive, bool quick_mode);
+		/**
+		 * \brief get a list of archives which are member of same archive mirror as \a archive
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] archive : reference archive
+		 * \return a value which contains a list of archives
+		 */
 		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
+		/**
+		 * \brief get an archive related to \a job
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \return \b NULL on failure
+		 */
 		struct so_archive * (*get_archive_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
+		/**
+		 * \brief get an archive format by its name
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] name : name of archive format
+		 * \return \b NULL on failure
+		 */
 		struct so_archive_format * (*get_archive_format_by_name)(struct so_database_connection * connect, const char * name) __attribute__((warn_unused_result));
+		/**
+		 * \brief get a list of archives which are on this \a media
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] media : a media
+		 * \return a list of archives
+		 */
 		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((warn_unused_result));
+		/**
+		 * \brief compute the number of volume where \a file is on \a archive
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] archive : an archive
+		 * \param[in] file : a file in \a archive
+		 * \return \b -1 on failure
+		 */
 		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+		/**
+		 * \brief get a list of archives which are synchronized
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] archive : reference archive
+		 * \return a list of archives
+		 */
 		struct so_value * (*get_synchronized_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
+		/**
+		 * \brief check if \a is synchronized
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] archive : an archive
+		 * \return \b false on failure
+		 */
 		bool (*is_archive_synchronized)(struct so_database_connection * connect, struct so_archive * archive);
+		/**
+		 * \brief create an archive mirror if needed and link \a source and \a copy to same archive mirror
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] job : a job
+		 * \param[in] source : an archive
+		 * \param[in] copy : an archive
+		 * \return \b false on failure
+		 */
 		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
 		int (*mark_archive_as_purged)(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
 		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
