@@ -57,7 +57,8 @@ static void solgr_socket_accept(int fd_server __attribute__((unused)), int fd_cl
 static void solgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
 	if (event & POLLHUP) {
 		solgr_nb_clients--;
-		solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Connection closed"));
+		solgr_log_write2(so_log_level_debug, so_log_type_logger,
+			gettext("Connection closed"));
 		return;
 	}
 
@@ -66,7 +67,8 @@ static void solgr_socket_message(int fd, short event, void * data __attribute__(
 		solgr_log_write(message);
 		so_value_free(message);
 	} else
-		solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Received incorrect message"));
+		solgr_log_write2(so_log_level_debug, so_log_type_logger,
+			gettext("Received incorrect message"));
 
 	struct so_value * response = so_value_new_boolean(message != NULL);
 	so_json_encode_to_fd(response, fd, true);
