@@ -490,7 +490,7 @@ error:
 
 static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	char * medium_serial_number = NULL;
-	so_value_unpack(request, "{s{si}}", "params", "medium serial number", &medium_serial_number);
+	so_value_unpack(request, "{s{ss}}", "params", "medium serial number", &medium_serial_number);
 
 	if (medium_serial_number == NULL) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
