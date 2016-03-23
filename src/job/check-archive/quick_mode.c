@@ -57,6 +57,7 @@
 #include "common.h"
 
 struct soj_checkarchive_worker {
+	unsigned int i_worker;
 	struct so_job * job;
 	struct so_database_connection * db_connect;
 
@@ -104,6 +105,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 		struct soj_checkarchive_worker * new_worker = malloc(sizeof(struct soj_checkarchive_worker));
 		bzero(new_worker, sizeof(struct soj_checkarchive_worker));
+		new_worker->i_worker = i;
 		new_worker->archive = archive;
 		new_worker->media = vol->media;
 		new_worker->db_connect = db_connect->config->ops->connect(db_connect->config);
@@ -210,7 +212,10 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, worker->db_connect);
 		if (drive == NULL) {
-			// TODO: print error
+			so_job_add_record(worker->job, worker->db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Worker #%u : failed to get drive for media '%s'"),
+				worker->i_worker, vol->media->name);
+
 			break;
 		}
 
@@ -228,6 +233,11 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		if (nb_read < 0) {
 			reader->ops->free(reader);
 			worker->status = so_job_status_error;
+
+			so_job_add_record(worker->job, worker->db_connect, so_log_level_notice, so_job_record_notif_normal,
+				dgettext("storiqone-job-check-archive", "Worker #%u : error while reading from media '%s'"),
+				worker->i_worker, vol->media->name);
+
 			return;
 		}
 
@@ -240,9 +250,18 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		struct so_value * digests = so_io_checksum_reader_get_checksums(reader);
 		vol->check_ok = so_value_equals(vol->digests, digests);
 		vol->check_time = time(NULL);
-		so_value_free(digests);
 
+		so_value_free(digests);
 		reader->ops->free(reader);
+
+		if (vol->check_ok)
+			so_job_add_record(worker->job, worker->db_connect, so_log_level_notice, so_job_record_notif_normal,
+				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume '%s' is correct"),
+				worker->i_worker, vol->media->name);
+		else
+			so_job_add_record(worker->job, worker->db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume '%s' is not correct"),
+				worker->i_worker, vol->media->name);
 	}
 
 	worker->status = worker->stop_request ? so_job_status_stopped : so_job_status_finished;
