@@ -206,7 +206,7 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 			drive->ops->sync(drive);
 
 			media = drive->slot->media;
-			if (media->status == so_media_status_new) {
+			if (media->status == so_media_status_new || media->status == so_media_status_foreign) {
 				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 					dgettext("libstoriqone-job", "Automatic formatting media '%s'"),
 					media->name);
