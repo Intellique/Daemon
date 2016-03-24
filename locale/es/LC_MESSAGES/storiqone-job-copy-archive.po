@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-18 09:00+0100\n"
+        "POT-Creation-Date: 2016-03-24 12:50+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/job/copy-archive/copy-archive.c:115 src/job/copy-archive/direct_copy.c:79 src/job/copy-archive/indirect_copy.c:96
+#: src/job/copy-archive/copy-archive.c:115 src/job/copy-archive/direct_copy.c:81 src/job/copy-archive/indirect_copy.c:97
 #, c-format
 msgid   "Failed to load media '%s'"
 msgstr  "Fallo al cargar el media \"%s\""
@@ -87,23 +87,23 @@ msgstr  "Error: no hay suficiente espacio disponible en el pool \"%s\""
 msgid   "Selected copy mode: direct"
 msgstr  "Seleccione el modo de copia: directo"
 
-#: src/job/copy-archive/direct_copy.c:104 src/job/copy-archive/indirect_copy.c:216
+#: src/job/copy-archive/direct_copy.c:106 src/job/copy-archive/indirect_copy.c:233
 #, c-format
 msgid   "Add file '%s' to archive"
 msgstr  ""
 
-#: src/job/copy-archive/direct_copy.c:110 src/job/copy-archive/direct_copy.c:132 src/job/copy-archive/direct_copy.c:176
-#: src/job/copy-archive/indirect_copy.c:245 src/job/copy-archive/indirect_copy.c:289
+#: src/job/copy-archive/direct_copy.c:113 src/job/copy-archive/direct_copy.c:135 src/job/copy-archive/direct_copy.c:179
+#: src/job/copy-archive/indirect_copy.c:262 src/job/copy-archive/indirect_copy.c:306
 #, c-format
 msgid   "Error while writing file header '%s' to media '%s'"
 msgstr  "Error al escribir el encabezamiento del fichero \"%s\" en el media \"%s\""
 
-#: src/job/copy-archive/direct_copy.c:154 src/job/copy-archive/indirect_copy.c:267
+#: src/job/copy-archive/direct_copy.c:157 src/job/copy-archive/indirect_copy.c:284
 #, c-format
 msgid   "Error while writing file data '%s' to media '%s'"
 msgstr  "Error al escribir los datos del fichero \"%s\" en el media \"%s\""
 
-#: src/job/copy-archive/direct_copy.c:198 src/job/copy-archive/indirect_copy.c:156
+#: src/job/copy-archive/direct_copy.c:201 src/job/copy-archive/indirect_copy.c:158
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Error al leer desde el media \"%s\""
@@ -121,25 +121,25 @@ msgstr  "Fallo a la creación de un fichero temporal"
 msgid   "Error, not enough disk space (required: %s, available: %s) to copy archive '%s'"
 msgstr  "Error, no hay espacio suficiente (requerido: %s, disponible: %s) para copiar el archivo \"%s\""
 
-#: src/job/copy-archive/indirect_copy.c:115
+#: src/job/copy-archive/indirect_copy.c:117
 #, c-format
 msgid   "Error while writing file header '%s' to temporary file"
 msgstr  "Error al escribir el encabezamiento del fichero \"%s\" en el fichero temporal"
 
-#: src/job/copy-archive/indirect_copy.c:135
+#: src/job/copy-archive/indirect_copy.c:137
 #, c-format
 msgid   "Error while writing file data '%s' to temporary file"
 msgstr  "Error al escribir los datos del fichero \"%s\" en el fichero temporal"
 
-#: src/job/copy-archive/indirect_copy.c:181 src/job/copy-archive/util.c:91
+#: src/job/copy-archive/indirect_copy.c:183 src/job/copy-archive/util.c:91
 msgid   "Failed to reopen temporary file"
 msgstr  "Fallo a la reabertura del fichero temporal"
 
-#: src/job/copy-archive/indirect_copy.c:222
+#: src/job/copy-archive/indirect_copy.c:239
 #, c-format
 msgid   "Error while writing header of file '%s' into media '%s'"
 msgstr  "Error al escirbir el encabezamiento del fichero \"%s\" en el media \"%s\""
 
-#: src/job/copy-archive/indirect_copy.c:311
+#: src/job/copy-archive/indirect_copy.c:328
 msgid   "Error while reading from temporary file"
 msgstr  "Error al leer desde un fichero temporal"

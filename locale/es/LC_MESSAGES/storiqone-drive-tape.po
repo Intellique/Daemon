@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 11:32+0100\n"
+        "POT-Creation-Date: 2016-03-24 12:09+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -31,80 +31,65 @@ msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del m
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:352 src/drive/tape_drive/device.c:374
+#: src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:351 src/drive/tape_drive/device.c:373
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:352 src/drive/tape_drive/device.c:374
+#: src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:351 src/drive/tape_drive/device.c:373
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:350
+#: src/drive/tape_drive/device.c:349
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:372
+#: src/drive/tape_drive/device.c:371
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:448
+#: src/drive/tape_drive/device.c:447
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:486
+#: src/drive/tape_drive/device.c:485
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:502
+#: src/drive/tape_drive/device.c:501
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:677
+#: src/drive/tape_drive/device.c:676
 #, c-format
 msgid   "[%s | %s | #%u]: retry #%uh to open tape drive"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:686
+#: src/drive/tape_drive/device.c:685
 #, c-format
 msgid   "[%s | %s | #%u]: failed to open tape drive because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:703
+#: src/drive/tape_drive/device.c:702
 #, c-format
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:850
-#, c-format
-msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
-msgstr  "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
-
-#: src/drive/tape_drive/device.c:757 src/drive/tape_drive/device.c:775
-#, c-format
-msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
-msgstr  "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
-
-#: src/drive/tape_drive/device.c:779 src/drive/tape_drive/device.c:786
-#, c-format
-msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
-msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
-
-#: src/drive/tape_drive/device.c:879
+#: src/drive/tape_drive/device.c:849
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:903
+#: src/drive/tape_drive/device.c:902
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:912
+#: src/drive/tape_drive/device.c:911
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -418,7 +403,7 @@ msgstr  "Encontró una etiqueta LTFS corrupto en el media \"%s\""
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/scsi.c:913
+#: src/drive/tape_drive/util/scsi.c:859
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Información del media %s, Frabricante del media: %s"
@@ -495,3 +480,12 @@ msgstr  ""
 #, c-format
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  ""
+
+#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
+#~ msgstr       "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
+
+#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
+#~ msgstr       "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
+
+#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d"
+#~ msgstr       "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"

@@ -57,7 +57,7 @@ struct soj_format_writer_private {
 	struct so_value * digest;
 };
 
-static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file);
+static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 static enum so_format_writer_status soj_format_writer_add_label(struct so_format_writer * fw, const char * label);
 static int soj_format_writer_close(struct so_format_writer * fw);
 static ssize_t soj_format_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
@@ -130,13 +130,14 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct 
 }
 
 
-static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file) {
+static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{sss{so}}",
+	struct so_value * request = so_value_pack("{sss{soss}}",
 		"command", "add file",
 		"params",
-			"file", so_format_file_convert(file)
+			"file", so_format_file_convert(file),
+			"selected path", selected_path
 	);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);

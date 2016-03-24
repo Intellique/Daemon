@@ -70,6 +70,8 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	ssize_t nb_total_read = 0, block_size = self->writer->ops->get_block_size(self->writer);
 	struct so_media * media = self->dest_drive->slot->media;
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
+		unsigned int j = 0;
+
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
 
 		if (i > 0) {
@@ -104,7 +106,8 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 					dgettext("storiqone-job-copy-archive", "Add file '%s' to archive"),
 					file.filename);
 
-				enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
+				struct so_archive_files * ptr_file = vol->files + j++;
+				enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file, ptr_file->file->selected_path);
 				if (wrtr_status != so_format_writer_ok) {
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-copy-archive", "Error while writing file header '%s' to media '%s'"),
