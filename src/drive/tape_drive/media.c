@@ -47,6 +47,8 @@
 
 #include "format/ltfs/ltfs.h"
 #include "media.h"
+#include "io/io.h"
+#include "util/scsi.h"
 #include "util/xml.h"
 
 static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, const char * buffer);
@@ -118,17 +120,36 @@ enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffe
 	return nb_params == 1 ? sodr_tape_drive_media_ltfs : sodr_tape_drive_media_unknown;
 }
 
-int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect) {
+int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int scsi_fd, struct so_database_connection * db_connect) {
 	struct so_media * media = drive->slot->media;
 	struct sodr_tape_drive_media * mp = media->private_data;
 
-	struct so_stream_reader * reader = drive->ops->get_raw_reader(0, db_connect);
+	struct sodr_tape_drive_scsi_position position = {
+		.partition = 0,
+		.block_position = 0,
+		.end_of_partition = false
+	};
+
+	struct so_stream_reader * reader = sodr_tape_drive_reader_get_raw_reader2(drive, fd, scsi_fd, &position);
+	if (reader == NULL) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "Error opening media '%s'"),
+			media->name);
+		return 1;
+	}
 
 	char buffer_label[82];
 	ssize_t nb_read = reader->ops->read(reader, buffer_label, 82);
 
-	reader->ops->close(reader);
+	sodr_tape_drive_reader_close2(reader, false);
 	reader->ops->free(reader);
+
+	if (nb_read < 0) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "Error while reading label on media '%s' because %m"),
+			media->name);
+		return 1;
+	}
 
 	strncpy(mp->data.ltfs.owner_identifier, buffer_label + 37, 14);
 	mp->data.ltfs.owner_identifier[14] = '\0';
@@ -138,7 +159,9 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 		so_string_rtrim(mp->data.ltfs.owner_identifier, ' ');
 
 
-	reader = drive->ops->get_raw_reader(3, db_connect);
+	position.block_position = mp->data.ltfs.index.block_position_of_last_index;
+
+	reader = sodr_tape_drive_reader_get_raw_reader2(drive, fd, scsi_fd, &position);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "Failed to read LTFS index from media '%s'"),
@@ -196,9 +219,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 		buffer = addr;
 	}
 
-	reader->ops->close(reader);
+	sodr_tape_drive_reader_close2(reader, false);
 	reader->ops->free(reader);
-	free(buffer);
 
 	if (index != NULL)
 		sodr_tape_drive_format_ltfs_parse_index(media->private_data, index);

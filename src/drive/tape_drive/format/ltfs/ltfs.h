@@ -48,6 +48,7 @@ struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const ch
 struct so_value * sodr_tape_drive_format_ltfs_create_empty_fs(time_t time, const char * uuid, const char * partition, unsigned long long position, const char * previous_partiton, unsigned long long previous_position);
 int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, int scsi_fd, struct so_pool * pool, struct so_value * option, struct so_database_connection * db);
 struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive * drive, int fd, int scsi_fd);
+struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive * drive, int fd, int scsi_fd);
 struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db);
 void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, struct so_value * index);
 time_t sodr_tape_drive_format_ltfs_parse_time(const char * date);

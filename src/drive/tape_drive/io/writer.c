@@ -210,12 +210,13 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 			sodr_time_start();
 			close(self->fd);
 			sodr_time_stop(self->drive);
+
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is closed"),
+				self->drive->vendor, self->drive->model, self->drive->index);
 		}
 
 		self->closed = true;
-		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is closed"),
-			self->drive->vendor, self->drive->model, self->drive->index);
 	}
 
 	return 0;

@@ -53,6 +53,7 @@
 #include <libstoriqone/string.h>
 
 #include "scsi.h"
+#include "../media.h"
 
 struct scsi_command {
 	const char * name;
@@ -974,6 +975,98 @@ int sodr_tape_drive_scsi_read_volume_change_reference(int fd, unsigned int * vol
 			case sodr_tape_drive_scsi_mam_volume_change_reference:
 				*volume_change_reference = be32toh(attr->value.be32);
 				break;
+
+			default:
+				break;
+		}
+	}
+
+	return 0;
+}
+
+int sodr_tape_drive_scsi_read_volume_coherency(int fd, struct sodr_tape_drive_ltfs_volume_coherency * volume_coherency, unsigned char part) {
+	if (!scsi_command_read_attribute.available || volume_coherency == NULL)
+		return -1;
+
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned short allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C, // READ ATTRIBUTE (16)
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.volume_number = 0,
+		.partition_number = part,
+		.first_attribute_id = 0,
+		.allocation_length = htobe16(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	unsigned char buffer[1024];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	unsigned int data_available = be32toh(*(unsigned int *) buffer);
+	unsigned char * ptr = buffer + 4;
+
+	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
+		attr->identifier = be16toh(attr->identifier);
+		attr->length = be16toh(attr->length);
+
+		ptr += attr->length + 5;
+
+		if (attr->length == 0)
+			continue;
+
+		switch (attr->identifier) {
+			case sodr_tape_drive_scsi_mam_volume_coherency_infomation: {
+					struct sodr_tape_drive_scsi_volume_coherency_information * vci = (struct sodr_tape_drive_scsi_volume_coherency_information *) &attr->value.text;
+					if (vci->volume_change_reference_value_length != 8)
+						return 1;
+
+					vci->volume_change_reference_value = be64toh(vci->volume_change_reference_value);
+					vci->volume_coherency_count = be64toh(vci->volume_coherency_count);
+					vci->volume_coherency_set_identifier = be64toh(vci->volume_coherency_set_identifier);
+					vci->application_client_specific_information_length = be16toh(vci->application_client_specific_information_length);
+
+					volume_coherency->volume_change_reference = vci->volume_change_reference_value;
+					volume_coherency->generation_number = vci->volume_coherency_count;
+					volume_coherency->block_position_of_last_index = vci->volume_coherency_set_identifier;
+
+					break;
+				}
 
 			default:
 				break;

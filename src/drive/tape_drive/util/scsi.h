@@ -34,6 +34,7 @@
 
 struct so_drive;
 struct so_media_format;
+struct sodr_tape_drive_ltfs_volume_coherency;
 
 enum sodr_tape_drive_scsi_mam_attributes {
 	sodr_tape_drive_scsi_mam_remaining_capacity      = 0x0000,
@@ -154,6 +155,7 @@ int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_posit
 int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
 int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media);
 int sodr_tape_drive_scsi_read_volume_change_reference(int fd, unsigned int * volume_change_reference);
+int sodr_tape_drive_scsi_read_volume_coherency(int fd, struct sodr_tape_drive_ltfs_volume_coherency * volume_coherency, unsigned char part);
 int sodr_tape_drive_scsi_rewind(int fd);
 int sodr_tape_drive_scsi_setup(const char * path);
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);

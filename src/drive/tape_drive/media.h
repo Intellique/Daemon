@@ -54,11 +54,12 @@ struct sodr_tape_drive_media {
 	} format;
 
 	union {
-		struct {
+		struct sodr_tape_drive_format_storiq_one {
 		} storiq_one;
 
 		struct sodr_tape_drive_format_ltfs {
 			char owner_identifier[15];
+			bool up_to_date;
 
 			struct sodr_tape_drive_ltfs_volume_coherency index;
 			struct sodr_tape_drive_ltfs_volume_coherency data;
@@ -106,7 +107,7 @@ void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data);
 void sodr_tape_drive_media_free2(void * private_data);
 struct sodr_tape_drive_media * sodr_tape_drive_media_new(enum sodr_tape_drive_media_format format);
 enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffer);
-int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect);
+int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int scsi_fd, struct so_database_connection * db_connect);
 int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_database_connection * db_connect);
 
 #endif
