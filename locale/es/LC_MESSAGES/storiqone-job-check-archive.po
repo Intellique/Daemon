@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-23 17:24+0100\n"
+        "POT-Creation-Date: 2016-03-24 13:31+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -44,17 +44,22 @@ msgstr  "Arranque del hilo de ejecución #%u"
 msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
 msgstr  "No hay suma de verificación para el volumen #%u del archivo \"%s\", ignore éste volumen"
 
-#: src/job/check-archive/quick_mode.c:235
+#: src/job/check-archive/quick_mode.c:216
+#, c-format
+msgid   "Worker #%u : failed to get drive for media '%s'"
+msgstr  ""
+
+#: src/job/check-archive/quick_mode.c:238
 #, c-format
 msgid   "Worker #%u : error while reading from media '%s'"
 msgstr  "El trabajador #%u: error al leer desde el media \"%s\""
 
-#: src/job/check-archive/quick_mode.c:256
+#: src/job/check-archive/quick_mode.c:259
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is correct"
 msgstr  "El trabajador #%u: la integridad de los datos del volumen \"%s\" es correcto"
 
-#: src/job/check-archive/quick_mode.c:260
+#: src/job/check-archive/quick_mode.c:263
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is not correct"
 msgstr  "El trabajador #%u: la integridad de los daros del volumen \"%s\" no es correcto"
