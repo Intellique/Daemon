@@ -342,7 +342,6 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
 	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
-
 	close(fd);
 
 	if (failed != 0)

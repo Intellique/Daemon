@@ -81,6 +81,21 @@ msgstr  ""
 
 #: src/drive/tape_drive/device.c:850
 #, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
+msgstr  "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
+
+#: src/drive/tape_drive/device.c:757 src/drive/tape_drive/device.c:775
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
+msgstr  "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
+
+#: src/drive/tape_drive/device.c:779 src/drive/tape_drive/device.c:786
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
+msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
+
+#: src/drive/tape_drive/device.c:879
+#, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
@@ -403,7 +418,7 @@ msgstr  "Encontró una etiqueta LTFS corrupto en el media \"%s\""
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/util/scsi.c:859
+#: src/drive/tape_drive/scsi.c:913
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Información del media %s, Frabricante del media: %s"
