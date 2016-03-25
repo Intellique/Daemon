@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include <libstoriqone/config.h>
+#include <libstoriqone/crash.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -79,8 +80,10 @@ static void sochgr_daemon_request(int fd, short event __attribute__((unused)), v
 	free(command);
 }
 
-int main() {
+int main(int argc __attribute__((unused)), char ** argv) {
 	bindtextdomain("libstoriqone-changer", LOCALE_DIR);
+
+	so_crash_init(*argv);
 
 	struct so_changer_driver * driver = sochgr_changer_get();
 	if (driver == NULL)

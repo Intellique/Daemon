@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include <libstoriqone/config.h>
+#include <libstoriqone/crash.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/json.h>
@@ -57,8 +58,10 @@ static void changer_request(int fd, short event __attribute__((unused)), void * 
 	sodr_changer_stop();
 }
 
-int main() {
+int main(int argc __attribute__((unused)), char ** argv) {
 	bindtextdomain("libstoriqone-drive", LOCALE_DIR);
+
+	so_crash_init(*argv);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	if (driver == NULL)

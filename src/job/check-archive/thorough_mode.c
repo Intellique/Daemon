@@ -28,6 +28,8 @@
 #include <libintl.h>
 // S_*
 #include <sys/stat.h>
+// strerror
+#include <string.h>
 // time
 #include <time.h>
 // sleep
@@ -52,11 +54,11 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 	job->done = 0.01;
 
-	unsigned i;
-	bool ok = true;
+	unsigned i, nb_ok = 0;
 	ssize_t total_read = 0;
 	struct so_stream_writer * chcksum_writer = NULL;
-	for (i = 0; ok && i < archive->nb_volumes; i++) {
+	for (i = 0; i < archive->nb_volumes; i++) {
+		bool ok = true;
 		struct so_archive_volume * vol = archive->volumes + i;
 
 		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
@@ -78,7 +80,10 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
 		if (drive == NULL) {
-			// TODO: print error
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "failed to get drive for media '%s' and volume #%u"),
+				vol->media->name, i);
+
 			break;
 		}
 
@@ -142,7 +147,10 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 				if (nb_read < 0) {
 					ok = false;
-					// TODO: error while reading
+
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						dgettext("storiqone-job-check-archive", "error while reading media '%s', volume #%u and file '%s' because %s"),
+						vol->media->name, i, file_in.filename, strerror(reader->ops->last_errno(reader)));
 				}
 
 				if (chcksum_writer != NULL && file_in.position == file_in.size) {
@@ -156,6 +164,15 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 						db_connect->ops->check_archive_file(db_connect, archive, file);
 
 					so_value_free(digests);
+
+					if (file->check_ok)
+						so_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
+							dgettext("storiqone-job-check-archive", "data integrity of file '%s' is correct"),
+							file->path);
+					else
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+							dgettext("storiqone-job-check-archive", "data integrity of file '%s' is not correct"),
+							file->path);
 
 					chcksum_writer->ops->free(chcksum_writer);
 					chcksum_writer = NULL;
@@ -187,11 +204,23 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 			struct so_value * digests = reader->ops->get_digests(reader);
 			if (so_value_list_get_length(digests) > 0)
 				ok = so_value_equals(vol->digests, digests);
+
+			if (ok)
+				nb_ok++;
 		}
 
 		vol->check_ok = ok;
 		vol->check_time = time(NULL);
 		total_read += vol->size;
+
+		if (vol->check_ok)
+			so_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
+				dgettext("storiqone-job-check-archive", "data integrity of volume #%u on media '%s' is correct"),
+				i, vol->media->name);
+		else
+			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "data integrity of volume #%u on media '%s' is not correct"),
+				i, vol->media->name);
 
 		if (so_value_list_get_length(checksums) == 0)
 			db_connect->ops->check_archive_volume(db_connect, vol);
@@ -201,6 +230,6 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 	job->done = 1;
 
-	return ok ? 0 : 1;
+	return nb_ok == archive->nb_volumes ? 0 : 1;
 }
 
