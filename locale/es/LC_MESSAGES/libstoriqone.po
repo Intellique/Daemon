@@ -180,7 +180,7 @@ msgstr  "so_checksum_salt_password: parámetro invalido (contraseña: %p, sal: %
 #: src/libstoriqone/crash.c:62
 #, c-format
 msgid   "Oops!!!, programs '%s' catch signal: %s"
-msgstr  ""
+msgstr  "Vaya!!!, programas \"%s\" capta la señal: %s"
 
 #: src/libstoriqone/database.c:61
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
