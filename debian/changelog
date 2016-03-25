@@ -1,3 +1,15 @@
+storiqone (1.2.14-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - pid in logs files
+    - add new messages for check archive task
+    - save core dump in '/var/crash/storiqone'
+  * Bug fix:
+    - #124: automatic formating of foreign tape
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 25 Mar 2016 16:37:23 +0100
+
 storiqone (1.2.13-1+wheezy) polisher; urgency=low
 
   * New bug fix release
