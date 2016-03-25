@@ -256,12 +256,12 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 
 		if (vol->check_ok)
 			so_job_add_record(worker->job, worker->db_connect, so_log_level_notice, so_job_record_notif_normal,
-				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume '%s' is correct"),
-				worker->i_worker, vol->media->name);
+				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume #%u on media '%s' is correct"),
+				worker->i_worker, i, vol->media->name);
 		else
 			so_job_add_record(worker->job, worker->db_connect, so_log_level_warning, so_job_record_notif_important,
-				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume '%s' is not correct"),
-				worker->i_worker, vol->media->name);
+				dgettext("storiqone-job-check-archive", "Worker #%u : data integrity of volume #%u on media '%s' is not correct"),
+				worker->i_worker, i, vol->media->name);
 	}
 
 	worker->status = worker->stop_request ? so_job_status_stopped : so_job_status_finished;
