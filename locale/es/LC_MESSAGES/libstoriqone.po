@@ -220,7 +220,7 @@ msgstr  "so_database_register_driver: el controlor de la base de datos \"%s\" ah
 msgid   "Dump %zd stack, stack addr: %p, stack size: %zd"
 msgid_plural    "Dump %zd stacks, stack addr: %p, stack size: %zd"
 msgstr[0]       "Vacio %zd pila, dirección de la pila: %p, tamaño de la pila: %zd"
-msgstr[1]       "Vacios %zd pilas, dirección de las pilas: %p, tamaño de las pilas: %zd"
+msgstr[1]       "Vacios %zd pilas, dirección de la pila: %p, tamaño de la pila: %zd"
 
 #: src/libstoriqone/debug.c:65
 #, c-format
