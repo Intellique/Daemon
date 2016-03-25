@@ -49,6 +49,9 @@ bool sod_env_setup() {
 	if (so_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
 		return false;
 
+	if (!access(DAEMON_SOCKET_DIR, F_OK))
+		so_file_mkdir(DAEMON_CRASH_DIR, 0700);
+
 	char * path = getenv("PATH");
 	char * new_path = NULL;
 	int size = asprintf(&new_path, DAEMON_BIN_DIR ":" DAEMON_JOB_DIR ":%s", path);

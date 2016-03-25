@@ -24,22 +24,71 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __STORIQONE_CONFIG_H__
-#define __STORIQONE_CONFIG_H__
+// dgettext
+#include <libintl.h>
+// snprintf
+#include <stdio.h>
+// signal
+#include <signal.h>
+// strrchr
+#include <string.h>
+// getpid, waitpid
+#include <sys/types.h>
+// waitpid
+#include <sys/wait.h>
+// close, execlp, fork, getpid
+#include <unistd.h>
 
-#define DAEMON_CONFIG_FILE "/etc/storiq/storiqone.conf"
-#define DAEMON_CRASH_DIR "/var/crash/storiqone"
-#define DAEMON_SOCKET_DIR "/var/run/storiqone"
-#define DAEMON_PID_FILE "/var/run/storiqone.pid"
-#define DAEMON_BIN_DIR "/usr/lib/storiqone/1.2/bin"
-#define DAEMON_JOB_DIR "/usr/lib/storiqone/1.2/job"
-#define LOCALE_DIR "/usr/share/locale/"
-#define MODULE_PATH "/usr/lib/storiqone/1.2/lib"
-#define SCRIPT_PATH "/usr/lib/storiqone/1.2/scripts"
-#define TMP_DIR "/tmp"
+#include <libstoriqone/crash.h>
+#include <libstoriqone/debug.h>
+#include <libstoriqone/log.h>
 
-#define ADMIN_DEFAULT_HOST "localhost"
-#define ADMIN_DEFAULT_PORT 4862
+#include "config.h"
 
-#endif
+static pid_t so_crash_pid = -1;
+static char so_crash_prog_name[256];
+
+static void so_crash(int signal);
+
+
+static void so_crash(int signal) {
+	const char * prog = strrchr(so_crash_prog_name, '/');
+	if (prog != NULL)
+		prog++;
+	else
+		prog = so_crash_prog_name;
+
+	so_log_write(so_log_level_alert,
+		dgettext("libstoriqone", "Oops!!!, programs '%s' catch signal: %s"),
+		prog, strsignal(signal));
+
+	so_debug_log_stack(32);
+
+	pid_t child = fork();
+
+	if (child == 0) {
+		char str_pid[8];
+		snprintf(str_pid, 8, "%d", so_crash_pid);
+
+		close(1);
+		close(2);
+
+		execlp("gcore", "gcore", "-o", so_crash_prog_name, str_pid, NULL);
+
+		_exit(0);
+	}
+
+	int status = 0;
+	waitpid(child, &status, 0);
+
+	_exit(0);
+}
+
+void so_crash_init(const char * prog_name) {
+	so_crash_pid = getpid();
+	snprintf(so_crash_prog_name, 256, DAEMON_CRASH_DIR "/%s", prog_name);
+
+	signal(SIGSEGV, so_crash);
+	signal(SIGABRT, so_crash);
+}
 

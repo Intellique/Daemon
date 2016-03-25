@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-07 19:36+0100\n"
+        "POT-Creation-Date: 2016-03-24 13:56+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -109,22 +109,22 @@ msgstr  "[%s %s #%u]: media \"%s\" formateo con éxito"
 msgid   "[%s %s #%u]: failed to format media '%s'"
 msgstr  "[%s %s #%u]: fallo de formateo del media \"%s\""
 
-#: src/libstoriqone-drive/main.c:72
+#: src/libstoriqone-drive/main.c:75
 #, c-format
 msgid   "Starting drive (type: %s)"
 msgstr  "Arranque del lector (type: %s)"
 
-#: src/libstoriqone-drive/main.c:115
+#: src/libstoriqone-drive/main.c:118
 #, c-format
 msgid   "Initializing drive (type: %s)"
 msgstr  "Inicio del lector (type : %s)"
 
-#: src/libstoriqone-drive/main.c:122
+#: src/libstoriqone-drive/main.c:125
 #, c-format
 msgid   "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"
 msgstr  "Arranque del lector (tipo: %s, fabricante: %s, modelo: %s, número de serie: %s)"
 
-#: src/libstoriqone-drive/main.c:136
+#: src/libstoriqone-drive/main.c:139
 #, c-format
 msgid   "Drive (type: %s) will stop"
 msgstr  "El lector (type : %s) va a detenerse"

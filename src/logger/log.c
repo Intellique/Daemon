@@ -33,8 +33,12 @@
 #include <stdlib.h>
 // vasprintf
 #include <stdio.h>
+// getpid
+#include <sys/types.h>
 // time
 #include <time.h>
+// getpid
+#include <unistd.h>
 
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
@@ -146,10 +150,15 @@ void solgr_log_write2(enum so_log_level level, enum so_log_type type, const char
 	if (size < 0)
 		return;
 
-	struct so_value * message = so_value_pack("{sssssIss}",
+	static pid_t pid = -1;
+	if (pid < 0)
+		pid = getpid();
+
+	struct so_value * message = so_value_pack("{sssssIsiss}",
 		"level", so_log_level_to_string(level, false),
 		"type", so_log_type_to_string(type, false),
 		"timestamp", timestamp,
+		"pid", pid,
 		"message", str_message
 	);
 
