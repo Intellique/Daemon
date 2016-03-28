@@ -30,7 +30,7 @@
 #include <stdlib.h>
 // vsnprintf
 #include <stdio.h>
-// memmove, strcpy, strlen, strdup
+// memcpy, memmove, strcmp, strcpy, strlen, strdup
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -75,6 +75,11 @@ struct so_value_linked_list {
 	unsigned int nb_vals;
 };
 
+struct so_value_linked_list_tuple {
+	struct so_value_linked_list_node * first;
+	struct so_value_linked_list_node * last;
+};
+
 struct so_value_iterator_array {
 	unsigned int index;
 };
@@ -113,6 +118,9 @@ static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_val
 static void so_value_hashtable_put_inner(struct so_value_hashtable * hash, unsigned int index, struct so_value_hashtable_node * new_node);
 static void so_value_hashtable_rehash(struct so_value_hashtable * hash);
 static void so_value_hashtable_release_node(struct so_value_hashtable_node * node);
+
+static void so_value_list_sort_array(struct so_value ** array, unsigned int length, so_value_compare_f compare);
+static struct so_value_linked_list_tuple so_value_list_sort_linked_list(struct so_value_linked_list_node * first, struct so_value_linked_list_node * last, unsigned int length, so_value_compare_f compare);
 
 static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * list, bool weak_ref) __attribute__((warn_unused_result));
 
@@ -1536,6 +1544,13 @@ struct so_value * so_value_hashtable_values(struct so_value * hash) {
 }
 
 
+long long int so_value_compare_integer(struct so_value * a, struct so_value * b) {
+	if (a->type != so_value_integer || b->type != so_value_integer)
+		return 0;
+
+	return so_value_integer_get(a) - so_value_integer_get(b);
+}
+
 long long int so_value_integer_get(const struct so_value * value) {
 	long long int * integer = so_value_get(value);
 	return *integer;
@@ -1793,6 +1808,115 @@ bool so_value_list_remove(struct so_value * list, unsigned int index) {
 	}
 
 	return false;
+}
+
+void so_value_list_sort(struct so_value * list, so_value_compare_f compare) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
+		return;
+
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
+		so_value_list_sort_array(array->values, array->nb_vals, compare);
+	} else {
+		struct so_value_linked_list * linked = so_value_get(list);
+		struct so_value_linked_list_tuple result = so_value_list_sort_linked_list(linked->first, linked->last, linked->nb_vals, compare);
+		linked->first = result.first;
+		linked->last = result.last;
+	}
+}
+
+static void so_value_list_sort_array(struct so_value ** array, unsigned int length, so_value_compare_f compare) {
+	if (length < 2)
+		return;
+
+	unsigned int middle = length / 2;
+	so_value_list_sort_array(array, middle, compare);
+	so_value_list_sort_array(array + middle, length - middle, compare);
+
+	struct so_value ** values = calloc(length, sizeof(struct so_value *));
+
+	unsigned int left = 0, right = middle, new_val = 0;
+	while (left < middle && right < length) {
+		if (compare(array[left], array[right]) <= 0) {
+			values[new_val] = array[left];
+			left++;
+		} else {
+			values[new_val] = array[right];
+			right++;
+		}
+		new_val++;
+	}
+
+	while (left < middle) {
+		values[new_val] = array[left];
+		left++;
+		new_val++;
+	}
+
+	while (right < length) {
+		values[new_val] = array[right];
+		right++;
+		new_val++;
+	}
+
+	memcpy(array, values, length * sizeof(struct so_value *));
+	free(values);
+}
+
+static struct so_value_linked_list_tuple so_value_list_sort_linked_list(struct so_value_linked_list_node * first, struct so_value_linked_list_node * last, unsigned int length, so_value_compare_f compare) {
+	if (length < 2) {
+		struct so_value_linked_list_tuple result = { first, last };
+		return result;
+	}
+
+	unsigned int i, middle = length / 2;
+	struct so_value_linked_list_node * tmp_first;
+
+	for (i = 0, tmp_first = first; i < middle && tmp_first != NULL; i++, tmp_first = tmp_first->next);
+
+	struct so_value_linked_list_node * tmp_last = tmp_first->previous;
+
+	tmp_first->previous = NULL;
+	tmp_last->next = NULL;
+
+	struct so_value_linked_list_tuple result_left = so_value_list_sort_linked_list(first, tmp_last, middle, compare);
+	struct so_value_linked_list_tuple result_right = so_value_list_sort_linked_list(tmp_first, last, length - middle, compare);
+
+	first = last = NULL;
+
+	struct so_value_linked_list_node * tmp;
+	while (result_left.first != NULL && result_right.first != NULL) {
+		if (compare(result_left.first->value, result_right.first->value) <= 0) {
+			tmp = result_left.first;
+			result_left.first = result_left.first->next;
+			if (result_left.first != NULL)
+				result_left.first->previous = NULL;
+		} else {
+			tmp = result_right.first;
+			result_right.first = result_right.first->next;
+			if (result_right.first != NULL)
+				result_right.first->previous = NULL;
+		}
+
+		tmp->next = NULL;
+
+		if (first == NULL)
+			first = last = tmp;
+		else {
+			last->next = tmp;
+			tmp->previous = last;
+			last = tmp;
+		}
+	}
+
+	tmp = result_left.first != NULL ? result_left.first : result_right.first;
+	last->next = tmp;
+	tmp->previous = last;
+
+	last = result_left.first == NULL ? result_right.last : result_left.last;
+
+	struct so_value_linked_list_tuple result = { first, last };
+	return result;
 }
 
 struct so_value * so_value_list_shift(struct so_value * list) {
@@ -2056,6 +2180,13 @@ bool so_value_list_unshift(struct so_value * list, struct so_value * val, bool n
 	}
 }
 
+
+long long int so_value_compare_string(struct so_value * a, struct so_value * b) {
+	if (a->type != so_value_string || b->type != so_value_string)
+		return 0;
+
+	return strcmp(so_value_string_get(a), so_value_string_get(b));
+}
 
 const char * so_value_string_get(const struct so_value * value) {
 	return so_value_get(value);
