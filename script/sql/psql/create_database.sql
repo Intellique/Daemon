@@ -584,7 +584,7 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     checktime TIMESTAMP(3) WITH TIME ZONE,
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
 
-    name TEXT,
+    ltfsPath TEXT,
 
     PRIMARY KEY (archiveVolume, archiveFile)
 );
