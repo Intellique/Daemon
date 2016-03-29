@@ -74,13 +74,26 @@ static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media __at
 void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
 	switch (media_data->format) {
 		case sodr_tape_drive_media_ltfs:
-			while (media_data->data.ltfs.first_file != NULL) {
-				struct sodr_tape_drive_format_ltfs_file * file = media_data->data.ltfs.first_file;
-				media_data->data.ltfs.first_file = file->next;
+			if (media_data->data.ltfs.root.first_child != NULL) {
+				struct sodr_tape_drive_format_ltfs_file * file = media_data->data.ltfs.root.first_child;
+				while (file->parent != NULL) {
+					while (file->first_child != NULL)
+						file = file->first_child;
 
-				so_format_file_free(&file->file);
-				free(file->extents);
+					so_format_file_free(&file->file);
+					free(file->extents);
+
+					if (file->next_sibling != NULL) {
+						file = file->next_sibling;
+						free(file->previous_sibling);
+					} else
+						do {
+							file = file->parent;
+							free(file->last_child);
+						} while (file->parent != NULL && file->next_sibling == NULL);
+				}
 			}
+			so_format_file_free(&media_data->data.ltfs.root.file);
 			break;
 
 		default:
@@ -120,7 +133,7 @@ enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffe
 	return nb_params == 1 ? sodr_tape_drive_media_ltfs : sodr_tape_drive_media_unknown;
 }
 
-int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int scsi_fd, struct so_database_connection * db_connect) {
+int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int scsi_fd) {
 	struct so_media * media = drive->slot->media;
 	struct sodr_tape_drive_media * mp = media->private_data;
 

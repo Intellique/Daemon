@@ -929,7 +929,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 							if (failed == 0) {
 								int fd = sodr_tape_drive_st_open();
 								if (fd >= 0) {
-									failed = sodr_tape_drive_media_parse_ltfs_index(&sodr_tape_drive, fd, scsi_fd, db);
+									failed = sodr_tape_drive_media_parse_ltfs_index(&sodr_tape_drive, fd, scsi_fd);
 									close(fd);
 								}
 							}

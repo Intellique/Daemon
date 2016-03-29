@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 12:09+0100\n"
+        "POT-Creation-Date: 2016-03-29 12:57+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -134,186 +134,186 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:710
+#: src/drive/tape_drive/format/ltfs/util.c:707
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application vendor' with 'INTELLIQ' on "
         "media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:716
+#: src/drive/tape_drive/format/ltfs/util.c:713
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application vendor' with 'INTELLIQ' on "
         "media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:720
+#: src/drive/tape_drive/format/ltfs/util.c:717
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application vendor' updated with 'INTELLIQ' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:736
+#: src/drive/tape_drive/format/ltfs/util.c:733
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application name' with 'STORIQ ONE' on "
         "media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:742
+#: src/drive/tape_drive/format/ltfs/util.c:739
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application name' with 'STORIQ ONE' on "
         "media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:746
+#: src/drive/tape_drive/format/ltfs/util.c:743
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' updated with 'STORIQ ONE' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:770
+#: src/drive/tape_drive/format/ltfs/util.c:767
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%*s' on media "
         "'%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:776
+#: src/drive/tape_drive/format/ltfs/util.c:773
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%*s' on media "
         "'%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:780
+#: src/drive/tape_drive/format/ltfs/util.c:777
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%*s' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:802
+#: src/drive/tape_drive/format/ltfs/util.c:799
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%*s' on media "
         "'%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:808
+#: src/drive/tape_drive/format/ltfs/util.c:805
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%*s' on "
         "media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:812
+#: src/drive/tape_drive/format/ltfs/util.c:809
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%*s' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:835
+#: src/drive/tape_drive/format/ltfs/util.c:832
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update 'bar code' with '%*s' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:841
+#: src/drive/tape_drive/format/ltfs/util.c:838
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update 'bar code' with '%*s' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:845
+#: src/drive/tape_drive/format/ltfs/util.c:842
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, update 'bar code' with '%*s' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:852
+#: src/drive/tape_drive/format/ltfs/util.c:849
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, skip update of attribute 'bar code' on media '%s' because there is "
         "no bar code available"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:865
+#: src/drive/tape_drive/format/ltfs/util.c:862
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application format version' with '2.2.0' on "
         "media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:871
+#: src/drive/tape_drive/format/ltfs/util.c:868
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application format version' with '2.2.0' "
         "on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:875
+#: src/drive/tape_drive/format/ltfs/util.c:872
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application format version' updated with '2.2.0' on media "
         "'%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:886
+#: src/drive/tape_drive/format/ltfs/util.c:883
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application vendor' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:892
+#: src/drive/tape_drive/format/ltfs/util.c:889
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application vendor' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:896
+#: src/drive/tape_drive/format/ltfs/util.c:893
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application vendor' removed on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:905 src/drive/tape_drive/format/ltfs/util.c:959
+#: src/drive/tape_drive/format/ltfs/util.c:902 src/drive/tape_drive/format/ltfs/util.c:956
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:911 src/drive/tape_drive/format/ltfs/util.c:965
+#: src/drive/tape_drive/format/ltfs/util.c:908 src/drive/tape_drive/format/ltfs/util.c:962
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:915 src/drive/tape_drive/format/ltfs/util.c:969
+#: src/drive/tape_drive/format/ltfs/util.c:912 src/drive/tape_drive/format/ltfs/util.c:966
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' removed on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:923
+#: src/drive/tape_drive/format/ltfs/util.c:920
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application version' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:929
+#: src/drive/tape_drive/format/ltfs/util.c:926
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application version' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:933
+#: src/drive/tape_drive/format/ltfs/util.c:930
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' removed on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:941
+#: src/drive/tape_drive/format/ltfs/util.c:938
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'user medium text label' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:947
+#: src/drive/tape_drive/format/ltfs/util.c:944
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'user medium text label' on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:951
+#: src/drive/tape_drive/format/ltfs/util.c:948
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' removed on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:1009
+#: src/drive/tape_drive/format/ltfs/util.c:1006
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'volume coherency information' on partion #"
         "%u on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:1015
+#: src/drive/tape_drive/format/ltfs/util.c:1012
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'volume coherency information' on partion "
         "#%u on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/util.c:1019
+#: src/drive/tape_drive/format/ltfs/util.c:1016
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'volume coherency information' on partion #%u on media '%s'"
 msgstr  ""
@@ -353,52 +353,52 @@ msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
 msgid   "Found LTFS header in media with (volume id: %s)"
 msgstr  "Encabezamiento de banda LTFS encontrado (id del volumen: %s"
 
-#: src/drive/tape_drive/media.c:136
+#: src/drive/tape_drive/media.c:149
 #, c-format
 msgid   "Error opening media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:149
+#: src/drive/tape_drive/media.c:162
 #, c-format
 msgid   "Error while reading label on media '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:167
+#: src/drive/tape_drive/media.c:180
 #, c-format
 msgid   "Failed to read LTFS index from media '%s'"
 msgstr  "Fallo en la lectura del indice LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:179
+#: src/drive/tape_drive/media.c:192
 #, c-format
 msgid   "Error while reading LTFS index from media '%s'"
 msgstr  "Error leyendo el indice LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:190
+#: src/drive/tape_drive/media.c:203
 #, c-format
 msgid   "Found corrupted LTFS index on media '%s'"
 msgstr  "encontró un indice LTFS corrupto en el media \"%s\""
 
-#: src/drive/tape_drive/media.c:210
+#: src/drive/tape_drive/media.c:223
 #, c-format
 msgid   "Error, not enough memory to read LTFS index from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer el indice LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:237
+#: src/drive/tape_drive/media.c:250
 #, c-format
 msgid   "Failed to read LTFS label from media '%s'"
 msgstr  "Fallo a la lectura de la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:249
+#: src/drive/tape_drive/media.c:262
 #, c-format
 msgid   "Error while reading LTFS label from media '%s'"
 msgstr  "Error leyendo la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:260
+#: src/drive/tape_drive/media.c:273
 #, c-format
 msgid   "Found corrupted LTFS label on media '%s'"
 msgstr  "Encontró una etiqueta LTFS corrupto en el media \"%s\""
 
-#: src/drive/tape_drive/media.c:280
+#: src/drive/tape_drive/media.c:293
 #, c-format
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer la etiqueta LTFS del media \"%s\""
@@ -481,11 +481,11 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  ""
 
-#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
-#~ msgstr       "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
+#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d"
+#~ msgstr       "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
 
 #~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 #~ msgstr       "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
 
-#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d"
-#~ msgstr       "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
+#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
+#~ msgstr       "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"

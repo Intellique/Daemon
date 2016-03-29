@@ -78,13 +78,13 @@ struct sodr_tape_drive_format_ltfs_default_value {
 static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * extents);
 static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_value * index);
 static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * index, const char * node);
-static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value);
+static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value);
 static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr);
 
 
 unsigned int sodr_tape_drive_format_ltfs_count_archives(struct so_media * media) {
 	struct sodr_tape_drive_media * mp = media->private_data;
-	return mp->data.ltfs.nb_files > 0 ? 1 : 0;
+	return mp->data.ltfs.root.first_child != NULL ? 1 : 0;
 }
 
 static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * extents) {
@@ -502,10 +502,6 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	if (root == NULL)
 		return;
 
-	struct sodr_tape_drive_format_ltfs * self = &mp->data.ltfs;
-	self->first_file = self->last_file = NULL;
-	self->nb_files = 0;
-
 	struct so_value * contents = sodr_tape_drive_format_ltfs_find(root, "contents");
 	if (contents == NULL)
 		return;
@@ -537,10 +533,11 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 		.directory_mask = directory_mask,
 	};
 
+	struct sodr_tape_drive_format_ltfs * self = &mp->data.ltfs;
 	struct so_value_iterator * iter = so_value_list_get_iterator(files);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * file = so_value_iterator_get_value(iter, false);
-		sodr_tape_drive_format_ltfs_parse_index_inner(self, file, base_directory, &default_value);
+		sodr_tape_drive_format_ltfs_parse_index_inner(self, &self->root, file, base_directory, &default_value);
 	}
 	so_value_iterator_free(iter);
 
@@ -548,7 +545,7 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	free(default_value.group);
 }
 
-static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value) {
+static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value) {
 	struct so_value * children = NULL;
 	if (so_value_unpack(index, "{so}", "children", &children) < 1)
 		return;
@@ -556,11 +553,11 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 	struct sodr_tape_drive_format_ltfs_file * file = malloc(sizeof(struct sodr_tape_drive_format_ltfs_file));
 	bzero(file, sizeof(struct sodr_tape_drive_format_ltfs_file));
 
-	if (self->first_file == NULL)
-		self->first_file = self->last_file = file;
+	if (directory->first_child == NULL)
+		directory->first_child = directory->last_child = file;
 	else
-		self->last_file = self->last_file->next = file;
-	self->nb_files++;
+		directory->last_child = directory->last_child->next_sibling = file;
+	file->parent = directory;
 
 	file->file.mode = S_IFREG | default_value->file_mask;
 
@@ -677,7 +674,7 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 		struct so_value_iterator * iter = so_value_list_get_iterator(files);
 		while (so_value_iterator_has_next(iter)) {
 			struct so_value * child = so_value_iterator_get_value(iter, false);
-			sodr_tape_drive_format_ltfs_parse_index_inner(self, child, file->file.filename, default_value);
+			sodr_tape_drive_format_ltfs_parse_index_inner(self, file, child, file->file.filename, default_value);
 		}
 		so_value_iterator_free(iter);
 

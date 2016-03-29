@@ -37,6 +37,7 @@
 #include "ltfs.h"
 #include "../../media.h"
 #include "../../io/io.h"
+#include "../../util/scsi.h"
 
 struct sodr_tape_drive_format_ltfs_writer_private {
 	int fd;
@@ -55,7 +56,7 @@ struct sodr_tape_drive_format_ltfs_writer_private {
 	struct so_stream_writer * writer;
 };
 
-static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file);
+static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_label(struct so_format_writer * fw, const char * label);
 static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw);
 static ssize_t sodr_tape_drive_format_ltfs_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
@@ -117,8 +118,15 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 }
 
 
-static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file) {
+static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
+
+	struct sodr_tape_drive_scsi_position position;
+	int failed = sodr_tape_drive_scsi_read_position(self->scsi_fd, &position);
+	if (failed != 0) {
+
+		return so_format_writer_error;
+	}
 
 	struct sodr_tape_drive_format_ltfs_file * previous_file = self->current_file;
 
@@ -130,13 +138,14 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 	self->current_extent = malloc(sizeof(struct sodr_tape_drive_format_ltfs_extent));
 	bzero(self->current_extent, sizeof(struct sodr_tape_drive_format_ltfs_extent));
 
-	// read position
-
 	self->current_file->extents = self->current_extent;
 	self->current_file->nb_extents = 1;
 
-	if (previous_file != NULL)
-		previous_file->next = self->current_file;
+	self->current_extent->partition = position.partition;
+	self->current_extent->start_block = position.block_position;
+
+//	if (previous_file != NULL)
+//		previous_file->next = self->current_file;
 
 	return so_format_writer_ok;
 }
@@ -148,7 +157,9 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_label
 static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
 
-	// Write index and update medium auxiliary memory
+	// TODO: write index
+
+	// TODO: write index and update medium auxiliary memory
 
 	return 0;
 }
