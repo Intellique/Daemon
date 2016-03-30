@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 00:30+0100\n"
+        "POT-Creation-Date: 2016-04-12 08:05+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -94,17 +94,17 @@ msgstr  "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
 
-#: src/drive/tape_drive/device.c:879
+#: src/drive/tape_drive/device.c:878
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:932
+#: src/drive/tape_drive/device.c:931
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:941
+#: src/drive/tape_drive/device.c:940
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
