@@ -110,6 +110,8 @@ typedef void (*so_value_free_f)(void * value);
  */
 typedef unsigned long long (*so_value_hashtable_compupte_hash_f)(const struct so_value * key);
 
+typedef long long int (*so_value_compare_f)(struct so_value * a, struct so_value * b);
+
 struct so_value_iterator {
 	struct so_value * value;
 	bool weak_ref;
@@ -317,6 +319,7 @@ void so_value_hashtable_remove2(struct so_value * hash, const char * key);
  */
 struct so_value * so_value_hashtable_values(struct so_value * hash);
 
+long long int so_value_compare_integer(struct so_value * a, struct so_value * b);
 long long int so_value_integer_get(const struct so_value * value);
 
 void so_value_list_clear(struct so_value * list);
@@ -327,12 +330,14 @@ int so_value_list_index_of(struct so_value * list, struct so_value * elt);
 struct so_value * so_value_list_pop(struct so_value * list) __attribute__((warn_unused_result));
 bool so_value_list_push(struct so_value * list, struct so_value * val, bool new_val);
 bool so_value_list_remove(struct so_value * list, unsigned int index);
+void so_value_list_sort(struct so_value * list, so_value_compare_f compare);
 struct so_value * so_value_list_shift(struct so_value * list) __attribute__((warn_unused_result));
 struct so_value * so_value_list_slice(struct so_value * list, int index) __attribute__((warn_unused_result));
 struct so_value * so_value_list_slice2(struct so_value * list, int index, int end) __attribute__((warn_unused_result));
 struct so_value * so_value_list_splice(struct so_value * list, int index, int how_many, ...) __attribute__((warn_unused_result));
 bool so_value_list_unshift(struct so_value * list, struct so_value * val, bool new_val);
 
+long long int so_value_compare_string(struct so_value * a, struct so_value * b);
 const char * so_value_string_get(const struct so_value * value);
 struct so_value * so_value_sprintf(const char * format, ...) __attribute__((warn_unused_result,format (printf, 1, 2)));
 

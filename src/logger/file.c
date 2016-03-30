@@ -210,6 +210,6 @@ static void solgr_file_module_write(struct solgr_log_module * module, struct so_
 	time_t timestamp = iTimestamp;
 	so_time_convert(&timestamp, "%c", strtime, 36);
 
-	dprintf(self->fd, "[L:%s | T:%s | P:%d | %s]: %s\n", self->buf_level, self->buf_type, pid, strtime, smessage);
+	dprintf(self->fd, "[L:%s | T:%s | P:%5d | %s]: %s\n", self->buf_level, self->buf_type, pid, strtime, smessage);
 }
 

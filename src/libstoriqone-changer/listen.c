@@ -513,8 +513,8 @@ error:
 }
 
 static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	char * medium_serial_number = NULL;
-	so_value_unpack(request, "{s{si}}", "params", "medium serial number", &medium_serial_number);
+	const char * medium_serial_number = NULL;
+	so_value_unpack(request, "{s{sS}}", "params", "medium serial number", &medium_serial_number);
 
 	if (medium_serial_number == NULL) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
@@ -524,7 +524,6 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 	}
 
 	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
-	free(medium_serial_number);
 
 	if (sl == NULL || sl->media == NULL) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);

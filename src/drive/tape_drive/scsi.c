@@ -440,13 +440,9 @@ bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool fo
 	return false;
 }
 
-int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
+int sodr_tape_drive_scsi_erase_media(int fd, bool quick_mode) {
 	if (!scsi_command_erase.available)
 		return -1;
-
-	int fd = open(path, O_RDWR);
-	if (fd < 0)
-		return 1;
 
 	struct {
 		unsigned char op_code;
@@ -477,10 +473,7 @@ int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
 	header.timeout = 1000 * scsi_command_erase.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	int status = ioctl(fd, SG_IO, &header);
-	close(fd);
-
-	return status;
+	return ioctl(fd, SG_IO, &header);
 }
 
 int sodr_tape_drive_scsi_locate(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format) {
