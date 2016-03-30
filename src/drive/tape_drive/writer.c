@@ -166,6 +166,10 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 						break;
 
 				default:
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %m"),
+						self->drive->vendor, self->drive->model, self->drive->index);
+
 					self->last_errno = errno;
 					self->media->nb_write_errors++;
 					return -1;
@@ -188,6 +192,10 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 		self->media->last_write = time(NULL);
 
 		if (failed) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing end of file because %m"),
+				self->drive->vendor, self->drive->model, self->drive->index);
+
 			self->last_errno = errno;
 			self->media->nb_write_errors++;
 			return -1;
@@ -328,6 +336,10 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 					break;
 
 			default:
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %m"),
+					self->drive->vendor, self->drive->model, self->drive->index);
+
 				self->last_errno = errno;
 				self->media->nb_write_errors++;
 				return -1;
@@ -358,6 +370,10 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 						break;
 
 				default:
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %m"),
+						self->drive->vendor, self->drive->model, self->drive->index);
+
 					self->last_errno = errno;
 					self->media->nb_write_errors++;
 					return -1;
