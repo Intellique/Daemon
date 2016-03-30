@@ -580,23 +580,29 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			const char * file_name = NULL;
 			so_value_unpack(elt, "{sS}", "value", &file_name);
 
-			char * tmp_path;
-			int size = asprintf(&tmp_path, "%s/%s", path, file_name);
-			if (size < 0)
-				continue;
-
-			char * original_path = db_connect->ops->get_original_path_of_ltfs_file(db_connect, archive, tmp_path);
-			if (original_path != NULL)
-				file->file.filename = original_path;
-			else {
-				size = asprintf(&file->file.filename, "%s%s", default_value->root_directory, tmp_path);
-				if (size < 0) {
-					free(tmp_path);
+			if (archive == NULL) {
+				int size = asprintf(&file->file.filename, "%s/%s/%s", default_value->root_directory, path, file_name);
+				if (size < 0)
 					continue;
-				}
-			}
+			} else {
+				char * tmp_path;
+				int size = asprintf(&tmp_path, "%s/%s", path, file_name);
+				if (size < 0)
+					continue;
 
-			free(tmp_path);
+				char * original_path = db_connect->ops->get_original_path_of_ltfs_file(db_connect, archive, tmp_path);
+				if (original_path != NULL)
+					file->file.filename = original_path;
+				else {
+					size = asprintf(&file->file.filename, "%s%s", default_value->root_directory, tmp_path);
+					if (size < 0) {
+						free(tmp_path);
+						continue;
+					}
+				}
+
+				free(tmp_path);
+			}
 		} else if (strcmp(elt_name, "creationtime") == 0) {
 			const char * ctime = NULL;
 			so_value_unpack(elt, "{sS}", "value", &ctime);
