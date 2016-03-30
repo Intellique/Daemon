@@ -34,6 +34,7 @@
 // time_t
 #include <time.h>
 
+struct so_archive;
 struct so_database_connection;
 struct so_drive;
 struct so_media;
@@ -50,7 +51,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive * drive, int fd, int scsi_fd);
 struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive * drive, int fd, int scsi_fd);
 struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db);
-void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, struct so_value * index);
+void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, struct so_value * index, struct so_archive * archive, struct so_database_connection * db_connect);
 time_t sodr_tape_drive_format_ltfs_parse_time(const char * date);
 int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive, struct so_database_connection * db);
 int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive, struct so_database_connection * db);
