@@ -763,7 +763,6 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 		if (fd < 0)
 			return -1;
 
-
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCGET, &status);
 		sodr_time_stop(&sodr_tape_drive);
