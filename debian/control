@@ -45,6 +45,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, dbconfig-common, postgresql-client
 Recommends: postgresql (>= 9.4)
 Provides: storiqone-plugin-db
+Enhances: storiqone-daemon
 Description: Storiq one posgresql connector (db-plugin)
  Contains plugin to connect to postresql database
 
