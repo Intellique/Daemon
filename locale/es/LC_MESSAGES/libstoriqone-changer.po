@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 13:56+0100\n"
+        "POT-Creation-Date: 2016-03-30 15:55+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -36,17 +36,17 @@ msgstr  "[%s | %s]: descargando el media \"%s\" desde el lector #%d finalizado c
 msgid   "[%s | %s]: the drive (%s#%u) doesn't support media format (%s)"
 msgstr  "[%s | %s]: el lector (%s#%u) no puede utilizar los medias de formato (%s)"
 
-#: src/libstoriqone-changer/listen.c:376
+#: src/libstoriqone-changer/listen.c:377
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d"
 msgstr  "[%s | %s]: cargando el media  \"%s\" desde la ranura #%u al lector #%d"
 
-#: src/libstoriqone-changer/listen.c:380
+#: src/libstoriqone-changer/listen.c:381
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"
 msgstr  "[%s | %s]: cargando el media \"%s\" desde la ranura #%u al lector #%d finalizado con el codigo =%d"
 
-#: src/libstoriqone-changer/listen.c:394
+#: src/libstoriqone-changer/listen.c:397
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"
 msgstr  "[%s | %s]: cargando el media \"%s\" desde la ranura #%u al lector #%d finalizado con el codigo =OK"
