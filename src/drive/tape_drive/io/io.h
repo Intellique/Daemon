@@ -39,6 +39,8 @@ struct sodr_tape_drive_scsi_position;
 int sodr_tape_drive_reader_close2(struct so_stream_reader * sr, bool close_fd);
 int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd);
 ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db);
+ssize_t sodr_tape_drive_writer_flush(struct so_stream_writer * sw);
+
 struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int partition, int file_position, struct so_database_connection * db);
 struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader2(struct so_drive * drive, int fd, int scsi_fd, struct sodr_tape_drive_scsi_position * position);
 struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int partition, int file_position, struct so_database_connection * db);

@@ -42,7 +42,9 @@ struct so_pool;
 struct so_value;
 struct sodr_tape_drive_ltfs_volume_coherency;
 struct sodr_tape_drive_media;
+struct sodr_tape_drive_scsi_position;
 
+struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * media, const char * previous_partition, struct sodr_tape_drive_ltfs_volume_coherency * previous_vcr, struct sodr_tape_drive_scsi_position * current_position);
 unsigned int sodr_tape_drive_format_ltfs_count_archives(struct so_media * media);
 unsigned int sodr_tape_drive_format_ltfs_count_files(struct so_value * index);
 struct so_value * sodr_tape_drive_format_ltfs_create_label(time_t time, const char * uuid, size_t block_size, const char * partition);

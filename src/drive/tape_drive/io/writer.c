@@ -241,6 +241,44 @@ static int sodr_tape_drive_file_position(struct so_stream_writer * sw) {
 	return self->file_position;
 }
 
+ssize_t sodr_tape_drive_writer_flush(struct so_stream_writer * sw) {
+	struct sodr_tape_drive_writer * self = sw->data;
+	self->last_errno = 0;
+
+	if (self->buffer_used > 0) {
+		sodr_time_start();
+		ssize_t nb_write = write(self->fd, self->buffer, self->buffer_used);
+		sodr_time_stop(self->drive);
+
+		if (nb_write < 0) {
+			switch (errno) {
+				case ENOSPC:
+					sodr_time_start();
+					nb_write = write(self->fd, self->buffer, self->block_size);
+					sodr_time_stop(self->drive);
+
+					if (nb_write == self->block_size)
+						break;
+
+				default:
+					self->last_errno = errno;
+					self->media->nb_write_errors++;
+					return -1;
+			}
+		}
+
+		self->position += nb_write;
+		self->buffer_used = 0;
+		self->media->nb_total_write++;
+		if (self->media->free_block > 0)
+			self->media->free_block--;
+
+		return nb_write;
+	}
+
+	return 0;
+}
+
 static void sodr_tape_drive_writer_free(struct so_stream_writer * sw) {
 	if (sw == NULL)
 		return;

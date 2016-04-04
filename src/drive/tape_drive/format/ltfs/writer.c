@@ -24,14 +24,28 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
+// dirname
+#include <libgen.h>
+// asprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
+// strdup, strlen
+#include <string.h>
+// S_ISREG
+#include <sys/stat.h>
 // bzero
 #include <strings.h>
+// time
+#include <time.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/drive.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
 #include "ltfs.h"
@@ -46,7 +60,6 @@ struct sodr_tape_drive_format_ltfs_writer_private {
 	ssize_t total_write;
 
 	struct sodr_tape_drive_format_ltfs_file * current_file;
-	struct sodr_tape_drive_format_ltfs_extent * current_extent;
 
 	int last_errno;
 
@@ -71,6 +84,7 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_position(struct so_format_writ
 static struct so_format_reader * sodr_tape_drive_format_ltfs_writer_reopen(struct so_format_writer * fw);
 static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t sodr_tape_drive_format_ltfs_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
+static ssize_t sodr_tape_drive_format_ltfs_write_metadata(struct so_format_writer * fw, struct so_value * metadata);
 
 static struct so_format_writer_ops sodr_tape_drive_format_ltfs_writer_ops = {
 	.add_file             = sodr_tape_drive_format_ltfs_writer_add_file,
@@ -88,6 +102,7 @@ static struct so_format_writer_ops sodr_tape_drive_format_ltfs_writer_ops = {
 	.reopen               = sodr_tape_drive_format_ltfs_writer_reopen,
 	.restart_file         = sodr_tape_drive_format_ltfs_writer_restart_file,
 	.write                = sodr_tape_drive_format_ltfs_writer_write,
+	.write_metadata       = sodr_tape_drive_format_ltfs_write_metadata,
 };
 
 
@@ -100,9 +115,6 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 
 	self->fd = fd;
 	self->scsi_fd = scsi_fd;
-
-	self->current_file = NULL;
-	self->current_extent = NULL;
 
 	self->drive = drive;
 	self->media = media;
@@ -123,29 +135,91 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 
 	struct sodr_tape_drive_scsi_position position;
 	int failed = sodr_tape_drive_scsi_read_position(self->scsi_fd, &position);
-	if (failed != 0) {
-
+	if (failed != 0)
 		return so_format_writer_error;
+
+	char * selected_path_dup = strdup(selected_path);
+	dirname(selected_path_dup);
+	ssize_t selected_path_length = strlen(selected_path_dup);
+	free(selected_path_dup);
+
+	char * path_dup = strdup(file->filename);
+	const char * ptr_path = path_dup + selected_path_length;
+	while (*ptr_path == '/')
+		ptr_path++;
+
+	const unsigned long long hash_selected_path = so_string_compute_hash2(selected_path);
+
+	struct sodr_tape_drive_format_ltfs_file * ptr_node = &self->ltfs_info->root;
+	for (;;) {
+		char * ptr_path2 = strchr(ptr_path, '/');
+		if (ptr_path2 != NULL)
+			*ptr_path2 = '\0';
+
+		const unsigned long long hash_name = so_string_compute_hash2(ptr_path);
+
+		struct sodr_tape_drive_format_ltfs_file * child_node;
+		unsigned int next_index = 0;
+		for (child_node = ptr_node->first_child; child_node != NULL; child_node = child_node->next_sibling)
+			if (hash_name == child_node->hash_name) {
+				if (hash_selected_path != child_node->hash_selected_path)
+					next_index++;
+				else
+					break;
+			}
+
+		if (child_node == NULL) {
+			child_node = malloc(sizeof(struct sodr_tape_drive_format_ltfs_file));
+			bzero(child_node, sizeof(struct sodr_tape_drive_format_ltfs_file));
+
+			if (next_index > 0)
+				asprintf(&child_node->name, "%s_%u", ptr_path, next_index - 1);
+			else
+				child_node->name = strdup(ptr_path);
+
+			child_node->hash_name = hash_name;
+			child_node->hash_selected_path = hash_selected_path;
+
+			child_node->parent = ptr_node;
+
+			if (ptr_node->first_child == NULL)
+				ptr_node->first_child = ptr_node->last_child = child_node;
+			else {
+				ptr_node->last_child->next_sibling = child_node;
+				child_node->previous_sibling = ptr_node->last_child;
+				ptr_node->last_child = child_node;
+			}
+		}
+
+		ptr_node = child_node;
+
+		bool finished = false;
+		if (ptr_path2 != NULL) {
+			*ptr_path2 = '/';
+
+			ptr_path = ptr_path2 + 1;
+		} else
+			finished = true;
+
+		if (*ptr_path == '\0')
+			finished = true;
+
+		if (finished) {
+			so_format_file_copy(&child_node->file, file);
+
+			if (S_ISREG(file->mode)) {
+				child_node->extents = malloc(sizeof(struct sodr_tape_drive_format_ltfs_extent));
+				bzero(child_node->extents, sizeof(struct sodr_tape_drive_format_ltfs_extent));
+
+				child_node->extents->partition = position.partition;
+				child_node->extents->start_block = position.block_position;
+			}
+
+			break;
+		}
 	}
 
-	struct sodr_tape_drive_format_ltfs_file * previous_file = self->current_file;
-
-	self->current_file = malloc(sizeof(struct sodr_tape_drive_format_ltfs_file));
-	bzero(self->current_file, sizeof(struct sodr_tape_drive_format_ltfs_file));
-
-	so_format_file_copy(&self->current_file->file, file);
-
-	self->current_extent = malloc(sizeof(struct sodr_tape_drive_format_ltfs_extent));
-	bzero(self->current_extent, sizeof(struct sodr_tape_drive_format_ltfs_extent));
-
-	self->current_file->extents = self->current_extent;
-	self->current_file->nb_extents = 1;
-
-	self->current_extent->partition = position.partition;
-	self->current_extent->start_block = position.block_position;
-
-//	if (previous_file != NULL)
-//		previous_file->next = self->current_file;
+	free(path_dup);
 
 	return so_format_writer_ok;
 }
@@ -156,6 +230,27 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_label
 
 static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
+
+	int failed = sodr_tape_drive_writer_close2(self->writer, false);
+	if (failed != 0) {
+		return failed;
+	}
+
+	unsigned int volume_change_reference = 0;
+	failed = sodr_tape_drive_scsi_read_volume_change_reference(self->scsi_fd, &volume_change_reference);
+	if (failed != 0) {
+		return failed;
+	}
+
+	struct sodr_tape_drive_scsi_position position;
+	failed = sodr_tape_drive_scsi_read_position(self->scsi_fd, &position);
+	if (failed != 0) {
+		return failed;
+	}
+
+	struct sodr_tape_drive_ltfs_volume_coherency previous_vcr = self->ltfs_info->data;
+	self->ltfs_info->data.volume_change_reference = volume_change_reference;
+	self->ltfs_info->data.generation_number++;
 
 	// TODO: write index
 
@@ -170,7 +265,12 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_compute_size_of_file(struct so
 
 static ssize_t sodr_tape_drive_format_ltfs_writer_end_of_file(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
-	return sodr_tape_drive_writer_close2(self->writer, false);
+
+	ssize_t nb_write = sodr_tape_drive_writer_flush(self->writer);
+	if (nb_write < 0)
+		return -1;
+
+	return self->writer->ops->create_new_file(self->writer);
 }
 
 static void sodr_tape_drive_format_ltfs_writer_free(struct so_format_writer * fw) {
@@ -213,11 +313,100 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_position(struct so_format_writ
 }
 
 static struct so_format_reader * sodr_tape_drive_format_ltfs_writer_reopen(struct so_format_writer * fw) {
+	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
 }
 
-static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file) {
+static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_restart_file(struct so_format_writer * fw __attribute__((unused)), const struct so_format_file * file __attribute__((unused))) {
+	return so_format_writer_unsupported;
 }
 
 static ssize_t sodr_tape_drive_format_ltfs_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {
+	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
+
+	ssize_t nb_write = self->writer->ops->write(self->writer, buffer, length);
+	if (nb_write > 0)
+		self->current_file->extents->byte_count += nb_write;
+
+	return nb_write;
+}
+
+static ssize_t sodr_tape_drive_format_ltfs_write_metadata(struct so_format_writer * fw, struct so_value * metadata) {
+	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
+
+	struct so_value * config = so_config_get();
+	const char * base_directory = "/mnt/ltfs";
+
+	so_value_unpack(config, "{s{s{sS}}}",
+		"format",
+			"ltfs",
+				"base directory", &base_directory
+	);
+
+	struct sodr_tape_drive_scsi_position position;
+	int failed = sodr_tape_drive_scsi_read_position(self->scsi_fd, &position);
+	if (failed != 0)
+		return -1;
+
+	const char * archive_name = NULL;
+	so_value_unpack(metadata, "{sS}", "name", &archive_name);
+
+	char * filename = NULL;
+	int size = asprintf(&filename, "%s.meta", archive_name);
+	if (size < 0)
+		return -1;
+
+	const unsigned long long hash_name = so_string_compute_hash2(filename);
+
+	struct sodr_tape_drive_format_ltfs_file * ptr_node = &self->ltfs_info->root;
+	struct sodr_tape_drive_format_ltfs_file * child_node;
+	for (child_node = ptr_node->first_child; child_node != NULL; child_node = child_node->next_sibling)
+		if (hash_name == child_node->hash_name)
+			break;
+
+	if (child_node == NULL) {
+		child_node = malloc(sizeof(struct sodr_tape_drive_format_ltfs_file));
+		bzero(child_node, sizeof(struct sodr_tape_drive_format_ltfs_file));
+
+		child_node->name = filename;
+
+		child_node->hash_name = hash_name;
+
+		asprintf(&child_node->file.filename, "%s/%s.meta", base_directory, archive_name);
+		child_node->file.mode = S_IFREG | 0644;
+		child_node->file.ctime = child_node->file.mtime = time(NULL);
+
+		child_node->extents = malloc(sizeof(struct sodr_tape_drive_format_ltfs_extent));
+		bzero(child_node->extents, sizeof(struct sodr_tape_drive_format_ltfs_extent));
+
+		child_node->parent = ptr_node;
+
+		if (ptr_node->first_child == NULL)
+			ptr_node->first_child = ptr_node->last_child = child_node;
+		else {
+			ptr_node->last_child->next_sibling = child_node;
+			child_node->previous_sibling = ptr_node->last_child;
+			ptr_node->last_child = child_node;
+		}
+	} else {
+		free(filename);
+
+		child_node->file.mtime = time(NULL);
+	}
+
+	child_node->extents->partition = position.partition;
+	child_node->extents->start_block = position.block_position;
+
+
+	char * json = so_json_encode_to_string(metadata);
+	ssize_t json_length = strlen(json);
+
+	ssize_t nb_write = self->writer->ops->write(self->writer, json, json_length);
+
+	free(json);
+
+	if (nb_write > 0)
+		child_node->extents->byte_count = position.partition;
+
+	return nb_write;
 }
 

@@ -132,6 +132,7 @@ static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(s
 static struct so_value * so_database_postgresql_get_archives_by_media(struct so_database_connection * connect, struct so_media * media);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path);
+static char * so_database_postgresql_get_selected_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path);
 static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
@@ -214,6 +215,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_archives_by_media          = so_database_postgresql_get_archives_by_media,
 	.get_nb_volumes_of_file         = so_database_postgresql_get_nb_volumes_of_file,
 	.get_original_path_of_ltfs_file = so_database_postgresql_get_original_path_of_ltfs_file,
+	.get_selected_path_of_ltfs_file = so_database_postgresql_get_selected_path_of_ltfs_file,
 	.get_synchronized_archive       = so_database_postgresql_get_synchronized_archive,
 	.is_archive_synchronized        = so_database_postgresql_is_archive_synchronized,
 	.link_archives                  = so_database_postgresql_link_archives,
@@ -3494,6 +3496,39 @@ static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_da
 	PQclear(result);
 
 	return original_path;
+}
+
+static char * so_database_postgresql_get_selected_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path) {
+	if (connect == NULL || archive == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
+
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
+
+	so_value_free(key);
+
+
+	const char * query = "select_selected_path_of_ltfs_file";
+	so_database_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id = (SELECT name FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE ltfspath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1) LIMIT 1");
+
+	const char * param[] = { archive_id, path };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * selected_path = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_string_dup(result, 0, 0, &selected_path);
+
+	PQclear(result);
+
+	return selected_path;
 }
 
 static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive) {

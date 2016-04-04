@@ -183,6 +183,7 @@ struct so_database_connection {
 		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((warn_unused_result));
 		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 		char * (*get_original_path_of_ltfs_file)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
+		char * (*get_selected_path_of_ltfs_file)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
 		struct so_value * (*get_synchronized_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
 		bool (*is_archive_synchronized)(struct so_database_connection * connect, struct so_archive * archive);
 		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);

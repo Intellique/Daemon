@@ -65,6 +65,11 @@ struct sodr_tape_drive_media {
 			struct sodr_tape_drive_ltfs_volume_coherency data;
 
 			struct sodr_tape_drive_format_ltfs_file {
+				char * name;
+
+				unsigned long long hash_name;
+				unsigned long long hash_selected_path;
+
 				struct so_format_file file;
 				struct sodr_tape_drive_format_ltfs_extent {
 					/**

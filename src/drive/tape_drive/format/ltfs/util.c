@@ -56,6 +56,7 @@
 #include <libstoriqone/io.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-drive/drive.h>
 #include <libstoriqone-drive/log.h>
@@ -84,6 +85,63 @@ static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * inde
 static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value, struct so_archive * archive, struct so_database_connection * db_connect);
 static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr);
 
+
+struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * media, const char * previous_partition, struct sodr_tape_drive_ltfs_volume_coherency * previous_vcr, struct sodr_tape_drive_scsi_position * current_position) {
+	struct sodr_tape_drive_media * mp = media->private_data;
+
+	time_t now = time(NULL);
+
+	struct tm gmt;
+	gmtime_r(&now, &gmt);
+
+	char buf_time[64];
+	strftime(buf_time, 64, "%FT%T.000000000Z", &gmt);
+
+	char current_partition[2] = { 'a' + current_position->partition, '\0' };
+
+	struct so_value * index = so_value_pack("{sss{ss}s[{ssss}{ssss}{sssz}{ssss}{s[{ssss}{sssz}]ss}{s[{sssz}]ss}{sssb}{sssz}]}",
+		"name", "ltfsindex",
+		"attributes",
+			"version", "2.2.0",
+		"children",
+			"name", "creator",
+			"value", "Intellique StoriqOne " STORIQONE_VERSION " - Linux - tape_drive",
+
+			"name", "volumeuuid",
+			"value", media->uuid,
+
+			"name", "generationnumber",
+			"value", mp->data.ltfs.index.generation_number,
+
+			"name", "updatetime",
+			"value", buf_time,
+
+			"children",
+				"name", "partition",
+				"value", current_partition,
+
+				"name", "startblock",
+				"value", current_position->block_position,
+			"name", "location"
+
+			"children",
+				"name", "partition",
+				"value", previous_partition,
+
+				"name", "startblock",
+				"value", previous_vcr->block_position_of_last_index,
+			"name", "previousgenerationlocation"
+
+			"name", "allowpolicyupdate",
+			"value", false,
+
+			"name", "highestfileuid",
+			"value", 1L
+
+		);
+
+	return index;
+}
 
 unsigned int sodr_tape_drive_format_ltfs_count_archives(struct so_media * media) {
 	struct sodr_tape_drive_media * mp = media->private_data;
@@ -585,6 +643,9 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 				if (size < 0)
 					continue;
 			} else {
+				file->name = strdup(elt_name);
+				file->hash_name = so_string_compute_hash2(file->name);
+
 				char * tmp_path;
 				int size = asprintf(&tmp_path, "%s/%s", path, file_name);
 				if (size < 0)
@@ -599,6 +660,12 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 						free(tmp_path);
 						continue;
 					}
+				}
+
+				char * selected_path = db_connect->ops->get_selected_path_of_ltfs_file(db_connect, archive, tmp_path);
+				if (selected_path != NULL) {
+					file->hash_selected_path = so_string_compute_hash2(selected_path);
+					free(selected_path);
 				}
 
 				free(tmp_path);
