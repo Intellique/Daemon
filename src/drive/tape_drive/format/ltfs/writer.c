@@ -39,14 +39,16 @@
 #include <strings.h>
 // time
 #include <time.h>
+// close
+#include <unistd.h>
 
 #include <libstoriqone/config.h>
-#include <libstoriqone/drive.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-drive/drive.h>
 
 #include "ltfs.h"
 #include "../../media.h"
@@ -301,7 +303,15 @@ static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw
 	}
 
 	// update medium auxiliary memory
-	return sodr_tape_drive_format_ltfs_update_mam(self->scsi_fd, self->drive, NULL);
+	failed = sodr_tape_drive_format_ltfs_update_mam(self->scsi_fd, self->drive, NULL);
+	if (failed != 0) {
+		return failed;
+	}
+
+	close(self->fd);
+	close(self->scsi_fd);
+
+	return 0;
 }
 
 static ssize_t sodr_tape_drive_format_ltfs_writer_compute_size_of_file(struct so_format_writer * fw __attribute__((unused)), const struct so_format_file * file) {
@@ -359,6 +369,8 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_position(struct so_format_writ
 
 static struct so_format_reader * sodr_tape_drive_format_ltfs_writer_reopen(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
+
+	return self->drive->ops->get_reader(0, NULL, NULL);
 }
 
 static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_restart_file(struct so_format_writer * fw __attribute__((unused)), const struct so_format_file * file __attribute__((unused))) {
