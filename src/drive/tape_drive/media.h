@@ -64,6 +64,8 @@ struct sodr_tape_drive_media {
 			struct sodr_tape_drive_ltfs_volume_coherency index;
 			struct sodr_tape_drive_ltfs_volume_coherency data;
 
+			unsigned long long highest_file_uid;
+
 			struct sodr_tape_drive_format_ltfs_file {
 				char * name;
 
@@ -99,6 +101,8 @@ struct sodr_tape_drive_media {
 					off_t file_offset;
 				} * extents;
 				unsigned int nb_extents;
+
+				unsigned long long file_uid;
 
 				struct sodr_tape_drive_format_ltfs_file * parent;
 

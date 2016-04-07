@@ -222,6 +222,10 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	struct sodr_tape_drive_media * mp = sodr_tape_drive_media_new(sodr_tape_drive_media_ltfs);
 	struct sodr_tape_drive_format_ltfs * ltfs = &mp->data.ltfs;
 
+	ltfs->highest_file_uid = 1;
+
+	ltfs->root.file_uid = 1;
+
 	ltfs->index.volume_change_reference = vcr;
 	ltfs->index.generation_number = 1;
 	ltfs->index.block_position_of_last_index = position.block_position;

@@ -79,6 +79,7 @@ struct sodr_tape_drive_format_ltfs_default_value {
 	const char * root_directory;
 };
 
+static struct so_value * sodr_tape_drive_format_ltfs_convert_index_inner(struct sodr_tape_drive_format_ltfs_file * file);
 static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * extents);
 static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_value * index);
 static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * index, const char * node);
@@ -99,7 +100,9 @@ struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * me
 
 	char current_partition[2] = { 'a' + current_position->partition, '\0' };
 
-	struct so_value * index = so_value_pack("{sss{ss}s[{ssss}{ssss}{sssz}{ssss}{s[{ssss}{sssz}]ss}{s[{sssz}]ss}{sssb}{sssz}]}",
+	struct so_value * root = sodr_tape_drive_format_ltfs_convert_index_inner(&mp->data.ltfs.root);
+
+	return so_value_pack("{sss{ss}s[{ssss}{ssss}{sssz}{ssss}{s[{ssss}{sssz}]ss}{s[{sssz}]ss}{sssb}{sssz}o]}",
 		"name", "ltfsindex",
 		"attributes",
 			"version", "2.2.0",
@@ -136,11 +139,101 @@ struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * me
 			"value", false,
 
 			"name", "highestfileuid",
-			"value", 1L
+			"value", mp->data.ltfs.highest_file_uid,
 
+			root);
+}
+
+static struct so_value * sodr_tape_drive_format_ltfs_convert_index_inner(struct sodr_tape_drive_format_ltfs_file * file) {
+	struct tm gmt;
+	gmtime_r(&file->file.ctime, &gmt);
+
+	char buf_ctime[64];
+	strftime(buf_ctime, 64, "%FT%T.000000000Z", &gmt);
+
+	gmtime_r(&file->file.mtime, &gmt);
+
+	char buf_mtime[64];
+	strftime(buf_mtime, 64, "%FT%T.000000000Z", &gmt);
+
+	struct so_value * info = so_value_pack("[{ssss}{sssb}{ssss}{ssss}{ssss}{ssss}{ssss}{sssz}]",
+		"name", "name",
+		"value", file->name != NULL ? file->name : "root",
+
+		"name", "readonly",
+		"value", !(file->file.mode & S_IWUSR),
+
+		"name", "creationtime",
+		"value", buf_ctime,
+
+		"name", "changetime",
+		"value", buf_mtime,
+
+		"name", "modifytime",
+		"value", buf_mtime,
+
+		"name", "accesstime",
+		"value", buf_mtime,
+
+		"name", "backuptime",
+		"value", buf_mtime,
+
+		"name", "fileuid",
+		"value", file->file_uid
+	);
+
+	if (file->hash_name == 0 || S_ISDIR(file->file.mode)) {
+		struct so_value * files = so_value_new_linked_list();
+
+		struct sodr_tape_drive_format_ltfs_file * child;
+		for (child = file->first_child; child != NULL; child = child->next_sibling)
+			so_value_list_push(files, sodr_tape_drive_format_ltfs_convert_index_inner(child), true);
+
+		so_value_list_push(info, so_value_pack("{ssso}", "name", "contents", "children", files), true);
+
+		return so_value_pack("{ssso}",
+			"name", "directory",
+			"children", info
 		);
+	} else {
+		if (file->nb_extents > 0) {
+			struct so_value * extents = so_value_new_array(file->nb_extents);
 
-	return index;
+			unsigned int i;
+			for (i = 0; i < file->nb_extents; i++) {
+				char partition[2] = { 'a' + file->extents[i].partition, '\0' };
+
+				so_value_list_push(extents, so_value_pack("{sss[{sssz}{ssss}{sssz}{sssz}{sssz}]}",
+					"name", "extent",
+					"children",
+						"name", "fileoffset",
+						"value", file->extents[i].file_offset,
+
+						"name", "partition",
+						"value", partition,
+
+						"name", "startblock",
+						"value", file->extents[i].start_block,
+
+						"name", "byteoffset",
+						"value", file->extents[i].byte_offset,
+
+						"name", "bytecount",
+						"value", file->extents[i].byte_count
+				), true);
+			}
+
+			so_value_list_push(info, so_value_pack("{ssso}",
+				"name", "extentinfo",
+				"children", extents
+			), true);
+		}
+
+		return so_value_pack("{ssso}",
+			"name", "file",
+			"children", info
+		);
+	}
 }
 
 unsigned int sodr_tape_drive_format_ltfs_count_archives(struct so_media * media) {
@@ -688,6 +781,14 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 			if (length != NULL)
 				sscanf(length, "%zd", &file->file.size);
+		} else if (strcmp(elt_name, "fileuid") == 0) {
+			const char * str_file_uid = NULL;
+			so_value_unpack(elt, "{sS}", "value", &str_file_uid);
+
+			sscanf(str_file_uid, "%Lu", &file->file_uid);
+
+			if (file->file_uid > self->highest_file_uid)
+				self->highest_file_uid = file->file_uid;
 		} else if (strcmp(elt_name, "extentinfo") == 0) {
 			file->nb_extents = sodr_tape_drive_format_ltfs_count_extent(elt);
 			file->extents = calloc(file->nb_extents, sizeof(struct sodr_tape_drive_format_ltfs_extent));
@@ -781,6 +882,27 @@ time_t sodr_tape_drive_format_ltfs_parse_time(const char * date) {
 	strptime(date, "%FT%T", &tm);
 
 	return mktime(&tm) - timezone;
+}
+
+void sodr_tape_drive_format_ltfs_update_index(struct so_value * index, struct sodr_tape_drive_scsi_position * current_position) {
+	struct so_value * children = NULL;
+	so_value_unpack(index, "{so}", "children", &children);
+
+	struct so_value * location = so_value_list_get(children, 4, false);
+	struct so_value * previous = so_value_list_get(children, 5, false);
+
+	struct so_value * previous_location = so_value_hashtable_get2(location, "children", false, true);
+	so_value_hashtable_put2(previous, "children", previous_location, true);
+
+	const char partition[] = { 'a' + current_position->partition, '\0' };
+
+	so_value_hashtable_put2(location, "children", so_value_pack("[{ssss}{sssz}]",
+		"name", "partition",
+		"value", partition,
+
+		"name", "startblock",
+		"value", current_position->block_position
+	), true);
 }
 
 int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive, struct so_database_connection * db) {

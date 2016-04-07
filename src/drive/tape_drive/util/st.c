@@ -92,7 +92,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partion from %lu to %u on media '%s'"),
 			drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
 		drive->status = so_drive_status_positioning;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		struct mtop change_partition = { MTSETPART, partition };
 		sodr_time_start();
@@ -100,7 +101,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		sodr_time_stop(drive);
 
 		drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		if (failed != 0) {
 			sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
@@ -129,7 +131,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s'"),
 			drive->vendor, drive->model, drive->index, drive->slot->media->name);
 		drive->status = so_drive_status_positioning;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		static struct mtop eod = { MTEOM, 1 };
 		sodr_time_start();
@@ -137,7 +140,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		sodr_time_stop(drive);
 
 		drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		if (failed != 0)
 			so_log_write(so_log_level_error,
@@ -152,7 +156,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d"),
 			drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
 		drive->status = so_drive_status_positioning;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		struct mtop fsr = { MTFSF, file_number - status.mt_fileno };
 		sodr_time_start();
@@ -160,7 +165,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		sodr_time_stop(drive);
 
 		drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
-		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		if (failed != 0)
 			so_log_write(so_log_level_error,
@@ -178,7 +184,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d"),
 				drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
 			drive->status = so_drive_status_positioning;
-			db->ops->sync_drive(db, drive, true, so_database_sync_default);
+			if (db != NULL)
+				db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 			struct mtop bsfm = { MTBSFM, status.mt_fileno - file_number + 1 };
 			sodr_time_start();
@@ -186,7 +193,8 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			sodr_time_stop(drive);
 
 			drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
-			db->ops->sync_drive(db, drive, true, so_database_sync_default);
+			if (db != NULL)
+				db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 			if (failed != 0)
 				so_log_write(so_log_level_error,
