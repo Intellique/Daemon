@@ -2,7 +2,7 @@ STORIQONED_SRC_DIR		:= src/storiqoned
 
 STORIQONED_BIN			:= bin/storiqoned
 STORIQONED_CFLAG		:= -fPIC -pthread
-STORIQONED_LD			:= -pthread -lstoriqone -Llib -Wl,-rpath,lib
+STORIQONED_LD			:= -pthread -lstoriqone -Llib
 
 STORIQONED_DEPEND_LIB	:= lib/libstoriqone.so
 
