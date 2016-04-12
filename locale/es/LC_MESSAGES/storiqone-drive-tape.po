@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 00:30+0100\n"
+        "POT-Creation-Date: 2016-04-12 08:08+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,95 +16,120 @@ msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/tape_drive/device.c:209
+#: src/drive/tape_drive/device.c:159
+#, c-format
+msgid   "[%s | %s | #%u]: rewind tape (scsi version)"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:170
+#, c-format
+msgid   "[%s | %s | #%u]: failed to rewind tape (scsi version)"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:181 src/drive/tape_drive/device.c:202
+#, c-format
+msgid   "[%s | %s | #%u]: rewind tape (using st driver)"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:191
+#, c-format
+msgid   "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:216
+#, c-format
+msgid   "[%s | %s | #%u]: error while reading header because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:235
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:308
+#: src/drive/tape_drive/device.c:334
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
-#: src/drive/tape_drive/device.c:334
+#: src/drive/tape_drive/device.c:360
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:336 src/drive/tape_drive/device.c:344 src/drive/tape_drive/device.c:366
+#: src/drive/tape_drive/device.c:362 src/drive/tape_drive/device.c:370 src/drive/tape_drive/device.c:392
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:336 src/drive/tape_drive/device.c:344 src/drive/tape_drive/device.c:366
+#: src/drive/tape_drive/device.c:362 src/drive/tape_drive/device.c:370 src/drive/tape_drive/device.c:392
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:342
+#: src/drive/tape_drive/device.c:368
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:364
+#: src/drive/tape_drive/device.c:390
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:434
+#: src/drive/tape_drive/device.c:460
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:477
+#: src/drive/tape_drive/device.c:503
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:507
+#: src/drive/tape_drive/device.c:533
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:721
+#: src/drive/tape_drive/device.c:747
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\""
 
-#: src/drive/tape_drive/device.c:733
+#: src/drive/tape_drive/device.c:759
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\" a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:737
+#: src/drive/tape_drive/device.c:763
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  "[ %s | %s | #%u ] : Avance rápido hacia el final del media \"%s\" terminado avec éxito"
 
-#: src/drive/tape_drive/device.c:744
+#: src/drive/tape_drive/device.c:770
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
 
-#: src/drive/tape_drive/device.c:757 src/drive/tape_drive/device.c:775
+#: src/drive/tape_drive/device.c:783 src/drive/tape_drive/device.c:801
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 msgstr  "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:779 src/drive/tape_drive/device.c:786
+#: src/drive/tape_drive/device.c:805 src/drive/tape_drive/device.c:812
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
 
-#: src/drive/tape_drive/device.c:879
+#: src/drive/tape_drive/device.c:904
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:932
+#: src/drive/tape_drive/device.c:957
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:941
+#: src/drive/tape_drive/device.c:966
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -179,6 +204,21 @@ msgstr  "Error, no hay suficiente memoria para leer la etiqueta LTFS del media \
 msgid   "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"
 msgstr  "[ %s | %s | #%u ]: Avanzar en el media \"%s\" en la posición #%u y el número de matrícula %ld"
 
+#: src/drive/tape_drive/reader.c:155
+#, c-format
+msgid   "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/reader.c:174 src/drive/tape_drive/reader.c:196 src/drive/tape_drive/reader.c:367
+#, c-format
+msgid   "[%s | %s | #%u]: error while reading because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/reader.c:421
+#, c-format
+msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
+msgstr  ""
+
 #: src/drive/tape_drive/scsi.c:913
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
@@ -202,7 +242,17 @@ msgstr  "no"
 msgid   "yes"
 msgstr  "si"
 
-#: src/drive/tape_drive/writer.c:207
+#: src/drive/tape_drive/writer.c:175 src/drive/tape_drive/writer.c:360 src/drive/tape_drive/writer.c:394
+#, c-format
+msgid   "[%s | %s | #%u]: error while writing because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/writer.c:201
+#, c-format
+msgid   "[%s | %s | #%u]: error while writing end of file because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/writer.c:215
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"

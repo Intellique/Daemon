@@ -151,6 +151,10 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 			sodr_time_stop(self->drive);
 
 			if (failed != 0) {
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"),
+					self->drive->vendor, self->drive->model, self->drive->index, next_forward);
+
 				self->last_errno = errno;
 				return failed;
 			}
@@ -166,6 +170,10 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 			sodr_time_stop(self->drive);
 
 			if (nb_read < 0) {
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while reading because %m"),
+					self->drive->vendor, self->drive->model, self->drive->index);
+
 				self->last_errno = errno;
 				return nb_read;
 			}
@@ -184,6 +192,10 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 	sodr_time_stop(self->drive);
 
 	if (nb_read < 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while reading because %m"),
+			self->drive->vendor, self->drive->model, self->drive->index);
+
 		self->last_errno = errno;
 		self->media->nb_read_errors++;
 		return nb_read;
@@ -351,6 +363,10 @@ static ssize_t sodr_tape_drive_reader_read(struct so_stream_reader * io, void * 
 		sodr_time_stop(self->drive);
 
 		if (nb_read < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while reading because %m"),
+				self->drive->vendor, self->drive->model, self->drive->index);
+
 			self->last_errno = errno;
 			self->media->nb_read_errors++;
 			return nb_read;
@@ -401,6 +417,10 @@ static int sodr_tape_drive_reader_rewind(struct so_stream_reader * io) {
 	sodr_time_stop(self->drive);
 
 	if (failed != 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while rewinding tape because %m"),
+			self->drive->vendor, self->drive->model, self->drive->index);
+
 		self->last_errno = errno;
 		return failed;
 	}
