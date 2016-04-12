@@ -381,6 +381,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				free(volume_name);
 			}
 
+			char * volume_name = strdup(sl->volume_name);
 			sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 				dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d"),
 				changer->vendor, changer->model, sl->volume_name, sl->index, drive->index);
@@ -398,6 +399,8 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				so_json_encode_to_fd(response, peer->fd, true);
 				so_value_free(response);
 
+				free(volume_name);
+
 				if (current_peer == peer)
 					return false;
 				else
@@ -406,6 +409,8 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 					dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"),
 					changer->vendor, changer->model, drive->slot->volume_name, sl->index, drive->index);
+
+			free(volume_name);
 
 			drive->ops->lock(drive, peer->job_id);
 

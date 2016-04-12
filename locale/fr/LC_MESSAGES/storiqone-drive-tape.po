@@ -16,50 +16,75 @@ msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/tape_drive/device.c:210
+#: src/drive/tape_drive/device.c:159
+#, c-format
+msgid   "[%s | %s | #%u]: rewind tape (scsi version)"
+msgstr  "[ %s | %s | #%u ] : rembobinage de la bande (version scsi)"
+
+#: src/drive/tape_drive/device.c:170
+#, c-format
+msgid   "[%s | %s | #%u]: failed to rewind tape (scsi version)"
+msgstr  "[ %s | %s | #%u ] : échec du rembobinage de la bande (version scsi)"
+
+#: src/drive/tape_drive/device.c:181 src/drive/tape_drive/device.c:202
+#, c-format
+msgid   "[%s | %s | #%u]: rewind tape (using st driver)"
+msgstr  "[ %s | %s | #%u ] : rembobinage de la bande (utilisant le pilote st)"
+
+#: src/drive/tape_drive/device.c:191
+#, c-format
+msgid   "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"
+msgstr  "[ %s | %s | #%u ] : échec du rembobinage de la bande (utilisant le pilote st) parce que %m"
+
+#: src/drive/tape_drive/device.c:216
+#, c-format
+msgid   "[%s | %s | #%u]: error while reading header because %m"
+msgstr  "[ %s | %s | #%u ] : erreur en lisant l’entête parce que %m"
+
+#: src/drive/tape_drive/device.c:235
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : échec lors de l’analyse de l’entête du média « %s »"
 
-#: src/drive/tape_drive/device.c:309
+#: src/drive/tape_drive/device.c:334
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | n°%u ] : échec lors de la lecture de la mémoire auxiliaire du média"
 
-#: src/drive/tape_drive/device.c:341
+#: src/drive/tape_drive/device.c:360
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | n°%u ] : Effacement du média « %s » (mode: %s)"
 
-#: src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:351 src/drive/tape_drive/device.c:373
+#: src/drive/tape_drive/device.c:362 src/drive/tape_drive/device.c:370 src/drive/tape_drive/device.c:392
 msgid   "long"
 msgstr  "long"
 
-#: src/drive/tape_drive/device.c:343 src/drive/tape_drive/device.c:351 src/drive/tape_drive/device.c:373
+#: src/drive/tape_drive/device.c:362 src/drive/tape_drive/device.c:370 src/drive/tape_drive/device.c:392
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/drive/tape_drive/device.c:349
+#: src/drive/tape_drive/device.c:368
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | n°%u ] : Échec lors de l’effacement du média « %s » (mode: %s)"
 
-#: src/drive/tape_drive/device.c:371
+#: src/drive/tape_drive/device.c:390
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | n°%u ] : le média « %s » a été effacé avec succès (mode: %s)"
 
-#: src/drive/tape_drive/device.c:447
+#: src/drive/tape_drive/device.c:460
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | n°%u ] : taille de bloc trouvé : %zd"
 
-#: src/drive/tape_drive/device.c:485
+#: src/drive/tape_drive/device.c:503
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en lecture"
 
-#: src/drive/tape_drive/device.c:501
+#: src/drive/tape_drive/device.c:533
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en écriture"
@@ -79,7 +104,22 @@ msgstr  "[ %s | %s | n°%u ] : échec lors de l’ouverture du lecteur parce 
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:849
+#: src/drive/tape_drive/device.c:770
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d"
+
+#: src/drive/tape_drive/device.c:783 src/drive/tape_drive/device.c:801
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d a rencontré une erreur  « %m »"
+
+#: src/drive/tape_drive/device.c:805 src/drive/tape_drive/device.c:812
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
+
+#: src/drive/tape_drive/device.c:904
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | n°%u ] : Création d’un nouveau média (numéro de série du média : %s)"
@@ -338,11 +378,6 @@ msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s), débit : %s/s"
 msgid   "[%s | %s | #%u]: Found best block size: %s"
 msgstr  "[ %s | %s | n°%u ] : Meilleure taille de bloc trouvé : %s"
 
-#: src/drive/tape_drive/io/reader.c:155
-#, c-format
-msgid   "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"
-msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la position n°%u et le numéro d’enregistrement %ld"
-
 #: src/drive/tape_drive/io/writer.c:215
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
@@ -410,6 +445,24 @@ msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média �
 
 #: src/drive/tape_drive/util/scsi.c:859
 #, c-format
+msgid   "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"
+msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la position n°%u et le numéro d’enregistrement %ld"
+
+#: src/drive/tape_drive/reader.c:155
+#, c-format
+msgid   "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en avançant de %d blocks parce que %m"
+
+#: src/drive/tape_drive/reader.c:174 src/drive/tape_drive/reader.c:196 src/drive/tape_drive/reader.c:367
+#, c-format
+msgid   "[%s | %s | #%u]: error while reading because %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en lisant parce que %m"
+
+#: src/drive/tape_drive/reader.c:421
+#, c-format
+msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en rembobinant la bande parce que %m"
+
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Information du média %s, Fabricant du média: %s"
 
@@ -431,7 +484,17 @@ msgstr  "non"
 msgid   "yes"
 msgstr  "oui"
 
-#: src/drive/tape_drive/util/st.c:60
+#: src/drive/tape_drive/writer.c:175 src/drive/tape_drive/writer.c:360 src/drive/tape_drive/writer.c:394
+#, c-format
+msgid   "[%s | %s | #%u]: error while writing because %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %m"
+
+#: src/drive/tape_drive/writer.c:201
+#, c-format
+msgid   "[%s | %s | #%u]: error while writing end of file because %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de find de fichier parce que %m"
+
+#: src/drive/tape_drive/writer.c:215
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to get information of media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Échec lors de l’obtention des informations du média « %s »"
@@ -485,12 +548,3 @@ msgstr  "[ %s | %s | n°%u ] : Le positionnement du média « %s » depuis 
 #, c-format
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  "[ %s | %s | n°%u ] : Erreur lors de la fermeture du fichier parce que « %m »"
-
-#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d"
-#~ msgstr       "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d"
-
-#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
-#~ msgstr       "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d a rencontré une erreur  « %m »"
-
-#~ msgid        "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
-#~ msgstr       "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
