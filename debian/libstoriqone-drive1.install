@@ -1,0 +1,4 @@
+lib/libstoriqone-drive.so.* usr/lib
+
+usr/share/locale/es/LC_MESSAGES/libstoriqone-drive.mo
+usr/share/locale/fr/LC_MESSAGES/libstoriqone-drive.mo
