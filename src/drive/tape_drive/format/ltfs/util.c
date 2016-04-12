@@ -1217,17 +1217,17 @@ int sodr_tape_drive_format_ltfs_update_volume_coherency_info(int scsi_fd, struct
 	acsi->version = 0x01;
 
 	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'volume coherency information' on partion #%u on media '%s'"),
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'volume coherency information' on partition #%u on media '%s'"),
 		drive->vendor, drive->model, drive->index, part, media_name);
 
 	int failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &volume_coherency, part);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'volume coherency information' on partion #%u on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'volume coherency information' on partition #%u on media '%s'"),
 			drive->vendor, drive->model, drive->index, part, media_name);
 	else
 		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'volume coherency information' on partion #%u on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'volume coherency information' on partition #%u on media '%s'"),
 			drive->vendor, drive->model, drive->index, part, media_name);
 
 	return failed;

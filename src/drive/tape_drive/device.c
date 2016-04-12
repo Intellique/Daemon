@@ -156,7 +156,7 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	if (fd < 0)
 		return false;
 
-	sodr_log_add_record(peer, so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (scsi version)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
@@ -167,7 +167,7 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	close(fd);
 
 	if (failed != 0) {
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to rewind tape (scsi version)"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
@@ -178,7 +178,7 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	if (fd < 0)
 		return false;
 
-	sodr_log_add_record(peer, so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (using st driver)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
@@ -188,7 +188,7 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	sodr_time_stop(&sodr_tape_drive);
 
 	if (failed != 0) {
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
@@ -199,7 +199,7 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_reading;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
-	sodr_log_add_record(peer, so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
+	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (using st driver)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
@@ -213,7 +213,7 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
 	if (nb_read < 0) {
-		sodr_log_add_record(peer, so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while reading header because %m"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 

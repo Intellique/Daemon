@@ -89,7 +89,7 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 
 	if (partition != status.mt_resid) {
 		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partion from %lu to %u on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partition from %lu to %u on media '%s'"),
 			drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
 		drive->status = so_drive_status_positioning;
 		if (db != NULL)
@@ -106,7 +106,7 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 
 		if (failed != 0) {
 			sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partion from %lu to %u on media '%s' because %m"),
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u on media '%s' because %m"),
 				drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
 
 			return failed;
