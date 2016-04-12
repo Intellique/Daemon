@@ -50,8 +50,8 @@ endif
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O2 -ggdb3 -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Wformat-security -Werror=format-security -fstack-protector --param ssp-buffer-size=4 $(addprefix -I,${INCLUDE_DIR})
-LDFLAGS		:=
+CFLAGS		:= -std=gnu99 -pipe -O2 -ggdb3 -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Wformat -Wformat-security -Werror=format-security -fstack-protector-strong -fstack-protector --param ssp-buffer-size=4 $(addprefix -I,${INCLUDE_DIR})
+LDFLAGS		:= -Wl,-z,relro,-z,now
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
