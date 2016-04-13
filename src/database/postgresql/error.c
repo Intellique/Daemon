@@ -41,7 +41,7 @@
 void so_database_postgresql_get_error(PGresult * result, const char * prepared_query) {
 	char * error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
 	if (error_code != NULL) {
-		so_log_write2(so_log_level_error, so_log_type_plugin_db,
+		so_log_write(so_log_level_error,
 			gettext("PSQL: error code => %s"),
 			error_code);
 	}
@@ -49,9 +49,9 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
 	if (error != NULL) {
 		if (prepared_query != NULL)
-			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error {%s} => %s"), prepared_query, error);
+			so_log_write(so_log_level_error, gettext("PSQL: error {%s} => %s"), prepared_query, error);
 		else
-			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error => %s"), error);
+			so_log_write(so_log_level_error, gettext("PSQL: error => %s"), error);
 	}
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
@@ -60,7 +60,7 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		char * ptr = NULL;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
-			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: detail => %s"), line);
+			so_log_write(so_log_level_error, gettext("PSQL: detail => %s"), line);
 			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);
@@ -72,7 +72,7 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		char * ptr = NULL;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
-			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: hint => %s"), line);
+			so_log_write(so_log_level_error, gettext("PSQL: hint => %s"), line);
 			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);

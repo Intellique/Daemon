@@ -66,17 +66,12 @@ static const char * so_log_postgresql_levels[] = {
 };
 
 static const char * so_log_postgresql_types[] = {
-	[so_log_type_changer]         = "changer",
-	[so_log_type_daemon]          = "daemon",
-	[so_log_type_drive]           = "drive",
-	[so_log_type_job]             = "job",
-	[so_log_type_logger]          = "logger",
-	[so_log_type_plugin_checksum] = "plugin checksum",
-	[so_log_type_plugin_db]       = "plugin db",
-	[so_log_type_plugin_log]      = "plugin log",
-	[so_log_type_scheduler]       = "scheduler",
-	[so_log_type_ui]              = "ui",
-	[so_log_type_user_message]    = "user message",
+	[so_log_type_changer]         = "StoriqOne Changer",
+	[so_log_type_daemon]          = "StoriqOne Daemon",
+	[so_log_type_drive]           = "StoriqOne Drive",
+	[so_log_type_job]             = "StoriqOne Job",
+	[so_log_type_logger]          = "StoriqOne Logger",
+	[so_log_type_www]             = "StoriqOne WWW",
 };
 
 
@@ -142,9 +137,6 @@ struct solgr_log_module * so_log_postgresql_new_module(struct so_value * params)
 		return NULL;
 	}
 
-	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host) VALUES ($1, $2, $3, $4, $5)", 0, NULL);
-	PQclear(prepare);
-
 	so_log_postgresql_module_prepare_queries(connect);
 
 	struct so_log_postgresql_private * self = malloc(sizeof(struct so_log_postgresql_private));
@@ -160,7 +152,7 @@ struct solgr_log_module * so_log_postgresql_new_module(struct so_value * params)
 }
 
 static void so_log_postgresql_module_prepare_queries(PGconn * connection) {
-	PGresult * prepare = PQprepare(connection, "insert_log", "INSERT INTO log(type, level, time, message, host) VALUES ($1, $2, $3, $4, $5)", 0, NULL);
+	PGresult * prepare = PQprepare(connection, "insert_log", "WITH app AS (SELECT id FROM application WHERE name = $1 LIMIT 1) INSERT INTO log(application, level, time, message, host) SELECT app.id, $2::loglevel, $3::TIMESTAMPTZ, $4::TEXT, $5::INTEGER FROM app", 0, NULL);
 	PQclear(prepare);
 }
 

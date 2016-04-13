@@ -68,11 +68,11 @@ struct so_value * soctl_detect_hardware() {
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
 	if (gl.gl_pathc == 0) {
-		so_log_write2(so_log_level_notice, so_log_type_user_message, "There is drive found");
+		so_log_write(so_log_level_notice, "There is drive found");
 		return changers;
 	}
 
-	so_log_write2(so_log_level_info, so_log_type_user_message, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	so_log_write(so_log_level_info, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 	printf(ngettext("storiqonectl: Found %zd drive\n", "storiqonectl: Found %zd drives\n", gl.gl_pathc), gl.gl_pathc);
 
 	struct so_value * drives = so_value_new_hashtable2();
@@ -155,7 +155,7 @@ struct so_value * soctl_detect_hardware() {
 
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
 
-	so_log_write2(so_log_level_info, so_log_type_user_message, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	so_log_write(so_log_level_info, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 	printf(ngettext("storiqonectl: Found %zd changer\n", "storiqonectl: Found %zd changers\n", gl.gl_pathc), gl.gl_pathc);
 
 	for (i = 0; i < gl.gl_pathc; i++) {

@@ -26,6 +26,13 @@ INSERT INTO DriveFormatSupport(driveFormat, mediaFormat, read, write) VALUES
 	(4, 5, TRUE, TRUE),
 	(5, 5, TRUE, TRUE);
 
+INSERT INTO Application(name) VALUES
+    ('StoriqOne Changer'),
+    ('StoriqOne Daemon'),
+    ('StoriqOne Drive'),
+    ('StoriqOne Job'),
+    ('StoriqOne Logger');
+
 INSERT INTO ArchiveFormat(name, readable, writable) VALUES
     ('Storiq One (TAR)', TRUE, TRUE);
 

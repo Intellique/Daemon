@@ -116,28 +116,11 @@ enum so_log_type {
 	 */
 	so_log_type_job = 0x4,
 	so_log_type_logger = 0x5,
-	/**
-	 * \brief used by checksum module
-	 */
-	so_log_type_plugin_checksum = 0x6,
-	/**
-	 * \brief used by database module
-	 */
-	so_log_type_plugin_db = 0x7,
-	/**
-	 * \brief used by log module
-	 */
-	so_log_type_plugin_log = 0x8,
-	/**
-	 * \brief used by scheduler
-	 */
-	so_log_type_scheduler = 0x9,
 
 	/**
 	 * \brief used by user interface
 	 */
-	so_log_type_ui = 0xa,
-	so_log_type_user_message = 0xb,
+	so_log_type_www = 0x6,
 
 	/**
 	 * \brief Should not be used
