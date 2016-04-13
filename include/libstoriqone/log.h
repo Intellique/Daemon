@@ -120,7 +120,7 @@ enum so_log_type {
 	/**
 	 * \brief used by user interface
 	 */
-	so_log_type_www = 0xa,
+	so_log_type_www = 0x6,
 
 	/**
 	 * \brief Should not be used
