@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-18 11:30+0100\n"
+        "POT-Creation-Date: 2016-04-12 17:11+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -34,29 +34,29 @@ msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il n’y a 
 msgid   "PSQL: error while creating a savepoint => %s"
 msgstr  "PSQL : erreur lors de la création d’un point de sauvegarde => %s"
 
-#: src/database/postgresql/connection.c:385
+#: src/database/postgresql/connection.c:386
 msgid   "PSQL: Rolling back transaction because current transaction encountered an error"
 msgstr  "PSQL : Annulation de la transaction parce qu’elle est en erreur"
 
-#: src/database/postgresql/connection.c:494
+#: src/database/postgresql/connection.c:496
 #, c-format
 msgid   "PSQL: Host not found into database (%s)"
 msgstr  "PSQL : Hôte non trouvé dans la base de données (%s)"
 
-#: src/database/postgresql/connection.c:1457
+#: src/database/postgresql/connection.c:1461
 msgid   "PSQL: error while synchronizing drive with database"
 msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base de données"
 
-#: src/database/postgresql/connection.c:1478 src/database/postgresql/connection.c:1491
+#: src/database/postgresql/connection.c:1483 src/database/postgresql/connection.c:1497
 msgid   "PSQL: error while synchronizing changer slots with database"
 msgstr  "PSQL : erreur lors de la synchronisation des emplacements d’une librairie de bande avec la base de données"
 
-#: src/database/postgresql/connection.c:3005
+#: src/database/postgresql/connection.c:3011
 #, c-format
 msgid   "Checking '%s'"
 msgstr  "Vérification « %s »"
 
-#: src/database/postgresql/connection.c:4645
+#: src/database/postgresql/connection.c:4651
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"

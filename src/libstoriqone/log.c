@@ -107,13 +107,8 @@ static struct so_log_type2 {
 	[so_log_type_drive]           = { 0, 0, gettext_noop("Drive"),           NULL, so_log_type_drive },
 	[so_log_type_job]             = { 0, 0, gettext_noop("Job"),             NULL, so_log_type_job },
 	[so_log_type_logger]          = { 0, 0, gettext_noop("Logger"),          NULL, so_log_type_logger },
-	[so_log_type_plugin_checksum] = { 0, 0, gettext_noop("Checksum Plugin"), NULL, so_log_type_plugin_checksum },
-	[so_log_type_plugin_db]       = { 0, 0, gettext_noop("Database Plugin"), NULL, so_log_type_plugin_db },
-	[so_log_type_plugin_log]      = { 0, 0, gettext_noop("Log Plugin"),      NULL, so_log_type_plugin_log },
-	[so_log_type_scheduler]       = { 0, 0, gettext_noop("Scheduler"),       NULL, so_log_type_scheduler },
 
-	[so_log_type_ui]	          = { 0, 0, gettext_noop("User Interface"), NULL, so_log_type_ui },
-	[so_log_type_user_message]    = { 0, 0, gettext_noop("User Message"),   NULL, so_log_type_user_message },
+	[so_log_type_www] = { 0, 0, gettext_noop("User Interface"), NULL, so_log_type_www },
 
 	[so_log_type_unknown]         = { 0, 0, gettext_noop("Unknown type"), NULL, so_log_type_unknown },
 };
