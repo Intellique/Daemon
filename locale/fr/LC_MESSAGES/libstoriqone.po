@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-29 20:09+0100\n"
+        "POT-Creation-Date: 2016-04-12 17:11+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -524,31 +524,11 @@ msgstr  "Tâche"
 msgid   "Logger"
 msgstr  "Enregistreur"
 
-#: src/libstoriqone/log.c:110
-msgid   "Checksum Plugin"
-msgstr  "Greffon de somme de contrôle"
-
 #: src/libstoriqone/log.c:111
-msgid   "Database Plugin"
-msgstr  "Greffon de la base de données"
-
-#: src/libstoriqone/log.c:112
-msgid   "Log Plugin"
-msgstr  "Greffon d’enregistrement"
-
-#: src/libstoriqone/log.c:113
-msgid   "Scheduler"
-msgstr  "Ordonnanceur"
-
-#: src/libstoriqone/log.c:115
 msgid   "User Interface"
 msgstr  "Interface utilisateur"
 
-#: src/libstoriqone/log.c:116
-msgid   "User Message"
-msgstr  "Message utilisateur"
-
-#: src/libstoriqone/log.c:118
+#: src/libstoriqone/log.c:113
 msgid   "Unknown type"
 msgstr  "Type inconnu"
 

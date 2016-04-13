@@ -143,7 +143,7 @@ static void solgr_file_module_check_logrotate(struct logger_log_file_private * s
 		self->fd = open(self->path, O_WRONLY | O_APPEND | O_CREAT, 0640);
 		fstat(self->fd, &self->current);
 
-		solgr_log_write2(so_log_level_notice, so_log_type_plugin_log, gettext("Log: file: logrotate detected"));
+		solgr_log_write2(so_log_level_notice, so_log_type_logger, gettext("Log: file: logrotate detected"));
 	}
 }
 
