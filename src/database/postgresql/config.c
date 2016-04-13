@@ -144,7 +144,7 @@ static int so_database_postgresql_ping(struct so_database_config * db_config) {
 	int server_version_minor = server_version_major % 100;
 	server_version_major /= 100;
 
-	so_log_write2(so_log_level_info, so_log_type_plugin_db, "Ping postgresql v.%d.%d.%d (using protocol version %d)", server_version_major, server_version_minor, server_version_rev, protocol_version);
+	so_log_write(so_log_level_info, "Ping postgresql v.%d.%d.%d (using protocol version %d)", server_version_major, server_version_minor, server_version_rev, protocol_version);
 
 	PQfinish(connect);
 

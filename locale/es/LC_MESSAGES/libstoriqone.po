@@ -519,31 +519,11 @@ msgstr  "Tarea"
 msgid   "Logger"
 msgstr  "Registrador"
 
-#: src/libstoriqone/log.c:110
-msgid   "Checksum Plugin"
-msgstr  "Complemento suma de comprobación"
-
 #: src/libstoriqone/log.c:111
-msgid   "Database Plugin"
-msgstr  "Complemento base de datos"
-
-#: src/libstoriqone/log.c:112
-msgid   "Log Plugin"
-msgstr  "Complemento registrador"
-
-#: src/libstoriqone/log.c:113
-msgid   "Scheduler"
-msgstr  "Programador"
-
-#: src/libstoriqone/log.c:115
 msgid   "User Interface"
 msgstr  "Interfaz Usuario"
 
-#: src/libstoriqone/log.c:116
-msgid   "User Message"
-msgstr  "Mensaje usuario"
-
-#: src/libstoriqone/log.c:118
+#: src/libstoriqone/log.c:113
 msgid   "Unknown type"
 msgstr  "Tipo desconocido"
 

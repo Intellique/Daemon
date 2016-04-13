@@ -86,20 +86,6 @@ CREATE TYPE LogLevel AS ENUM (
     'warning'
 );
 
-CREATE TYPE LogType AS ENUM (
-    'changer',
-    'daemon',
-    'drive',
-    'job',
-    'logger',
-    'plugin checksum',
-    'plugin db',
-    'plugin log',
-    'scheduler',
-    'ui',
-    'user message'
-);
-
 CREATE TYPE MediaFormatDataType AS ENUM (
     'audio',
     'cleaning',
@@ -685,10 +671,17 @@ CREATE TABLE JobToSelectedFile (
     PRIMARY KEY (job, selectedFile)
 );
 
+CREATE TABLE Application (
+    id SERIAL NOT NULL PRIMARY KEY,
+
+    name TEXT NOT NULL UNIQUE,
+    apiKey UUID UNIQUE
+);
+
 CREATE TABLE Log (
     id BIGSERIAL PRIMARY KEY,
 
-    type LogType NOT NULL,
+    application INTEGER NOT NULL REFERENCES Application(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     level LogLevel NOT NULL,
     time TIMESTAMP(3) WITH TIME ZONE NOT NULL,
     message TEXT NOT NULL,
