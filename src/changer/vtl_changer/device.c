@@ -52,6 +52,7 @@
 #include <libstoriqone-changer/media.h>
 
 #include "device.h"
+#include "script.h"
 #include "util.h"
 
 static struct sochgr_vtl_drive * sochgr_vtl_drives = NULL;
@@ -449,7 +450,7 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		sochgr_drive_register(drive, dr_p->params, "vtl_drive");
 	}
 
-	return 0;
+	return sochgr_vtl_script_init(sochgr_vtl_root_dir);
 
 init_error:
 	free(sochgr_vtl_root_dir);
@@ -511,6 +512,16 @@ static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_con
 	sochgr_vtl_changer.status = so_changer_status_go_offline;
 	db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
 
+	int failed = sochgr_vtl_script_pre_offline(&sochgr_vtl_changer, sochgr_vtl_root_dir);
+	if (failed != 0) {
+		sochgr_vtl_changer.status = so_changer_status_offline;
+		sochgr_vtl_changer.is_online = false;
+		sochgr_vtl_changer.next_action = so_changer_action_none;
+		db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
+
+		return failed;
+	}
+
 retry:
 	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
 		struct so_drive * dr = sochgr_vtl_changer.drives + i;
@@ -536,7 +547,9 @@ retry:
 		sl->full = false;
 	}
 
-	sochgr_vtl_changer.status = so_changer_status_offline;
+	failed = sochgr_vtl_script_post_offline(&sochgr_vtl_changer, sochgr_vtl_root_dir);
+
+	sochgr_vtl_changer.status = failed != 0 ? so_changer_status_error : so_changer_status_offline;
 	sochgr_vtl_changer.is_online = false;
 	sochgr_vtl_changer.next_action = so_changer_action_none;
 	db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
@@ -547,6 +560,16 @@ retry:
 static int sochgr_vtl_changer_put_online(struct so_database_connection * db_connection) {
 	sochgr_vtl_changer.status = so_changer_status_go_online;
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+
+	int failed = sochgr_vtl_script_pre_online(&sochgr_vtl_changer, sochgr_vtl_root_dir);
+	if (failed != 0) {
+		sochgr_vtl_changer.status = so_changer_status_offline;
+		sochgr_vtl_changer.is_online = false;
+		sochgr_vtl_changer.next_action = so_changer_action_none;
+		db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+
+		return failed;
+	}
 
 	unsigned int i, j;
 	for (i = 0, j = sochgr_vtl_changer.nb_drives; j < sochgr_vtl_changer.nb_slots; i++, j++) {
@@ -576,12 +599,14 @@ static int sochgr_vtl_changer_put_online(struct so_database_connection * db_conn
 		free(serial_file);
 	}
 
-	sochgr_vtl_changer.status = so_changer_status_idle;
-	sochgr_vtl_changer.is_online = true;
+	failed = sochgr_vtl_script_post_online(&sochgr_vtl_changer, sochgr_vtl_root_dir);
+
+	sochgr_vtl_changer.status = failed != 0 ? so_changer_status_error : so_changer_status_idle;
+	sochgr_vtl_changer.is_online = failed == 0;
 	sochgr_vtl_changer.next_action = so_changer_action_none;
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
 
-	return 0;
+	return failed;
 }
 
 static int sochgr_vtl_changer_shut_down(struct so_database_connection * db_connection) {
