@@ -84,7 +84,12 @@ msgstr  "Error, intento al crear un archivo \"%s\" en un pool suprimido \"%s\""
 msgid   "Error, can't add file to the archive '%s' because it should be synchronized first"
 msgstr  "Error, no puede añadir el fichero en el archivo \"%s\" porque éste no está sincronizado"
 
-#: src/job/create-archive/create-archive.c:418
+#: src/job/create-archive/create-archive.c:328
+#, c-format
+msgid   "Space required (%s) for creating new archive '%s'"
+msgstr  "Espacio requerido (%s) para crear un nuevo archivo \"%s\""
+
+#: src/job/create-archive/create-archive.c:334
 #, c-format
 msgid   "Error: not enought space available in pool (%s)"
 msgstr  "Error: no hay espacio suficiente en el pool (%s)"
@@ -93,11 +98,6 @@ msgstr  "Error: no hay espacio suficiente en el pool (%s)"
 #, c-format
 msgid   "Warning, skipping archive '%s' from pool '%s' because this archive is not synchronized"
 msgstr  "Atención, el archivo \"%s\" del pool \"%s\" porque el archivo no está sincronizado"
-
-#: src/job/create-archive/create-archive.c:440
-#, c-format
-msgid   "Space required (%s) for creating new archive '%s'"
-msgstr  "Espacio requerido (%s) para crear un nuevo archivo \"%s\""
 
 #: src/job/create-archive/create-archive.c:445
 #, c-format

@@ -412,6 +412,10 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 			return 1;
 		}
 
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Space required (%s) for creating new archive '%s'"),
+			sarchive_size, job->name);
+
 		ssize_t reserved = soj_media_prepare(pool, archive_size, db_connect);
 		if (reserved < archive_size) {
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -435,10 +439,6 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 					archive->name, archive->volumes->media->pool->name);
 		}
 		so_value_iterator_free(iter);
-
-		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-			dgettext("storiqone-job-create-archive", "Space required (%s) for creating new archive '%s'"),
-			sarchive_size, job->name);
 	} else {
 		if (primary_pool->deleted) {
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -446,6 +446,10 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 				primary_pool->name);
 			return 1;
 		}
+
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Space required (%s) to add to archive '%s'"),
+			sarchive_size, job->name);
 
 		ssize_t reserved = soj_media_prepare(primary_pool, archive_size, db_connect);
 		if (reserved < archive_size) {
@@ -456,10 +460,6 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 		}
 
 		pool_mirrors = db_connect->ops->get_pool_by_pool_mirror(db_connect, primary_pool);
-
-		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-			dgettext("storiqone-job-create-archive", "Space required (%s) to add to archive '%s'"),
-			sarchive_size, job->name);
 	}
 
 	return 0;
