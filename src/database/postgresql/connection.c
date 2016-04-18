@@ -3820,7 +3820,7 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 		so_database_postgresql_prepare(self, query_update, "UPDATE metadata SET value = to_json($3) WHERE id = $1 AND type = 'archive' AND key = $2");
 
 		const char * query_insert = "insert_archive_metadata";
-		so_database_postgresql_prepare(self, query_insert, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata(id, type, key, value, login) SELECT $1, 'archive', $2, $3, owner FROM a");
+		so_database_postgresql_prepare(self, query_insert, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata(id, type, key, value, login) SELECT $1, 'archive', $2::TEXT, to_json($3), owner FROM a");
 
 		struct so_value_iterator * iter = so_value_hashtable_get_iterator(archive->metadata);
 		while (so_value_iterator_has_next(iter)) {
@@ -3977,7 +3977,7 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 
 	if (file->metadata != NULL) {
 		const char * query_meta = "insert_archivefile_metadata";
-		so_database_postgresql_prepare(self, query_meta, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata(id, type, key, value, login) SELECT $2, 'archivefile', $3, $4, owner FROM a");
+		so_database_postgresql_prepare(self, query_meta, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata(id, type, key, value, login) SELECT $2, 'archivefile', $3::TEXT, to_json($4), owner FROM a");
 
 		struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->metadata);
 		while (so_value_iterator_has_next(iter)) {
