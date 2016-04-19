@@ -81,13 +81,13 @@ int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_databas
 	return failed;
 }
 
-int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, struct so_database_connection * db) {
+int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, bool force, struct so_database_connection * db) {
 	struct so_media * media = drive->slot->media;
 
 	struct mtget status;
 	int failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
 
-	if (partition != status.mt_resid) {
+	if (force || partition != status.mt_resid) {
 		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partition from %lu to %u on media '%s'"),
 			drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);

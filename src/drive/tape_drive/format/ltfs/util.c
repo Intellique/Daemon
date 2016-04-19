@@ -102,7 +102,7 @@ struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * me
 
 	struct so_value * root = sodr_tape_drive_format_ltfs_convert_index_inner(&mp->data.ltfs.root);
 
-	return so_value_pack("{sss{ss}s[{ssss}{ssss}{sssz}{ssss}{s[{ssss}{sssz}]ss}{s[{sssz}]ss}{sssb}{sssz}o]}",
+	return so_value_pack("{sss{ss}s[{ssss}{ssss}{sssz}{ssss}{s[{ssss}{sssz}]ss}{s[{ssss}{sssz}]ss}{sssb}{sssz}o]}",
 		"name", "ltfsindex",
 		"attributes",
 			"version", "2.2.0",
@@ -125,7 +125,7 @@ struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * me
 
 				"name", "startblock",
 				"value", current_position->block_position,
-			"name", "location"
+			"name", "location",
 
 			"children",
 				"name", "partition",
@@ -133,7 +133,7 @@ struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * me
 
 				"name", "startblock",
 				"value", previous_vcr->block_position_of_last_index,
-			"name", "previousgenerationlocation"
+			"name", "previousgenerationlocation",
 
 			"name", "allowpolicyupdate",
 			"value", false,
@@ -690,6 +690,8 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	};
 
 	struct sodr_tape_drive_format_ltfs * self = &mp->data.ltfs;
+	self->highest_file_uid = 1;
+
 	struct so_value_iterator * iter = so_value_list_get_iterator(files);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * file = so_value_iterator_get_value(iter, false);

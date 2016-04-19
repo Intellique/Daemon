@@ -87,7 +87,7 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_position(struct so_format_writ
 static struct so_format_reader * sodr_tape_drive_format_ltfs_writer_reopen(struct so_format_writer * fw);
 static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t sodr_tape_drive_format_ltfs_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
-static ssize_t sodr_tape_drive_format_ltfs_write_metadata(struct so_format_writer * fw, struct so_value * metadata);
+static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_format_writer * fw, struct so_value * metadata);
 
 static struct so_format_writer_ops sodr_tape_drive_format_ltfs_writer_ops = {
 	.add_file             = sodr_tape_drive_format_ltfs_writer_add_file,
@@ -105,7 +105,7 @@ static struct so_format_writer_ops sodr_tape_drive_format_ltfs_writer_ops = {
 	.reopen               = sodr_tape_drive_format_ltfs_writer_reopen,
 	.restart_file         = sodr_tape_drive_format_ltfs_writer_restart_file,
 	.write                = sodr_tape_drive_format_ltfs_writer_write,
-	.write_metadata       = sodr_tape_drive_format_ltfs_write_metadata,
+	.write_metadata       = sodr_tape_drive_format_ltfs_writer_write_metadata,
 };
 
 
@@ -122,6 +122,7 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 	self->drive = drive;
 	self->media = media;
 	self->ltfs_info = &mp->data.ltfs;
+	self->writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, -1, false, NULL);
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));
 	writer->ops = &sodr_tape_drive_format_ltfs_writer_ops;
@@ -216,10 +217,13 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 			if (S_ISREG(file->mode)) {
 				child_node->extents = malloc(sizeof(struct sodr_tape_drive_format_ltfs_extent));
 				bzero(child_node->extents, sizeof(struct sodr_tape_drive_format_ltfs_extent));
+				child_node->nb_extents = 1;
 
 				child_node->extents->partition = position.partition;
 				child_node->extents->start_block = position.block_position;
 			}
+
+			self->current_file = child_node;
 
 			break;
 		}
@@ -387,7 +391,7 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write(struct so_format_writer 
 	return nb_write;
 }
 
-static ssize_t sodr_tape_drive_format_ltfs_write_metadata(struct so_format_writer * fw, struct so_value * metadata) {
+static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_format_writer * fw, struct so_value * metadata) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
 
 	struct so_value * config = so_config_get();

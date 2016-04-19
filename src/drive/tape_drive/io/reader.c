@@ -268,7 +268,7 @@ struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive 
 	if (block_size < 0)
 		return NULL;
 
-	int failed = sodr_tape_drive_st_set_position(drive, fd, partition, file_position, db);
+	int failed = sodr_tape_drive_st_set_position(drive, fd, partition, file_position, false, db);
 	if (failed != 0)
 		return NULL;
 

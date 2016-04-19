@@ -331,7 +331,7 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive 
 struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer2(struct so_drive * drive, int fd, int partition, int file_position, bool fill_last_block, struct so_database_connection * db) {
 	ssize_t block_size = sodr_tape_drive_get_block_size(db);
 
-	int failed = sodr_tape_drive_st_set_position(drive, fd, partition, file_position, db);
+	int failed = sodr_tape_drive_st_set_position(drive, fd, partition, file_position, false, db);
 	if (failed != 0)
 		return NULL;
 

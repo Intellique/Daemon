@@ -285,14 +285,14 @@ static unsigned int sodr_tape_drive_count_archives(const bool * const disconnect
 }
 
 static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_writer * writer = sodr_tape_drive_get_raw_writer(db);
+	struct so_format_writer * writer = sodr_tape_drive_get_writer(checksums, db);
 	if (writer == NULL)
 		return NULL;
 
 	volume->media = sodr_tape_drive.slot->media;
 	volume->media_position = writer->ops->file_position(writer);
 
-	return so_format_tar_new_writer(writer, checksums);
+	return writer;
 }
 
 static void sodr_tape_drive_create_media(struct so_database_connection * db) {
@@ -436,7 +436,13 @@ ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db) {
 	if (fd < 0)
 		return -1;
 
-	int failed = sodr_tape_drive_st_rewind(&sodr_tape_drive, fd, db);
+	int failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, true, db);
+	if (failed != 0) {
+		close(fd);
+		return failed;
+	}
+
+	failed = sodr_tape_drive_st_rewind(&sodr_tape_drive, fd, db);
 	if (failed != 0) {
 		close(fd);
 		return failed;
@@ -958,7 +964,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 									close(fd);
 								}
 							}
-							close(fd);
+							close(scsi_fd);
 						}
 					}
 				}
