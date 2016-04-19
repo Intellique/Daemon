@@ -53,7 +53,7 @@ int sodr_log_add_record(enum so_job_status status, struct so_database_connection
 
 	int failed = 0;
 
-	if (peer != NULL)
+	if (peer != NULL && db_connect != NULL)
 		failed = db_connect->ops->add_job_record2(db_connect, peer->job_id, peer->job_num_run, status, level, notif, message);
 
 	free(message);
