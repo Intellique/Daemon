@@ -230,6 +230,8 @@ int main(int argc __attribute__((unused)), char ** argv) {
 		dgettext("libstoriqone-job", "Initializing job (type: %s)"),
 		job_dr->name);
 
+	job->step = so_job_run_step_warm_up;
+
 	db_connect->ops->sync_job(db_connect, job);
 	db_connect->ops->start_job(db_connect, job);
 
