@@ -144,6 +144,8 @@ unsigned int so_string_convert_utf8_to_unicode(const char * character);
  */
 void so_string_delete_double_char(char * str, char delete_char);
 
+char * so_string_dup_and_fix(const char * str);
+
 const struct so_string_character * so_string_get_character_info(unsigned int unicode_character);
 
 void so_string_middle_elipsis(char * string, size_t length);
