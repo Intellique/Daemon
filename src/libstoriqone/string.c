@@ -99,25 +99,25 @@ unsigned long long so_string_compute_hash3(const char * str) {
 }
 
 bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string) {
-	if (unicode < 0x80 && length > 1) {
+	if (unicode < 0x80 && length > (end_string ? 1 : 0)) {
 		string[0] = unicode & 0x7F;
 		if (end_string)
 			string[1] = '\0';
 		return true;
-	} else if (unicode < 0x800 && length > 2) {
+	} else if (unicode < 0x800 && length > (end_string ? 2 : 1)) {
 		string[0] = ((unicode & 0x7C0) >> 6) | 0xC0;
 		string[1] = (unicode & 0x3F) | 0x80;
 		if (end_string)
 			string[2] = '\0';
 		return true;
-	} else if (unicode < 0x10000 && length > 3) {
+	} else if (unicode < 0x10000 && length > (end_string ? 3 : 2)) {
 		string[0] = ((unicode & 0xF000) >> 12) | 0xE0;
 		string[1] = ((unicode & 0xFC0) >> 6) | 0x80;
 		string[2] = (unicode & 0x3F) | 0x80;
 		if (end_string)
 			string[3] = '\0';
 		return true;
-	} else if (unicode < 0x200000 && length > 4) {
+	} else if (unicode < 0x200000 && length > (end_string ? 4 : 3)) {
 		string[0] = ((unicode & 0x1C0000) >> 18) | 0xF0;
 		string[1] = ((unicode & 0x3F000) >> 12) | 0x80;
 		string[2] = ((unicode & 0xFC0) >> 6) | 0x80;
@@ -168,6 +168,53 @@ void so_string_delete_double_char(char * str, char delete_char) {
 
 		ptr = strstr(ptr, double_char);
 	}
+}
+
+char * so_string_dup_and_fix(const char * str) {
+	if (str == NULL)
+		return NULL;
+
+	const char * ptr = str;
+	int length = 0;
+	while (*ptr != 0) {
+		int size = so_string_valid_utf8_char(ptr);
+
+		if (size > 0) {
+			ptr += size;
+			length += size;
+		} else {
+			unsigned char character = *ptr;
+			length += so_string_unicode_length(0xE000 | character);
+			ptr++;
+		}
+	}
+
+	ptr = str;
+	char * dup_str = malloc(length + 1);
+	int copied = 0;
+
+	while (*ptr != 0) {
+		int size = so_string_valid_utf8_char(ptr);
+
+		if (size < 1) {
+			unsigned char character = *ptr;
+			so_string_convert_unicode_to_utf8(0xE000 | character, dup_str + copied, length - copied, false);
+
+			size = 1;
+			copied += so_string_unicode_length(0xE000 | character);
+		} else {
+			int i;
+			for (i = 0; i < size; i++)
+				dup_str[copied + i] = ptr[i];
+		}
+
+		ptr += size;
+		copied += size;
+	}
+
+	dup_str[copied] = '\0';
+
+	return dup_str;
 }
 
 const struct so_string_character * so_string_get_character_info(unsigned int unicode_character) {
