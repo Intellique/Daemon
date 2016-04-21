@@ -360,7 +360,7 @@ char * so_string_unescape(const char * str) {
 	int copied = 0;
 
 	while (*str != '\0') {
-		size_t utf8_length = so_string_utf8_length(str);
+		size_t utf8_length = so_string_valid_utf8_char(str);
 		unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
 
 		if ((unicode_char & 0xE080) == 0xE080) {
