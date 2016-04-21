@@ -164,6 +164,8 @@ void so_string_to_lowercase(char * str);
 
 void so_string_to_uppercase(char * str);
 
+char * so_string_unescape(const char * str);
+
 /**
  * \brief Remove characters \a trim at the beginning and at the end of \a str
  *
