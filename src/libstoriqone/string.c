@@ -350,6 +350,38 @@ void so_string_to_uppercase(char * str) {
 	}
 }
 
+char * so_string_unescape(const char * str) {
+	if (str == NULL)
+		return NULL;
+
+	size_t length = strlen(str);
+	char * dup_str = malloc(length + 1);
+
+	int copied = 0;
+
+	while (*str != '\0') {
+		size_t utf8_length = so_string_utf8_length(str);
+		unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
+
+		if ((unicode_char & 0xE080) == 0xE080) {
+			dup_str[copied] = unicode_char & 0xFF;
+			copied++;
+		} else {
+			unsigned int i;
+			for (i = 0; i < utf8_length; i++) {
+				dup_str[copied] = str[i];
+				copied++;
+			}
+		}
+
+		str += utf8_length;
+	}
+
+	dup_str[copied] = '\0';
+
+	return dup_str;
+}
+
 size_t so_string_unicode_length(unsigned int unicode) {
 	if (unicode < 0x80)
 		return 1;
