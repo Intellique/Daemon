@@ -170,9 +170,12 @@ void so_string_delete_double_char(char * str, char delete_char) {
 	}
 }
 
-char * so_string_dup_and_fix(const char * str) {
+char * so_string_dup_and_fix(const char * str, bool * fixed) {
 	if (str == NULL)
 		return NULL;
+
+	if (fixed != NULL)
+		*fixed = false;
 
 	const char * ptr = str;
 	int length = 0;
@@ -184,7 +187,7 @@ char * so_string_dup_and_fix(const char * str) {
 			length += size;
 		} else {
 			unsigned char character = *ptr;
-			length += so_string_unicode_length(0xE000 | character);
+			length += so_string_unicode_length(0xE000 + character);
 			ptr++;
 		}
 	}
@@ -198,18 +201,22 @@ char * so_string_dup_and_fix(const char * str) {
 
 		if (size < 1) {
 			unsigned char character = *ptr;
-			so_string_convert_unicode_to_utf8(0xE000 | character, dup_str + copied, length - copied, false);
+			so_string_convert_unicode_to_utf8(0xE000 + character, dup_str + copied, length - copied, false);
 
 			size = 1;
-			copied += so_string_unicode_length(0xE000 | character);
+			ptr++;
+			copied += so_string_unicode_length(0xE000 + character);
+
+			if (fixed != NULL)
+				*fixed = true;
 		} else {
 			int i;
 			for (i = 0; i < size; i++)
 				dup_str[copied + i] = ptr[i];
-		}
 
-		ptr += size;
-		copied += size;
+			ptr += size;
+			copied += size;
+		}
 	}
 
 	dup_str[copied] = '\0';
