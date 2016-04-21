@@ -274,7 +274,7 @@ ssize_t so_json_encode_to_fd(struct so_value * val, int fd, bool use_buffer) {
 
 							const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
 							if (char_info->category == so_string_character_category_other)
-								nb_write += dprintf(fd, "\\u%04u", unicode_char);
+								nb_write += dprintf(fd, "\\u%04x", unicode_char);
 							else
 								nb_write += dprintf(fd, "%.*s", utf8_length, str);
 
@@ -417,7 +417,7 @@ static ssize_t so_json_encode_to_string_inner(struct so_value * val, char * buff
 
 						const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
 						if (char_info->category == so_string_character_category_other)
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\u%04u", unicode_char);
+							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\u%04x", unicode_char);
 						else
 							nb_write += snprintf(buffer + nb_write, length - nb_write, "%.*s", utf8_length, str);
 
