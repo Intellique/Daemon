@@ -241,7 +241,12 @@ const struct so_string_character * so_string_get_character_info(unsigned int uni
 		return &so_string_unknow_character;
 
 	unsigned int l1 = l0 & 0x3FF;
-	return c1[l1 / 0x20] + (l1 & 0x1F);
+
+	const struct so_string_character * c2 = c1[l1 / 0x20];
+	if (c2 == NULL)
+		return &so_string_unknow_character;
+
+	return c2 + (l1 & 0x1F);
 }
 
 void so_string_middle_elipsis(char * string, size_t length) {
