@@ -168,28 +168,21 @@ static size_t so_json_compute_length(struct so_value * val) {
 				nb_write = 1;
 				const char * str = so_value_string_get(val);
 
-				while (*str != 0) {
-					int nb_printable = strcspn(str, "\"\\/\b\f\n\r\t");
-					if (nb_printable > 0) {
-						nb_write += nb_printable;
-						str += nb_printable;
+				while (*str != '\0') {
+					if (strchr("\"\\/\b\f\n\r\t", *str) != NULL) {
+						nb_write += 2;
+						str++;
+					} else {
+						short utf8_length = so_string_valid_utf8_char(str);
+						unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
 
-						if (*str == '\0')
-							break;
-					}
+						const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
+						if (char_info->category == so_string_character_category_other)
+							nb_write += 6;
+						else
+							nb_write += utf8_length;
 
-					switch (*str) {
-						case '"':
-						case '\\':
-						case '/':
-						case '\b':
-						case '\f':
-						case '\n':
-						case '\r':
-						case '\t':
-							nb_write += 2;
-							str++;
-							break;
+						str += utf8_length;
 					}
 				}
 
@@ -287,45 +280,49 @@ ssize_t so_json_encode_to_fd(struct so_value * val, int fd, bool use_buffer) {
 					nb_write = dprintf(fd, "\"");
 					const char * str = so_value_string_get(val);
 
-					while (*str != 0) {
-						int nb_printable = strcspn(str, "\"\\/\b\f\n\r\t");
-						if (nb_printable > 0) {
-							nb_write += dprintf(fd, "%.*s", nb_printable, str);
-							str += nb_printable;
+					while (*str != '\0') {
+						if (strchr("\"\\/\b\f\n\r\t", *str) != NULL) {
+							switch (*str) {
+								case '"':
+								case '\\':
+								case '/':
+									nb_write += dprintf(fd, "\\%c", *str);
+									break;
 
-							if (*str == '\0')
-								break;
+								case '\b':
+									nb_write += dprintf(fd, "\\b");
+									break;
+
+								case '\f':
+									nb_write += dprintf(fd, "\\f");
+									break;
+
+								case '\n':
+									nb_write += dprintf(fd, "\\n");
+									break;
+
+								case '\r':
+									nb_write += dprintf(fd, "\\r");
+									break;
+
+								case '\t':
+									nb_write += dprintf(fd, "\\t");
+									break;
+							}
+
+							str++;
+						} else {
+							short utf8_length = so_string_valid_utf8_char(str);
+							unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
+
+							const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
+							if (char_info->category == so_string_character_category_other)
+								nb_write += dprintf(fd, "\\u%04u", unicode_char);
+							else
+								nb_write += dprintf(fd, "%.*s", utf8_length, str);
+
+							str += utf8_length;
 						}
-
-						switch (*str) {
-							case '"':
-							case '\\':
-							case '/':
-								nb_write += dprintf(fd, "\\%c", *str);
-								break;
-
-							case '\b':
-								nb_write += dprintf(fd, "\\b");
-								break;
-
-							case '\f':
-								nb_write += dprintf(fd, "\\f");
-								break;
-
-							case '\n':
-								nb_write += dprintf(fd, "\\n");
-								break;
-
-							case '\r':
-								nb_write += dprintf(fd, "\\r");
-								break;
-
-							case '\t':
-								nb_write += dprintf(fd, "\\t");
-								break;
-						}
-
-						str++;
 					}
 
 					nb_write += dprintf(fd, "\"");
@@ -426,45 +423,49 @@ static ssize_t so_json_encode_to_string_inner(struct so_value * val, char * buff
 				nb_write = snprintf(buffer, length, "\"");
 				const char * str = so_value_string_get(val);
 
-				while (*str != 0) {
-					int nb_printable = strcspn(str, "\"\\/\b\f\n\r\t");
-					if (nb_printable > 0) {
-						nb_write += snprintf(buffer + nb_write, length - nb_write, "%.*s", nb_printable, str);
-						str += nb_printable;
+				while (*str != '\0') {
+					if (strchr("\"\\/\b\f\n\r\t", *str) != NULL) {
+						switch (*str) {
+							case '"':
+							case '\\':
+							case '/':
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "\\%c", *str);
+								break;
 
-						if (*str == '\0')
-							break;
+							case '\b':
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "\\b");
+								break;
+
+							case '\f':
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "\\f");
+								break;
+
+							case '\n':
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "\\n");
+								break;
+
+							case '\r':
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "\\r");
+								break;
+
+							case '\t':
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "\\t");
+								break;
+						}
+
+						str++;
+					} else {
+						int utf8_length = so_string_valid_utf8_char(str);
+						unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
+
+						const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
+						if (char_info->category == so_string_character_category_other)
+							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\u%04u", unicode_char);
+						else
+							nb_write += snprintf(buffer + nb_write, length - nb_write, "%.*s", utf8_length, str);
+
+						str += utf8_length;
 					}
-
-					switch (*str) {
-						case '"':
-						case '\\':
-						case '/':
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\%c", *str);
-							break;
-
-						case '\b':
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\b");
-							break;
-
-						case '\f':
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\f");
-							break;
-
-						case '\n':
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\n");
-							break;
-
-						case '\r':
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\r");
-							break;
-
-						case '\t':
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\t");
-							break;
-					}
-
-					str++;
 				}
 
 				nb_write += snprintf(buffer + nb_write, length - nb_write, "\"");
