@@ -19,27 +19,27 @@ msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
 #: src/drive/tape_drive/device.c:155
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (scsi version)"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: rebobinaje de la banda (versión scsi)"
 
 #: src/drive/tape_drive/device.c:166
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (scsi version)"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo de rebobinaje de la bande (versión scsi)"
 
 #: src/drive/tape_drive/device.c:177 src/drive/tape_drive/device.c:198
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (using st driver)"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: rebobinaje de la banda (utilizando los driver st)"
 
 #: src/drive/tape_drive/device.c:187
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo de rebobinaje de la banda (utilizando los driver st) porque %m"
 
 #: src/drive/tape_drive/device.c:212
 #, c-format
 msgid   "[%s | %s | #%u]: error while reading header because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo al leer el encabezamiento porque %m"
 
 #: src/drive/tape_drive/device.c:231
 #, c-format
@@ -207,17 +207,17 @@ msgstr  "[ %s | %s | #%u ]: Avanzar en el media \"%s\" en la posición #%u y e
 #: src/drive/tape_drive/reader.c:151
 #, c-format
 msgid   "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: Fallo al avanzar de  %d bloques porque %m"
 
 #: src/drive/tape_drive/reader.c:170 src/drive/tape_drive/reader.c:192 src/drive/tape_drive/reader.c:299
 #, c-format
 msgid   "[%s | %s | #%u]: error while reading because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: Fallo a la lectura porque %m"
 
 #: src/drive/tape_drive/reader.c:353
 #, c-format
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo al rebobinar la banda porque %m"
 
 #: src/drive/tape_drive/scsi.c:913
 #, c-format
@@ -245,12 +245,12 @@ msgstr  "si"
 #: src/drive/tape_drive/writer.c:170 src/drive/tape_drive/writer.c:340 src/drive/tape_drive/writer.c:374
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo al escribir porque %m"
 
 #: src/drive/tape_drive/writer.c:196
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing end of file because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo al escribir el fin del marcador de fin de archivo porque %m"
 
 #: src/drive/tape_drive/writer.c:210
 #, c-format
