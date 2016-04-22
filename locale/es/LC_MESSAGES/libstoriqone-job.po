@@ -16,7 +16,12 @@ msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-job/io/filesystem_reader.c:382
+#: src/libstoriqone-job/io/filesystem_reader.c:359
+#, c-format
+msgid   "Filename '%s' contains an invalid UTF-8 sequence"
+msgstr  ""
+
+#: src/libstoriqone-job/io/filesystem_reader.c:390
 #, c-format
 msgid   "Failed to read link of file '%s' because %m"
 msgstr  "fallo al leer el enlace simbólico del fichero \"%s\" porque %m"
