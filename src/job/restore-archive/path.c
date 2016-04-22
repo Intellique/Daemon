@@ -89,14 +89,17 @@ const char * soj_restorearchive_path_get(const char * path, const char * parent,
 			ppath++;
 		}
 
-		char * restore_path = NULL;
-		int size = asprintf(&restore_path, "%s/%s", path_root, ppath);
+		char * tmp_path = NULL;
+		int size = asprintf(&tmp_path, "%s/%s", path_root, ppath);
 
 		if (size < 0) {
 			pthread_mutex_unlock(&path_lock);
 
 			return NULL;
 		}
+
+		char * restore_path = so_string_unescape(tmp_path);
+		free(tmp_path);
 
 		if (is_regular_file && access(restore_path, F_OK) == 0) {
 			char * tmp_restore_path = so_file_rename(restore_path);

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-04-21 19:05+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -21,7 +21,7 @@ msgstr  "Project-Id-Version: storiqone-job-restore-archive v1.2\n"
 msgid   "Skipping verifying '%s' because there are no checksums availables"
 msgstr  "No hay verificación de \"%s\" porque no hay suma de verificación disponibles"
 
-#: src/job/restore-archive/check_worker.c:126
+#: src/job/restore-archive/check_worker.c:129
 #, c-format
 msgid   "Failed to open '%s' because %m"
 msgstr  "Fallo a la apertura de \"%s\" porque %m"
@@ -42,91 +42,91 @@ msgstr  "El fichero \"%s\" es ignorado"
 msgid   "Error while reading header from media '%s'"
 msgstr  "Error al leer el emcabezamiento desde el media \"%s\""
 
-#: src/job/restore-archive/data_worker.c:204
+#: src/job/restore-archive/data_worker.c:207
 #, c-format
 msgid   "Creating missing directories '%s' with permission 0777"
 msgstr  "Creando los directorios faltantes \"%s\" con el permiso 0777"
 
-#: src/job/restore-archive/data_worker.c:212
+#: src/job/restore-archive/data_worker.c:217
 #, c-format
 msgid   "Starting restoring file '%s'"
 msgstr  "Arranque de la restitución del fichero \"%s\""
 
-#: src/job/restore-archive/data_worker.c:219
+#: src/job/restore-archive/data_worker.c:224
 #, c-format
 msgid   "Error while opening file '%s' for writing because %m"
 msgstr  "error a la apertura del fichero \"%s\" en escritura porque %m"
 
-#: src/job/restore-archive/data_worker.c:229
+#: src/job/restore-archive/data_worker.c:234
 #, c-format
 msgid   "Error while seeking into file '%s' because %m"
 msgstr  "Error al moverse en el fichero \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:247
+#: src/job/restore-archive/data_worker.c:252
 #, c-format
 msgid   "Error while writing to file '%s' because %m"
 msgstr  "Error al escribir en el fichero \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:256
+#: src/job/restore-archive/data_worker.c:261
 #, c-format
 msgid   "Error while reading from media '%s' because %m"
 msgstr  "Error al leer desde el media \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:264
+#: src/job/restore-archive/data_worker.c:269
 #, c-format
 msgid   "Error while restoring file owner (%s) because %m"
 msgstr  "error al restaurar la propiedad del fichero (%s) porque %m"
 
-#: src/job/restore-archive/data_worker.c:271
+#: src/job/restore-archive/data_worker.c:276
 #, c-format
 msgid   "Error while restoring file permissions '%s' because %m"
 msgstr  "Error al restaurar las permisiones de los ficheros \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:282
+#: src/job/restore-archive/data_worker.c:287
 #, c-format
 msgid   "Error while setting file date and time '%s' because %m"
 msgstr  "Error al restaurar la fecha y hora del fichero \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:295
+#: src/job/restore-archive/data_worker.c:300
 #, c-format
 msgid   "Failed to create directory '%s' because %m"
 msgstr  "Fallo a la creación del directorio \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:302
+#: src/job/restore-archive/data_worker.c:307
 #, c-format
 msgid   "Failed to create symbolic link '%s' to '%s' because %m"
 msgstr  "fallo a la creación del enlace simbólico \"%s\" hacia \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:307
+#: src/job/restore-archive/data_worker.c:312
 #, c-format
 msgid   "Failed to change permission of '%s' to '%03o' because %m"
 msgstr  "fallo al momento de cambiar los permisos de \"%s\" hacia \"%03o\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:314
+#: src/job/restore-archive/data_worker.c:319
 #, c-format
 msgid   "Failed to create fifo '%s' because %m"
 msgstr  "Fallo al crear la tubería nombrada fifo \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:321
+#: src/job/restore-archive/data_worker.c:326
 #, c-format
 msgid   "Failed to create character device '%s' because %m"
 msgstr  "Fallo al momento de la creación del dispositivo de caracteres \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:329
+#: src/job/restore-archive/data_worker.c:334
 #, c-format
 msgid   "Failed to create block device '%s' because %m"
 msgstr  "Fallo al momento de la creación del dispositivo de bloques\"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:337
+#: src/job/restore-archive/data_worker.c:342
 #, c-format
 msgid   "Failed to change owner and group of '%s' because %m"
 msgstr  "Fallo al momento del cambio del propietario y del grupo de \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:362
+#: src/job/restore-archive/data_worker.c:367
 msgid   "Failed while setting worker thread name"
 msgstr  "Fallo en el momento de la definición del hilo de ejecución"
 
-#: src/job/restore-archive/data_worker.c:369
+#: src/job/restore-archive/data_worker.c:374
 #, c-format
 msgid   "Starting worker thread #%u"
 msgstr  "Arranque del hilo de ejecución #%u"
