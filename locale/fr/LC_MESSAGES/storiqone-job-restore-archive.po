@@ -21,7 +21,7 @@ msgstr  "Project-Id-Version: job-restore-archive v1.2\n"
 msgid   "Skipping verifying '%s' because there are no checksums availables"
 msgstr  "Pas de vérification de « %s » parce qu’il n’a pas d’empreintes disponibles"
 
-#: src/job/restore-archive/check_worker.c:126
+#: src/job/restore-archive/check_worker.c:129
 #, c-format
 msgid   "Failed to open '%s' because %m"
 msgstr  "Échec à l’ouverture de « %s » parce que %m"
@@ -42,91 +42,91 @@ msgstr  "Le fichier « %s » est ignoré"
 msgid   "Error while reading header from media '%s'"
 msgstr  "Erreur en lisant l’entête depuis le média « %s »"
 
-#: src/job/restore-archive/data_worker.c:204
+#: src/job/restore-archive/data_worker.c:207
 #, c-format
 msgid   "Creating missing directories '%s' with permission 0777"
 msgstr  "Création des répertoires manquants « %s » avec la permission 0777"
 
-#: src/job/restore-archive/data_worker.c:212
+#: src/job/restore-archive/data_worker.c:217
 #, c-format
 msgid   "Starting restoring file '%s'"
 msgstr  "Démarrage de la restitution du fichier « %s »"
 
-#: src/job/restore-archive/data_worker.c:219
+#: src/job/restore-archive/data_worker.c:224
 #, c-format
 msgid   "Error while opening file '%s' for writing because %m"
 msgstr  "Erreur à l’ouverture du fichier « %s » en écriture parce que %m"
 
-#: src/job/restore-archive/data_worker.c:229
+#: src/job/restore-archive/data_worker.c:234
 #, c-format
 msgid   "Error while seeking into file '%s' because %m"
 msgstr  "Erreur en se déplaçant dans le fichier « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:247
+#: src/job/restore-archive/data_worker.c:252
 #, c-format
 msgid   "Error while writing to file '%s' because %m"
 msgstr  "Erreur en écrivant dans le fichier « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:256
+#: src/job/restore-archive/data_worker.c:261
 #, c-format
 msgid   "Error while reading from media '%s' because %m"
 msgstr  "Erreur en lisant depuis le média « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:264
+#: src/job/restore-archive/data_worker.c:269
 #, c-format
 msgid   "Error while restoring file owner (%s) because %m"
 msgstr  "Erreur en restaurant le propriétaire du fichier « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:271
+#: src/job/restore-archive/data_worker.c:276
 #, c-format
 msgid   "Error while restoring file permissions '%s' because %m"
 msgstr  "Erreur en restaurant les permissions du fichier « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:282
+#: src/job/restore-archive/data_worker.c:287
 #, c-format
 msgid   "Error while setting file date and time '%s' because %m"
 msgstr  "Erreur en restaurant l’horodatage du fichier « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:295
+#: src/job/restore-archive/data_worker.c:300
 #, c-format
 msgid   "Failed to create directory '%s' because %m"
 msgstr  "Échec lors de la création du répertoire « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:302
+#: src/job/restore-archive/data_worker.c:307
 #, c-format
 msgid   "Failed to create symbolic link '%s' to '%s' because %m"
 msgstr  "Échec lors de la création du lien symbolique « %s » vers « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:307
+#: src/job/restore-archive/data_worker.c:312
 #, c-format
 msgid   "Failed to change permission of '%s' to '%03o' because %m"
 msgstr  "Échec lors du changement de permission de « %s » vers « %03o » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:314
+#: src/job/restore-archive/data_worker.c:319
 #, c-format
 msgid   "Failed to create fifo '%s' because %m"
 msgstr  "Échec lors de la création du tube nommé « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:321
+#: src/job/restore-archive/data_worker.c:326
 #, c-format
 msgid   "Failed to create character device '%s' because %m"
 msgstr  "Échec lors de la création du périphérique characteère « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:329
+#: src/job/restore-archive/data_worker.c:334
 #, c-format
 msgid   "Failed to create block device '%s' because %m"
 msgstr  "Échec lors de la création du périphérique bloc « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:337
+#: src/job/restore-archive/data_worker.c:342
 #, c-format
 msgid   "Failed to change owner and group of '%s' because %m"
 msgstr  "Échec lors du changement du propriétaire et du groupe de « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:362
+#: src/job/restore-archive/data_worker.c:367
 msgid   "Failed while setting worker thread name"
 msgstr  "Échec lors de la définition du nom du fil d’exécution"
 
-#: src/job/restore-archive/data_worker.c:369
+#: src/job/restore-archive/data_worker.c:374
 #, c-format
 msgid   "Starting worker thread #%u"
 msgstr  "Démarrage du fil d’exécution n°%u"
