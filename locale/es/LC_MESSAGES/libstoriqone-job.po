@@ -19,7 +19,7 @@ msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
 #: src/libstoriqone-job/io/filesystem_reader.c:359
 #, c-format
 msgid   "Filename '%s' contains an invalid UTF-8 sequence"
-msgstr  ""
+msgstr  "El fichero '%s' contiene una secuencia de codificación UTF-8 no válido"
 
 #: src/libstoriqone-job/io/filesystem_reader.c:390
 #, c-format
