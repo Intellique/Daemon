@@ -206,7 +206,7 @@ msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la positio
 
 #: src/drive/tape_drive/reader.c:155
 #, c-format
-msgid   "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"
+msgid   "[%s | %s | #%u]: error while fast forwarding of %d blocks because %m"
 msgstr  "[ %s | %s | n°%u ] : erreur en avançant de %d blocks parce que %m"
 
 #: src/drive/tape_drive/reader.c:174 src/drive/tape_drive/reader.c:196 src/drive/tape_drive/reader.c:367
