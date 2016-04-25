@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-04-12 10:48+0200\n"
+        "POT-Creation-Date: 2016-04-25 12:33+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -206,7 +206,7 @@ msgstr  "[ %s | %s | #%u ]: Avanzar en el media \"%s\" en la posición #%u y e
 
 #: src/drive/tape_drive/reader.c:151
 #, c-format
-msgid   "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"
+msgid   "[%s | %s | #%u]: error while fast forwarding of %d blocks because %m"
 msgstr  "[%s | %s | #%u]: Fallo al avanzar de  %d bloques porque %m"
 
 #: src/drive/tape_drive/reader.c:170 src/drive/tape_drive/reader.c:192 src/drive/tape_drive/reader.c:299
