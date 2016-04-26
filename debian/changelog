@@ -1,3 +1,15 @@
+storiqone (1.2.15-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Change: Move from taiga to redmine. #x (#y) => x for redmine ticket and y
+    for taiga ticket.
+  * Bug fix:
+    - #1 (#133): JSON encoding: escape control character
+    - #2 (#130): Through checking archive, update archive volume.
+    - #123: Escape invalid UTF-8 encoding.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 26 Apr 2016 19:08:41 +0200
+
 storiqone (1.2.14.1-1+wheezy) polisher; urgency=low
 
   * New bug fix release
