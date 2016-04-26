@@ -194,30 +194,35 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 			const char * restore_to = soj_restorearchive_path_get(header.filename, file->selected_path, file->type == so_archive_file_type_regular_file);
 			if (restore_to != NULL)
-				file->restored_to = strdup(restore_to);
+				file->restored_to = so_string_dup_and_fix(restore_to, NULL);
 
-			char * ptr = strrchr(restore_to, '/');
-			if (ptr != NULL) {
-				*ptr = '\0';
+			char * ptr_fixed = strrchr(file->restored_to, '/');
+			char * ptr_bad = strrchr(restore_to, '/');
+			if (ptr_fixed != NULL) {
+				*ptr_fixed = '\0';
+				*ptr_bad = '\0';
+
 				if (access(restore_to, R_OK | W_OK | X_OK) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Creating missing directories '%s' with permission 0777"),
-						restore_to);
+						file->restored_to);
 					so_file_mkdir(restore_to, 0777);
 				}
-				*ptr = '/';
+
+				*ptr_fixed = '/';
+				*ptr_bad = '/';
 			}
 
 			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 				dgettext("storiqone-job-restore-archive", "Starting restoring file '%s'"),
-				restore_to);
+				file->restored_to);
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
 				if (fd < 0) {
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-restore-archive", "Error while opening file '%s' for writing because %m"),
-						restore_to);
+						file->restored_to);
 					worker->nb_errors++;
 
 					break;
@@ -227,7 +232,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					if (lseek(fd, header.position, SEEK_SET) != header.position) {
 						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while seeking into file '%s' because %m"),
-							restore_to);
+							file->restored_to);
 						worker->nb_errors++;
 						close(fd);
 
@@ -245,7 +250,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					else {
 						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while writing to file '%s' because %m"),
-							restore_to);
+							file->restored_to);
 						worker->nb_errors++;
 						break;
 					}
@@ -262,14 +267,14 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					if (fchown(fd, file->ownerid, file->groupid)) {
 						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while restoring file owner (%s) because %m"),
-							restore_to);
+							file->restored_to);
 						worker->nb_warnings++;
 					}
 
 					if (fchmod(fd, file->perm)) {
 						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while restoring file permissions '%s' because %m"),
-							restore_to);
+							file->restored_to);
 						worker->nb_warnings++;
 					}
 
@@ -280,7 +285,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					if (futimes(fd, tv)) {
 						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while setting file date and time '%s' because %m"),
-							restore_to);
+							file->restored_to);
 						worker->nb_warnings++;
 					}
 				}
@@ -293,14 +298,14 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				if (failed != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create directory '%s' because %m"),
-						restore_to);
+						file->restored_to);
 					worker->nb_errors++;
 				}
 			} else if (S_ISLNK(header.mode)) {
 				if (symlink(header.link, header.filename) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create symbolic link '%s' to '%s' because %m"),
-						restore_to, header.link);
+						file->restored_to, header.link);
 					worker->nb_errors++;
 				} else if (chmod(restore_to, file->perm & 0777) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
@@ -312,14 +317,14 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				if (mknod(file->path, S_IFIFO, 0) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create fifo '%s' because %m"),
-						restore_to);
+						file->restored_to);
 					worker->nb_errors++;
 				}
 			} else if (S_ISCHR(header.mode)) {
 				if (mknod(file->path, S_IFCHR, header.dev) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create character device '%s' because %m"),
-						restore_to);
+						file->restored_to);
 					worker->nb_errors++;
 				}
 			} else if (S_ISBLK(header.mode)) {
@@ -327,7 +332,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				if (failed != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 						dgettext("storiqone-job-restore-archive", "Failed to create block device '%s' because %m"),
-						restore_to);
+						file->restored_to);
 					worker->nb_errors++;
 				}
 			}
@@ -335,7 +340,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			if (chown(restore_to, file->ownerid, file->groupid) != 0) {
 				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 					dgettext("storiqone-job-restore-archive", "Failed to change owner and group of '%s' because %m"),
-					restore_to);
+					file->restored_to);
 				worker->nb_warnings++;
 			}
 

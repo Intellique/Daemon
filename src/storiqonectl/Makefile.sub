@@ -2,7 +2,7 @@ STORIQONECTL_SRC_DIR		:= src/storiqonectl
 
 STORIQONECTL_BIN			:= bin/storiqonectl
 STORIQONECTL_CFLAG			 = -fPIC -pthread ${LIB_UUID_CFLAGS}
-STORIQONECTL_LD				 = -pthread -lstoriqone -Llib -Wl,-rpath,lib ${LIB_UUID_LD}
+STORIQONECTL_LD				 = -pthread -lstoriqone -Llib ${LIB_UUID_LD}
 
 STORIQONECTL_DEPEND_LIB		:= lib/libstoriqone.so
 

@@ -119,14 +119,20 @@ static void soj_restorearchive_check_worker_check(struct so_job * job, struct so
 		return;
 	}
 
-	int fd_in = open(ptr->file->restored_to, O_RDONLY);
+	char * filename = so_string_unescape(ptr->file->restored_to);
+
+	int fd_in = open(filename, O_RDONLY);
 	if (fd_in < 0) {
 		so_value_free(checksums);
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to open '%s' because %m"), ptr->file->restored_to);
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-restore-archive", "Failed to open '%s' because %m"),
+			ptr->file->restored_to);
 
 		return;
 	}
+
+	free(filename);
 
 	struct so_stream_writer * checksum_writer = so_io_checksum_writer_new(NULL, checksums, false);
 

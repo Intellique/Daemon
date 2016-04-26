@@ -349,8 +349,16 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 }
 
 static void soj_format_reader_filesystem_node_sync(struct soj_format_reader_filesystem_node * node, struct so_format_file * file) {
-	file->filename = strdup(node->path);
+	bool fixed = false;
+
+	file->filename = so_string_dup_and_fix(node->path, &fixed);
 	file->link = NULL;
+
+	if (fixed) {
+		so_log_write(so_log_level_warning,
+			dgettext("libstoriqone-job", "Filename '%s' contains an invalid UTF-8 sequence"),
+			file->filename);
+	}
 
 	file->position = 0;
 	file->size = 0;

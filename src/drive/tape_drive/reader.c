@@ -148,7 +148,7 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 
 			if (failed != 0) {
 				so_log_write(so_log_level_error,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"),
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while fast forwarding of %d blocks because %m"),
 					self->drive->vendor, self->drive->model, self->drive->index, next_forward);
 
 				self->last_errno = errno;

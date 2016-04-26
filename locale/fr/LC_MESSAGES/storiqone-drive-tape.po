@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-30 18:33+0200\n"
+        "POT-Creation-Date: 2016-04-25 12:33+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -206,7 +206,7 @@ msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la positio
 
 #: src/drive/tape_drive/reader.c:151
 #, c-format
-msgid   "[%s | %s | #%u]: error while fast fowarding of %d blocks because %m"
+msgid   "[%s | %s | #%u]: error while fast forwarding of %d blocks because %m"
 msgstr  "[ %s | %s | n°%u ] : erreur en avançant de %d blocks parce que %m"
 
 #: src/drive/tape_drive/reader.c:170 src/drive/tape_drive/reader.c:192 src/drive/tape_drive/reader.c:299
@@ -249,8 +249,8 @@ msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %m"
 
 #: src/drive/tape_drive/writer.c:196
 #, c-format
-msgid   "[%s | %s | #%u]: error while writing filemark because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de find de fichier parce que %m"
+msgid   "[%s | %s | #%u]: error while writing end of file because %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fine de fichier parce que %m"
 
 #: src/drive/tape_drive/writer.c:210
 #, c-format

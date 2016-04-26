@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-30 15:55+0200\n"
+        "POT-Creation-Date: 2016-04-12 10:48+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -99,9 +99,3 @@ msgstr  "[ %s | %s ] : échec de la remise en-ligne de l’échangeur"
 #, c-format
 msgid   "Changer (type: %s) will stop"
 msgstr  "Échangeur (type : %s) va s’arrêter"
-
-#~ msgid        "[%s | %s]: no free drive available"
-#~ msgstr       "[ %s | %s ] : pas de lecteur libre de disponible"
-
-#~ msgid        "[%s | %s]: job (id: %s) gets media '%s'"
-#~ msgstr       "[ %s | %s ] : la tâche (id : %s) reçoit le média « %s »"

@@ -2,7 +2,7 @@ STORIQONE_DRIVE_TAPEDRIVE_SRC_DIR		:= src/drive/tape_drive
 
 STORIQONE_DRIVE_TAPEDRIVE_BIN			:= bin/tape_drive
 STORIQONE_DRIVE_TAPEDRIVE_CFLAG			 = -pthread ${LIB_EXPAT_CFLAGS} ${LIB_MAGIC_CFLAGS}
-STORIQONE_DRIVE_TAPEDRIVE_LD			 = -pthread -lstoriqone -lstoriqone-drive -Llib -Wl,-rpath,lib ${LIB_EXPAT_LD} ${LIB_MAGIC_LD}
+STORIQONE_DRIVE_TAPEDRIVE_LD			 = -pthread -lstoriqone -lstoriqone-drive -Llib ${LIB_EXPAT_LD} ${LIB_MAGIC_LD}
 
 STORIQONE_DRIVE_TAPEDRIVE_DEPEND_LIB	:= lib/libstoriqone-drive.so
 
