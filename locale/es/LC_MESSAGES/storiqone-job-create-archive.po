@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 13:31+0100\n"
+        "POT-Creation-Date: 2016-04-15 13:04+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -84,35 +84,35 @@ msgstr  "Error, intento al crear un archivo \"%s\" en un pool suprimido \"%s\""
 msgid   "Error, can't add file to the archive '%s' because it should be synchronized first"
 msgstr  "Error, no puede añadir el fichero en el archivo \"%s\" porque éste no está sincronizado"
 
-#: src/job/create-archive/create-archive.c:330
+#: src/job/create-archive/create-archive.c:328
+#, c-format
+msgid   "Space required (%s) for creating new archive '%s'"
+msgstr  "Espacio requerido (%s) para crear un nuevo archivo \"%s\""
+
+#: src/job/create-archive/create-archive.c:334
 #, c-format
 msgid   "Error: not enought space available in pool (%s)"
 msgstr  "Error: no hay espacio suficiente en el pool (%s)"
 
-#: src/job/create-archive/create-archive.c:346
+#: src/job/create-archive/create-archive.c:350
 #, c-format
 msgid   "Warning, skipping archive '%s' from pool '%s' because this archive is not synchronized"
 msgstr  "Atención, el archivo \"%s\" del pool \"%s\" porque el archivo no está sincronizado"
-
-#: src/job/create-archive/create-archive.c:352
-#, c-format
-msgid   "Space required (%s) for creating new archive '%s'"
-msgstr  "Espacio requerido (%s) para crear un nuevo archivo \"%s\""
 
 #: src/job/create-archive/create-archive.c:357
 #, c-format
 msgid   "Error, trying to create an archive into a deleted pool '%s'"
 msgstr  "Error, al iniciar la creación de un archivo en un pool suprimido \"%s\""
 
-#: src/job/create-archive/create-archive.c:365
-#, c-format
-msgid   "Error: not enough space available in pool (%s)"
-msgstr  "Error: no hay espacio suficiente en el pool (%s)"
-
-#: src/job/create-archive/create-archive.c:373
+#: src/job/create-archive/create-archive.c:363
 #, c-format
 msgid   "Space required (%s) to add to archive '%s'"
 msgstr  "Espacio requerido (%s) para añdir a unarchivo \"%s\""
+
+#: src/job/create-archive/create-archive.c:369
+#, c-format
+msgid   "Error: not enough space available in pool (%s)"
+msgstr  "Error: no hay espacio suficiente en el pool (%s)"
 
 #: src/job/create-archive/worker.c:132 src/job/create-archive/worker.c:149
 #, c-format

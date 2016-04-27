@@ -151,18 +151,31 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	if (fd < 0)
 		return false;
 
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (scsi version)"),
+		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
 	sodr_time_start();
 	int failed = sodr_tape_drive_scsi_rewind(fd);
 	sodr_time_stop(&sodr_tape_drive);
 
 	close(fd);
 
-	if (failed != 0)
+	if (failed != 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to rewind tape (scsi version)"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
 		return false;
+	}
 
 	fd = sodr_tape_drive_open_drive();
 	if (fd < 0)
 		return false;
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (using st driver)"),
+		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
 	static struct mtop rewind = { MTREW, 1 };
 	sodr_time_start();
@@ -170,12 +183,20 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	sodr_time_stop(&sodr_tape_drive);
 
 	if (failed != 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
 		close(fd);
 		return false;
 	}
 
 	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_reading;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (using st driver)"),
+		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
 	char * buffer = malloc(block_size);
 	sodr_time_start();
@@ -187,7 +208,12 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
 	if (nb_read < 0) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while reading header because %m"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
 		free(buffer);
+
 		return false;
 	}
 
@@ -762,7 +788,6 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 		fd = sodr_tape_drive_open_drive();
 		if (fd < 0)
 			return -1;
-
 
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCGET, &status);

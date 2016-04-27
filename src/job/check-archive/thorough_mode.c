@@ -222,7 +222,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 				dgettext("storiqone-job-check-archive", "data integrity of volume #%u on media '%s' is not correct"),
 				i, vol->media->name);
 
-		if (so_value_list_get_length(checksums) == 0)
+		if (so_value_list_get_length(checksums) != 0)
 			db_connect->ops->check_archive_volume(db_connect, vol);
 
 		so_value_free(checksums);
