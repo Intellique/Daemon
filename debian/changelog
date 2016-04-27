@@ -1,3 +1,11 @@
+storiqone (1.2.15-2+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - Miss to add a script to fix trigger log_metadata
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 27 Apr 2016 11:14:27 +0200
+
 storiqone (1.2.15-1+wheezy) polisher; urgency=low
 
   * New bug fix release
