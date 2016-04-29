@@ -229,6 +229,8 @@ static struct so_value * sodr_tape_drive_format_ltfs_convert_index_inner(struct 
 			), true);
 		}
 
+		so_value_list_push(info, so_value_pack("{sssz}", "name", "length", "value", file->file.size), true);
+
 		return so_value_pack("{ssso}",
 			"name", "file",
 			"children", info
@@ -1117,7 +1119,6 @@ int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive,
 
 	if (failed != 0)
 		return failed;
-
 
 
 	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,

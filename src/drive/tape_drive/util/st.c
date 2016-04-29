@@ -39,7 +39,7 @@
 
 #include "st.h"
 
-int sodr_tape_drive_st_get_positition(struct so_drive * drive, int fd, struct so_database_connection * db) {
+int sodr_tape_drive_st_get_position(struct so_drive * drive, int fd, struct so_database_connection * db) {
 	struct mtget status;
 	int failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
 	if (failed < 0)
@@ -115,15 +115,13 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Partition changed from %lu to %u on media '%s'"),
 				drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
 
-		if (file_number >= 0) {
-			failed = sodr_tape_drive_st_rewind(drive, fd, db);
-			if (failed != 0)
-				return failed;
+		failed = sodr_tape_drive_st_rewind(drive, fd, db);
+		if (failed != 0)
+			return failed;
 
-			failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
-			if (failed != 0)
-				return failed;
-		}
+		failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
+		if (failed != 0)
+			return failed;
 	}
 
 	if (file_number < 0) {

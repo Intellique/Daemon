@@ -398,12 +398,12 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 	char * json = so_json_encode_to_string(metadata);
 	ssize_t json_length = strlen(json);
 
+	child_node->file.size = json_length;
+	child_node->extents->byte_count = json_length;
+
 	ssize_t nb_write = self->writer->ops->write(self->writer, json, json_length);
 
 	free(json);
-
-	if (nb_write > 0)
-		child_node->extents->byte_count = position.partition;
 
 	failed = sodr_tape_drive_writer_close2(self->writer, false);
 	if (failed != 0) {
@@ -422,8 +422,10 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 	}
 
 	struct sodr_tape_drive_ltfs_volume_coherency previous_vcr = self->ltfs_info->data;
+
 	self->ltfs_info->data.volume_change_reference = volume_change_reference;
 	self->ltfs_info->data.generation_number++;
+	self->ltfs_info->data.block_position_of_last_index = position.block_position;
 
 	// write index
 	struct so_value * index = sodr_tape_drive_format_ltfs_convert_index(self->media, "b", &previous_vcr, &position);
@@ -455,6 +457,10 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		return failed;
 	}
 
+	self->ltfs_info->index.volume_change_reference = volume_change_reference;
+	self->ltfs_info->index.generation_number++;
+	self->ltfs_info->index.block_position_of_last_index = position.block_position;
+
 	sodr_tape_drive_format_ltfs_update_index(index, &position);
 
 	nb_write = sodr_tape_drive_xml_encode_stream(self->writer, index);
@@ -469,11 +475,13 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		return failed;
 	}
 
-	// update medium auxiliary memory
-	failed = sodr_tape_drive_format_ltfs_update_mam(self->scsi_fd, self->drive, NULL);
-	if (failed != 0) {
+	failed = sodr_tape_drive_format_ltfs_update_volume_coherency_info(self->scsi_fd, self->drive, self->media->uuid, 0, &self->ltfs_info->index, NULL);
+	if (failed != 0)
 		return failed;
-	}
+
+	failed = sodr_tape_drive_format_ltfs_update_volume_coherency_info(self->scsi_fd, self->drive, self->media->uuid, 1, &self->ltfs_info->data, NULL);
+	if (failed != 0)
+		return failed;
 
 	close(self->fd);
 	close(self->scsi_fd);
