@@ -19,27 +19,27 @@ msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
 #: src/drive/tape_drive/device.c:160
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (scsi version)"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: rebobinaje de la banda (versión scsi)"
 
 #: src/drive/tape_drive/device.c:171
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (scsi version)"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo de rebobinaje de la bande (versión scsi)"
 
 #: src/drive/tape_drive/device.c:182 src/drive/tape_drive/device.c:203
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (using st driver)"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: rebobinaje de la banda (utilizando los driver st)"
 
 #: src/drive/tape_drive/device.c:192
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo de rebobinaje de la banda (utilizando los driver st) porque %m"
 
 #: src/drive/tape_drive/device.c:217
 #, c-format
 msgid   "[%s | %s | #%u]: error while reading header because %m"
-msgstr  ""
+msgstr  "[%s | %s | #%u]: fallo al leer el encabezamiento porque %m"
 
 #: src/drive/tape_drive/device.c:236
 #, c-format
@@ -466,8 +466,8 @@ msgstr  "Información del media %s, Frabricante del media: %s"
 
 #: src/drive/tape_drive/util/scsi.c:877
 #, c-format
-msgid   "Media information of %s, Medium date: %s"
-msgstr  "Información del media %s, Fecha del media: %s"
+msgid   "[%s | %s | #%u]: error while fast forwarding of %d blocks because %m"
+msgstr  "[%s | %s | #%u]: Fallo al avanzar de  %d bloques porque %m"
 
 #: src/drive/tape_drive/util/scsi.c:1215
 #, c-format
