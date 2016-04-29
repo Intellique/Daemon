@@ -244,6 +244,8 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 		return failed;
 	}
 
+	ltfs->up_to_date = true;
+
 
 	strcpy(media->uuid, uuid);
 	media->status = so_media_status_in_use;

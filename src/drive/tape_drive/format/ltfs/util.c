@@ -663,6 +663,13 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	struct so_value * files = NULL;
 	so_value_unpack(contents, "{so}", "children", &files);
 
+	struct sodr_tape_drive_format_ltfs * self = &mp->data.ltfs;
+	self->highest_file_uid = 1;
+	self->root.file_uid = 1;
+
+	if (so_value_list_get_length(files) == 0)
+		return;
+
 	struct so_value * config = so_config_get();
 	unsigned int uid = 0, gid = 0, file_mask = 0644, directory_mask = 0755;
 	const char * base_directory;
@@ -688,9 +695,6 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 
 		.root_directory = base_directory,
 	};
-
-	struct sodr_tape_drive_format_ltfs * self = &mp->data.ltfs;
-	self->highest_file_uid = 1;
 
 	struct so_value_iterator * iter = so_value_list_get_iterator(files);
 	while (so_value_iterator_has_next(iter)) {
@@ -737,6 +741,8 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 				int size = asprintf(&file->file.filename, "%s/%s/%s", default_value->root_directory, path, file_name);
 				if (size < 0)
 					continue;
+
+				so_string_delete_double_char(file->file.filename, '/');
 			} else {
 				file->name = strdup(elt_name);
 				file->hash_name = so_string_compute_hash2(file->name);

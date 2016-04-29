@@ -39,7 +39,7 @@
 
 #include "st.h"
 
-int sodr_tape_drive_st_get_posititon(struct so_drive * drive, int fd, struct so_database_connection * db) {
+int sodr_tape_drive_st_get_positition(struct so_drive * drive, int fd, struct so_database_connection * db) {
 	struct mtget status;
 	int failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
 	if (failed < 0)

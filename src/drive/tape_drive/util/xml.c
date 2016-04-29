@@ -177,10 +177,10 @@ ssize_t sodr_tape_drive_xml_encode_inner(struct sodr_tape_drive_xml_encoder * co
 				nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%s", "true");
 			else
 				nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%s", "false");
-		} else if (so_value_unpack(xml, "{sf}", "value", &float_value) == 1)
-			nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%g", float_value);
-		else if (so_value_unpack(xml, "{sI}", "value", &integer_value) == 1)
+		} else if (so_value_unpack(xml, "{sI}", "value", &integer_value) == 1)
 			nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%lld", integer_value);
+		else if (so_value_unpack(xml, "{sf}", "value", &float_value) == 1)
+			nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%g", float_value);
 		else if (so_value_unpack(xml, "{sS}", "value", &value) == 1)
 			nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%s", value);
 		else

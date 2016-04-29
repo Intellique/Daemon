@@ -349,6 +349,9 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer2(struct so_drive
 	self->fill_last_block = fill_last_block;
 	self->last_errno = 0;
 
+	if (self->file_position < 0)
+		self->file_position = sodr_tape_drive_st_get_positition(drive, fd, db);
+
 	self->drive = drive;
 	self->media = drive->slot->media;
 

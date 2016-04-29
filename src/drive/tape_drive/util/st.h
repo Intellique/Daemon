@@ -35,7 +35,7 @@ struct so_database_connection;
 
 struct mtget;
 
-int sodr_tape_drive_st_get_posititon(struct so_drive * drive, int fd, struct so_database_connection * db);
+int sodr_tape_drive_st_get_positition(struct so_drive * drive, int fd, struct so_database_connection * db);
 int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct so_database_connection * db);
 int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_database_connection * db);
 int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, bool force, struct so_database_connection * db);

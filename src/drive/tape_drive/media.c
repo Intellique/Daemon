@@ -273,8 +273,10 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int 
 	sodr_tape_drive_reader_close2(reader, false);
 	reader->ops->free(reader);
 
-	if (index != NULL)
+	if (index != NULL) {
 		sodr_tape_drive_format_ltfs_parse_index(media->private_data, index, archive, db_connect);
+		so_value_free(index);
+	}
 
 	so_archive_free(archive);
 
