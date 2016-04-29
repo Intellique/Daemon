@@ -2,7 +2,7 @@ STORIQONE_CHANGER_STANDALONECHANGER_SRC_DIR			:= src/changer/standalone_changer
 
 STORIQONE_CHANGER_STANDALONECHANGER_BIN				:= bin/standalone_changer
 STORIQONE_CHANGER_STANDALONECHANGER_CFLAG			:= -pthread
-STORIQONE_CHANGER_STANDALONECHANGER_LD				:= -pthread -lstoriqone -lstoriqone-changer -Llib -Wl,-rpath,lib
+STORIQONE_CHANGER_STANDALONECHANGER_LD				:= -pthread -lstoriqone -lstoriqone-changer -Llib
 
 STORIQONE_CHANGER_STANDALONECHANGER_DEPEND_LIB		:= lib/libstoriqone-changer.so
 

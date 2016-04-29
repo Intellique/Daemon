@@ -48,6 +48,7 @@
 #include <libstoriqone/archive.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/io.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
 
@@ -74,7 +75,7 @@ static pthread_cond_t wait = PTHREAD_COND_INITIALIZER;
 
 void soj_create_archive_meta_worker_add_file(const char * filename, const char * selected_file) {
 	struct meta_worker_list * file = malloc(sizeof(struct meta_worker_list));
-	file->filename = strdup(filename);
+	file->filename = so_string_unescape(filename);
 	file->selected_file = strdup(selected_file);
 	file->next = NULL;
 
@@ -139,7 +140,7 @@ static void soj_create_archive_meta_worker_do2(const char * filename, struct so_
 	struct so_archive_file * file = malloc(sizeof(struct so_archive_file));
 	bzero(file, sizeof(struct so_archive_file));
 
-	file->path = strdup(filename);
+	file->path = so_string_dup_and_fix(filename, NULL);
 	file->perm = st.st_mode & 07777;
 	file->type = so_archive_file_mode_to_type(st.st_mode);
 	file->ownerid = st.st_uid;
@@ -184,7 +185,7 @@ static void soj_create_archive_meta_worker_do2(const char * filename, struct so_
 	} else
 		file->digests = NULL;
 
-	so_value_hashtable_put2(files, filename, so_value_new_custom(file, NULL), true);
+	so_value_hashtable_put2(files, file->path, so_value_new_custom(file, NULL), true);
 }
 
 void soj_create_archive_meta_worker_start(struct so_value * checksums) {
