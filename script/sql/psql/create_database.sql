@@ -778,11 +778,15 @@ CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
     BEGIN
         IF TG_OP = 'UPDATE' AND OLD.type != NEW.type THEN
             RAISE EXCEPTION 'type of metadata should not be modified' USING ERRCODE = '09000';
+        ELSIF TG_OP = 'DELETE' THEN
+            INSERT INTO MetadataLog(id, type, key, value, login, updated)
+                VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, FALSE);
+            RETURN OLD;
         ELSIF TG_OP = 'DELETE' OR OLD != NEW THEN
             INSERT INTO MetadataLog(id, type, key, value, login, updated)
-                VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, CASE WHEN TG_OP = 'UPDATE' THEN true ELSE false END );
+                VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, TRUE);
+            RETURN NEW;
         END IF;
-        RETURN NEW;
     END;
 $body$ LANGUAGE plpgsql;
 
