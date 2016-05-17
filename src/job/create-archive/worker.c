@@ -580,7 +580,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_find_and_load_next(worker->pool, false, db_connect);
+		worker->drive = soj_media_find_and_load_next(worker->pool, true, db_connect);
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->pool);
 
 		if (worker->drive != NULL) {
@@ -621,6 +621,7 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 
 		if (worker->drive != NULL) {
 			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
+			worker->media = worker->drive->slot->media;
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
