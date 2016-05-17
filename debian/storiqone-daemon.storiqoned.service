@@ -1,0 +1,12 @@
+# systemd service for managing storiq one daemon
+
+[Unit]
+Description=Storiq One daemon
+After=postgresql.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/storiqone/1.2/bin/storiqoned
+
+[Install]
+WantedBy=multi-user.target

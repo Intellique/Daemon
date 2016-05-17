@@ -1,0 +1,5 @@
+lib/libstoriqone.so.* usr/lib
+lib/libchecksum*.so usr/lib/storiqone/1.2/lib
+
+usr/share/locale/es/LC_MESSAGES/libstoriqone.mo
+usr/share/locale/fr/LC_MESSAGES/libstoriqone.mo
