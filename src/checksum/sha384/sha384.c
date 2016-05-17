@@ -48,18 +48,18 @@ static void so_checksum_sha384_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_sha384_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_sha384_driver = {
-	.name			  = "sha384",
+	.name             = "sha384",
 	.default_checksum = false,
-	.new_checksum	  = so_checksum_sha384_new_checksum,
-	.cookie			  = NULL,
+	.new_checksum     = so_checksum_sha384_new_checksum,
+	.cookie           = NULL,
 	.src_checksum     = STORIQONE_CHECKSUM_SHA384_SRCSUM,
 };
 
 static struct so_checksum_ops so_checksum_sha384_ops = {
-	.digest	= so_checksum_sha384_digest,
-	.free	= so_checksum_sha384_free,
+	.digest = so_checksum_sha384_digest,
+	.free   = so_checksum_sha384_free,
 	.reset  = so_checksum_sha384_reset,
-	.update	= so_checksum_sha384_update,
+	.update = so_checksum_sha384_update,
 };
 
 

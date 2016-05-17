@@ -27,6 +27,11 @@
 #ifndef __LIBSTORIQONE_CRASH_H__
 #define __LIBSTORIQONE_CRASH_H__
 
+/**
+ * \brief register an handler which will call on SIGSEGV and SIGABRT
+ *
+ * \param[in] prog_name : name of programm used to generate core dump
+ */
 void so_crash_init(const char * prog_name);
 
 #endif

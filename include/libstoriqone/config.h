@@ -29,7 +29,19 @@
 
 struct so_value;
 
+/**
+ * \brief Get current configuration previously defined by \a so_config_set
+ *
+ * \return a value which contains current configuration
+ *
+ * \see so_config_set
+ */
 struct so_value * so_config_get(void);
+/**
+ * \brief Define current configuration
+ *
+ * \param[in] config : new configuration
+ */
 void so_config_set(struct so_value * config);
 
 #endif

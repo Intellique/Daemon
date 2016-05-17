@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-04-12 17:11+0200\n"
+        "POT-Creation-Date: 2016-03-13 15:02+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -119,60 +119,60 @@ msgstr  "so_checksum_compute: fallo al cargar el módulo del cálculo de comprob
 msgid   "so_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"
 msgstr  "so_checksum_convert_to_hex: parámetros inválidos  (digest : %p, length : %zd, hex_digest : %s)"
 
-#: src/libstoriqone/checksum.c:102
+#: src/libstoriqone/checksum.c:103
 #, c-format
 msgid   "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"
 msgstr  "so_checksum_gen_salt: longitud del parámetro \"length\" debe ser superior a 8 (en lugar de %zd)"
 
-#: src/libstoriqone/checksum.c:108
+#: src/libstoriqone/checksum.c:111
 #, c-format
 msgid   "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt because %m"
 msgstr  "so_checksum_gen_salt: error en el momento de la abertura de \"/dev/urandom\" para generar una sal porque %m"
 
-#: src/libstoriqone/checksum.c:118
+#: src/libstoriqone/checksum.c:122
 #, c-format
 msgid   "so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"
 msgstr  "so_checksum_gen_salt: atención, error en el momento del cierre de \"/dev/urandom\" (fd : %d) porque %m"
 
-#: src/libstoriqone/checksum.c:122
+#: src/libstoriqone/checksum.c:128
 #, c-format
 msgid   "so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"
 msgstr  "so_checksum_gen_salt: error en el momento de la lectura desde \"/dev/urandom\" porque  %m"
 
-#: src/libstoriqone/checksum.c:128
+#: src/libstoriqone/checksum.c:135
 #, c-format
 msgid   "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, expected: %zd)"
 msgstr  "so_checksum_gen_salt: a leído menos de lo esperado desde \"/dev/urandom\" (nb read : %zd, read expected : %zd)"
 
-#: src/libstoriqone/checksum.c:146
+#: src/libstoriqone/checksum.c:155
 msgid   "so_checksum_get_driver: invalid parameter, 'driver' should not be NULL"
 msgstr  "so_checksum_get_driver: parámetro invalido, \"driver\"no debe ser nulo "
 
-#: src/libstoriqone/checksum.c:159
+#: src/libstoriqone/checksum.c:168
 #, c-format
 msgid   "so_checksum_get_driver: failed to load checksum driver '%s'"
 msgstr  "so_checksum_get_driver: fallo de carga del modulo de cálculo de comprobación de la huella \"%s\""
 
-#: src/libstoriqone/checksum.c:167
+#: src/libstoriqone/checksum.c:176
 #, c-format
 msgid   "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"
 msgstr  "so_checksum_get_driver: el controlador \"%s\" no ha llamado \"so_checksum_register_driver"
 
-#: src/libstoriqone/checksum.c:190
+#: src/libstoriqone/checksum.c:200
 msgid   "so_checksum_register_driver: trying to register a NULL driver"
 msgstr  "so_checksum_register_driver: intento para grabar un controlador \"NULL\""
 
-#: src/libstoriqone/checksum.c:199
+#: src/libstoriqone/checksum.c:209
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is already registered"
 msgstr  "so_checksum_register_driver: el controlador de cálculo de comprobación de la huella \"%s\" está cargado"
 
-#: src/libstoriqone/checksum.c:210
+#: src/libstoriqone/checksum.c:220
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is now registered"
 msgstr  "so_checksum_register_driver: el controlador de cálculo de comprobación \"%s\" ahora está cargado"
 
-#: src/libstoriqone/checksum.c:216
+#: src/libstoriqone/checksum.c:227
 #, c-format
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
 msgstr  "so_checksum_salt_password: parámetro invalido (contraseña: %p, sal: %p)"
@@ -186,31 +186,31 @@ msgstr  "Vaya!!!, programas \"%s\" capta la señal: %s"
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
 msgstr  "so_database_get_driver: parámetro invalido, \"driver\" no debe ser \"NULL\""
 
-#: src/libstoriqone/database.c:73
+#: src/libstoriqone/database.c:74
 #, c-format
 msgid   "so_database_get_driver: failed to load database driver '%s'"
 msgstr  "so_database_get_driver: error al cargar el modulo de la base de datos \"%s\""
 
-#: src/libstoriqone/database.c:79
+#: src/libstoriqone/database.c:82
 #, c-format
 msgid   "so_database_get_driver: driver '%s' did not call 'so_database_register_driver'"
 msgstr  "so_database_get_driver: el controlador \"%s\" no ha llamado \"so_database_register_driver"
 
-#: src/libstoriqone/database.c:101
+#: src/libstoriqone/database.c:106
 #, c-format
 msgid   "so_database_load_config: invalid parameters (config: %p)"
 msgstr  "so_database_load_config: parámetro invalido (config: %p)"
 
-#: src/libstoriqone/database.c:123
+#: src/libstoriqone/database.c:129
 msgid   "so_database_register_driver: trying to register a NULL driver"
 msgstr  "so_database_register_driver: intentar grabar un controlador \"NULL\""
 
-#: src/libstoriqone/database.c:132
+#: src/libstoriqone/database.c:138
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is already registered"
 msgstr  "so_database_register_driver: el controlador de base de datos \"%s\" está cargado"
 
-#: src/libstoriqone/database.c:146
+#: src/libstoriqone/database.c:152
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is now registered"
 msgstr  "so_database_register_driver: el controlor de la base de datos \"%s\" ahora está cargado"

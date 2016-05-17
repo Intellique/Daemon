@@ -70,13 +70,17 @@ struct so_database * so_database_get_driver(const char * driver) {
 
 		if (cookie == NULL) {
 			pthread_mutex_unlock(&so_database_lock);
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_database_get_driver: failed to load database driver '%s'"), driver);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_database_get_driver: failed to load database driver '%s'"),
+				driver);
 			return NULL;
 		}
 
 		if (!so_value_hashtable_has_key2(so_database_drivers, driver)) {
 			pthread_mutex_unlock(&so_database_lock);
-			so_log_write(so_log_level_warning, dgettext("libstoriqone", "so_database_get_driver: driver '%s' did not call 'so_database_register_driver'"), driver);
+			so_log_write(so_log_level_warning,
+				dgettext("libstoriqone", "so_database_get_driver: driver '%s' did not call 'so_database_register_driver'"),
+				driver);
 			return NULL;
 		}
 	}
@@ -98,7 +102,9 @@ static void so_database_init() {
 
 void so_database_load_config(struct so_value * config) {
 	if (config == NULL || !(config->type == so_value_array || config->type == so_value_linked_list)) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_database_load_config: invalid parameters (config: %p)"), config);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_database_load_config: invalid parameters (config: %p)"),
+			config);
 		return;
 	}
 

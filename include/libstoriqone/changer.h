@@ -188,7 +188,7 @@ struct so_changer {
 };
 
 /**
- * \brief Convert an enumeration info static allocated string
+ * \brief Convert an enumeration into static allocated string
  *
  * \param[in] action : a value of enum so_changer_action
  * \param[in] translate : translate returned value
@@ -198,21 +198,39 @@ const char * so_changer_action_to_string(enum so_changer_action action, bool tra
 
 /**
  * \brief Convert an instance of \a changer into an object
+ *
+ * \param[in] changer : a changer
+ * \return a value
+ *
+ * \note To encode an archive into JSON, we need to call so_json_encode with
+ * returned value
+ * \see so_json_encode_to_fd
+ * \see so_json_encode_to_file
+ * \see so_json_encode_to_string
  */
 struct so_value * so_changer_convert(struct so_changer * changer) __attribute__((warn_unused_result));
 
 /**
  * \brief Release memory allocated for \a changer
+ *
+ * \param[in] changer : a changer
  */
 void so_changer_free(struct so_changer * changer);
 
 /**
  * \brief Function to pass to so_value_new_custom
+ *
+ * This function is a wrapper to so_changer_free used by so_value_free
+ * \param[in] changer : a changer
+ *
+ * \see so_changer_free
+ * \see so_value_free
+ * \see so_value_new_custom
  */
 void so_changer_free2(void * changer);
 
 /**
- * \brief Convert an status to string
+ * \brief Convert a status to string
  *
  * \param[in] status : a status
  * \param[in] translate : translate result into current locale by using gettext

@@ -48,18 +48,18 @@ static void so_checksum_sha512_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_sha512_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_sha512_driver = {
-	.name			  = "sha512",
+	.name             = "sha512",
 	.default_checksum = false,
-	.new_checksum	  = so_checksum_sha512_new_checksum,
-	.cookie			  = NULL,
+	.new_checksum     = so_checksum_sha512_new_checksum,
+	.cookie           = NULL,
 	.src_checksum     = STORIQONE_CHECKSUM_SHA512_SRCSUM,
 };
 
 static struct so_checksum_ops so_checksum_sha512_ops = {
-	.digest	= so_checksum_sha512_digest,
-	.free	= so_checksum_sha512_free,
+	.digest = so_checksum_sha512_digest,
+	.free   = so_checksum_sha512_free,
 	.reset  = so_checksum_sha512_reset,
-	.update	= so_checksum_sha512_update,
+	.update = so_checksum_sha512_update,
 };
 
 
