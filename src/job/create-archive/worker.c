@@ -636,7 +636,7 @@ float soj_create_archive_progress() {
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
-		if (worker->state != soj_worker_status_ready)
+		if (worker->state < soj_worker_status_reserved)
 			continue;
 
 		nb_done += worker->total_done + worker->partial_done;
