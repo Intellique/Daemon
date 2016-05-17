@@ -570,6 +570,8 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     checktime TIMESTAMP(3) WITH TIME ZONE,
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
 
+    ltfsPath TEXT,
+
     PRIMARY KEY (archiveVolume, archiveFile)
 );
 
@@ -749,16 +751,17 @@ CREATE TABLE Vtl (
 
 -- Functions
 CREATE OR REPLACE FUNCTION "json_object_set_key"("json" json, "key_to_set" TEXT, "value_to_set" anyelement)
-  RETURNS json
-  LANGUAGE sql
-  IMMUTABLE
-  STRICT
+    RETURNS json
+    LANGUAGE sql
+    IMMUTABLE
+    STRICT
 AS $function$
 SELECT CONCAT('{', STRING_AGG(TO_JSON("key") || ':' || "value", ','), '}')::JSON
-  FROM (SELECT *
-          FROM JSON_EACH("json")
-         WHERE "key" <> "key_to_set"
-         UNION ALL
+    FROM (
+        SELECT *
+        FROM JSON_EACH("json")
+        WHERE "key" <> "key_to_set"
+        UNION ALL
         SELECT "key_to_set", TO_JSON("value_to_set")) AS "fields"
 $function$;
 

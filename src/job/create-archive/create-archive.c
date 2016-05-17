@@ -143,7 +143,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				if (round == 1)
 					soj_create_archive_meta_worker_add_file(file.filename, root);
 
-				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file, round == 1, db_connect);
+				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file, root, round == 1, db_connect);
 				if (write_status != so_format_writer_ok) {
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),

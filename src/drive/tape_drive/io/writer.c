@@ -52,6 +52,7 @@
 #include <libstoriqone-drive/time.h>
 
 #include "io.h"
+#include "../util/st.h"
 
 struct sodr_tape_drive_writer {
 	int fd;
@@ -61,7 +62,9 @@ struct sodr_tape_drive_writer {
 	ssize_t buffer_used;
 	ssize_t block_size;
 	ssize_t position;
+	int partition;
 	int file_position;
+	bool fill_last_block;
 
 	int last_errno;
 
@@ -101,7 +104,7 @@ static ssize_t sodr_tape_drive_writer_before_close(struct so_stream_writer * sw,
 		return -1;
 
 	struct sodr_tape_drive_writer * self = sw->data;
-	if (self->buffer_used > 0 && self->buffer_used < self->block_size) {
+	if (self->fill_last_block && self->buffer_used > 0 && self->buffer_used < self->block_size) {
 		ssize_t will_copy = self->block_size - self->buffer_used;
 		if (will_copy > length)
 			will_copy = length;
@@ -147,6 +150,10 @@ static ssize_t sodr_tape_drive_writer_before_close(struct so_stream_writer * sw,
 }
 
 static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
+	return sodr_tape_drive_writer_close2(sw, true);
+}
+
+int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 	if (sw == NULL || sw->data == NULL)
 		return -1;
 
@@ -154,10 +161,14 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 	self->last_errno = 0;
 
 	if (self->buffer_used > 0) {
-		bzero(self->buffer + self->buffer_used, self->block_size - self->buffer_used);
+		ssize_t nb_will_write = self->block_size;
+		if (self->fill_last_block)
+			bzero(self->buffer + self->buffer_used, self->block_size - self->buffer_used);
+		else
+			nb_will_write = self->buffer_used;
 
 		sodr_time_start();
-		ssize_t nb_write = write(self->fd, self->buffer, self->block_size);
+		ssize_t nb_write = write(self->fd, self->buffer, nb_will_write);
 		sodr_time_stop(self->drive);
 
 		if (nb_write < 0) {
@@ -189,10 +200,7 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 	}
 
 	if (!self->closed) {
-		static struct mtop eof = { MTWEOF, 1 };
-		sodr_time_start();
-		int failed = ioctl(self->fd, MTIOCTOP, &eof);
-		sodr_time_stop(self->drive);
+		int failed = sodr_tape_drive_st_write_end_of_file(self->drive, self->fd);
 
 		self->media->last_write = time(NULL);
 
@@ -206,14 +214,17 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 			return -1;
 		}
 
-		sodr_time_start();
-		close(self->fd);
-		sodr_time_stop(self->drive);
+		if (close_fd) {
+			sodr_time_start();
+			close(self->fd);
+			sodr_time_stop(self->drive);
+
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is closed"),
+				self->drive->vendor, self->drive->model, self->drive->index);
+		}
 
 		self->closed = true;
-		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is closed"),
-			self->drive->vendor, self->drive->model, self->drive->index);
 	}
 
 	return 0;
@@ -236,6 +247,44 @@ static int sodr_tape_drive_writer_create_new_file(struct so_stream_writer * sw) 
 static int sodr_tape_drive_file_position(struct so_stream_writer * sw) {
 	struct sodr_tape_drive_writer * self = sw->data;
 	return self->file_position;
+}
+
+ssize_t sodr_tape_drive_writer_flush(struct so_stream_writer * sw) {
+	struct sodr_tape_drive_writer * self = sw->data;
+	self->last_errno = 0;
+
+	if (self->buffer_used > 0) {
+		sodr_time_start();
+		ssize_t nb_write = write(self->fd, self->buffer, self->buffer_used);
+		sodr_time_stop(self->drive);
+
+		if (nb_write < 0) {
+			switch (errno) {
+				case ENOSPC:
+					sodr_time_start();
+					nb_write = write(self->fd, self->buffer, self->block_size);
+					sodr_time_stop(self->drive);
+
+					if (nb_write == self->block_size)
+						break;
+
+				default:
+					self->last_errno = errno;
+					self->media->nb_write_errors++;
+					return -1;
+			}
+		}
+
+		self->position += nb_write;
+		self->buffer_used = 0;
+		self->media->nb_total_write++;
+		if (self->media->free_block > 0)
+			self->media->free_block--;
+
+		return nb_write;
+	}
+
+	return 0;
 }
 
 static void sodr_tape_drive_writer_free(struct so_stream_writer * sw) {
@@ -275,8 +324,16 @@ static int sodr_tape_drive_writer_last_errno(struct so_stream_writer * sw) {
 	return self->last_errno;
 }
 
-struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position) {
-	ssize_t block_size = sodr_tape_drive_get_block_size();
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int partition, int file_position, struct so_database_connection * db) {
+	return sodr_tape_drive_writer_get_raw_writer2(drive, fd, partition, file_position, true, db);
+}
+
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer2(struct so_drive * drive, int fd, int partition, int file_position, bool fill_last_block, struct so_database_connection * db) {
+	ssize_t block_size = sodr_tape_drive_get_block_size(db);
+
+	int failed = sodr_tape_drive_st_set_position(drive, fd, partition, file_position, false, db);
+	if (failed != 0)
+		return NULL;
 
 	drive->status = so_drive_status_writing;
 
@@ -287,8 +344,13 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive 
 	self->buffer_used = 0;
 	self->block_size = block_size;
 	self->position = 0;
+	self->partition = partition;
 	self->file_position = file_position;
+	self->fill_last_block = fill_last_block;
 	self->last_errno = 0;
+
+	if (self->file_position < 0)
+		self->file_position = sodr_tape_drive_st_get_position(drive, fd, db);
 
 	self->drive = drive;
 	self->media = drive->slot->media;
@@ -320,7 +382,7 @@ static struct so_stream_reader * sodr_tape_drive_writer_reopen(struct so_stream_
 		return NULL;
 
 	struct sodr_tape_drive_writer * self = sw->data;
-	return sodr_tape_drive_reader_get_raw_reader(self->drive, self->fd, self->file_position);
+	return sodr_tape_drive_reader_get_raw_reader(self->drive, self->fd, self->partition, self->file_position, NULL);
 }
 
 static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length) {

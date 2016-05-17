@@ -53,6 +53,7 @@
 #include <libstoriqone/string.h>
 
 #include "scsi.h"
+#include "../media.h"
 
 struct scsi_command {
 	const char * name;
@@ -115,41 +116,6 @@ struct scsi_request_sense {
 	bool command_data:1;
 	bool sksv:1;
 	unsigned char field_data[2];					/* Byte 16,17 */
-};
-
-enum scsi_mam_attribute {
-	scsi_mam_remaining_capacity  = 0x0000,
-	scsi_mam_maximum_capacity    = 0x0001,
-	scsi_mam_load_count          = 0x0003,
-	scsi_mam_mam_space_remaining = 0x0004,
-
-	scsi_mam_device_at_last_load           = 0x020A,
-	scsi_mam_device_at_last_load_2         = 0x020B,
-	scsi_mam_device_at_last_load_3         = 0x020C,
-	scsi_mam_device_at_last_load_4         = 0x020D,
-	scsi_mam_total_written_in_medium_life  = 0x0220,
-	scsi_mam_total_read_in_medium_life     = 0x0221,
-	scsi_mam_total_written_in_current_load = 0x0222,
-	scsi_mam_total_read_current_load       = 0x0223,
-
-	scsi_mam_medium_manufacturer      = 0x0400,
-	scsi_mam_medium_serial_number     = 0x0401,
-	scsi_mam_medium_manufacturer_date = 0x0406,
-	scsi_mam_mam_capacity             = 0x0407,
-	scsi_mam_medium_type              = 0x0408,
-	scsi_mam_medium_type_information  = 0x0409,
-
-	scsi_mam_application_vendor           = 0x0800,
-	scsi_mam_application_name             = 0x0801,
-	scsi_mam_application_version          = 0x0802,
-	scsi_mam_user_medium_text_label       = 0x0803,
-	scsi_mam_date_and_time_last_written   = 0x0804,
-	scsi_mam_text_localization_identifier = 0x0805,
-	scsi_mam_barcode                      = 0x0806,
-	scsi_mam_owning_host_textual_name     = 0x0807,
-	scsi_mam_media_pool                   = 0x0808,
-
-	scsi_mam_unique_cardtrige_identity = 0x1000,
 };
 
 static int sodr_tape_drive_scsi_locate10(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
@@ -229,6 +195,14 @@ static struct scsi_command scsi_command_rewind = {
 	.op_code = 0x01,
 	.cdb_length = 6,
 	.timeout = 540,
+	.available = true
+};
+
+static struct scsi_command scsi_command_write_attribute = {
+	.name = "WRITE ATTRIBUTE",
+	.op_code = 0x8d,
+	.cdb_length = 16,
+	.timeout = 60,
 	.available = true
 };
 
@@ -754,37 +728,23 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 	if (status)
 		return status;
 
-	struct scsi_mam {
-		enum scsi_mam_attribute attribute_identifier:16;
-		unsigned char format:2;
-		unsigned char reserved:5;
-		bool read_only:1;
-		unsigned short attribute_length;
-		union {
-			unsigned char int8;
-			unsigned short be16;
-			unsigned long long be64;
-			char text[160];
-		} attribute_value;
-	} __attribute__((packed));
-
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
 	unsigned char * ptr = buffer + 4;
 
 	for (ptr = buffer + 4; ptr < buffer + data_available;) {
-		struct scsi_mam * attr = (struct scsi_mam *) ptr;
-		attr->attribute_identifier = be16toh(attr->attribute_identifier);
-		attr->attribute_length = be16toh(attr->attribute_length);
+		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
+		attr->identifier = be16toh(attr->identifier);
+		attr->length = be16toh(attr->length);
 
-		ptr += attr->attribute_length + 5;
+		ptr += attr->length + 5;
 
-		if (attr->attribute_length == 0)
+		if (attr->length == 0)
 			continue;
 
 		char * space;
-		switch (attr->attribute_identifier) {
-			case scsi_mam_medium_serial_number:
-				strncpy(medium_serial_number, attr->attribute_value.text, length);
+		switch (attr->identifier) {
+			case sodr_tape_drive_scsi_mam_medium_serial_number:
+				strncpy(medium_serial_number, attr->value.text, length);
 				space = strchr(medium_serial_number, ' ');
 				if (space)
 					*space = '\0';
@@ -844,26 +804,12 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = buffer;
-	header.timeout = 1000 * scsi_command_read_attribute.timeout;
+	header.timeout = 60000; // 1 minute
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
 	if (status)
 		return status;
-
-	struct scsi_mam {
-		enum scsi_mam_attribute attribute_identifier:16;
-		unsigned char format:2;
-		unsigned char reserved:5;
-		bool read_only:1;
-		unsigned short attribute_length;
-		union {
-			unsigned char int8;
-			unsigned short be16;
-			unsigned long long be64;
-			char text[160];
-		} attribute_value;
-	} __attribute__((packed));
 
 	static unsigned long last_hash = 0;
 	const unsigned long hash = so_string_compute_hash2(media->name);
@@ -872,41 +818,41 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	unsigned char * ptr = buffer + 4;
 
 	for (ptr = buffer + 4; ptr < buffer + data_available;) {
-		struct scsi_mam * attr = (struct scsi_mam *) ptr;
-		attr->attribute_identifier = be16toh(attr->attribute_identifier);
-		attr->attribute_length = be16toh(attr->attribute_length);
+		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
+		attr->identifier = be16toh(attr->identifier);
+		attr->length = be16toh(attr->length);
 
-		ptr += attr->attribute_length + 5;
+		ptr += attr->length + 5;
 
-		if (attr->attribute_length == 0)
+		if (attr->length == 0)
 			continue;
 
 		char * space;
 		char buf[33];
-		switch (attr->attribute_identifier) {
-//			case scsi_mam_remaining_capacity:
-//				media->free_block = be64toh(attr->attribute_value.be64);
-//				media->free_block <<= 10;
-//				media->free_block /= (media->block_size >> 10);
-//				break;
-
-			case scsi_mam_load_count:
-				media->load_count = be64toh(attr->attribute_value.be64);
+		switch (attr->identifier) {
+			case sodr_tape_drive_scsi_mam_remaining_capacity:
+				media->free_block = be64toh(attr->value.be64);
+				media->free_block <<= 10;
+				media->free_block /= (media->block_size >> 10);
 				break;
 
-			case scsi_mam_total_written_in_medium_life:
-				media->nb_total_write = be64toh(attr->attribute_value.be64);
+			case sodr_tape_drive_scsi_mam_load_count:
+				media->load_count = be64toh(attr->value.be64);
+				break;
+
+			case sodr_tape_drive_scsi_mam_total_written_in_medium_life:
+				media->nb_total_write = be64toh(attr->value.be64);
 				media->nb_total_write <<= 10;
 				break;
 
-			case scsi_mam_total_read_in_medium_life:
-				media->nb_total_read = be64toh(attr->attribute_value.be64);
+			case sodr_tape_drive_scsi_mam_total_read_in_medium_life:
+				media->nb_total_read = be64toh(attr->value.be64);
 				media->nb_total_read <<= 10;
 				break;
 
-			case scsi_mam_medium_manufacturer:
+			case sodr_tape_drive_scsi_mam_medium_manufacturer:
 				if (last_hash != hash) {
-					strncpy(buf, attr->attribute_value.text, 8);
+					strncpy(buf, attr->value.text, 8);
 					buf[8] = '\0';
 					so_string_rtrim(buf, ' ');
 					so_log_write(so_log_level_debug,
@@ -915,16 +861,16 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 				}
 				break;
 
-			case scsi_mam_medium_serial_number:
-				media->medium_serial_number = strdup(attr->attribute_value.text);
+			case sodr_tape_drive_scsi_mam_medium_serial_number:
+				media->medium_serial_number = strdup(attr->value.text);
 				space = strchr(media->medium_serial_number, ' ');
 				if (space)
 					*space = '\0';
 				break;
 
-			case scsi_mam_medium_manufacturer_date:
+			case sodr_tape_drive_scsi_mam_medium_manufacturer_date:
 				if (last_hash != hash) {
-					strncpy(buf, attr->attribute_value.text, 8);
+					strncpy(buf, attr->value.text, 8);
 					buf[8] = '\0';
 					so_string_rtrim(buf, ' ');
 					so_log_write(so_log_level_debug,
@@ -933,8 +879,8 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 				}
 				break;
 
-			case scsi_mam_medium_type:
-				switch (attr->attribute_value.int8) {
+			case sodr_tape_drive_scsi_mam_medium_type:
+				switch (attr->value.int8) {
 					case 0x01:
 						media->type = so_media_type_cleaning;
 						break;
@@ -955,6 +901,177 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	}
 
 	last_hash = hash;
+
+	return 0;
+}
+
+int sodr_tape_drive_scsi_read_volume_change_reference(int fd, unsigned int * volume_change_reference) {
+	if (!scsi_command_read_attribute.available || volume_change_reference == NULL)
+		return -1;
+
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned short allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C, // READ ATTRIBUTE (16)
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.volume_number = 0,
+		.partition_number = 0,
+		.first_attribute_id = 0,
+		.allocation_length = htobe16(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	unsigned char buffer[1024];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	unsigned int data_available = be32toh(*(unsigned int *) buffer);
+	unsigned char * ptr = buffer + 4;
+
+	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
+		attr->identifier = be16toh(attr->identifier);
+		attr->length = be16toh(attr->length);
+
+		ptr += attr->length + 5;
+
+		if (attr->length == 0)
+			continue;
+
+		switch (attr->identifier) {
+			case sodr_tape_drive_scsi_mam_volume_change_reference:
+				*volume_change_reference = be32toh(attr->value.be32);
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return 0;
+}
+
+int sodr_tape_drive_scsi_read_volume_coherency(int fd, struct sodr_tape_drive_ltfs_volume_coherency * volume_coherency, unsigned char part) {
+	if (!scsi_command_read_attribute.available || volume_coherency == NULL)
+		return -1;
+
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned short allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C, // READ ATTRIBUTE (16)
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.volume_number = 0,
+		.partition_number = part,
+		.first_attribute_id = 0,
+		.allocation_length = htobe16(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	unsigned char buffer[1024];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	unsigned int data_available = be32toh(*(unsigned int *) buffer);
+	unsigned char * ptr = buffer + 4;
+
+	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
+		attr->identifier = be16toh(attr->identifier);
+		attr->length = be16toh(attr->length);
+
+		ptr += attr->length + 5;
+
+		if (attr->length == 0)
+			continue;
+
+		switch (attr->identifier) {
+			case sodr_tape_drive_scsi_mam_volume_coherency_infomation: {
+					struct sodr_tape_drive_scsi_volume_coherency_information * vci = (struct sodr_tape_drive_scsi_volume_coherency_information *) &attr->value.text;
+					if (vci->volume_change_reference_value_length != 8)
+						return 1;
+
+					vci->volume_change_reference_value = be64toh(vci->volume_change_reference_value);
+					vci->volume_coherency_count = be64toh(vci->volume_coherency_count);
+					vci->volume_coherency_set_identifier = be64toh(vci->volume_coherency_set_identifier);
+					vci->application_client_specific_information_length = be16toh(vci->application_client_specific_information_length);
+
+					volume_coherency->volume_change_reference = vci->volume_change_reference_value;
+					volume_coherency->generation_number = vci->volume_coherency_count;
+					volume_coherency->block_position_of_last_index = vci->volume_coherency_set_identifier;
+
+					break;
+				}
+
+			default:
+				break;
+		}
+	}
 
 	return 0;
 }
@@ -988,7 +1105,7 @@ int sodr_tape_drive_scsi_rewind(int fd) {
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = NULL;
 	header.timeout = 1000 * scsi_command_rewind.timeout;
-	header.dxfer_direction = SG_DXFER_FROM_DEV;
+	header.dxfer_direction = SG_DXFER_NONE;
 
 	int status = ioctl(fd, SG_IO, &header);
 
@@ -1009,6 +1126,7 @@ int sodr_tape_drive_scsi_setup(const char * path) {
 	sodr_tape_drive_scsi_setup2(fd, &scsi_command_read_position);
 	sodr_tape_drive_scsi_setup2(fd, &scsi_command_report_density_support);
 	sodr_tape_drive_scsi_setup2(fd, &scsi_command_rewind);
+	sodr_tape_drive_scsi_setup2(fd, &scsi_command_write_attribute);
 
 	close(fd);
 
@@ -1102,9 +1220,6 @@ static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_comman
 }
 
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
-	if (!scsi_command_log_sense.available)
-		return -1;
-
 	struct {
 		unsigned char page_code:6;
 		unsigned char reserved0:2;
@@ -1188,6 +1303,76 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	unsigned long long int total_block = result.values[2].value + result.values[3].value;
 	total_block <<= 20;
 	media->total_block = total_block / media->block_size;
+
+	return 0;
+}
+
+int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part) {
+	if (!scsi_command_write_attribute.available)
+		return -1;
+
+	unsigned int attribute_length = 5 + attribute->length;
+
+	attribute->identifier = htobe16(attribute->identifier);
+	attribute->length = htobe16(attribute->length);
+
+	if (attribute->format == sodr_tape_drive_scsi_mam_attribute_format_binary) {
+		if (attribute->length == 2)
+			attribute->value.be16 = htobe16(attribute->value.be16);
+		else if (attribute->length == 4)
+			attribute->value.be32 = htobe32(attribute->value.be32);
+		else if (attribute->length == 8)
+			attribute->value.be64 = htobe64(attribute->value.be64);
+	}
+
+	struct {
+		unsigned int data_available;
+		struct sodr_tape_drive_scsi_mam_attribute attr;
+	} __attribute__((packed)) data = {
+		.data_available = htobe32(attribute_length),
+		.attr = *attribute
+	};
+
+	struct {
+		unsigned char operation_code;
+		bool write_through_cache:1;
+		unsigned char reserved0:7;
+		unsigned char reserved1[3];
+		unsigned char volume_number;
+		unsigned char reserved2;
+		unsigned char partition_number;
+		unsigned short reserved3;
+		unsigned int parameter_list_length;
+		unsigned char reserved4;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8D, // WRITE ATTRIBUTE (16)
+		.write_through_cache = false,
+		.volume_number = 0,
+		.partition_number = part,
+		.parameter_list_length = htobe32(4 + attribute_length),
+		.control = 0,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+
+	struct scsi_request_sense sense;
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 4 + attribute_length;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &data;
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
+	header.dxfer_direction = SG_DXFER_TO_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
 
 	return 0;
 }

@@ -124,20 +124,22 @@ static int so_database_postgresql_sync_plugin_script(struct so_database_connecti
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume);
 static int so_database_postgresql_create_check_archive_job(struct so_database_connection * connect, struct so_job * current_job, struct so_archive * archive, bool quick_mode);
-static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(struct so_database_connection * connect, struct so_archive * archive);
 static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id);
 static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_archive_format * so_database_postgresql_get_archive_format_by_id(struct so_database_connection * connect, const char * id);
 static struct so_archive_format * so_database_postgresql_get_archive_format_by_name(struct so_database_connection * connect, const char * name);
+static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(struct so_database_connection * connect, struct so_archive * archive);
 static struct so_value * so_database_postgresql_get_archives_by_media(struct so_database_connection * connect, struct so_media * media);
+static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path);
+static char * so_database_postgresql_get_selected_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path);
+static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
 static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
-static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
-static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
-static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id);
+static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files);
 static int so_database_postgresql_update_link_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job);
 
@@ -207,11 +209,13 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.check_archive_file             = so_database_postgresql_check_archive_file,
 	.check_archive_volume           = so_database_postgresql_check_archive_volume,
 	.create_check_archive_job       = so_database_postgresql_create_check_archive_job,
-	.get_archives_by_archive_mirror = so_database_postgresql_get_archives_by_archive_mirror,
 	.get_archive_by_job             = so_database_postgresql_get_archive_by_job,
 	.get_archive_format_by_name     = so_database_postgresql_get_archive_format_by_name,
+	.get_archives_by_archive_mirror = so_database_postgresql_get_archives_by_archive_mirror,
 	.get_archives_by_media          = so_database_postgresql_get_archives_by_media,
 	.get_nb_volumes_of_file         = so_database_postgresql_get_nb_volumes_of_file,
+	.get_original_path_of_ltfs_file = so_database_postgresql_get_original_path_of_ltfs_file,
+	.get_selected_path_of_ltfs_file = so_database_postgresql_get_selected_path_of_ltfs_file,
 	.get_synchronized_archive       = so_database_postgresql_get_synchronized_archive,
 	.is_archive_synchronized        = so_database_postgresql_is_archive_synchronized,
 	.link_archives                  = so_database_postgresql_link_archives,
@@ -1889,7 +1893,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			if (media->media_format->db_data != NULL) {
 				struct so_value * format_db = so_value_hashtable_get(media->media_format->db_data, key, false, false);
 				so_value_unpack(format_db, "{ss}", "id", &mediaformat_id);
-				so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
+				if (mediaformat_id != NULL)
+					so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
 			} else {
 				const char * query = "select_media_format_by_density";
 				so_database_postgresql_prepare(self, query, "SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2");
@@ -1909,7 +1914,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 					so_database_postgresql_get_error(result, query);
 				else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 					so_database_postgresql_get_string_dup(result, 0, 0, &mediaformat_id);
-					so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
+					if (mediaformat_id != NULL)
+						so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
 				}
 
 				free(densitycode);
@@ -3465,6 +3471,111 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 	return nb_volumes;
 }
 
+static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path) {
+	if (connect == NULL || archive == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
+
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
+
+	so_value_free(key);
+
+
+	const char * query = "select_original_path_of_ltfs_file";
+	so_database_postgresql_prepare(self, query, "SELECT name FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE ltfspath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1");
+
+	const char * param[] = { archive_id, path };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * original_path = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_string_dup(result, 0, 0, &original_path);
+
+	PQclear(result);
+
+	return original_path;
+}
+
+static char * so_database_postgresql_get_selected_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path) {
+	if (connect == NULL || archive == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
+
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
+
+	so_value_free(key);
+
+
+	const char * query = "select_selected_path_of_ltfs_file";
+	so_database_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id = (SELECT name FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE ltfspath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1) LIMIT 1");
+
+	const char * param[] = { archive_id, path };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * selected_path = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_string_dup(result, 0, 0, &selected_path);
+
+	PQclear(result);
+
+	return selected_path;
+}
+
+static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive) {
+	if (connect == NULL || archive == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
+
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
+
+	so_value_free(key);
+
+
+	const char * query = "select_synchronized_archives";
+	so_database_postgresql_prepare(self, query, "SELECT sub.archive FROM (SELECT archive, lastupdate = MAX(lastupdate) OVER (PARTITION BY archivemirror) AS synchronized FROM archivetoarchivemirror WHERE archive != $1 AND archivemirror IN (SELECT archivemirror FROM archivetoarchivemirror WHERE archive = $1)) AS sub WHERE sub.synchronized");
+
+	const char * param[] = { archive_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	struct so_value * archives = so_value_new_array(nb_result);
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			struct so_archive * archive = so_database_postgresql_get_archive_by_id(connect, PQgetvalue(result, i, 0));
+			so_value_list_push(archives, so_value_new_custom(archive, so_archive_free2), true);
+		}
+	}
+
+	PQclear(result);
+
+	return archives;
+}
+
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive) {
 	if (connect == NULL || archive == NULL)
 		return false;
@@ -3640,45 +3751,6 @@ static int so_database_postgresql_mark_archive_as_purged(struct so_database_conn
 	PQclear(result);
 
 	return status != PGRES_COMMAND_OK;
-}
-
-static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive) {
-	if (connect == NULL || archive == NULL)
-		return NULL;
-
-	struct so_database_postgresql_connection_private * self = connect->data;
-
-	struct so_value * key = so_value_new_custom(connect->config, NULL);
-	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
-
-	const char * archive_id = NULL;
-	so_value_unpack(db, "{sS}", "id", &archive_id);
-
-	so_value_free(key);
-
-
-	const char * query = "select_synchronized_archives";
-	so_database_postgresql_prepare(self, query, "SELECT sub.archive FROM (SELECT archive, lastupdate = MAX(lastupdate) OVER (PARTITION BY archivemirror) AS synchronized FROM archivetoarchivemirror WHERE archive != $1 AND archivemirror IN (SELECT archivemirror FROM archivetoarchivemirror WHERE archive = $1)) AS sub WHERE sub.synchronized");
-
-	const char * param[] = { archive_id };
-	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-	ExecStatusType status = PQresultStatus(result);
-	int nb_result = PQntuples(result);
-
-	struct so_value * archives = so_value_new_array(nb_result);
-	if (status == PGRES_FATAL_ERROR)
-		so_database_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
-		int i;
-		for (i = 0; i < nb_result; i++) {
-			struct so_archive * archive = so_database_postgresql_get_archive_by_id(connect, PQgetvalue(result, i, 0));
-			so_value_list_push(archives, so_value_new_custom(archive, so_archive_free2), true);
-		}
-	}
-
-	PQclear(result);
-
-	return archives;
 }
 
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original) {

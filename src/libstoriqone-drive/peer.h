@@ -64,7 +64,9 @@ struct sodr_peer {
 };
 
 void sodr_peer_free(struct sodr_peer * peer);
+struct sodr_peer * sodr_peer_get(void);
 struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous);
+void sodr_peer_set(struct sodr_peer * peer);
 
 #endif
 

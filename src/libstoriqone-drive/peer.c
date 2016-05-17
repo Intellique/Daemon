@@ -37,6 +37,8 @@
 
 #include "peer.h"
 
+static struct sodr_peer * current_peer = NULL;
+
 void sodr_peer_free(struct sodr_peer * peer) {
 	free(peer->job_id);
 
@@ -76,6 +78,10 @@ void sodr_peer_free(struct sodr_peer * peer) {
 	free(peer);
 }
 
+struct sodr_peer * sodr_peer_get() {
+	return current_peer;
+}
+
 struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous) {
 	struct sodr_peer * peer = malloc(sizeof(struct sodr_peer));
 	bzero(peer, sizeof(struct sodr_peer));
@@ -107,5 +113,9 @@ struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous) {
 		previous->next = peer;
 
 	return peer;
+}
+
+void sodr_peer_set(struct sodr_peer * peer) {
+	current_peer = peer;
 }
 

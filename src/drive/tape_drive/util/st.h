@@ -24,34 +24,22 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __SO_TAPEDRIVE_SCSI_H__
-#define __SO_TAPEDRIVE_SCSI_H__
+#ifndef __SO_TAPEDRIVE_UTIL_ST_H__
+#define __SO_TAPEDRIVE_UTIL_ST_H__
 
 // bool
 #include <stdbool.h>
-// off_t
-#include <sys/types.h>
 
 struct so_drive;
-struct so_media_format;
+struct so_database_connection;
 
-struct sodr_tape_drive_scsi_position {
-	unsigned int partition;
-	off_t block_position;
-	bool end_of_partition;
-};
+struct mtget;
 
-bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path);
-bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path);
-int sodr_tape_drive_scsi_erase_media(int fd, bool quick_mode);
-int sodr_tape_drive_scsi_locate(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
-int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path);
-int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_position * position);
-int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
-int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media);
-int sodr_tape_drive_scsi_rewind(int fd);
-int sodr_tape_drive_scsi_setup(const char * path);
-int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);
+int sodr_tape_drive_st_get_position(struct so_drive * drive, int fd, struct so_database_connection * db);
+int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget * status, struct so_database_connection * db);
+int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_database_connection * db);
+int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, bool force, struct so_database_connection * db);
+int sodr_tape_drive_st_write_end_of_file(struct so_drive * drive, int fd);
 
 #endif
 

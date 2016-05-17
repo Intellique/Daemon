@@ -495,7 +495,6 @@ struct so_database_connection {
 		 * \param[in] archive : reference archive
 		 * \return a value which contains a list of archives
 		 */
-		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
 		/**
 		 * \brief get an archive related to \a job
 		 *
@@ -512,6 +511,7 @@ struct so_database_connection {
 		 * \return \b NULL on failure
 		 */
 		struct so_archive_format * (*get_archive_format_by_name)(struct so_database_connection * connect, const char * name) __attribute__((warn_unused_result));
+		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((warn_unused_result));
 		/**
 		 * \brief get a list of archives which are on this \a media
 		 *
@@ -529,6 +529,8 @@ struct so_database_connection {
 		 * \return \b -1 on failure
 		 */
 		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+		char * (*get_original_path_of_ltfs_file)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
+		char * (*get_selected_path_of_ltfs_file)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
 		/**
 		 * \brief get a list of archives which are synchronized
 		 *

@@ -37,6 +37,8 @@
 // free, malloc, realloc
 #include <stdlib.h>
 
+#include <libstoriqone/archive.h>
+#include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
@@ -47,7 +49,9 @@
 
 #include "format/ltfs/ltfs.h"
 #include "media.h"
-#include "xml.h"
+#include "io/io.h"
+#include "util/scsi.h"
+#include "util/xml.h"
 
 static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, const char * buffer);
 
@@ -70,14 +74,28 @@ static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media __at
 }
 
 void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
-	unsigned int i;
 	switch (media_data->format) {
 		case sodr_tape_drive_media_ltfs:
-			for (i = 0; i < media_data->data.ltfs.nb_files; i++) {
-				struct sodr_tape_drive_format_ltfs_file * file = media_data->data.ltfs.files + i;
-				so_format_file_free(&file->file);
+			if (media_data->data.ltfs.root.first_child != NULL) {
+				struct sodr_tape_drive_format_ltfs_file * file = media_data->data.ltfs.root.first_child;
+				while (file->parent != NULL) {
+					while (file->first_child != NULL)
+						file = file->first_child;
+
+					so_format_file_free(&file->file);
+					free(file->extents);
+
+					if (file->next_sibling != NULL) {
+						file = file->next_sibling;
+						free(file->previous_sibling);
+					} else
+						do {
+							file = file->parent;
+							free(file->last_child);
+						} while (file->parent != NULL && file->next_sibling == NULL);
+				}
 			}
-			free(media_data->data.ltfs.files);
+			so_format_file_free(&media_data->data.ltfs.root.file);
 			break;
 
 		default:
@@ -117,17 +135,63 @@ enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffe
 	return nb_params == 1 ? sodr_tape_drive_media_ltfs : sodr_tape_drive_media_unknown;
 }
 
-int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect) {
+int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int scsi_fd, struct so_database_connection * db_connect) {
 	struct so_media * media = drive->slot->media;
 	struct sodr_tape_drive_media * mp = media->private_data;
 
-	struct so_stream_reader * reader = drive->ops->get_raw_reader(NULL, 0, db_connect);
+	struct so_value * archives = db_connect->ops->get_archives_by_media(db_connect, media);
+	int nb_archives = so_value_list_get_length(archives);
+	if (nb_archives > 1) {
+		so_value_free(archives);
+
+		media->status = so_media_status_error;
+
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "LTFS media '%s' should contains at most one archive but not %d archives"),
+			media->name, nb_archives);
+
+		return 0;
+	}
+
+	struct so_archive * archive = NULL;
+	if (nb_archives == 1) {
+		struct so_value * varchive = so_value_list_get(archives, 0, true);
+		archive = so_value_custom_get(varchive);
+	}
+	so_value_free(archives);
+
+	struct sodr_tape_drive_scsi_position position = {
+		.partition = 0,
+		.block_position = 0,
+		.end_of_partition = false
+	};
+
+	struct so_stream_reader * reader = sodr_tape_drive_reader_get_raw_reader2(drive, fd, scsi_fd, &position);
+	if (reader == NULL) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "Error opening media '%s'"),
+			media->name);
+
+		so_archive_free(archive);
+
+		return 1;
+	}
 
 	char buffer_label[82];
 	ssize_t nb_read = reader->ops->read(reader, buffer_label, 82);
 
-	reader->ops->close(reader);
+	sodr_tape_drive_reader_close2(reader, false);
 	reader->ops->free(reader);
+
+	if (nb_read < 0) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "Error while reading label on media '%s' because %m"),
+			media->name);
+
+		so_archive_free(archive);
+
+		return 1;
+	}
 
 	strncpy(mp->data.ltfs.owner_identifier, buffer_label + 37, 14);
 	mp->data.ltfs.owner_identifier[14] = '\0';
@@ -137,11 +201,16 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 		so_string_rtrim(mp->data.ltfs.owner_identifier, ' ');
 
 
-	reader = drive->ops->get_raw_reader(NULL, 3, db_connect);
+	position.block_position = mp->data.ltfs.index.block_position_of_last_index;
+
+	reader = sodr_tape_drive_reader_get_raw_reader2(drive, fd, scsi_fd, &position);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "Failed to read LTFS index from media '%s'"),
 			media->name);
+
+		so_archive_free(archive);
+
 		return 1;
 	}
 
@@ -158,6 +227,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 			free(buffer);
 			reader->ops->free(reader);
 
+			so_archive_free(archive);
+
 			return 2;
 		}
 
@@ -168,6 +239,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 
 			free(buffer);
 			reader->ops->free(reader);
+
+			so_archive_free(archive);
 
 			return 3;
 		}
@@ -189,18 +262,23 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 			free(buffer);
 			reader->ops->free(reader);
 
+			so_archive_free(archive);
+
 			return 3;
 		}
 
 		buffer = addr;
 	}
 
-	reader->ops->close(reader);
+	sodr_tape_drive_reader_close2(reader, false);
 	reader->ops->free(reader);
-	free(buffer);
 
-	if (index != NULL)
-		sodr_tape_drive_format_ltfs_parse_index(media->private_data, index);
+	if (index != NULL) {
+		sodr_tape_drive_format_ltfs_parse_index(media->private_data, index, archive, db_connect);
+		so_value_free(index);
+	}
+
+	so_archive_free(archive);
 
 	return 0;
 }
@@ -208,7 +286,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_database_connection * db_connect) {
 	struct so_media * media = drive->slot->media;
 
-	struct so_stream_reader * reader = drive->ops->get_raw_reader(NULL, 1, db_connect);
+	struct so_stream_reader * reader = drive->ops->get_raw_reader(1, db_connect);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "Failed to read LTFS label from media '%s'"),

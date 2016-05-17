@@ -43,7 +43,7 @@
 
 #include "ltfs.h"
 #include "../../media.h"
-#include "../../scsi.h"
+#include "../../util/scsi.h"
 
 struct sodr_tape_drive_format_ltfs_reader_private {
 	int fd;
@@ -60,8 +60,7 @@ struct sodr_tape_drive_format_ltfs_reader_private {
 	char * base_directory;
 
 	struct sodr_tape_drive_format_ltfs_file * file_info;
-	unsigned int i_files;
-	struct sodr_tape_drive_format_ltfs_extent * extent;
+	struct sodr_tape_drive_format_ltfs_extent * extents;
 	unsigned int i_extent;
 	int last_errno;
 
@@ -120,9 +119,10 @@ struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive
 	self->total_read = 0;
 	self->file_position = 0;
 
-	self->file_info = NULL;
-	self->i_files = 0;
-	self->extent = NULL;
+	self->file_info = mp->data.ltfs.root.first_child;
+	self->extents = NULL;
+	if (self->file_info != NULL)
+		self->extents = self->file_info->extents;
 	self->i_extent = 0;
 	self->last_errno = 0;
 
@@ -166,7 +166,7 @@ static int sodr_tape_drive_format_ltfs_reader_close(struct so_format_reader * fr
 
 static bool sodr_tape_drive_format_ltfs_reader_end_of_file(struct so_format_reader * fr) {
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
-	return self->i_files >= self->ltfs_info->nb_files;
+	return self->file_info == &self->ltfs_info->root || self->file_info == NULL;
 }
 
 static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_forward(struct so_format_reader * fr, off_t offset) {
@@ -186,7 +186,7 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 	}
 
 	while (nb_total_skip < offset) {
-		if (self->extent == NULL) {
+		if (self->extents == NULL) {
 			ssize_t will_skip = offset - nb_total_skip;
 			if (self->file_info->file.size - self->file_position < will_skip)
 				will_skip = self->file_info->file.size - self->file_position;
@@ -198,10 +198,10 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 			return so_format_reader_header_ok;
 		}
 
-		if (self->file_position < self->extent->file_offset) {
+		if (self->file_position < self->extents->file_offset) {
 			ssize_t will_skip = offset - nb_total_skip;
-			if (self->file_position + will_skip > self->extent->file_offset)
-				will_skip = self->extent->file_offset - self->file_position;
+			if (self->file_position + will_skip > self->extents->file_offset)
+				will_skip = self->extents->file_offset - self->file_position;
 
 			self->file_position += will_skip;
 			self->total_read += will_skip;
@@ -211,8 +211,8 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 				return so_format_reader_header_ok;
 		}
 
-		if (self->file_position + (offset - nb_total_skip) >= self->extent->file_offset + (off_t) self->extent->byte_count) {
-			ssize_t will_skip = self->extent->file_offset + self->extent->byte_count;
+		if (self->file_position + (offset - nb_total_skip) >= self->extents->file_offset + (off_t) self->extents->byte_count) {
+			ssize_t will_skip = self->extents->file_offset + self->extents->byte_count;
 
 			self->file_position += will_skip;
 			self->total_read += will_skip;
@@ -221,9 +221,9 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 			self->i_extent++;
 
 			if (self->i_extent < self->file_info->nb_extents)
-				self->extent++;
+				self->extents++;
 			else
-				self->extent = NULL;
+				self->extents = NULL;
 
 			if (self->file_position == self->file_info->file.size)
 				return so_format_reader_header_ok;
@@ -232,9 +232,9 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 		}
 
 		size_t nb_blocks = 0;
-		if (offset - nb_total_skip > (off_t) (self->block_size - self->extent->byte_offset)) {
+		if (offset - nb_total_skip > (off_t) (self->block_size - self->extents->byte_offset)) {
 			nb_blocks = 1;
-			size_t will_skip = self->block_size - self->extent->byte_offset;
+			size_t will_skip = self->block_size - self->extents->byte_offset;
 
 			self->file_position += will_skip;
 			self->total_read += will_skip;
@@ -253,8 +253,8 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 		}
 
 		struct sodr_tape_drive_scsi_position position = {
-			.partition = self->extent->partition,
-			.block_position = self->extent->start_block + nb_blocks,
+			.partition = self->extents->partition,
+			.block_position = self->extents->start_block + nb_blocks,
 			.end_of_partition = false,
 		};
 
@@ -269,7 +269,7 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 		if (failed != 0)
 			return so_format_reader_header_not_found;
 
-		if ((self->extent->byte_offset > 0 && nb_blocks == 0) || offset > nb_total_skip) {
+		if ((self->extents->byte_offset > 0 && nb_blocks == 0) || offset > nb_total_skip) {
 			sodr_time_start();
 			ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
 			sodr_time_stop(self->drive);
@@ -280,7 +280,7 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 			if (nb_read == 0)
 				return so_format_reader_header_ok;
 
-			self->buffer_used = self->extent->byte_offset;
+			self->buffer_used = self->extents->byte_offset;
 			self->buffer_size = nb_read;
 
 			size_t will_skip = offset - nb_total_skip;
@@ -319,20 +319,26 @@ static struct so_value * sodr_tape_drive_format_ltfs_reader_get_digests(struct s
 static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 
-	if (self->i_files >= self->ltfs_info->nb_files)
+	if (self->file_info == &self->ltfs_info->root || self->file_info == NULL)
 		return so_format_reader_header_not_found;
-
-	if (self->i_files == 0)
-		self->file_info = self->ltfs_info->files;
-	else
-		self->file_info++;
 
 	so_format_file_copy(file, &self->file_info->file);
 
+	if (self->file_info->first_child != NULL)
+		self->file_info = self->file_info->first_child;
+	else if (self->file_info->next_sibling != NULL)
+		self->file_info = self->file_info->next_sibling;
+	else {
+		do {
+			self->file_info = self->file_info->parent;
+		} while (self->file_info->parent != NULL && self->file_info->next_sibling == NULL);
+
+		if (self->file_info->next_sibling != NULL)
+			self->file_info = self->file_info->next_sibling;
+	}
+
 	self->buffer_used = self->buffer_size = 0;
 	self->file_position = 0;
-	self->i_files++;
-	self->extent = self->file_info->extents;
 	self->i_extent = 0;
 
 	return so_format_reader_header_ok;
@@ -361,7 +367,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 
 	ssize_t nb_total_read = 0;
 	while (nb_total_read < length) {
-		if (self->extent == NULL) {
+		if (self->extents == NULL) {
 			ssize_t will_blank = length - nb_total_read;
 			if (self->file_info->file.size - self->file_position < will_blank)
 				will_blank = self->file_info->file.size - self->file_position;
@@ -375,10 +381,10 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 			return nb_total_read;
 		}
 
-		if (self->file_position < self->extent->file_offset) {
+		if (self->file_position < self->extents->file_offset) {
 			ssize_t will_blank = length - nb_total_read;
-			if (self->file_position + will_blank > self->extent->file_offset)
-				will_blank = self->extent->file_offset - self->file_position;
+			if (self->file_position + will_blank > self->extents->file_offset)
+				will_blank = self->extents->file_offset - self->file_position;
 
 			bzero(buffer + nb_total_read, will_blank);
 
@@ -391,10 +397,10 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 		}
 
 		// Positionnement vers un nouveau extent
-		if (self->file_position == self->extent->file_offset) {
+		if (self->file_position == self->extents->file_offset) {
 			struct sodr_tape_drive_scsi_position position = {
-				.partition = self->extent->partition,
-				.block_position = self->extent->start_block,
+				.partition = self->extents->partition,
+				.block_position = self->extents->start_block,
 				.end_of_partition = false,
 			};
 
@@ -409,7 +415,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 			if (failed != 0)
 				return -1;
 
-			if (self->extent->byte_offset > 0) {
+			if (self->extents->byte_offset > 0) {
 				sodr_time_start();
 				ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
 				sodr_time_stop(self->drive);
@@ -420,7 +426,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 				if (nb_read == 0)
 					return nb_total_read;
 
-				self->buffer_used = self->extent->byte_offset;
+				self->buffer_used = self->extents->byte_offset;
 				self->buffer_size = nb_read;
 			}
 		}
@@ -443,15 +449,15 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 		}
 
 		// changement d'extent
-		if (self->file_position == (off_t) (self->extent->file_offset + self->extent->byte_count)) {
+		if (self->file_position == (off_t) (self->extents->file_offset + self->extents->byte_count)) {
 			self->i_extent++;
 
 			if (self->i_extent < self->file_info->nb_extents) {
-				self->extent++;
+				self->extents++;
 
 				struct sodr_tape_drive_scsi_position position = {
-					.partition = self->extent->partition,
-					.block_position = self->extent->start_block,
+					.partition = self->extents->partition,
+					.block_position = self->extents->start_block,
 					.end_of_partition = false,
 				};
 
@@ -466,7 +472,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 				if (failed != 0)
 					return -1;
 
-				if (self->extent->byte_offset > 0) {
+				if (self->extents->byte_offset > 0) {
 					sodr_time_start();
 					ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
 					sodr_time_stop(self->drive);
@@ -477,13 +483,13 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 					if (nb_read == 0)
 						return nb_total_read;
 
-					self->buffer_used = self->extent->byte_offset;
+					self->buffer_used = self->extents->byte_offset;
 					self->buffer_size = nb_read;
 
 					continue;
 				}
 			} else {
-				self->extent = NULL;
+				self->extents = NULL;
 				continue;
 			}
 		}
@@ -503,11 +509,11 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 			self->file_position += nb_read;
 			nb_total_read += nb_read;
 
-			if (self->file_position == (off_t) (self->extent->file_offset + self->extent->byte_count))
+			if (self->file_position == (off_t) (self->extents->file_offset + self->extents->byte_count))
 				break;
 		}
 
-		if (self->file_position == (off_t) (self->extent->file_offset + self->extent->byte_count))
+		if (self->file_position == (off_t) (self->extents->file_offset + self->extents->byte_count))
 			continue;
 
 		sodr_time_start();
@@ -520,7 +526,7 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 		if (nb_read == 0)
 			return nb_total_read;
 
-		self->buffer_used = self->extent->byte_offset;
+		self->buffer_used = self->extents->byte_offset;
 		self->buffer_size = nb_read;
 
 		available_size = self->buffer_size - self->buffer_used;
@@ -548,15 +554,23 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read_to_end_of_data(struct so_
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 
 	ssize_t nb_total_read = 0;
-	while (self->i_files < self->ltfs_info->nb_files) {
+	while (self->file_info->parent != NULL) {
+		while (self->file_info->first_child != NULL)
+			self->file_info = self->file_info->first_child;
+
 		nb_total_read += self->file_info->file.size - self->file_position;
 
 		self->file_position = 0;
 		self->buffer_used = self->buffer_size;
 
-		self->i_files++;
-		if (self->i_files < self->ltfs_info->nb_files)
-			self->file_info++;
+		if (self->file_info->next_sibling != NULL) {
+			self->file_info = self->file_info->next_sibling;
+			free(self->file_info->previous_sibling);
+		} else
+			do {
+				self->file_info = self->file_info->parent;
+				free(self->file_info->last_child);
+			} while (self->file_info->parent != NULL && self->file_info->next_sibling == NULL);
 	}
 
 	return nb_total_read;
@@ -571,9 +585,10 @@ static int sodr_tape_drive_format_ltfs_reader_rewind(struct so_format_reader * f
 	self->total_read = 0;
 	self->file_position = 0;
 
-	self->file_info = NULL;
-	self->i_files = 0;
-	self->extent = NULL;
+	self->file_info = self->ltfs_info->root.first_child;
+	self->extents = NULL;
+	if (self->file_info != NULL)
+		self->extents = self->file_info->extents;
 	self->i_extent = 0;
 	self->last_errno = 0;
 

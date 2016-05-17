@@ -39,6 +39,12 @@ struct so_database_connection;
 struct so_drive;
 struct so_media;
 
+struct sodr_tape_drive_ltfs_volume_coherency {
+	unsigned long long volume_change_reference;
+	unsigned long long generation_number;
+	off_t block_position_of_last_index; // block position of last index
+} __attribute__((packed));
+
 struct sodr_tape_drive_media {
 	enum sodr_tape_drive_media_format {
 		sodr_tape_drive_media_storiq_one = 0x1,
@@ -48,13 +54,24 @@ struct sodr_tape_drive_media {
 	} format;
 
 	union {
-		struct {
+		struct sodr_tape_drive_format_storiq_one {
 		} storiq_one;
 
 		struct sodr_tape_drive_format_ltfs {
 			char owner_identifier[15];
+			bool up_to_date;
+
+			struct sodr_tape_drive_ltfs_volume_coherency index;
+			struct sodr_tape_drive_ltfs_volume_coherency data;
+
+			unsigned long long highest_file_uid;
 
 			struct sodr_tape_drive_format_ltfs_file {
+				char * name;
+
+				unsigned long long hash_name;
+				unsigned long long hash_selected_path;
+
 				struct so_format_file file;
 				struct sodr_tape_drive_format_ltfs_extent {
 					/**
@@ -84,8 +101,17 @@ struct sodr_tape_drive_media {
 					off_t file_offset;
 				} * extents;
 				unsigned int nb_extents;
-			} * files;
-			unsigned int nb_files;
+
+				unsigned long long file_uid;
+
+				struct sodr_tape_drive_format_ltfs_file * parent;
+
+				struct sodr_tape_drive_format_ltfs_file * first_child;
+				struct sodr_tape_drive_format_ltfs_file * last_child;
+
+				struct sodr_tape_drive_format_ltfs_file * next_sibling;
+				struct sodr_tape_drive_format_ltfs_file * previous_sibling;
+			} root;
 		} ltfs;
 	} data;
 };
@@ -95,7 +121,7 @@ void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data);
 void sodr_tape_drive_media_free2(void * private_data);
 struct sodr_tape_drive_media * sodr_tape_drive_media_new(enum sodr_tape_drive_media_format format);
 enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffer);
-int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect);
+int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int scsi_fd, struct so_database_connection * db_connect);
 int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_database_connection * db_connect);
 
 #endif

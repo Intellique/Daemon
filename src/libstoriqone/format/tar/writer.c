@@ -73,7 +73,7 @@ struct so_format_tar_writer_private {
 	bool has_cheksum;
 };
 
-static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file);
+static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 static enum so_format_writer_status so_format_tar_writer_add_label(struct so_format_writer * fw, const char * label);
 static int so_format_tar_writer_close(struct so_format_writer * fw);
 static void so_format_tar_writer_compute_checksum(const void * header, char * checksum);
@@ -206,7 +206,7 @@ ssize_t so_format_tar_compute_size(const char * path) {
 }
 
 
-static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file) {
+static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path __attribute__((unused))) {
 	ssize_t block_size = 512;
 	struct so_format_tar * header = malloc(block_size);
 	struct so_format_tar * current_header = header;

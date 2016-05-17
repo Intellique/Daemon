@@ -88,7 +88,7 @@ struct soj_create_archive_worker {
 	} state;
 };
 
-static enum so_format_writer_status soj_create_archive_worker_add_file2(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
+static enum so_format_writer_status soj_create_archive_worker_add_file2(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect);
 static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, ssize_t position);
 static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
@@ -124,9 +124,9 @@ struct so_value * soj_create_archive_worker_archives() {
 	);
 }
 
-enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file, bool first_round, struct so_database_connection * db_connect) {
+enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect) {
 	if (primary_worker->state == soj_worker_status_ready) {
-		enum so_format_writer_status status = soj_create_archive_worker_add_file2(primary_worker, file, first_round, db_connect);
+		enum so_format_writer_status status = soj_create_archive_worker_add_file2(primary_worker, file, selected_path, first_round, db_connect);
 		if (status != so_format_writer_ok) {
 			soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
@@ -143,7 +143,7 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		enum so_format_writer_status status = soj_create_archive_worker_add_file2(worker, file, first_round, db_connect);
+		enum so_format_writer_status status = soj_create_archive_worker_add_file2(worker, file, selected_path, first_round, db_connect);
 		if (status != so_format_writer_ok) {
 			soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
@@ -162,7 +162,7 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format
 	return so_format_writer_error;
 }
 
-static enum so_format_writer_status soj_create_archive_worker_add_file2(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect) {
+static enum so_format_writer_status soj_create_archive_worker_add_file2(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect) {
 	ssize_t position = worker->writer->ops->position(worker->writer) / worker->writer->ops->get_block_size(worker->writer);
 
 	if (worker->pool->unbreakable_level == so_pool_unbreakable_level_file) {
@@ -178,7 +178,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 	}
 
 	int failed = 0;
-	enum so_format_writer_status status = worker->writer->ops->add_file(worker->writer, file);
+	enum so_format_writer_status status = worker->writer->ops->add_file(worker->writer, file, selected_path);
 	switch (status) {
 		case so_format_writer_end_of_volume:
 			failed = soj_create_archive_worker_change_volume(worker, file, first_round, db_connect);

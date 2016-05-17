@@ -87,14 +87,15 @@ static void sodr_io_format_writer_init() {
 
 static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_value * request) {
 	struct so_value * vfile = NULL;
-	so_value_unpack(request, "{s{so}}", "params", "file", &vfile);
+	const char * selected_path = NULL;
+	so_value_unpack(request, "{s{sosS}}", "params", "file", &vfile, "selected path", &selected_path);
 
 	struct so_format_file file;
 	so_format_file_init(&file);
 	so_format_file_sync(&file, vfile);
 
 	ssize_t current_position = peer->format_writer->ops->position(peer->format_writer);
-	enum so_format_writer_status status = peer->format_writer->ops->add_file(peer->format_writer, &file);
+	enum so_format_writer_status status = peer->format_writer->ops->add_file(peer->format_writer, &file, selected_path);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);

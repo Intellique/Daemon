@@ -30,9 +30,7 @@
 #include <libstoriqone/job.h>
 #include <libstoriqone/log.h>
 
-struct sodr_peer;
-
-int sodr_log_add_record(const struct sodr_peer * peer, enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 6, 7)));
+int sodr_log_add_record(enum so_job_status status, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) __attribute__ ((format(printf, 5, 6)));
 
 #endif
 

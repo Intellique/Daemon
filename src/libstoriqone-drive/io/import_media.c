@@ -82,7 +82,7 @@ static void sodr_io_import_media_count_archives(struct sodr_peer * peer, struct 
 		dgettext("libstoriqone-drive", "[%s %s #%u]: counting archives from media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	unsigned int nb_archives = drive->ops->count_archives(peer, &peer->disconnected, peer->db_connection);
+	unsigned int nb_archives = drive->ops->count_archives(&peer->disconnected, peer->db_connection);
 
 	struct so_value * response = so_value_pack("{su}", "returned", nb_archives);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
@@ -148,7 +148,7 @@ static void sodr_io_import_media_parse_archive(struct sodr_peer * peer, struct s
 		dgettext("libstoriqone-drive", "[%s %s #%u]: Parsing archive from media '%s' at position #%u"),
 		drive->vendor, drive->model, drive->index, media_name, archive_position);
 
-	struct so_archive * archive = drive->ops->parse_archive(peer, &peer->disconnected, archive_position, checksums, peer->db_connection);
+	struct so_archive * archive = drive->ops->parse_archive(&peer->disconnected, archive_position, checksums, peer->db_connection);
 
 	struct so_value * response = so_value_pack("{so}", "returned", so_archive_convert(archive));
 	so_json_encode_to_fd(response, peer->fd_cmd, true);

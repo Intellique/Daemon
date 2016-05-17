@@ -87,6 +87,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	unsigned int i;
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
+		unsigned int j = 0;
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
 
 		if (i > 0) {
@@ -108,7 +109,8 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 		while (rdr_status = reader->ops->get_header(reader, &file), rdr_status == so_format_reader_header_ok) {
 			if (file.position == 0) {
-				enum so_format_writer_status wrtr_status = tmp_frmt_writer->ops->add_file(tmp_frmt_writer, &file);
+				struct so_archive_files * ptr_file = vol->files + j++;
+				enum so_format_writer_status wrtr_status = tmp_frmt_writer->ops->add_file(tmp_frmt_writer, &file, ptr_file->file->selected_path);
 
 				if (wrtr_status != so_format_writer_ok) {
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -200,7 +202,22 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	bool ok = true;
 	int failed = 0;
 	ssize_t block_size = self->writer->ops->get_block_size(self->writer);
+
+	i = 0;
+	vol = self->src_archive->volumes;
+	struct so_archive_files * ptr_file = vol->files;
+
 	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file), rdr_status == so_format_reader_header_ok && ok) {
+
+		if (i < vol->nb_files)
+			ptr_file++;
+		else {
+			vol++;
+			ptr_file = vol->files;
+			i = 0;
+		}
+
+
 		available_size = self->writer->ops->get_available_size(self->writer);
 		if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
 			failed = soj_copyarchive_util_change_media(job, db_connect, self);
@@ -216,7 +233,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			dgettext("storiqone-job-copy-archive", "Add file '%s' to archive"),
 			file.filename);
 
-		enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
+		enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file, ptr_file->file->selected_path);
 		if (wrtr_status != so_format_writer_ok) {
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Error while writing header of file '%s' into media '%s'"),
