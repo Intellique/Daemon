@@ -34,7 +34,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one libraries (libs)
 
-Package: libstoriqone-1.2-dev
+Package: libstoriqone-1.3-dev
 Section: libdevel
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
