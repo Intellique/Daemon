@@ -1,0 +1,334 @@
+storiqone (1.3b1-1+wheezy) polisher; urgency=low
+
+  * New beta release
+  * New features:
+    - changers and drives can log into jobrecord
+    - save core dump on crash
+    - improve task progression, can report script progressions
+    - new hash algorithm: “xxhash”
+    - report daemon's version into databse (table: host)
+    - write LTFS support
+  * Change
+    - checksum helper reduce memory framentation by using mmap instead of
+      malloc
+    - rewrite JSON parser
+    - api key support
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 19 May 2016 18:01:43 +0200
+
+storiqone (1.2.15-2+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - Miss to add a script to fix trigger log_metadata
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 27 Apr 2016 11:14:27 +0200
+
+storiqone (1.2.15-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Change: Move from taiga to redmine. #x (#y) => x for redmine ticket and y
+    for taiga ticket.
+  * Bug fix:
+    - #1 (#133): JSON encoding: escape control character
+    - #2 (#130): Through checking archive, update archive volume.
+    - #123: Escape invalid UTF-8 encoding.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 26 Apr 2016 19:08:41 +0200
+
+storiqone (1.2.14.1-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - tape_drive is more verbose
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 31 Mar 2016 12:55:30 +0200
+
+storiqone (1.2.14-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - pid in logs files
+    - add new messages for check archive task
+    - save core dump in '/var/crash/storiqone'
+  * Bug fix:
+    - #124: automatic formating of foreign tape
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 25 Mar 2016 16:37:23 +0100
+
+storiqone (1.2.13-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #99: Implicite close in free functions
+    - #110: Bug fix when archiving in pool mirror
+    - #111: Improve archive checking with archive which has no checksum computed
+    - #112: Improve checking of media header
+    - #113: Infinit loop in libstoriqone-changer
+    - #101: Blank media are no longer recognized as foreign media
+    - #117: Remove unix socket before use
+    - #116: Fix media with negative number of free block
+    - #119: Wrong type in database for table MetadataLog
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 15 Mar 2016 15:36:16 +0100
+
+storiqone (1.2.12.2-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - default configuration
+    - #94: checking foreign ST1 media failed because media has no pool
+    - #96: update drive status while reading LTFS tape
+    - #75: import metadata when importing media
+    - #97: fix remaing size of partitioned tape (LTFS)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 25 Feb 2016 12:35:27 +0100
+
+storiqone (1.2.12.1-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #95: Import media: programming error
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 23 Feb 2016 18:19:45 +0100
+
+storiqone (1.2.12-3+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Change:
+    - Disable scsi_setup
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Feb 2016 19:07:14 +0100
+
+storiqone (1.2.12-2+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - typo fix, wrong format, use %d instead of %u
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Feb 2016 13:43:16 +0100
+
+storiqone (1.2.12-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - SCSI command REWIND
+    - from LTO-5, we can detect timeout command and check if SCSI command is
+      available
+  * Bug fix:
+    - #93: LOCATE(10) & LOCATE(16)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Feb 2016 10:29:30 +0100
+
+storiqone (1.2.11-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - #84: jobs of disabled users will not be executed
+    - debug symbol package (storiqone-dbg)
+  * Bug fix:
+    - #82: create check archive task after copy
+    - #80: do not start disabled device
+    - small memory leaks
+    - #74: fix support for standalone drives
+    - fix: create databse script
+    - #91: correctly close file descriptor
+    - #92: fix starting tape drive
+    - #83: fix import media (LTFS and other)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 17 Feb 2016 16:37:25 +0100
+
+storiqone (1.2.10-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - Spanish translation
+  * Change:
+    - format renamed from 'Storiq One' to 'Storiq One (TAR)'
+  * Bug fix:
+    - create archive: add metadatas (archive & file) into database
+    - standalone drive: update correctly drive information (slot) to database
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Sat, 23 Jan 2016 23:45:19 +0100
+
+storiqone (1.2.9-1) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - Improve initialize of scsi changer. Can initialize with a tape into a
+      tape drive.
+    - Improve the speed of generation of json.
+    - Improve archiving at the end of media.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 16 Dec 2015 18:00:35 +0100
+
+storiqone (1.2.8-2) polisher; urgency=low
+
+  * Bug fix:
+    - so_file_gid2name & so_file_uid2name: programming error
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 09 Dec 2015 12:54:06 +0100
+
+storiqone (1.2.8-1) polisher; urgency=low
+
+  * Bug fix:
+    - restore-archive: restore also empty directories
+    - restore-archive: special care about path without leading slash '/'
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 08 Dec 2015 10:24:08 +0100
+
+storiqone (1.2.7-2) polisher; urgency=low
+
+  * Bug fix: when reading tar if the length path in tar header is equal to 100 bytes
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 07 Dec 2015 14:42:54 +0100
+
+storiqone (1.2.7-1) polisher; urgency=low
+
+  * Memory leaks (daemon)
+  * Upgrade database: freeblock & totalblock are now bigint instead of integer
+  * Improve scsi changer start up
+  * Fix a bug in create archive, there is no post script executed when adding file
+    into existing archive
+  * Fix a race condition in thread_pool, at the end of process, thread should exit
+    more quickly
+  * Fix a programming error in tape_drive, we can have LTO6 with 72TB of capacity.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Sun, 06 Dec 2015 23:45:46 +0100
+
+storiqone (1.2.6-3) polisher; urgency=low
+
+  * Add dbconfig to create database
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Sat, 05 Dec 2015 17:22:26 +0100
+
+storiqone (1.2.6-2) polisher; urgency=low
+
+  * Add configuration file
+  * fix default path in configuration files
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 01 Dec 2015 17:51:42 +0100
+
+storiqone (1.2.6-1) polisher; urgency=low
+
+  * Bug fix release
+    - Create archive: bug when archiving into pool which unbreakablelevel is
+      defined to 'file' (final fix)
+    - Restore archive: job could block if there is more than one volume in same
+      media.
+    - Update translation
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Sun, 22 Nov 2015 18:35:00 +0100
+
+storiqone (1.2.5-1) polisher; urgency=low
+
+  * Bug fix release
+    - Create archive: bug when archiving into pool which unbreakablelevel is
+      defined to 'file' (again)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 17 Nov 2015 13:56:00 +0100
+
+storiqone (1.2.4-1) polisher; urgency=low
+
+  * Bug fix release
+    - detection of standalone drive
+    - generation proxies script
+    - bug when archiving into pool which unbreakablelevel is defined to 'file'
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 10 Nov 2015 16:56:26 +0100
+
+storiqone (1.2.3-1) polisher; urgency=low
+
+  * Bug fix release
+    - init.d script
+    - jobtype and script are correctly synchronized with database
+    - restoring multiple file sequentially
+    - create archive : can create verify task
+    - copy archive
+    - various fixes about tar format
+    - new media was seen as foreign media
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 26 Oct 2015 15:44:05 +0100
+
+storiqone (1.2.2-1) polisher; urgency=low
+
+  * Bug fix release
+    - tcp socket: use uninitialize variable with accept
+  * Restore-archive and check-archive refuse to proceed with a deleted archive
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 06 Oct 2015 12:01:36 +0200
+
+storiqone (1.2.1-1) polisher; urgency=low
+
+  * Bug fix release
+    - wrong block size in media label while formatting media (LTO)
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 25 Sep 2015 08:04:23 +0200
+
+storiqone (1.2-1) polisher; urgency=low
+
+  * Final release
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 24 Sep 2015 16:54:57 +0200
+
+storiqone (1.2rc8-1) polisher; urgency=low
+
+  * Generate report for create-archive, copy-archive, erase-media and restore-archive
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 23 Sep 2015 13:37:25 +0200
+
+storiqone (1.2rc7-1) polisher; urgency=low
+
+  * Bug fix:
+    - status of tape drive when reading and writing from/to tape
+  * Improve restore archive
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 22 Sep 2015 14:57:26 +0200
+
+storiqone (1.2rc6-1) polisher; urgency=low
+
+  * Bug fix:
+    - create archive progression
+    - typos in french messages
+  * Improve restore archive
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 22 Sep 2015 09:46:32 +0200
+
+storiqone (1.2rc5-1) polisher; urgency=low
+
+  * Bug fix: nasty copy & paste
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 21 Sep 2015 11:45:10 +0200
+
+storiqone (1.2rc4-2) polisher; urgency=low
+
+  * Fix pre/post installation scripts
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 18 Sep 2015 16:18:18 +0200
+
+storiqone (1.2rc4-1) polisher; urgency=low
+
+  * Fourth release candidate
+  * Update install paths
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 18 Sep 2015 15:49:42 +0200
+
+storiqone (1.2rc3-1) polisher; urgency=low
+
+  * Third release candidate
+  * Add init.d & logrotate scripts
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 17 Sep 2015 17:12:42 +0200
+
+storiqone (1.2rc2-1) polisher; urgency=low
+
+  * Second release candidate
+  * Support for fiber channel devices
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 15 Sep 2015 12:19:43 +0200
+
+storiqone (1.2rc1-1) polisher; urgency=low
+
+  * First release candidate
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 14 Sep 2015 12:18:24 +0200

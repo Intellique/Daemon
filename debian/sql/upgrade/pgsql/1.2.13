@@ -1,0 +1,10 @@
+-- Upgrade from v1.2.10 to v1.2.13
+-- wrong type in table MetadataLog
+-- because trigger failed to insert data into MetadataLog
+
+BEGIN;
+
+ALTER TABLE MetadataLog ALTER value TYPE JSONB USING value::JSONB;
+
+COMMIT;
+

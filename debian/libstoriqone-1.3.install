@@ -1,0 +1,12 @@
+lib/libstoriqone*.so.* usr/lib
+lib/libchecksum*.so usr/lib/storiqone/1.3/lib
+
+usr/share/locale/es/LC_MESSAGES/libstoriqone.mo
+usr/share/locale/es/LC_MESSAGES/libstoriqone-changer.mo
+usr/share/locale/es/LC_MESSAGES/libstoriqone-drive.mo
+usr/share/locale/es/LC_MESSAGES/libstoriqone-job.mo
+
+usr/share/locale/fr/LC_MESSAGES/libstoriqone.mo
+usr/share/locale/fr/LC_MESSAGES/libstoriqone-changer.mo
+usr/share/locale/fr/LC_MESSAGES/libstoriqone-drive.mo
+usr/share/locale/fr/LC_MESSAGES/libstoriqone-job.mo

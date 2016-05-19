@@ -1,0 +1,15 @@
+-- Upgrade from v1.2.7 to v1.2.10
+-- mimetype of ArchiveFile is not enought
+-- value of Metadata is now JSONB
+-- change archive format name 'Storiq One (TAR)'
+
+BEGIN;
+
+ALTER TABLE ArchiveFile ALTER mimeType TYPE VARCHAR(255);
+
+ALTER TABLE Metadata ALTER value TYPE JSONB USING value::JSONB;
+
+UPDATE ArchiveFormat SET name = 'Storiq One (TAR)' WHERE name = 'Storiq One';
+
+COMMIT;
+
