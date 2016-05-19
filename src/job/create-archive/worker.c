@@ -580,7 +580,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_find_and_load_next(worker->pool, false, db_connect);
+		worker->drive = soj_media_find_and_load_next(worker->pool, true, db_connect);
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->pool);
 
 		if (worker->drive != NULL) {
@@ -618,6 +618,7 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 		worker->drive = soj_media_find_and_load_next(worker->pool, false, db_connect);
 
 		if (worker->drive != NULL) {
+			worker->media = worker->drive->slot->media;
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
 			vol->job = soj_job_get();
 
@@ -635,7 +636,7 @@ float soj_create_archive_progress() {
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
-		if (worker->state != soj_worker_status_ready)
+		if (worker->state < soj_worker_status_reserved)
 			continue;
 
 		nb_done += worker->total_done + worker->partial_done;

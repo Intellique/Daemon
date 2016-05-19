@@ -785,7 +785,7 @@ CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
             INSERT INTO MetadataLog(id, type, key, value, login, updated)
                 VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, FALSE);
             RETURN OLD;
-        ELSIF TG_OP = 'DELETE' OR OLD != NEW THEN
+        ELSIF OLD != NEW THEN
             INSERT INTO MetadataLog(id, type, key, value, login, updated)
                 VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, TRUE);
             RETURN NEW;
