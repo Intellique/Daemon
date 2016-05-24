@@ -139,6 +139,25 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			return failed;
 	}
 
+	if (status.mt_fileno < 0) {
+		if (media != NULL)
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Unkown media position '%s', force rewinding"),
+				drive->vendor, drive->model, drive->index, drive->slot->media->name);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Unkown media position, force rewinding"),
+				drive->vendor, drive->model, drive->index);
+
+		failed = sodr_tape_drive_st_rewind(drive, fd, db);
+		if (failed != 0)
+			return failed;
+
+		failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
+		if (failed != 0)
+			return failed;
+	}
+
 	if (file_number < 0) {
 		if (media != NULL)
 			so_log_write(so_log_level_info,
