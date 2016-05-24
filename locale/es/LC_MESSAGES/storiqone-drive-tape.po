@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-04-29 17:48+0200\n"
+        "POT-Creation-Date: 2016-05-24 11:36+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -487,52 +487,97 @@ msgstr  "si"
 msgid   "[%s | %s | #%u]: Failed to get information of media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/util/st.c:92
+#: src/drive/tape_drive/util/st.c:93
 #, c-format
 msgid   "[%s | %s | #%u]: Changing partition from %lu to %u on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/util/st.c:109
+#: src/drive/tape_drive/util/st.c:97
+#, c-format
+msgid   "[%s | %s | #%u]: Changing partition from %lu to %u"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:116
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to change partition from %lu to %u on media '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/util/st.c:115
+#: src/drive/tape_drive/util/st.c:120
+#, c-format
+msgid   "[%s | %s | #%u]: Failed to change partition from %lu to %u because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:126
 #, c-format
 msgid   "[%s | %s | #%u]: Partition changed from %lu to %u on media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/util/st.c:129
+#: src/drive/tape_drive/util/st.c:130
+#, c-format
+msgid   "[%s | %s | #%u]: Partition changed from %lu to %u"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:145
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\""
 
-#: src/drive/tape_drive/util/st.c:146
+#: src/drive/tape_drive/util/st.c:149
+#, c-format
+msgid   "[%s | %s | #%u]: Fast forwarding to end"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:168
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\" a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/util/st.c:150
+#: src/drive/tape_drive/util/st.c:172
+#, c-format
+msgid   "[%s | %s | #%u]: Fast forwarding to end encountered an error '%m'"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:176
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  "[ %s | %s | #%u ] : Avance rápido hacia el final del media \"%s\" terminado avec éxito"
 
-#: src/drive/tape_drive/util/st.c:154 src/drive/tape_drive/util/st.c:182
+#: src/drive/tape_drive/util/st.c:180
+#, c-format
+msgid   "[%s | %s | #%u]: Fast forwarding to end completed with status = OK"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:185 src/drive/tape_drive/util/st.c:228
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d"
 msgstr  ""
 
-#: src/drive/tape_drive/util/st.c:171 src/drive/tape_drive/util/st.c:199
+#: src/drive/tape_drive/util/st.c:189 src/drive/tape_drive/util/st.c:232
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning from #%u to position #%d"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:208 src/drive/tape_drive/util/st.c:251
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d encountered an error '%m'"
 msgstr  ""
 
-#: src/drive/tape_drive/util/st.c:175 src/drive/tape_drive/util/st.c:203
+#: src/drive/tape_drive/util/st.c:212 src/drive/tape_drive/util/st.c:255
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning from #%u to position #%d encountered an error '%m'"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:216 src/drive/tape_drive/util/st.c:259
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d completed with status = OK"
 msgstr  ""
 
-#: src/drive/tape_drive/util/st.c:220
+#: src/drive/tape_drive/util/st.c:220 src/drive/tape_drive/util/st.c:263
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning from #%u to position #%d completed with status = OK"
+msgstr  ""
+
+#: src/drive/tape_drive/util/st.c:280
 #, c-format
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  ""

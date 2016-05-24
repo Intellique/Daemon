@@ -88,9 +88,15 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 	int failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
 
 	if (force || partition != status.mt_resid) {
-		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partition from %lu to %u on media '%s'"),
-			drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
+		if (media != NULL)
+			sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partition from %lu to %u on media '%s'"),
+				drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
+		else
+			sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Changing partition from %lu to %u"),
+				drive->vendor, drive->model, drive->index, status.mt_resid, partition);
+
 		drive->status = so_drive_status_positioning;
 		if (db != NULL)
 			db->ops->sync_drive(db, drive, true, so_database_sync_default);
@@ -105,15 +111,24 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 		if (failed != 0) {
-			sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u on media '%s' because %m"),
-				drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
+			if (media != NULL)
+				sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u on media '%s' because %m"),
+					drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
+			else
+				sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u because %m"),
+					drive->vendor, drive->model, drive->index, status.mt_resid, partition);
 
 			return failed;
-		} else
+		} else if (media != NULL)
 			sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Partition changed from %lu to %u on media '%s'"),
 				drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
+		else
+			sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Partition changed from %lu to %u"),
+				drive->vendor, drive->model, drive->index, status.mt_resid, partition);
 
 		failed = sodr_tape_drive_st_rewind(drive, fd, db);
 		if (failed != 0)
@@ -125,9 +140,15 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 	}
 
 	if (file_number < 0) {
-		so_log_write(so_log_level_info,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s'"),
-			drive->vendor, drive->model, drive->index, drive->slot->media->name);
+		if (media != NULL)
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s'"),
+				drive->vendor, drive->model, drive->index, drive->slot->media->name);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end"),
+				drive->vendor, drive->model, drive->index);
+
 		drive->status = so_drive_status_positioning;
 		if (db != NULL)
 			db->ops->sync_drive(db, drive, true, so_database_sync_default);
@@ -141,18 +162,33 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		if (db != NULL)
 			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
-		if (failed != 0)
-			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"),
-				drive->vendor, drive->model, drive->index, drive->slot->media->name);
-		else
+		if (failed != 0) {
+			if (media != NULL)
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name);
+			else
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end encountered an error '%m'"),
+					drive->vendor, drive->model, drive->index);
+		} else if (media != NULL)
 			so_log_write(so_log_level_info,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"),
 				drive->vendor, drive->model, drive->index, drive->slot->media->name);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end completed with status = OK"),
+				drive->vendor, drive->model, drive->index);
 	} else if (status.mt_fileno < file_number) {
-		so_log_write(so_log_level_info,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d"),
-			drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+		if (media != NULL)
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d"),
+				drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d"),
+				drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
+
 		drive->status = so_drive_status_positioning;
 		if (db != NULL)
 			db->ops->sync_drive(db, drive, true, so_database_sync_default);
@@ -166,21 +202,36 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		if (db != NULL)
 			db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
-		if (failed != 0)
-			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d encountered an error '%m'"),
-				drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
-		else
+		if (failed != 0) {
+			if (media != NULL)
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d encountered an error '%m'"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+			else
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d encountered an error '%m'"),
+					drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
+		} else if (media != NULL)
 			so_log_write(so_log_level_info,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d completed with status = OK"),
 				drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d completed with status = OK"),
+				drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
 	} else if (status.mt_fileno > file_number) {
 		if (file_number == 0) {
 			failed = sodr_tape_drive_st_rewind(drive, fd, db);
 		} else {
-			so_log_write(so_log_level_info,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d"),
-				drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+			if (media != NULL)
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+			else
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d"),
+					drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
+
 			drive->status = so_drive_status_positioning;
 			if (db != NULL)
 				db->ops->sync_drive(db, drive, true, so_database_sync_default);
@@ -194,14 +245,23 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			if (db != NULL)
 				db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
-			if (failed != 0)
-				so_log_write(so_log_level_error,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d encountered an error '%m'"),
-					drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
-			else
+			if (failed != 0) {
+				if (media != NULL)
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d encountered an error '%m'"),
+						drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+				else
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d encountered an error '%m'"),
+						drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
+			} else if (media != NULL)
 				so_log_write(so_log_level_info,
 					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d completed with status = OK"),
 					drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+			else
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d completed with status = OK"),
+					drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
 		}
 	}
 
