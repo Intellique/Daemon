@@ -6,7 +6,7 @@ After=postgresql.service
 
 [Service]
 Type=simple
-ExecStart=/usr/lib/storiqone/1.2/bin/storiqoned
+ExecStart=/usr/lib/storiqone/1.3/bin/storiqoned
 
 [Install]
 WantedBy=multi-user.target
