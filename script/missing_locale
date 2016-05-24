@@ -1,0 +1,6 @@
+#! /bin/bash
+
+set -x
+
+git grep ' ""' -- locale/$1 | perl -ne 'print if /(\d+)/ and $1 > 6'
+

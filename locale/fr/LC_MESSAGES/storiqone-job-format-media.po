@@ -44,7 +44,7 @@ msgstr  "Tentative de formater un média « %s » qui est protégé en écritu
 #: src/job/format-media/format-media.c:159
 #, c-format
 msgid   "Formatting media '%s' in progress"
-msgstr  ""
+msgstr  "Formatage du média « %s » en cours"
 
 #: src/job/format-media/format-media.c:166
 msgid   "Failed to format media"

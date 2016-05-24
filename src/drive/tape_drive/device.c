@@ -436,7 +436,7 @@ ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db) {
 	if (fd < 0)
 		return -1;
 
-	int failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, true, db);
+	int failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, false, db);
 	if (failed != 0) {
 		close(fd);
 		return failed;
@@ -483,13 +483,7 @@ ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db) {
 			return nb_read;
 		}
 
-		sodr_tape_drive.status = so_drive_status_rewinding;
-
-		sodr_time_start();
-		failed = ioctl(fd, MTIOCTOP, &rewind);
-		sodr_time_stop(&sodr_tape_drive);
-
-		sodr_tape_drive.status = so_drive_status_loaded_idle;
+		failed = sodr_tape_drive_st_rewind(&sodr_tape_drive, fd, db);
 	}
 
 	close(fd);
