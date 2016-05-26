@@ -830,12 +830,6 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 		char * space;
 		char buf[33];
 		switch (attr->identifier) {
-			case sodr_tape_drive_scsi_mam_remaining_capacity:
-				media->free_block = be64toh(attr->value.be64);
-				media->free_block <<= 10;
-				media->free_block /= (media->block_size >> 10);
-				break;
-
 			case sodr_tape_drive_scsi_mam_load_count:
 				media->load_count = be64toh(attr->value.be64);
 				break;
