@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-05-25 18:09+0200\n"
+        "POT-Creation-Date: 2016-05-26 12:50+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -493,26 +493,26 @@ msgstr  "Trouvé une étiquette LTFS corrompue sur le média « %s »"
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média « %s »"
 
-#: src/drive/tape_drive/util/scsi.c:859
+#: src/drive/tape_drive/util/scsi.c:853
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Information du média %s, Fabricant du média: %s"
 
-#: src/drive/tape_drive/util/scsi.c:877
+#: src/drive/tape_drive/util/scsi.c:871
 #, c-format
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Information du média %s, date du média: %s"
 
-#: src/drive/tape_drive/util/scsi.c:1215
+#: src/drive/tape_drive/util/scsi.c:1209
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
 msgstr  "Commande SCSI supportée : « %s », disponible : %s, temps morts : %u secondes"
 
-#: src/drive/tape_drive/util/scsi.c:1216
+#: src/drive/tape_drive/util/scsi.c:1210
 msgid   "no"
 msgstr  "non"
 
-#: src/drive/tape_drive/util/scsi.c:1216
+#: src/drive/tape_drive/util/scsi.c:1210
 msgid   "yes"
 msgstr  "oui"
 
