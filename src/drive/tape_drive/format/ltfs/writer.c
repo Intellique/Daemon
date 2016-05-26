@@ -60,7 +60,7 @@ struct sodr_tape_drive_format_ltfs_writer_private {
 	int fd;
 	int scsi_fd;
 
-	ssize_t total_write;
+	ssize_t total_wrote;
 
 	struct sodr_tape_drive_format_ltfs_file * current_file;
 
@@ -123,6 +123,7 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 	self->media = media;
 	self->ltfs_info = &mp->data.ltfs;
 	self->writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, -1, false, NULL);
+	self->total_wrote = 0;
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));
 	writer->ops = &sodr_tape_drive_format_ltfs_writer_ops;
@@ -291,7 +292,7 @@ static struct so_value * sodr_tape_drive_format_ltfs_writer_get_digests(struct s
 
 static int sodr_tape_drive_format_ltfs_writer_file_position(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
-	return self->writer->ops->file_position(self->writer);
+	return self->total_wrote;
 }
 
 static int sodr_tape_drive_format_ltfs_writer_last_errno(struct so_format_writer * fw) {
@@ -318,8 +319,10 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write(struct so_format_writer 
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
 
 	ssize_t nb_write = self->writer->ops->write(self->writer, buffer, length);
-	if (nb_write > 0)
+	if (nb_write > 0) {
 		self->current_file->extents->byte_count += nb_write;
+		self->total_wrote += nb_write;
+	}
 
 	return nb_write;
 }
