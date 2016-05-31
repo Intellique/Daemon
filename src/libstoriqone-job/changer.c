@@ -58,7 +58,7 @@ struct soj_changer {
 static struct so_changer * soj_changers = NULL;
 static unsigned int soj_nb_changers = 0;
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait);
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error);
 static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
 static int soj_changer_release_media(struct so_changer * changer, struct so_media * media);
 static int soj_changer_sync(struct so_changer * changer);
@@ -119,7 +119,7 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 	return NULL;
 }
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait) {
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error) {
 	struct soj_changer * self = changer->data;
 	struct so_job * job = soj_job_get();
 
@@ -158,17 +158,20 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 	pthread_mutex_unlock(&self->lock);
 
 	if (response != NULL) {
-		bool error = true;
+		bool err = true;
 		unsigned int index = 0;
 		struct so_value * vch = NULL;
 
 		int nb_parsed = so_value_unpack(response, "{sbsosu}",
-			"error", &error,
+			"error", &err,
 			"changer", &vch,
 			"index", &index
 		);
 
-		if (!error) {
+		if (error != NULL)
+			*error = err;
+
+		if (!err) {
 			if (nb_parsed >= 3 && slot->index != index)
 				so_slot_swap(slot, changer->drives[index].slot);
 

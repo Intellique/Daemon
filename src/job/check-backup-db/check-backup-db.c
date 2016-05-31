@@ -137,37 +137,45 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 			sleep(1);
 	}
 
-	job->done = 0.99;
+	bool error = false;
+	for (ptr = worker; ptr != NULL; ptr = ptr->next)
+		error |= worker->status == so_job_status_error;
 
-	if (!job->stopped_by_user) {
-		unsigned int i;
-		bool checksum_ok = true;
-		for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
-			if (ptr->volume->checksum_ok)
+	if (error) {
+		job->status = so_job_status_error;
+	} else {
+		job->done = 0.99;
+
+		if (!job->stopped_by_user) {
+			unsigned int i;
+			bool checksum_ok = true;
+			for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
+				if (ptr->volume->checksum_ok)
 				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-					dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: success"), i);
-			else {
+						dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: success"), i);
+				else {
 				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-					dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: failed"), i);
-				checksum_ok = false;
+						dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: failed"), i);
+					checksum_ok = false;
+				}
+
+				db_connect->ops->mark_backup_volume_checked(db_connect, ptr->volume);
 			}
 
-			db_connect->ops->mark_backup_volume_checked(db_connect, ptr->volume);
+			if (checksum_ok)
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					dgettext("storiqone-job-check-backup-db", "Checking backup: success"));
+			else
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					dgettext("storiqone-job-check-backup-db", "Checking backup: failed"));
 		}
 
-		if (checksum_ok)
-			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-				dgettext("storiqone-job-check-backup-db", "Checking backup: success"));
-		else
-			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-				dgettext("storiqone-job-check-backup-db", "Checking backup: failed"));
+		job->done = 1;
 	}
 
 	soj_checkbackupdb_worker_free(worker);
 
-	job->done = 1;
-
-	return 0;
+	return error ? 1 : 0;
 }
 
 static void soj_checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {

@@ -262,12 +262,22 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_important,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
 						changer->vendor, changer->model, volume_name, drive->index, failed);
+
+					struct so_value * response = so_value_pack("{sbsiso}",
+						"error", true,
+						"index", -1,
+						"changer", so_changer_convert(changer)
+					);
+					so_json_encode_to_fd(response, peer->fd, true);
+					so_value_free(response);
+
+					return false;
 				} else
 					sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"),
 						changer->vendor, changer->model, volume_name, drive->index);
 			} else {
-				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_error, so_job_record_notif_important,
+				sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_warning, so_job_record_notif_important,
 					dgettext("libstoriqone-changer", "[%s | %s]: the drive (%s#%u) doesn't support media format (%s)"),
 					changer->vendor, changer->model, drive->model, drive->index, sl->media->media_format->name);
 			}
@@ -477,7 +487,10 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 
 	struct so_media * media = sl != NULL ? sl->media : NULL;
 	if (media == NULL) {
-		struct so_value * response = so_value_pack("{sbsi}", "found", false, "index", -1);
+		struct so_value * response = so_value_pack("{sisb}",
+			"index", -1,
+			"error", true
+		);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
@@ -511,7 +524,10 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 
 	struct so_value * response;
 error:
-	response = so_value_pack("{sbsi}", "error", true, "index", -1);
+	response = so_value_pack("{sbsi}",
+		"error", true,
+		"index", -1
+	);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 	return;
