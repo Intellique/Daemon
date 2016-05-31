@@ -189,6 +189,13 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
+	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
+	if (self->dest_drive == NULL) {
+		tmp_frmt_reader->ops->free(tmp_frmt_reader);
+		job->status = so_job_status_error;
+		return 1;
+	}
+
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
 
 	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);

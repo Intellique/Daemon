@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-06 19:30+0200\n"
+        "POT-Creation-Date: 2016-06-16 17:36+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -87,18 +87,18 @@ msgstr  "Error: no hay suficiente espacio disponible en el pool \"%s\""
 msgid   "Selected copy mode: direct"
 msgstr  "Seleccione el modo de copia: directo"
 
-#: src/job/copy-archive/direct_copy.c:106 src/job/copy-archive/indirect_copy.c:233
+#: src/job/copy-archive/direct_copy.c:106 src/job/copy-archive/indirect_copy.c:240
 #, c-format
 msgid   "Add file '%s' to archive"
 msgstr  ""
 
 #: src/job/copy-archive/direct_copy.c:113 src/job/copy-archive/direct_copy.c:135 src/job/copy-archive/direct_copy.c:179
-#: src/job/copy-archive/indirect_copy.c:262 src/job/copy-archive/indirect_copy.c:306
+#: src/job/copy-archive/indirect_copy.c:269 src/job/copy-archive/indirect_copy.c:313
 #, c-format
 msgid   "Error while writing file header '%s' to media '%s'"
 msgstr  "Error al escribir el encabezamiento del fichero \"%s\" en el media \"%s\""
 
-#: src/job/copy-archive/direct_copy.c:157 src/job/copy-archive/indirect_copy.c:284
+#: src/job/copy-archive/direct_copy.c:157 src/job/copy-archive/indirect_copy.c:291
 #, c-format
 msgid   "Error while writing file data '%s' to media '%s'"
 msgstr  "Error al escribir los datos del fichero \"%s\" en el media \"%s\""
@@ -135,11 +135,11 @@ msgstr  "Error al escribir los datos del fichero \"%s\" en el fichero temporal"
 msgid   "Failed to reopen temporary file"
 msgstr  "Fallo a la reabertura del fichero temporal"
 
-#: src/job/copy-archive/indirect_copy.c:239
+#: src/job/copy-archive/indirect_copy.c:246
 #, c-format
 msgid   "Error while writing header of file '%s' into media '%s'"
 msgstr  "Error al escirbir el encabezamiento del fichero \"%s\" en el media \"%s\""
 
-#: src/job/copy-archive/indirect_copy.c:328
+#: src/job/copy-archive/indirect_copy.c:335
 msgid   "Error while reading from temporary file"
 msgstr  "Error al leer desde un fichero temporal"
