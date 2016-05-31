@@ -78,7 +78,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 			}
 		}
 
-		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
+		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, NULL, db_connect);
 		if (drive == NULL) {
 			// TODO: print error
 			break;
