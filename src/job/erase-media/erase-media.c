@@ -116,7 +116,7 @@ static void soj_erasemedia_make_report(struct so_job * job, struct so_database_c
 static int soj_erasemedia_run(struct so_job * job, struct so_database_connection * db_connect) {
 	job->done = 0.25;
 
-	struct so_drive * drive = soj_media_find_and_load(soj_erasemedia_media, false, 0, db_connect);
+	struct so_drive * drive = soj_media_find_and_load(soj_erasemedia_media, false, 0, NULL, db_connect);
 	if (drive == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error,
 			so_job_record_notif_important, dgettext("storiqone-job-erase-media", "Failed to load media '%s'"),
