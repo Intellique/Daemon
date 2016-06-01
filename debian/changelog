@@ -1,3 +1,15 @@
+storiqone (1.3b3-1+jessie) polisher; urgency=low
+
+  * New beta release
+  * Bug fix:
+    - #138: XML encoding: escape characters
+    - #135: Fix size of LTFS archives
+    - #38:  Fix remaining size of parted tapes
+    - #134: Force option of 'st' driver in order to format tape with
+            partitions
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 01 Jun 2016 13:13:26 +0200
+
 storiqone (1.3b2-1+jessie) polisher; urgency=low
 
   * New beta release
