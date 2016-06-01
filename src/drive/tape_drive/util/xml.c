@@ -181,9 +181,56 @@ ssize_t sodr_tape_drive_xml_encode_inner(struct sodr_tape_drive_xml_encoder * co
 			nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%lld", integer_value);
 		else if (so_value_unpack(xml, "{sf}", "value", &float_value) == 1)
 			nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%g", float_value);
-		else if (so_value_unpack(xml, "{sS}", "value", &value) == 1)
-			nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%s", value);
-		else
+		else if (so_value_unpack(xml, "{sS}", "value", &value) == 1) {
+			while (*value != '\0') {
+				size_t length = strcspn(value, "\"'<>&");
+				if (length > 0) {
+					nb_write = sodr_tape_drive_xml_encode_inner_write(context, "%.*s", (int) length, value);
+					if (nb_write < 0)
+						return nb_write;
+
+					nb_total_write += nb_write;
+					value += nb_write;
+				}
+
+				if (*value != '\0') {
+					switch (*value) {
+						case '&':
+							nb_write = sodr_tape_drive_xml_encode_inner_write(context, "&amp;");
+							value++;
+							break;
+
+						case '"':
+							nb_write = sodr_tape_drive_xml_encode_inner_write(context, "&quot;");
+							value++;
+							break;
+
+						case '\'':
+							nb_write = sodr_tape_drive_xml_encode_inner_write(context, "&apos;");
+							value++;
+							break;
+
+						case '<':
+							nb_write = sodr_tape_drive_xml_encode_inner_write(context, "&lt;");
+							value++;
+							break;
+
+						case '>':
+							nb_write = sodr_tape_drive_xml_encode_inner_write(context, "&gt;");
+							value++;
+							break;
+
+						default:
+							nb_write = 0;
+					}
+
+					if (nb_write < 0)
+						return nb_write;
+
+					nb_total_write += nb_write;
+				}
+			}
+		} else
 			nb_write = 0;
 
 		if (nb_write < 0)
@@ -288,18 +335,27 @@ struct so_value * sodr_tape_drive_xml_parse_string(const char * xml) {
 	if (xml == NULL)
 		return NULL;
 
+	size_t xml_length = strlen(xml);
+
+	XML_Parser parser = XML_ParserCreate(NULL);
+	int failed = XML_Parse(parser, xml, xml_length, true);
+	XML_ParserFree(parser);
+
+	if (failed != XML_STATUS_OK)
+		return NULL;
+
 	struct sodr_tape_drive_xml_state state = {
 		.root         = NULL,
 		.stack_object = so_value_new_linked_list(),
 		.current      = NULL,
 	};
 
-	XML_Parser parser = XML_ParserCreate(NULL);
+	parser = XML_ParserCreate(NULL);
 	XML_SetUserData(parser, &state);
 	XML_SetCharacterDataHandler(parser, sodr_tape_drive_xml_character_data);
 	XML_SetElementHandler(parser, sodr_tape_drive_xml_start_element, sodr_tape_drive_xml_end_element);
 
-	int failed = XML_Parse(parser, xml, strlen(xml), true);
+	failed = XML_Parse(parser, xml, xml_length, true);
 	XML_ParserFree(parser);
 
 	so_value_free(state.stack_object);

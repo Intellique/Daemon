@@ -214,8 +214,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int 
 		return 1;
 	}
 
-	ssize_t buffer_size = 65536, nb_total_read = 0;
-	char * buffer = malloc(buffer_size);
+	ssize_t buffer_size = 524288, nb_total_read = 0;
+	char * buffer = malloc(buffer_size + 1);
 	struct so_value * index = NULL;
 	for (;;) {
 		nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
@@ -252,8 +252,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int 
 		if (index != NULL)
 			break;
 
-		buffer_size += 65536;
-		void * addr = realloc(buffer, buffer_size);
+		buffer_size += 524288;
+		void * addr = realloc(buffer, buffer_size + 1);
 		if (addr == NULL) {
 			so_log_write(so_log_level_debug,
 				dgettext("storiqone-drive-tape", "Error, not enough memory to read LTFS index from media '%s'"),

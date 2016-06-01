@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-05-26 12:50+0200\n"
+        "POT-Creation-Date: 2016-05-27 17:06+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -413,7 +413,7 @@ msgstr  "[ %s | %s | n°%u ] : erreur en avançant de %d blocks parce que %m"
 msgid   "[%s | %s | #%u]: error while reading because %m"
 msgstr  "[ %s | %s | n°%u ] : erreur en lisant parce que %m"
 
-#: src/drive/tape_drive/io/reader.c:471
+#: src/drive/tape_drive/io/reader.c:472
 #, c-format
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  "[ %s | %s | n°%u ] : erreur en rembobinant la bande parce que %m"
