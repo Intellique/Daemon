@@ -81,6 +81,29 @@ int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_databas
 	return failed;
 }
 
+int sodr_tape_drive_st_set_can_partition(struct so_drive * drive, int fd, struct so_database_connection * db) {
+	const struct mtop set_can_parition = { MTSETDRVBUFFER, MT_ST_CAN_PARTITIONS | MT_ST_SETBOOLEANS };
+
+	sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Set option to 'st' driver 'can-partition'"),
+		drive->vendor, drive->model, drive->index);
+
+	sodr_time_start();
+	int failed = ioctl(fd, MTIOCTOP, &set_can_parition);
+	sodr_time_stop(drive);
+
+	if (failed != 0)
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to set option to 'st' driver 'can-partition'"),
+			drive->vendor, drive->model, drive->index);
+	else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"),
+			drive->vendor, drive->model, drive->index);
+
+	return failed;
+}
+
 int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned int partition, int file_number, bool force, struct so_database_connection * db) {
 	struct so_media * media = drive->slot->media;
 
