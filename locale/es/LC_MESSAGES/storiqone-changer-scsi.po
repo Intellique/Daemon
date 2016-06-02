@@ -63,7 +63,7 @@ msgstr  "[ %s | %s ]: verificiación del media con el lector #%u terminado"
 
 #: src/changer/scsi_changer/device.c:381
 msgid   "<UNLABELED>"
-msgstr  ""
+msgstr  "SIN ETIQUETA"
 
 #: src/changer/scsi_changer/device.c:388
 #, c-format
@@ -88,7 +88,7 @@ msgstr  "[%s | %s]: fallo al reiniciar el lector #%u %s %s"
 #: src/changer/scsi_changer/device.c:454
 #, c-format
 msgid   "Retreive label '%s' from media into drive #%u"
-msgstr  ""
+msgstr  "Obtiene la etiqueta \"%s\" desde el media en el lector #%u"
 
 #: src/changer/scsi_changer/device.c:460
 #, c-format
@@ -108,7 +108,7 @@ msgstr  "[ %s | %s ]: descarga del media \"%s\" desde el lector #%u hacia el l
 #: src/changer/scsi_changer/device.c:561
 #, c-format
 msgid   "Found a media at slot #%u which is unlabeled or mislabeled."
-msgstr  ""
+msgstr  "Ha encontrado un media en la ranura #%u que está sea sin etiqueta o sea mal etiqueteada"
 
 #: src/changer/scsi_changer/device.c:573
 #, c-format
