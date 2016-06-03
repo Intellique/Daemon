@@ -90,7 +90,7 @@ msgstr  "Seleccione el modo de copia: directo"
 #: src/job/copy-archive/direct_copy.c:106 src/job/copy-archive/indirect_copy.c:233
 #, c-format
 msgid   "Add file '%s' to archive"
-msgstr  ""
+msgstr  "Añadir los ficheros \"%s\" en el archivo"
 
 #: src/job/copy-archive/direct_copy.c:113 src/job/copy-archive/direct_copy.c:135 src/job/copy-archive/direct_copy.c:179
 #: src/job/copy-archive/indirect_copy.c:262 src/job/copy-archive/indirect_copy.c:306
