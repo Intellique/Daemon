@@ -988,17 +988,17 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 	strncpy(application_version.value.text, version, version_length);
 
 	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%*s' on media '%s'"),
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%.*s' on media '%s'"),
 		drive->vendor, drive->model, drive->index, version_length, version, media_name);
 
 	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &application_version, 0);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, version_length, version, media_name);
 	else
 		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, version_length, version, media_name);
 
 	if (failed != 0)
@@ -1007,7 +1007,7 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 
 	static struct sodr_tape_drive_scsi_mam_attribute user_medium_text_label = {
 		.identifier = sodr_tape_drive_scsi_mam_user_medium_text_label,
-		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_text,
 		.read_only  = false,
 		.length     = 160,
 		.value.text = "                                                                                                                                                                "
@@ -1020,17 +1020,17 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 	strncpy(user_medium_text_label.value.text, media_name, media_name_length);
 
 	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%*s' on media '%s'"),
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%.*s' on media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
 
 	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &user_medium_text_label, 0);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
 	else
 		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
 
 	if (failed != 0)

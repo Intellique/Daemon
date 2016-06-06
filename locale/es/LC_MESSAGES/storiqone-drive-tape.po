@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-05-27 17:06+0200\n"
+        "POT-Creation-Date: 2016-06-06 17:23+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -195,36 +195,36 @@ msgstr  ""
 
 #: src/drive/tape_drive/format/ltfs/util.c:991
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%*s' on media "
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%.*s' on media "
         "'%s'"
 msgstr  ""
 
 #: src/drive/tape_drive/format/ltfs/util.c:997
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%*s' on media "
-        "'%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%.*s' on "
+        "media '%s'"
 msgstr  ""
 
 #: src/drive/tape_drive/format/ltfs/util.c:1001
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%*s' on media '%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%.*s' on media '%s'"
 msgstr  ""
 
 #: src/drive/tape_drive/format/ltfs/util.c:1023
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%*s' on media "
-        "'%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%.*s' on "
+        "media '%s'"
 msgstr  ""
 
 #: src/drive/tape_drive/format/ltfs/util.c:1029
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%*s' on "
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%.*s' on "
         "media '%s'"
 msgstr  ""
 
 #: src/drive/tape_drive/format/ltfs/util.c:1033
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%*s' on media '%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%.*s' on media '%s'"
 msgstr  ""
 
 #: src/drive/tape_drive/format/ltfs/util.c:1056

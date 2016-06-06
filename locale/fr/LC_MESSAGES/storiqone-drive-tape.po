@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-05-27 17:06+0200\n"
+        "POT-Creation-Date: 2016-06-06 17:23+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -201,43 +201,43 @@ msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’at
 
 #: src/drive/tape_drive/format/ltfs/util.c:991
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%*s' on media "
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%.*s' on media "
         "'%s'"
 msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de mettre à jour l’attribut « application "
-        "version » avec « %*s » sur le média « %s »"
+        "version » avec « %.*s » sur le média « %s »"
 
 #: src/drive/tape_drive/format/ltfs/util.c:997
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%*s' on media "
-        "'%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%.*s' on "
+        "media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la mise à jour de l’attribut « application "
-        "version » avec « %*s » sur le média « %s »"
+        "version » avec « %.*s » sur le média « %s »"
 
 #: src/drive/tape_drive/format/ltfs/util.c:1001
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%*s' on media '%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%.*s' on media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « application version » a été mis à jour avec "
-        "« %*s » sur le média « %s »"
+        "« %.*s » sur le média « %s »"
 
 #: src/drive/tape_drive/format/ltfs/util.c:1023
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%*s' on media "
-        "'%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%.*s' on "
+        "media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de mettre à jour l’attribut « user medium text "
-        "label » avec « %*s » sur le média « %s »"
+        "label » avec « %.*s » sur le média « %s »"
 
 #: src/drive/tape_drive/format/ltfs/util.c:1029
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%*s' on "
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%.*s' on "
         "media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la mise à jour de l’attribut « user medium text "
-        "label » avec « %*s » sur le média « %s »"
+        "label » avec « %.*s » sur le média « %s »"
 
 #: src/drive/tape_drive/format/ltfs/util.c:1033
 #, c-format
-msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%*s' on media '%s'"
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%.*s' on media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « user medium text label » a été mis à jour "
-        "avec « %*s » sur le média « %s »"
+        "avec « %.*s » sur le média « %s »"
 
 #: src/drive/tape_drive/format/ltfs/util.c:1056
 #, c-format
