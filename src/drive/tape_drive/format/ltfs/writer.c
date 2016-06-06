@@ -292,7 +292,7 @@ static struct so_value * sodr_tape_drive_format_ltfs_writer_get_digests(struct s
 
 static int sodr_tape_drive_format_ltfs_writer_file_position(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
-	return self->total_wrote;
+	return self->writer->ops->file_position(self->writer);
 }
 
 static int sodr_tape_drive_format_ltfs_writer_last_errno(struct so_format_writer * fw) {
@@ -302,7 +302,7 @@ static int sodr_tape_drive_format_ltfs_writer_last_errno(struct so_format_writer
 
 static ssize_t sodr_tape_drive_format_ltfs_writer_position(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
-	return self->writer->ops->position(self->writer);
+	return self->total_wrote;
 }
 
 static struct so_format_reader * sodr_tape_drive_format_ltfs_writer_reopen(struct so_format_writer * fw) {
