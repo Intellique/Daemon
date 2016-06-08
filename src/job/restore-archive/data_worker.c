@@ -104,7 +104,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 		if (strcmp(vol->media->medium_serial_number, worker->media->medium_serial_number) != 0)
 			continue;
 
-		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
+		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, NULL, db_connect);
 		if (drive == NULL) {
 			// TODO: print error
 			break;

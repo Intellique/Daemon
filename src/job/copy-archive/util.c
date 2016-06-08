@@ -70,7 +70,7 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 
 	self->dest_drive->ops->release(self->dest_drive);
 
-	self->dest_drive = soj_media_find_and_load_next(self->pool, false, db_connect);
+	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
 	if (self->dest_drive == NULL)
 		return 3;
 

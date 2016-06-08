@@ -210,7 +210,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 			continue;
 		}
 
-		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, worker->db_connect);
+		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, NULL, worker->db_connect);
 		if (drive == NULL) {
 			so_job_add_record(worker->job, worker->db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-check-archive", "Worker #%u : failed to get drive for media '%s'"),

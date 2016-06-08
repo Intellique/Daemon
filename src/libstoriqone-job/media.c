@@ -69,7 +69,7 @@ void soj_media_check_reserved() {
 	so_value_iterator_free(iter_pool);
 }
 
-struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait, size_t size_need, struct so_database_connection * db_connect) {
+struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait, size_t size_need, bool * error, struct so_database_connection * db_connect) {
 	struct so_job * job = soj_job_get();
 
 	enum {
@@ -100,7 +100,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 				break;
 
 			case get_media:
-				drive = slot->changer->ops->get_media(slot->changer, media, no_wait);
+				drive = slot->changer->ops->get_media(slot->changer, media, no_wait, error);
 				if (drive == NULL) {
 					job->status = so_job_status_waiting;
 
@@ -139,7 +139,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 	return drive;
 }
 
-struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wait, struct so_database_connection * db_connect) {
+struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wait, bool * error, struct so_database_connection * db_connect) {
 	struct so_job * job = soj_job_get();
 
 	struct so_value * medias = so_value_hashtable_get2(soj_media_reserved_by_pool, pool->uuid, false, false);
@@ -176,7 +176,7 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 					break;
 
 				case get_media:
-					drive = slot->changer->ops->get_media(slot->changer, media, no_wait);
+					drive = slot->changer->ops->get_media(slot->changer, media, no_wait, error);
 
 					if (drive != NULL || no_wait)
 						stop = true;

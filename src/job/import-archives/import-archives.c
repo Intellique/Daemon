@@ -99,7 +99,7 @@ static void soj_importarchives_init() {
 static int soj_importarchives_run(struct so_job * job, struct so_database_connection * db_connect) {
 	job->done = 0;
 
-	struct so_drive * drive = soj_media_find_and_load(soj_importarchives_media, false, 0, db_connect);
+	struct so_drive * drive = soj_media_find_and_load(soj_importarchives_media, false, 0, NULL, db_connect);
 	if (drive == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-import-archives", "Failed to load media '%s'"),
