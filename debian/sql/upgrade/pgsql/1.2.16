@@ -1,0 +1,31 @@
+-- Upgrade from v1.2.13 to v1.2.16
+-- update trigger log_metata
+-- force JSONB to Metadata.value and MetadataLog.value
+-- update constraints in archivemirror
+
+BEGIN;
+
+CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
+    BEGIN
+        IF TG_OP = 'UPDATE' AND OLD.type != NEW.type THEN
+            RAISE EXCEPTION 'type of metadata should not be modified' USING ERRCODE = '09000';
+        ELSIF TG_OP = 'DELETE' THEN
+            INSERT INTO MetadataLog(id, type, key, value, login, updated)
+                VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, FALSE);
+            RETURN OLD;
+        ELSIF OLD != NEW THEN
+            INSERT INTO MetadataLog(id, type, key, value, login, updated)
+                VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, TRUE);
+            RETURN NEW;
+        END IF;
+    END;
+$body$ LANGUAGE plpgsql;
+
+ALTER TABLE Metadata ALTER value TYPE JSONB USING value::JSONB;
+ALTER TABLE MetadataLog ALTER value TYPE JSONB USING value::JSONB;
+
+ALTER TABLE archivemirror DROP CONSTRAINT archivemirror_poolmirror_fkey;
+ALTER TABLE archivemirror ADD FOREIGN KEY (poolmirror) REFERENCES poolmirror(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+COMMIT;
+

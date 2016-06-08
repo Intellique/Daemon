@@ -1,3 +1,15 @@
+storiqone (1.2.16-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Add:
+    - #121: Fix archiving in poolmirror with # of pool greater than available
+            drives.
+    - #129: Fix trigger used to log metadata changes
+    - #131, #132, #133: Manage tape without label in library
+    - #141: Fix a bug when using storiqone with more than one library
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 08 Jun 2016 11:13:58 +0200
+
 storiqone (1.2.15-2+wheezy) polisher; urgency=low
 
   * New bug fix release
