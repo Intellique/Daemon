@@ -4,8 +4,18 @@ use strict;
 use warnings;
 
 my $ref;
+my $directory = '.git';
 
-open my $fd, '<', '.git/HEAD';
+if ( -f $directory ) {
+	open my $fd_git, '<', $directory;
+	while (<$fd_git>) {
+		chomp;
+		(undef, $directory) = split ' ';
+	}
+	close $fd_git;
+}
+
+open my $fd, '<', "$directory/HEAD";
 while (<$fd>) {
 	if (/^ref: (.+)$/) {
 		$ref = $1;
@@ -14,14 +24,24 @@ while (<$fd>) {
 }
 close $fd;
 
-my $filename = ".git/$ref";
+my $sub_directory = "$directory/commondir";
+if ( -f $sub_directory ) {
+	open my $fd_git, '<', $sub_directory;
+	while (<$fd_git>) {
+		chomp;
+		$directory = "$directory/$_";
+	}
+	close $fd_git;
+}
+
+my $filename = "$directory/$ref";
 
 if (-e $filename) {
 	print "$filename\n";
 	exit 0;
 }
 
-$filename = ".git/logs/$ref";
+$filename = "$directory/logs/$ref";
 
 if (-e $filename) {
 	print "$filename\n";

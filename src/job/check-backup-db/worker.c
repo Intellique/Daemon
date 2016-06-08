@@ -65,7 +65,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 	struct so_drive * dr = NULL;
 	struct so_stream_reader * sr_dr = NULL;
 
-	bool stop = false;
+	bool error = false, stop = false;
 	bool has_alert_user = false;
 	while (!stop) {
 		switch (state) {
@@ -96,7 +96,13 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				break;
 
 			case get_media:
-				dr = slot->changer->ops->get_media(slot->changer, worker->volume->media, false);
+				dr = slot->changer->ops->get_media(slot->changer, worker->volume->media, false, &error);
+
+				if (error) {
+					stop = true;
+					break;
+				}
+
 				if (dr == NULL) {
 					state = find_media;
 					sleep(5);
@@ -122,6 +128,12 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				state = get_media;
 				break;
 		}
+	}
+
+	if (error) {
+		worker->status = so_job_status_error;
+		worker->working = false;
+		return;
 	}
 
 	struct so_value * checksums = so_value_hashtable_keys(worker->volume->digests);

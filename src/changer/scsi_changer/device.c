@@ -375,7 +375,15 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		if (!sl->enable || !sl->full || sl->media != NULL)
 			continue;
 
-		char * volume_name = strdup(sl->volume_name);
+		bool is_correctly_labeled = false;
+		char * volume_name = NULL;
+		if (sl->volume_name == NULL || sl->volume_name[0] == '\0')
+			volume_name = strdup(dgettext("storiqone-changer-scsi", "<UNLABELED>"));
+		else {
+			volume_name = strdup(sl->volume_name);
+			is_correctly_labeled = true;
+		}
+
 		so_log_write(so_log_level_notice,
 			dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u"),
 			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, dr->index);
@@ -429,6 +437,44 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 
 			free(volume_name);
 			return;
+		}
+
+		if (is_correctly_labeled) {
+			struct so_media * media = dr->slot->media;
+			if (media->label != NULL) {
+				so_string_trim(media->label, ' ');
+
+				if (media->label[0] == '\0') {
+					so_log_write(so_log_level_warning,
+						dgettext("storiqone-changer-scsi", "[%s | %s]: media has a new label '%s'"),
+						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name);
+				} else if (strcmp(media->label, volume_name) != 0) {
+					so_log_write(so_log_level_alert,
+						dgettext("storiqone-changer-scsi", "[%s | %s]: label mismatched (librairie read '%s', drive read '%s')"),
+						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->slot->media->label);
+				}
+			} else {
+				so_log_write(so_log_level_warning,
+					dgettext("storiqone-changer-scsi", "[%s | %s]: media has a new label '%s'"),
+					sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name);
+			}
+		} else {
+			struct so_media * media = dr->slot->media;
+			if (media->label != NULL) {
+				so_string_trim(media->label, ' ');
+
+				if (media->label[0] != '\0') {
+					free(volume_name);
+					volume_name = strdup(media->label);
+
+					free(dr->slot->volume_name);
+					dr->slot->volume_name = strdup(media->label);
+
+					so_log_write(so_log_level_critical,
+						dgettext("storiqone-changer-scsi", "[%s | %s]: retrieve label '%s' from media into drive #%u"),
+						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, media->label, dr->index);
+				}
+			}
 		}
 
 		so_log_write(so_log_level_notice,
@@ -507,6 +553,20 @@ static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive
 			so_log_write(so_log_level_critical,
 				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to reset drive #%u %s %s"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, to->index, to->vendor, to->model);
+
+		struct so_slot * sl_dr = to->slot;
+		struct so_media * m_dr = sl_dr->media;
+		if (sl_dr->volume_name != NULL && sl_dr->volume_name[0] != '\0' && m_dr->label != NULL && m_dr->label[0] != '\0' && strcmp(sl_dr->volume_name, m_dr->label) != 0) {
+			so_log_write(so_log_level_critical,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: label mismatched (librairie read '%s', drive read '%s')"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sl_dr->volume_name, m_dr->label);
+
+			failed = sochgr_scsi_changer_unload(to, db_connection);
+			if (failed != 0)
+				return failed;
+			else
+				return 1;
+		}
 	}
 
 	sochgr_scsi_changer.status = so_changer_status_idle;
@@ -530,9 +590,17 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 		if (!sl->enable || !sl->full)
 			continue;
 
-		sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name, NULL);
-		if (sl->media == NULL)
+		so_string_trim(sl->volume_name, ' ');
+		if (sl->volume_name == NULL || sl->volume_name[0] == '\0') {
+			so_log_write(so_log_level_critical,
+				dgettext("storiqone-changer-scsi", "Found a media at slot #%u which is unlabeled or mislabeled."),
+				i);
 			need_init++;
+		} else {
+			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name, NULL);
+			if (sl->media == NULL)
+				need_init++;
+		}
 	}
 
 	if (need_init > 0) {
