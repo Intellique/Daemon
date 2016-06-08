@@ -3486,8 +3486,8 @@ static char * so_database_postgresql_get_original_path_from_alternate_path(struc
 	so_value_free(key);
 
 
-	const char * query = "select_original_path_of_ltfs_file";
-	so_database_postgresql_prepare(self, query, "SELECT name FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE alternatepath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1");
+	const char * query = "select_original_path_of_alternate_file";
+	so_database_postgresql_prepare(self, query, "WITH af2v AS (SELECT archivefile, alternatepath FROM archivefiletoarchivevolume WHERE archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1)) SELECT af.name FROM archivefile af INNER JOIN selectedfile sf ON af.parent = sf.id WHERE (SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) = $2 AND af.id IN (SELECT archivefile FROM af2v)) OR af.id = (SELECT archivefile FROM af2v WHERE alternatepath = $2 LIMIT 1) LIMIT 1");
 
 	const char * param[] = { archive_id, path };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -3519,8 +3519,8 @@ static char * so_database_postgresql_get_selected_path_from_alternate_path(struc
 	so_value_free(key);
 
 
-	const char * query = "select_selected_path_of_ltfs_file";
-	so_database_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id = (SELECT parent FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE alternatepath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1) LIMIT 1");
+	const char * query = "select_selected_path_of_alternate_file";
+	so_database_postgresql_prepare(self, query, "WITH af2v AS (SELECT archivefile, alternatepath FROM archivefiletoarchivevolume WHERE archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1)) SELECT sf.path FROM archivefile af INNER JOIN selectedfile sf ON af.parent = sf.id WHERE (SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) = $2 AND af.id IN (SELECT archivefile FROM af2v)) OR af.id = (SELECT archivefile FROM af2v WHERE alternatepath = $2 LIMIT 1) LIMIT 1");
 
 	const char * param[] = { archive_id, path };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);

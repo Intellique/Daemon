@@ -746,7 +746,7 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 				so_string_delete_double_char(file->file.filename, '/');
 			} else {
-				file->name = strdup(elt_name);
+				file->name = strdup(file_name);
 				file->hash_name = so_string_compute_hash2(file->name);
 
 				char * tmp_path;
@@ -876,8 +876,15 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 		struct so_value_iterator * iter = so_value_list_get_iterator(files);
 		while (so_value_iterator_has_next(iter)) {
-			struct so_value * child = so_value_iterator_get_value(iter, false);
-			sodr_tape_drive_format_ltfs_parse_index_inner(self, file, child, file->file.filename, default_value, archive, db_connect);
+			char * sub_path = NULL;
+			int size = asprintf(&sub_path, "%s/%s", path, file->name);
+
+			if (size > 0) {
+				struct so_value * child = so_value_iterator_get_value(iter, false);
+				sodr_tape_drive_format_ltfs_parse_index_inner(self, file, child, sub_path, default_value, archive, db_connect);
+
+				free(sub_path);
+			}
 		}
 		so_value_iterator_free(iter);
 
