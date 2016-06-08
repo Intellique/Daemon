@@ -131,8 +131,8 @@ static struct so_archive_format * so_database_postgresql_get_archive_format_by_n
 static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(struct so_database_connection * connect, struct so_archive * archive);
 static struct so_value * so_database_postgresql_get_archives_by_media(struct so_database_connection * connect, struct so_media * media);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
-static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path);
-static char * so_database_postgresql_get_selected_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path);
+static char * so_database_postgresql_get_original_path_from_alternate_path(struct so_database_connection * connect, struct so_archive * archive, const char * path);
+static char * so_database_postgresql_get_selected_path_from_alternate_path(struct so_database_connection * connect, struct so_archive * archive, const char * path);
 static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
@@ -206,23 +206,23 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
 	.sync_plugin_script   = so_database_postgresql_sync_plugin_script,
 
-	.check_archive_file             = so_database_postgresql_check_archive_file,
-	.check_archive_volume           = so_database_postgresql_check_archive_volume,
-	.create_check_archive_job       = so_database_postgresql_create_check_archive_job,
-	.get_archive_by_job             = so_database_postgresql_get_archive_by_job,
-	.get_archive_format_by_name     = so_database_postgresql_get_archive_format_by_name,
-	.get_archives_by_archive_mirror = so_database_postgresql_get_archives_by_archive_mirror,
-	.get_archives_by_media          = so_database_postgresql_get_archives_by_media,
-	.get_nb_volumes_of_file         = so_database_postgresql_get_nb_volumes_of_file,
-	.get_original_path_of_ltfs_file = so_database_postgresql_get_original_path_of_ltfs_file,
-	.get_selected_path_of_ltfs_file = so_database_postgresql_get_selected_path_of_ltfs_file,
-	.get_synchronized_archive       = so_database_postgresql_get_synchronized_archive,
-	.is_archive_synchronized        = so_database_postgresql_is_archive_synchronized,
-	.link_archives                  = so_database_postgresql_link_archives,
-	.mark_archive_as_purged         = so_database_postgresql_mark_archive_as_purged,
-	.sync_archive                   = so_database_postgresql_sync_archive,
-	.sync_archive_format            = so_database_postgresql_sync_archive_format,
-	.update_link_archive            = so_database_postgresql_update_link_archive,
+	.check_archive_file                    = so_database_postgresql_check_archive_file,
+	.check_archive_volume                  = so_database_postgresql_check_archive_volume,
+	.create_check_archive_job              = so_database_postgresql_create_check_archive_job,
+	.get_archive_by_job                    = so_database_postgresql_get_archive_by_job,
+	.get_archive_format_by_name            = so_database_postgresql_get_archive_format_by_name,
+	.get_archives_by_archive_mirror        = so_database_postgresql_get_archives_by_archive_mirror,
+	.get_archives_by_media                 = so_database_postgresql_get_archives_by_media,
+	.get_nb_volumes_of_file                = so_database_postgresql_get_nb_volumes_of_file,
+	.get_original_path_from_alternate_path = so_database_postgresql_get_original_path_from_alternate_path,
+	.get_selected_path_from_alternate_path = so_database_postgresql_get_selected_path_from_alternate_path,
+	.get_synchronized_archive              = so_database_postgresql_get_synchronized_archive,
+	.is_archive_synchronized               = so_database_postgresql_is_archive_synchronized,
+	.link_archives                         = so_database_postgresql_link_archives,
+	.mark_archive_as_purged                = so_database_postgresql_mark_archive_as_purged,
+	.sync_archive                          = so_database_postgresql_sync_archive,
+	.sync_archive_format                   = so_database_postgresql_sync_archive_format,
+	.update_link_archive                   = so_database_postgresql_update_link_archive,
 
 	.backup_add                 = so_database_postgresql_backup_add,
 	.get_backup                 = so_database_postgresql_get_backup,
@@ -3471,7 +3471,7 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 	return nb_volumes;
 }
 
-static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path) {
+static char * so_database_postgresql_get_original_path_from_alternate_path(struct so_database_connection * connect, struct so_archive * archive, const char * path) {
 	if (connect == NULL || archive == NULL)
 		return NULL;
 
@@ -3487,7 +3487,7 @@ static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_da
 
 
 	const char * query = "select_original_path_of_ltfs_file";
-	so_database_postgresql_prepare(self, query, "SELECT name FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE ltfspath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT name FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE alternatepath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1");
 
 	const char * param[] = { archive_id, path };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -3504,7 +3504,7 @@ static char * so_database_postgresql_get_original_path_of_ltfs_file(struct so_da
 	return original_path;
 }
 
-static char * so_database_postgresql_get_selected_path_of_ltfs_file(struct so_database_connection * connect, struct so_archive * archive, const char * path) {
+static char * so_database_postgresql_get_selected_path_from_alternate_path(struct so_database_connection * connect, struct so_archive * archive, const char * path) {
 	if (connect == NULL || archive == NULL)
 		return NULL;
 
@@ -3520,7 +3520,7 @@ static char * so_database_postgresql_get_selected_path_of_ltfs_file(struct so_da
 
 
 	const char * query = "select_selected_path_of_ltfs_file";
-	so_database_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id = (SELECT name FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE ltfspath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1) LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id = (SELECT parent FROM archivefile WHERE id = (SELECT archivefile FROM archivefiletoarchivevolume WHERE alternatepath = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) LIMIT 1) LIMIT 1) LIMIT 1");
 
 	const char * param[] = { archive_id, path };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -4151,7 +4151,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		}
 
 		const char * queryA = "insert_archivefiletoarchivevolume";
-		so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) VALUES ($1, $2, $3, $4)");
+		so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime, alternatepath) VALUES ($1, $2, $3, $4, $5)");
 
 		unsigned int i;
 		for (i = 0; i < volume->nb_files; i++) {
@@ -4175,8 +4175,8 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 
 			so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
 
-			const char * paramA[] = { volume_id, file_id, block_number, archive_time };
-			PGresult * resultA = PQexecPrepared(self->connect, queryA, 4, paramA, NULL, NULL, 0);
+			const char * paramA[] = { volume_id, file_id, block_number, archive_time, file->alternate_path };
+			PGresult * resultA = PQexecPrepared(self->connect, queryA, 5, paramA, NULL, NULL, 0);
 			ExecStatusType statusA = PQresultStatus(resultA);
 
 			if (statusA == PGRES_FATAL_ERROR)

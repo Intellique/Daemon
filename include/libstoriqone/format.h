@@ -99,6 +99,7 @@ struct so_format_writer {
 		ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const struct so_format_file * file);
 		ssize_t (*end_of_file)(struct so_format_writer * fw);
 		void (*free)(struct so_format_writer * fw);
+		char * (*get_alternate_path)(struct so_format_writer * fw);
 		ssize_t (*get_available_size)(struct so_format_writer * fw);
 		ssize_t (*get_block_size)(struct so_format_writer * fw);
 		struct so_value * (*get_digests)(struct so_format_writer * fw);

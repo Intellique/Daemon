@@ -754,7 +754,7 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 				if (size < 0)
 					continue;
 
-				char * original_path = db_connect->ops->get_original_path_of_ltfs_file(db_connect, archive, tmp_path);
+				char * original_path = db_connect->ops->get_original_path_from_alternate_path(db_connect, archive, tmp_path);
 				if (original_path != NULL)
 					file->file.filename = original_path;
 				else {
@@ -765,7 +765,7 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 					}
 				}
 
-				char * selected_path = db_connect->ops->get_selected_path_of_ltfs_file(db_connect, archive, tmp_path);
+				char * selected_path = db_connect->ops->get_selected_path_from_alternate_path(db_connect, archive, tmp_path);
 				if (selected_path != NULL) {
 					file->hash_selected_path = so_string_compute_hash2(selected_path);
 					free(selected_path);

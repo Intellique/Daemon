@@ -204,7 +204,7 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 
 		unsigned int j;
 		for (j = 0; j < ch->nb_drives; j++) {
-			struct so_drive * dr = ch->drives + i;
+			struct so_drive * dr = ch->drives + j;
 			if (dr->ops->check_support(dr, format, for_writing))
 				return true;
 		}

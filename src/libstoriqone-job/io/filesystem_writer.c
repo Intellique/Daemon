@@ -67,6 +67,7 @@ static ssize_t soj_format_writer_filesystem_compute_size_of_file(struct so_forma
 static ssize_t soj_format_writer_filesystem_end_of_file(struct so_format_writer * fw);
 static int soj_format_writer_filesystem_file_position(struct so_format_writer * fw);
 static void soj_format_writer_filesystem_free(struct so_format_writer * fw);
+static char * soj_format_writer_filesystem_get_alternate_path(struct so_format_writer * fw);
 static ssize_t soj_format_writer_filesystem_get_available_size(struct so_format_writer * fw);
 static ssize_t soj_format_writer_filesystem_get_block_size(struct so_format_writer * fw);
 static struct so_value * soj_format_writer_filesystem_get_digests(struct so_format_writer * fw);
@@ -83,6 +84,7 @@ static struct so_format_writer_ops soj_format_writer_filesystem_ops = {
 	.end_of_file          = soj_format_writer_filesystem_end_of_file,
 	.file_position        = soj_format_writer_filesystem_file_position,
 	.free                 = soj_format_writer_filesystem_free,
+	.get_alternate_path   = soj_format_writer_filesystem_get_alternate_path,
 	.get_available_size   = soj_format_writer_filesystem_get_available_size,
 	.get_block_size       = soj_format_writer_filesystem_get_block_size,
 	.get_digests          = soj_format_writer_filesystem_get_digests,
@@ -183,6 +185,10 @@ static void soj_format_writer_filesystem_free(struct so_format_writer * fw) {
 	free(self->base_dir);
 	free(self);
 	free(fw);
+}
+
+static char * soj_format_writer_filesystem_get_alternate_path(struct so_format_writer * fw __attribute__((unused))) {
+	return NULL;
 }
 
 static ssize_t soj_format_writer_filesystem_get_available_size(struct so_format_writer * fw) {
