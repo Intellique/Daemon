@@ -719,8 +719,10 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 	if (directory->first_child == NULL)
 		directory->first_child = directory->last_child = file;
-	else
+	else {
+		file->previous_sibling = directory->last_child;
 		directory->last_child = directory->last_child->next_sibling = file;
+	}
 	file->parent = directory;
 
 	file->file.mode = S_IFREG | default_value->file_mask;

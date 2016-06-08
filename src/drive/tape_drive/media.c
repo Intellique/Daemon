@@ -82,6 +82,7 @@ void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
 					while (file->first_child != NULL)
 						file = file->first_child;
 
+					free(file->name);
 					so_format_file_free(&file->file);
 					free(file->extents);
 
@@ -91,6 +92,7 @@ void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
 					} else
 						do {
 							file = file->parent;
+							file->first_child = NULL;
 							free(file->last_child);
 						} while (file->parent != NULL && file->next_sibling == NULL);
 				}
