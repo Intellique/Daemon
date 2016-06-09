@@ -732,19 +732,19 @@ static int sodr_tape_drive_scsi_open() {
 }
 
 static struct so_format_reader * sodr_tape_drive_open_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(volume->media_position, db);
-	if (reader == NULL)
-		return NULL;
-
 	struct so_media * media = sodr_tape_drive.slot->media;
 	if (media == NULL)
 		return NULL;
 
 	struct sodr_tape_drive_media * mp = media->private_data;
-
 	switch (mp->format) {
-		case sodr_tape_drive_media_storiq_one:
+		case sodr_tape_drive_media_storiq_one: {
+			struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(volume->media_position, db);
+			if (reader == NULL)
+				return NULL;
+
 			return so_format_tar_new_reader(reader, checksums);
+		}
 
 		case sodr_tape_drive_media_ltfs: {
 			int fd = sodr_tape_drive_st_open();
