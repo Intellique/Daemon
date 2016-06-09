@@ -300,6 +300,9 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 static void sodr_tape_drive_format_ltfs_reader_free(struct so_format_reader * fr) {
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 	if (self != NULL) {
+		if (self->fd > -1)
+			sodr_tape_drive_format_ltfs_reader_close(fr);
+
 		self->fd = -1;
 		free(self->buffer);
 		free(self);

@@ -717,14 +717,6 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 	struct sodr_tape_drive_format_ltfs_file * file = malloc(sizeof(struct sodr_tape_drive_format_ltfs_file));
 	bzero(file, sizeof(struct sodr_tape_drive_format_ltfs_file));
 
-	if (directory->first_child == NULL)
-		directory->first_child = directory->last_child = file;
-	else {
-		file->previous_sibling = directory->last_child;
-		directory->last_child = directory->last_child->next_sibling = file;
-	}
-	file->parent = directory;
-
 	file->file.mode = S_IFREG | default_value->file_mask;
 
 	struct so_value_iterator * iter = so_value_list_get_iterator(children);
@@ -750,6 +742,18 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			} else {
 				file->name = strdup(file_name);
 				file->hash_name = so_string_compute_hash2(file->name);
+
+				if (strcmp(path, "") == 0) {
+					char * index_file = NULL;
+					int size = asprintf(&index_file, "%s.meta", archive->name);
+					if (size > 0 && strcmp(file_name, index_file) == 0) {
+						free(index_file);
+						free(file);
+						return;
+					}
+
+					free(index_file);
+				}
 
 				char * tmp_path;
 				int size = asprintf(&tmp_path, "%s/%s", path, file_name);
@@ -866,6 +870,14 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 	file->file.uid = default_value->user_id;
 	file->file.group = strdup(default_value->group);
 	file->file.gid = default_value->group_id;
+
+	if (directory->first_child == NULL)
+		directory->first_child = directory->last_child = file;
+	else {
+		file->previous_sibling = directory->last_child;
+		directory->last_child = directory->last_child->next_sibling = file;
+	}
+	file->parent = directory;
 
 	const char * elt_name = NULL;
 	so_value_unpack(index, "{sS}", "name", &elt_name);
