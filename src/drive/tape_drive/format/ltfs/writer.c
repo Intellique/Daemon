@@ -397,6 +397,8 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		self->ltfs_info->highest_file_uid++;
 		child_node->file_uid = self->ltfs_info->highest_file_uid;
 
+		child_node->ignored = true;
+
 		child_node->parent = ptr_node;
 
 		if (ptr_node->first_child == NULL)

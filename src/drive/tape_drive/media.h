@@ -104,6 +104,8 @@ struct sodr_tape_drive_media {
 
 				unsigned long long file_uid;
 
+				bool ignored;
+
 				struct sodr_tape_drive_format_ltfs_file * parent;
 
 				struct sodr_tape_drive_format_ltfs_file * first_child;
