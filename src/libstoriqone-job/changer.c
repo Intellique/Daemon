@@ -180,7 +180,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 
 		so_value_free(response);
 
-		if (!error) {
+		if (!err) {
 			job->status = so_job_status_running;
 			return changer->drives + index;
 		}
