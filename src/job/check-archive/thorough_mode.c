@@ -63,9 +63,15 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
 		if (so_value_list_get_length(checksums) == 0) {
-			struct so_archive_file * file = vol->files->file;
+			struct so_archive_file * file = NULL;
+			unsigned int f;
+			for (f = 0; f < vol->nb_files; f++) {
+				file = vol->files[f].file;
+				if (file->type == so_archive_file_type_regular_file)
+					break;
+			}
 
-			if (so_value_hashtable_get_length(file->digests) == 0) {
+			if (file == NULL || so_value_hashtable_get_length(file->digests) == 0) {
 				so_value_free(checksums);
 
 				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,

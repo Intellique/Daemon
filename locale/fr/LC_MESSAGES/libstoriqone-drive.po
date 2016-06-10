@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-drive/io/format_writer.c:224
+#: src/libstoriqone-drive/io/format_writer.c:237
 #, c-format
 msgid   "[%s %s #%u]: reopen media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : réouverture du média « %s » en lecture à la position n°%d"

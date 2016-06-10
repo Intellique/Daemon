@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-11 10:37+0100\n"
+        "POT-Creation-Date: 2016-06-09 12:59+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -58,7 +58,7 @@ msgid_plural    "%u errors"
 msgstr[0]       "%u error"
 msgstr[1]       "%u errores"
 
-#: src/job/check-archive/quick_mode.c:219 src/job/check-archive/thorough_mode.c:72
+#: src/job/check-archive/quick_mode.c:219 src/job/check-archive/thorough_mode.c:78
 #, c-format
 msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
 msgstr  "No hay suma de verificación para el volumen #%u del archivo \"%s\", ignore éste volumen"
@@ -83,27 +83,27 @@ msgstr  "El trabajador #%u: la integridad de los daros del volumen \"%s\" no es 
 msgid   "Starting check archive (%s) in thorough mode"
 msgstr  "Arranque de la verificacón del archivo (%s) en modo minucioso"
 
-#: src/job/check-archive/thorough_mode.c:149
+#: src/job/check-archive/thorough_mode.c:155
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Error de lectira desde el media \"%s\""
 
-#: src/job/check-archive/thorough_mode.c:170
+#: src/job/check-archive/thorough_mode.c:176
 #, c-format
 msgid   "Data integrity of file '%s' is correct"
 msgstr  "La integridad de los datos del fichero \"%s\" es correcto"
 
-#: src/job/check-archive/thorough_mode.c:174
+#: src/job/check-archive/thorough_mode.c:180
 #, c-format
 msgid   "Data integrity of file '%s' is not correct"
 msgstr  "La integridad de los datos del fichero \"%s\" no es correcto"
 
-#: src/job/check-archive/thorough_mode.c:212
+#: src/job/check-archive/thorough_mode.c:218
 #, c-format
 msgid   "Data integrity of volume '%s' is correct"
 msgstr  "La integridad de los datos del volumen \"%s\" es correcto"
 
-#: src/job/check-archive/thorough_mode.c:216
+#: src/job/check-archive/thorough_mode.c:222
 #, c-format
 msgid   "Data integrity of volume '%s' is not correct"
 msgstr  "La integridad de los datos del volumen \"%s\" no es correcto"

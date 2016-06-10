@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-05-17 16:29+0200\n"
+        "POT-Creation-Date: 2016-06-07 16:32+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -114,22 +114,22 @@ msgstr  "Espacio requerido (%s) para añdir a unarchivo \"%s\""
 msgid   "Error: not enough space available in pool (%s)"
 msgstr  "Error: no hay espacio suficiente en el pool (%s)"
 
-#: src/job/create-archive/worker.c:132 src/job/create-archive/worker.c:149
+#: src/job/create-archive/worker.c:133 src/job/create-archive/worker.c:150
 #, c-format
 msgid   "Error while adding file (%s) to pool %s"
 msgstr  "Error al añadir un fichero (%s) o pool%s"
 
-#: src/job/create-archive/worker.c:232
+#: src/job/create-archive/worker.c:235
 #, c-format
 msgid   "Archive continue on media (%s)"
 msgstr  "Archivo continua en el media (%s)"
 
-#: src/job/create-archive/worker.c:681
+#: src/job/create-archive/worker.c:685
 #, c-format
 msgid   "Warning, not archiving to pool '%s': not enough space (space reserved: %s, space required: %s)"
 msgstr  "Atención, imposible de archivar en el pool \"%s\": no hay suficiente espacio (espacio reservado: %s, espacio "
         "\"requerido: %s\""
 
-#: src/job/create-archive/worker.c:691
+#: src/job/create-archive/worker.c:695
 msgid   "Failed to start database transaction"
 msgstr  "Fallo al iniciar una nueva transacción de base de datos"
