@@ -3,7 +3,7 @@ SHELL=/bin/bash
 
 # commands
 # static code analysis tool: cppcheck, sparse (cgcc), splint
-CC			:= $(shell which ccache) ${TARGET}gcc
+CC			:= $(shell which ccache) ${TARGET}gcc-6
 CSCOPE		:= cscope
 CTAGS		:= ctags
 DOXYGEN		:= doxygen
@@ -16,7 +16,7 @@ STRIP		:= ${TARGET}strip
 # variable
 NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
-VERSION		:= v1.3b1
+VERSION		:= v1.3rc1
 
 
 GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar.gz

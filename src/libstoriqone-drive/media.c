@@ -284,10 +284,12 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 	else
 		ok = false;
 
+	nb_parsed2 = 0;
 	if (sscanf(buffer + nb_parsed, "Label: \"%64[^\"]\"\n%n", name, &nb_parsed2) == 1) {
 		nb_parsed += nb_parsed2;
 		has_label = true;
-	}
+	} else if (sscanf(buffer + nb_parsed, "Label: \"\"\n%n", &nb_parsed2) == 0)
+		nb_parsed += nb_parsed2;
 
 	if (ok && sscanf(buffer + nb_parsed, "Media id: uuid=\"%36[^\"]\"\n%n", uuid, &nb_parsed2) == 1)
 		nb_parsed += nb_parsed2;

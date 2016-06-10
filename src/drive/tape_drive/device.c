@@ -182,6 +182,19 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (using st driver)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
+	sodr_time_start();
+	failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, true, db);
+	sodr_time_stop(&sodr_tape_drive);
+
+	if (failed != 0) {
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
+		close(fd);
+		return false;
+	}
+
 	static struct mtop rewind = { MTREW, 1 };
 	sodr_time_start();
 	failed = ioctl(fd, MTIOCTOP, &rewind);
@@ -436,7 +449,7 @@ ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db) {
 	if (fd < 0)
 		return -1;
 
-	int failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, true, db);
+	int failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, false, db);
 	if (failed != 0) {
 		close(fd);
 		return failed;
@@ -483,13 +496,7 @@ ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db) {
 			return nb_read;
 		}
 
-		sodr_tape_drive.status = so_drive_status_rewinding;
-
-		sodr_time_start();
-		failed = ioctl(fd, MTIOCTOP, &rewind);
-		sodr_time_stop(&sodr_tape_drive);
-
-		sodr_tape_drive.status = so_drive_status_loaded_idle;
+		failed = sodr_tape_drive_st_rewind(&sodr_tape_drive, fd, db);
 	}
 
 	close(fd);
@@ -677,6 +684,9 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 		int failed = -1;
 		if (fd > -1) {
 			failed = ioctl(fd, MTIOCGET, &status);
+
+			sodr_tape_drive_st_set_can_partition(&sodr_tape_drive, fd, db_connect);
+
 			close(fd);
 		}
 		sodr_time_stop(&sodr_tape_drive);
@@ -738,19 +748,19 @@ static int sodr_tape_drive_scsi_open() {
 }
 
 static struct so_format_reader * sodr_tape_drive_open_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(volume->media_position, db);
-	if (reader == NULL)
-		return NULL;
-
 	struct so_media * media = sodr_tape_drive.slot->media;
 	if (media == NULL)
 		return NULL;
 
 	struct sodr_tape_drive_media * mp = media->private_data;
-
 	switch (mp->format) {
-		case sodr_tape_drive_media_storiq_one:
+		case sodr_tape_drive_media_storiq_one: {
+			struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(volume->media_position, db);
+			if (reader == NULL)
+				return NULL;
+
 			return so_format_tar_new_reader(reader, checksums);
+		}
 
 		case sodr_tape_drive_media_ltfs: {
 			int fd = sodr_tape_drive_st_open();

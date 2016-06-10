@@ -82,6 +82,7 @@ static void so_format_tar_writer_compute_size(char * csize, long long size);
 static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t so_format_tar_writer_end_of_file(struct so_format_writer * fw);
 static void so_format_tar_writer_free(struct so_format_writer * fw);
+static char * so_format_tar_writer_get_alternate_path(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_get_available_size(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_get_block_size(struct so_format_writer * fw);
 static struct so_value * so_format_tar_writer_get_digests(struct so_format_writer * fw);
@@ -103,6 +104,7 @@ static struct so_format_writer_ops so_format_tar_writer_ops = {
 	.compute_size_of_file = so_format_tar_writer_compute_size_of_file,
 	.end_of_file          = so_format_tar_writer_end_of_file,
 	.free                 = so_format_tar_writer_free,
+	.get_alternate_path   = so_format_tar_writer_get_alternate_path,
 	.get_available_size   = so_format_tar_writer_get_available_size,
 	.get_block_size       = so_format_tar_writer_get_block_size,
 	.get_digests          = so_format_tar_writer_get_digests,
@@ -420,6 +422,10 @@ static void so_format_tar_writer_free(struct so_format_writer * fw) {
 
 	free(self);
 	free(fw);
+}
+
+static char * so_format_tar_writer_get_alternate_path(struct so_format_writer * fw __attribute__((unused))) {
+	return NULL;
 }
 
 static ssize_t so_format_tar_writer_get_available_size(struct so_format_writer * fw) {

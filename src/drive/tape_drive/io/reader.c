@@ -447,7 +447,8 @@ static ssize_t sodr_tape_drive_reader_read(struct so_stream_reader * sr, void * 
 		self->buffer_pos = self->buffer + will_copy;
 		self->position += will_copy;
 		self->media->nb_total_read++;
-		return length;
+		nb_total_read += will_copy;
+		return nb_total_read;
 	} else {
 		self->end_of_file = true;
 		return nb_total_read;

@@ -529,8 +529,8 @@ struct so_database_connection {
 		 * \return \b -1 on failure
 		 */
 		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
-		char * (*get_original_path_of_ltfs_file)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
-		char * (*get_selected_path_of_ltfs_file)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
+		char * (*get_original_path_from_alternate_path)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
+		char * (*get_selected_path_from_alternate_path)(struct so_database_connection * connect, struct so_archive * archive, const char * path) __attribute__((warn_unused_result));
 		/**
 		 * \brief get a list of archives which are synchronized
 		 *
