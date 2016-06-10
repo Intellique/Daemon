@@ -3416,7 +3416,7 @@ static struct so_value * so_database_postgresql_get_archives_by_media(struct so_
 	so_value_unpack(db, "{sS}", "id", &media_id);
 
 	const char * query = "select_archive_by_media";
-	so_database_postgresql_prepare(self, query, "SELECT DISTINCT archive FROM archivevolume WHERE media = $1");
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT a.id FROM archive a INNER JOIN archivevolume av ON a.id = av.archive AND NOT a.deleted WHERE av.media = $1");
 
 	const char * param[] = { media_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
