@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-09 22:54+0200\n"
+        "POT-Creation-Date: 2016-06-10 10:40+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -26,135 +26,135 @@ msgstr  "[%s | %s | #%u]: rebobinaje de la banda (versión scsi)"
 msgid   "[%s | %s | #%u]: failed to rewind tape (scsi version)"
 msgstr  "[%s | %s | #%u]: fallo de rebobinaje de la bande (versión scsi)"
 
-#: src/drive/tape_drive/device.c:182 src/drive/tape_drive/device.c:203
+#: src/drive/tape_drive/device.c:182 src/drive/tape_drive/device.c:216
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (using st driver)"
 msgstr  "[%s | %s | #%u]: rebobinaje de la banda (utilizando los driver st)"
 
-#: src/drive/tape_drive/device.c:192
+#: src/drive/tape_drive/device.c:191 src/drive/tape_drive/device.c:205
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"
 msgstr  "[%s | %s | #%u]: fallo de rebobinaje de la banda (utilizando los driver st) porque %m"
 
-#: src/drive/tape_drive/device.c:217
+#: src/drive/tape_drive/device.c:230
 #, c-format
 msgid   "[%s | %s | #%u]: error while reading header because %m"
 msgstr  "[%s | %s | #%u]: fallo al leer el encabezamiento porque %m"
 
-#: src/drive/tape_drive/device.c:236
+#: src/drive/tape_drive/device.c:249
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:335
+#: src/drive/tape_drive/device.c:348
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
-#: src/drive/tape_drive/device.c:367
+#: src/drive/tape_drive/device.c:380
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:369 src/drive/tape_drive/device.c:377 src/drive/tape_drive/device.c:399
+#: src/drive/tape_drive/device.c:382 src/drive/tape_drive/device.c:390 src/drive/tape_drive/device.c:412
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:369 src/drive/tape_drive/device.c:377 src/drive/tape_drive/device.c:399
+#: src/drive/tape_drive/device.c:382 src/drive/tape_drive/device.c:390 src/drive/tape_drive/device.c:412
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:375
+#: src/drive/tape_drive/device.c:388
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:397
+#: src/drive/tape_drive/device.c:410
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:479
+#: src/drive/tape_drive/device.c:492
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:511
+#: src/drive/tape_drive/device.c:524
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:527
+#: src/drive/tape_drive/device.c:540
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:702
+#: src/drive/tape_drive/device.c:718
 #, c-format
 msgid   "[%s | %s | #%u]: retry #%uh to open tape drive"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:711
+#: src/drive/tape_drive/device.c:727
 #, c-format
 msgid   "[%s | %s | #%u]: failed to open tape drive because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:728
+#: src/drive/tape_drive/device.c:744
 #, c-format
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:874
+#: src/drive/tape_drive/device.c:890
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:927
+#: src/drive/tape_drive/device.c:943
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:936
+#: src/drive/tape_drive/device.c:952
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:100
+#: src/drive/tape_drive/format/ltfs/ltfs.c:96
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' info LTFS format"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:104
+#: src/drive/tape_drive/format/ltfs/ltfs.c:100
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:114
+#: src/drive/tape_drive/format/ltfs/ltfs.c:110
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:123
+#: src/drive/tape_drive/format/ltfs/ltfs.c:119
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:131
+#: src/drive/tape_drive/format/ltfs/ltfs.c:127
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with two partitions (second partition size: %s)"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:142
+#: src/drive/tape_drive/format/ltfs/ltfs.c:138
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with two partition because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:151
+#: src/drive/tape_drive/format/ltfs/ltfs.c:147
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:277
+#: src/drive/tape_drive/format/ltfs/ltfs.c:273
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  ""

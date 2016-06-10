@@ -182,6 +182,19 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: rewind tape (using st driver)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
+	sodr_time_start();
+	failed = sodr_tape_drive_st_set_position(&sodr_tape_drive, fd, 0, 0, true, db);
+	sodr_time_stop(&sodr_tape_drive);
+
+	if (failed != 0) {
+		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
+		close(fd);
+		return false;
+	}
+
 	static struct mtop rewind = { MTREW, 1 };
 	sodr_time_start();
 	failed = ioctl(fd, MTIOCTOP, &rewind);
@@ -671,6 +684,9 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 		int failed = -1;
 		if (fd > -1) {
 			failed = ioctl(fd, MTIOCGET, &status);
+
+			sodr_tape_drive_st_set_can_partition(&sodr_tape_drive, fd, db_connect);
+
 			close(fd);
 		}
 		sodr_time_stop(&sodr_tape_drive);
