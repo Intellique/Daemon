@@ -75,7 +75,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
 
 		if (i > 0) {
-			self->src_drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
+			self->src_drive = soj_media_find_and_load(vol->media, false, 0, NULL, db_connect);
 			if (self->src_drive == NULL) {
 				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Failed to load media '%s'"),

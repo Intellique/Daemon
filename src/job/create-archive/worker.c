@@ -71,6 +71,7 @@ struct soj_create_archive_worker {
 
 	struct soj_create_archive_files {
 		char * path;
+		char * alternate_path;
 		ssize_t position;
 		time_t archived_time;
 		struct soj_create_archive_files * next;
@@ -89,10 +90,10 @@ struct soj_create_archive_worker {
 };
 
 static enum so_format_writer_status soj_create_archive_worker_add_file2(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect);
-static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, ssize_t position);
+static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, char * alternate_path, ssize_t position);
 static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
-static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
+static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file, char * alternate_path);
 static void soj_create_archive_worker_generate_report2(struct so_archive * archive, struct so_value * selected_path, struct so_database_connection * db_connect);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
 ssize_t soj_create_archive_worker_write2(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
@@ -195,16 +196,18 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 			break;
 	}
 
-	soj_create_archive_add_file3(worker, file, position);
+	char * alternate_path = worker->writer->ops->get_alternate_path(worker->writer);
+	soj_create_archive_add_file3(worker, file, alternate_path, position);
 
 	worker->partial_done = worker->writer->ops->position(worker->writer);
 
 	return status;
 }
 
-static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, ssize_t position) {
+static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, char * alternate_path, ssize_t position) {
 	struct soj_create_archive_files * new_file = malloc(sizeof(struct soj_create_archive_files));
 	new_file->path = strdup(file->filename);
+	new_file->alternate_path = alternate_path;
 	new_file->position = position;
 	new_file->archived_time = time(NULL);
 	new_file->next = NULL;
@@ -223,7 +226,7 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 	worker->writer->ops->free(worker->writer);
 	worker->writer = NULL;
 
-	worker->drive = soj_media_find_and_load_next(worker->pool, false, db_connect);
+	worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
 	if (worker->drive != NULL) {
 		worker->drive->ops->sync(worker->drive);
 		worker->media = worker->drive->slot->media;
@@ -237,12 +240,14 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 
 		worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
 
+		if (file != NULL) {
+			char * alternate_path = worker->writer->ops->get_alternate_path(worker->writer);
+			soj_create_archive_add_file3(worker, file, alternate_path, 0);
+		}
 
-		if (file != NULL)
-			soj_create_archive_add_file3(worker, file, 0);
-	}
-
-	return 0;
+		return 0;
+	} else
+		return 1;
 }
 
 int soj_create_archive_worker_close(bool first_round) {
@@ -307,7 +312,7 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 		struct so_value * vfile = so_value_hashtable_get2(files, ptr_file->path, false, false);
 
 		struct so_archive_files * new_file = last_vol->files + i;
-		new_file->file = soj_create_archive_worker_copy_file(worker, so_value_custom_get(vfile));
+		new_file->file = soj_create_archive_worker_copy_file(worker, so_value_custom_get(vfile), ptr_file->alternate_path);
 		new_file->position = ptr_file->position;
 		new_file->archived_time = ptr_file->archived_time;
 
@@ -328,11 +333,12 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 	return 0;
 }
 
-static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file) {
+static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file, char * alternate_path) {
 	struct so_archive_file * new_file = malloc(sizeof(struct so_archive_file));
 	bzero(new_file, sizeof(struct so_archive_file));
 
 	new_file->path = strdup(file->path);
+	new_file->alternate_path = alternate_path;
 	new_file->perm = file->perm;
 	new_file->type = file->type;
 	new_file->ownerid = file->ownerid;
@@ -551,7 +557,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 void soj_create_archive_worker_prepare_medias(struct so_database_connection * db_connect) {
 	struct so_value * checksums = so_value_new_hashtable2();
 
-	primary_worker->drive = soj_media_find_and_load_next(primary_worker->pool, false, db_connect);
+	primary_worker->drive = soj_media_find_and_load_next(primary_worker->pool, false, NULL, db_connect);
 
 	if (primary_worker->drive != NULL) {
 		primary_worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, primary_worker->pool);
@@ -571,7 +577,8 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 				so_value_hashtable_put(checksums, val, false, val, false);
 		}
 		so_value_iterator_free(iter);
-	}
+	} else
+		primary_worker->state = soj_worker_status_give_up;
 
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
@@ -580,25 +587,28 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_find_and_load_next(worker->pool, true, db_connect);
+		bool error = false;
+		worker->drive = soj_media_find_and_load_next(worker->pool, true, &error, db_connect);
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->pool);
 
-		if (worker->drive != NULL) {
+		if (error)
+			worker->state = soj_worker_status_give_up;
+		else if (worker->drive != NULL) {
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
 			vol->job = soj_job_get();
 
 			worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
-		}
 
-		struct so_value_iterator * iter = so_value_list_get_iterator(worker->checksums);
-		while (so_value_iterator_has_next(iter)) {
-			struct so_value * val = so_value_iterator_get_value(iter, false);
-			if (!so_value_hashtable_has_key(checksums, val))
-				so_value_hashtable_put(checksums, val, false, val, false);
+			struct so_value_iterator * iter = so_value_list_get_iterator(worker->checksums);
+			while (so_value_iterator_has_next(iter)) {
+				struct so_value * val = so_value_iterator_get_value(iter, false);
+				if (!so_value_hashtable_has_key(checksums, val))
+					so_value_hashtable_put(checksums, val, false, val, false);
+			}
+			so_value_iterator_free(iter);
 		}
-		so_value_iterator_free(iter);
 	}
 
 	struct so_value * unique_checksums = so_value_hashtable_keys(checksums);
@@ -615,16 +625,19 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_find_and_load_next(worker->pool, false, db_connect);
+		worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
 
 		if (worker->drive != NULL) {
+			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
 			worker->media = worker->drive->slot->media;
-			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->job = soj_job_get();
-
-			worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
 			worker->state = soj_worker_status_ready;
-		}
+
+			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
+			vol->media = so_media_dup(worker->media);
+			vol->media_position = worker->writer->ops->file_position(worker->writer);
+			vol->job = soj_job_get();
+		} else
+			worker->state = soj_worker_status_give_up;
 	}
 }
 

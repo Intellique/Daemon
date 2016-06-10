@@ -1,6 +1,35 @@
-#! /bin/bash
+#! /usr/bin/perl
 
-set -x
+use strict;
+use warnings;
 
-git grep ' ""' -- locale/$1 | perl -ne 'print if /(\d+)/ and $1 > 6'
+my ($param) = @ARGV;
+$param = '' unless defined $param;
+
+my $current_po_file;
+my $current_po_line;
+my $current_src_file;
+my $current_src_line;
+my $current_msg_id;
+
+open(my $fd, qq#git grep -B3 ' ""' -- locale/$param |#);
+while (<$fd>) {
+	chomp;
+
+	if (/:\s(.+):(\d+)$/) {
+		$current_src_file = $1;
+		$current_src_line = $2;
+	}
+	if (/msgid\s+"(.+)"$/) {
+		$current_msg_id = $1;
+	}
+	elsif (/^(.+):(\d+):msgstr/) {
+		$current_po_file = $1;
+		$current_po_line = int $2;
+
+		printf "In po file '%s' at line #%d\n", $current_po_file, $current_po_line;
+		printf "In src file '%s' at line #%d: %s\n\n", $current_src_file, $current_src_line, $current_msg_id;
+	}
+}
+close $fd;
 

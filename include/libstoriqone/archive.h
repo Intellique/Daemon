@@ -253,6 +253,12 @@ struct so_archive_file {
 	 */
 	char * path;
 	/**
+	 * \brief alternate path of file
+	 *
+	 * \warning can be NULL
+	 */
+	char * alternate_path;
+	/**
 	 * \brief Restore path of file
 	 *
 	 * \warning can be NULL

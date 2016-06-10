@@ -54,6 +54,7 @@ static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value
 static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_free(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_format_writer_get_alternate_path(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_init(void) __attribute__((constructor));
 static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request);
@@ -67,6 +68,7 @@ static struct sodr_command commands[] = {
 	{ 0, "compute size of file", sodr_io_format_writer_compute_size_of_file },
 	{ 0, "end of file",          sodr_io_format_writer_end_of_file },
 	{ 0, "free",                 sodr_io_format_writer_free },
+	{ 0, "get alternate path",   sodr_io_format_writer_get_alternate_path },
 	{ 0, "reopen",               sodr_io_format_writer_reopen },
 	{ 0, "restart file",         sodr_io_format_writer_restart_file },
 	{ 0, "write",                sodr_io_format_writer_write },
@@ -204,6 +206,17 @@ static void sodr_io_format_writer_free(struct sodr_peer * peer, struct so_value 
 
 	close(peer->fd_cmd);
 	peer->fd_cmd = -1;
+}
+
+static void sodr_io_format_writer_get_alternate_path(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	char * alternate_path = peer->format_writer->ops->get_alternate_path(peer->format_writer);
+
+	struct so_value * response = so_value_pack("{ss}", "returned", alternate_path);
+
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+
+	free(alternate_path);
 }
 
 static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {

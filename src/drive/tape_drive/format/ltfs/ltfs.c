@@ -89,10 +89,6 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	if (partition_size == 0)
 		return -1;
 
-	int failed = sodr_tape_drive_st_set_can_partition(drive, fd, db);
-	if (failed != 0)
-		return failed;
-
 	drive->status = so_drive_status_writing;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
@@ -106,7 +102,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 
 	static struct mtop mk1partition = { MTMKPART, 0 };
 	sodr_time_start();
-	failed = ioctl(fd, MTIOCTOP, &mk1partition);
+	int failed = ioctl(fd, MTIOCTOP, &mk1partition);
 	sodr_time_stop(drive);
 
 	if (failed != 0) {

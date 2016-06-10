@@ -64,6 +64,8 @@ struct sodr_tape_drive_format_ltfs_reader_private {
 	unsigned int i_extent;
 	int last_errno;
 
+	struct sodr_tape_drive_format_ltfs_file * next_file;
+
 	struct so_drive * drive;
 	struct so_media * media;
 	struct sodr_tape_drive_format_ltfs * ltfs_info;
@@ -119,12 +121,12 @@ struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive
 	self->total_read = 0;
 	self->file_position = 0;
 
-	self->file_info = mp->data.ltfs.root.first_child;
+	self->file_info = NULL;
 	self->extents = NULL;
-	if (self->file_info != NULL)
-		self->extents = self->file_info->extents;
 	self->i_extent = 0;
 	self->last_errno = 0;
+
+	self->next_file = mp->data.ltfs.root.first_child;
 
 	struct so_value * config = so_config_get();
 	so_value_unpack(config, "{s{s{ss}}}",
@@ -298,6 +300,9 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 static void sodr_tape_drive_format_ltfs_reader_free(struct so_format_reader * fr) {
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 	if (self != NULL) {
+		if (self->fd > -1)
+			sodr_tape_drive_format_ltfs_reader_close(fr);
+
 		self->fd = -1;
 		free(self->buffer);
 		free(self);
@@ -319,26 +324,29 @@ static struct so_value * sodr_tape_drive_format_ltfs_reader_get_digests(struct s
 static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 
+	self->file_info = self->next_file;
+
 	if (self->file_info == &self->ltfs_info->root || self->file_info == NULL)
 		return so_format_reader_header_not_found;
 
 	so_format_file_copy(file, &self->file_info->file);
 
 	if (self->file_info->first_child != NULL)
-		self->file_info = self->file_info->first_child;
+		self->next_file = self->file_info->first_child;
 	else if (self->file_info->next_sibling != NULL)
-		self->file_info = self->file_info->next_sibling;
+		self->next_file = self->file_info->next_sibling;
 	else {
 		do {
-			self->file_info = self->file_info->parent;
-		} while (self->file_info->parent != NULL && self->file_info->next_sibling == NULL);
+			self->next_file = self->next_file->parent;
+		} while (self->next_file->parent != NULL && self->next_file->next_sibling == NULL);
 
-		if (self->file_info->next_sibling != NULL)
-			self->file_info = self->file_info->next_sibling;
+		if (self->next_file->next_sibling != NULL)
+			self->next_file = self->next_file->next_sibling;
 	}
 
 	self->buffer_used = self->buffer_size = 0;
 	self->file_position = 0;
+	self->extents = self->file_info->extents;
 	self->i_extent = 0;
 
 	return so_format_reader_header_ok;
@@ -585,12 +593,12 @@ static int sodr_tape_drive_format_ltfs_reader_rewind(struct so_format_reader * f
 	self->total_read = 0;
 	self->file_position = 0;
 
-	self->file_info = self->ltfs_info->root.first_child;
+	self->file_info = NULL;
 	self->extents = NULL;
-	if (self->file_info != NULL)
-		self->extents = self->file_info->extents;
 	self->i_extent = 0;
 	self->last_errno = 0;
+
+	self->next_file = self->ltfs_info->root.first_child;
 
 	return 0;
 }

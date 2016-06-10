@@ -63,6 +63,7 @@ static int soj_format_writer_close(struct so_format_writer * fw);
 static ssize_t soj_format_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw);
 static void soj_format_writer_free(struct so_format_writer * fw);
+static char * soj_format_writer_get_alternate_path(struct so_format_writer * fw);
 static ssize_t soj_format_writer_get_available_size(struct so_format_writer * fw);
 static ssize_t soj_format_writer_get_block_size(struct so_format_writer * fw);
 static struct so_value * soj_format_writer_get_digests(struct so_format_writer * fw);
@@ -83,7 +84,8 @@ static struct so_format_writer_ops soj_format_writer_ops = {
 	.end_of_file          = soj_format_writer_end_of_file,
 	.file_position        = soj_format_writer_file_position,
 	.free                 = soj_format_writer_free,
-	.get_available_size =   soj_format_writer_get_available_size,
+	.get_alternate_path   = soj_format_writer_get_alternate_path,
+	.get_available_size   = soj_format_writer_get_available_size,
 	.get_block_size       = soj_format_writer_get_block_size,
 	.get_digests          = soj_format_writer_get_digests,
 	.last_errno           = soj_format_writer_last_errno,
@@ -280,6 +282,24 @@ static void soj_format_writer_free(struct so_format_writer * fw) {
 	so_value_free(self->digest);
 	free(self);
 	free(fw);
+}
+
+static char * soj_format_writer_get_alternate_path(struct so_format_writer * fw) {
+	struct soj_format_writer_private * self = fw->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "get alternate path");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response == NULL)
+		return NULL;
+
+	char * alternate_path = NULL;
+	so_value_unpack(response, "{ss}", "returned", &alternate_path);
+	so_value_free(response);
+
+	return alternate_path;
 }
 
 static ssize_t soj_format_writer_get_available_size(struct so_format_writer * fw) {

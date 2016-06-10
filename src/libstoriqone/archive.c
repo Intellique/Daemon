@@ -299,11 +299,12 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 	else
 		checksums = so_value_share(file->digests);
 
-	return so_value_pack("{szsIs{sssssusssusssusssIsIsbsIsoszsOssss}}",
+	return so_value_pack("{szsIs{sssssssusssusssusssIsIsbsIsoszsOssss}}",
 		"position", ptr_file->position,
 		"archived time", (long long) ptr_file->archived_time,
 		"file",
 			"path", file->path,
+			"alternate path", file->alternate_path,
 			"restored to", file->restored_to,
 
 			"permission", file->perm,
@@ -331,6 +332,7 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 static void so_archive_file_free(struct so_archive_files * files) {
 	struct so_archive_file * file = files->file;
 	free(file->path);
+	free(file->alternate_path);
 	free(file->restored_to);
 	free(file->owner);
 	free(file->group);
@@ -367,11 +369,12 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 	struct so_archive_file * file = files->file;
 
-	so_value_unpack(new_file, "{szsis{sssssusSsusssusssisisbsisOszsOssss}}",
+	so_value_unpack(new_file, "{szsis{sssssssusSsusssusssisisbsisOszsOssss}}",
 		"position", &files->position,
 		"archived time", &archived_time,
 		"file",
 			"path", &file->path,
+			"alternate path", &file->alternate_path,
 			"restored to", &file->restored_to,
 
 			"permission", &permission,

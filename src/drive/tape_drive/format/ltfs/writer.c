@@ -63,6 +63,7 @@ struct sodr_tape_drive_format_ltfs_writer_private {
 	ssize_t total_wrote;
 
 	struct sodr_tape_drive_format_ltfs_file * current_file;
+	const char * alternate_path;
 
 	int last_errno;
 
@@ -78,6 +79,7 @@ static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw
 static ssize_t sodr_tape_drive_format_ltfs_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t sodr_tape_drive_format_ltfs_writer_end_of_file(struct so_format_writer * fw);
 static void sodr_tape_drive_format_ltfs_writer_free(struct so_format_writer * fw);
+static char * sodr_tape_drive_format_ltfs_writer_get_alternate_path(struct so_format_writer * fw);
 static ssize_t sodr_tape_drive_format_ltfs_writer_get_available_size(struct so_format_writer * fw);
 static ssize_t sodr_tape_drive_format_ltfs_writer_get_block_size(struct so_format_writer * fw);
 static struct so_value * sodr_tape_drive_format_ltfs_writer_get_digests(struct so_format_writer * fw);
@@ -96,6 +98,7 @@ static struct so_format_writer_ops sodr_tape_drive_format_ltfs_writer_ops = {
 	.compute_size_of_file = sodr_tape_drive_format_ltfs_writer_compute_size_of_file,
 	.end_of_file          = sodr_tape_drive_format_ltfs_writer_end_of_file,
 	.free                 = sodr_tape_drive_format_ltfs_writer_free,
+	.get_alternate_path   = sodr_tape_drive_format_ltfs_writer_get_alternate_path,
 	.get_available_size   = sodr_tape_drive_format_ltfs_writer_get_available_size,
 	.get_block_size       = sodr_tape_drive_format_ltfs_writer_get_block_size,
 	.get_digests          = sodr_tape_drive_format_ltfs_writer_get_digests,
@@ -119,11 +122,14 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 	self->fd = fd;
 	self->scsi_fd = scsi_fd;
 
+	self->total_wrote = 0;
+	self->current_file = NULL;
+	self->alternate_path = NULL;
+
 	self->drive = drive;
 	self->media = media;
 	self->ltfs_info = &mp->data.ltfs;
 	self->writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, -1, false, NULL);
-	self->total_wrote = 0;
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));
 	writer->ops = &sodr_tape_drive_format_ltfs_writer_ops;
@@ -137,6 +143,8 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 
 static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
+
+	self->alternate_path = NULL;
 
 	struct sodr_tape_drive_scsi_position position;
 	int failed = sodr_tape_drive_scsi_read_position(self->scsi_fd, &position);
@@ -177,9 +185,10 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 			child_node = malloc(sizeof(struct sodr_tape_drive_format_ltfs_file));
 			bzero(child_node, sizeof(struct sodr_tape_drive_format_ltfs_file));
 
-			if (next_index > 0)
+			if (next_index > 0) {
 				asprintf(&child_node->name, "%s_%u", ptr_path, next_index - 1);
-			else
+				self->alternate_path = child_node->name;
+			} else
 				child_node->name = strdup(ptr_path);
 
 			child_node->hash_name = hash_name;
@@ -276,6 +285,15 @@ static void sodr_tape_drive_format_ltfs_writer_free(struct so_format_writer * fw
 	free(fw);
 }
 
+static char * sodr_tape_drive_format_ltfs_writer_get_alternate_path(struct so_format_writer * fw) {
+	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
+
+	if (self->alternate_path != NULL)
+		return strdup(self->alternate_path);
+	else
+		return NULL;
+}
+
 static ssize_t sodr_tape_drive_format_ltfs_writer_get_available_size(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
 	return self->writer->ops->get_available_size(self->writer);
@@ -292,7 +310,7 @@ static struct so_value * sodr_tape_drive_format_ltfs_writer_get_digests(struct s
 
 static int sodr_tape_drive_format_ltfs_writer_file_position(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
-	return self->total_wrote;
+	return self->writer->ops->file_position(self->writer);
 }
 
 static int sodr_tape_drive_format_ltfs_writer_last_errno(struct so_format_writer * fw) {
@@ -302,7 +320,7 @@ static int sodr_tape_drive_format_ltfs_writer_last_errno(struct so_format_writer
 
 static ssize_t sodr_tape_drive_format_ltfs_writer_position(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
-	return self->writer->ops->position(self->writer);
+	return self->total_wrote;
 }
 
 static struct so_format_reader * sodr_tape_drive_format_ltfs_writer_reopen(struct so_format_writer * fw) {
