@@ -406,6 +406,10 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 			so_pool_free(media->pool);
 		media->pool = NULL;
 
+		sodr_tape_drive_media_free(media->private_data);
+		media->private_data = NULL;
+		media->free_private_data = NULL;
+
 		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
@@ -916,6 +920,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 				if (media->private_data != NULL) {
 					sodr_tape_drive_media_free(media->private_data);
 					media->private_data = NULL;
+					media->free_private_data = NULL;
 				}
 
 				if (slot->media != NULL) {
