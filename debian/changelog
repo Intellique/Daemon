@@ -1,3 +1,20 @@
+storiqone (1.3rc1-1+jessie) polisher; urgency=low
+
+  * New release candidate release
+  * Database changes:
+    - field of table 'archivefiletoarchivevolume' 'ltfspath' have been renamed
+      to 'alternatepath'
+  * Bug fix:
+    - #135: Fix size of LTFS archives
+    - #142: Fix updating Mam attribute 'user medium text label' after
+            archiving and formatting LTFS tape
+    - #132: Fix header checking with label set to ''
+    - #131, #133: Manage error while loading media
+    - #141: job crash with more than one library
+    - #145: fix 'double fix' while ejecting LTFS tape
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 10 Jun 2016 11:04:43 +0200
+
 storiqone (1.3b3-1+jessie) polisher; urgency=low
 
   * New beta release
