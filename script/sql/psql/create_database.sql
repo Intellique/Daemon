@@ -781,6 +781,8 @@ CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
             INSERT INTO MetadataLog(id, type, key, value, login, updated)
                 VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, TRUE);
             RETURN NEW;
+        ELSE
+            RETURN NEW;
         END IF;
     END;
 $body$ LANGUAGE plpgsql;
