@@ -774,13 +774,19 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 						free(tmp_path);
 						continue;
 					}
+
+					file->ignored = true;
 				}
 
 				char * selected_path = db_connect->ops->get_selected_path_from_alternate_path(db_connect, archive, tmp_path);
 				if (selected_path != NULL) {
 					file->hash_selected_path = so_string_compute_hash2(selected_path);
 					free(selected_path);
-				}
+				} else
+					file->ignored = true;
+
+				if (!file->ignored)
+					file->volume_number = db_connect->ops->find_first_volume_of_archive_file(db_connect, archive, original_path);
 
 				free(tmp_path);
 			}

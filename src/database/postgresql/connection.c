@@ -124,6 +124,7 @@ static int so_database_postgresql_sync_plugin_script(struct so_database_connecti
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume);
 static int so_database_postgresql_create_check_archive_job(struct so_database_connection * connect, struct so_job * current_job, struct so_archive * archive, bool quick_mode);
+static int so_database_postgresql_find_first_volume_of_archive_file(struct so_database_connection * connect, struct so_archive * archive, const char * archive_file);
 static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id);
 static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_archive_format * so_database_postgresql_get_archive_format_by_id(struct so_database_connection * connect, const char * id);
@@ -209,6 +210,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.check_archive_file                    = so_database_postgresql_check_archive_file,
 	.check_archive_volume                  = so_database_postgresql_check_archive_volume,
 	.create_check_archive_job              = so_database_postgresql_create_check_archive_job,
+	.find_first_volume_of_archive_file     = so_database_postgresql_find_first_volume_of_archive_file,
 	.get_archive_by_job                    = so_database_postgresql_get_archive_by_job,
 	.get_archive_format_by_name            = so_database_postgresql_get_archive_format_by_name,
 	.get_archives_by_archive_mirror        = so_database_postgresql_get_archives_by_archive_mirror,
@@ -3051,6 +3053,37 @@ static int so_database_postgresql_create_check_archive_job(struct so_database_co
 	free(job_name);
 
 	return status != PGRES_COMMAND_OK;
+}
+
+static int so_database_postgresql_find_first_volume_of_archive_file(struct so_database_connection * connect, struct so_archive * archive, const char * archive_file) {
+	if (connect == NULL || archive == NULL || archive_file == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
+
+	const char * archive_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &archive_id);
+	so_value_free(key);
+
+	const char * query = "select_archive_volume_by_archive_and_file";
+	so_database_postgresql_prepare(self, query, "SELECT MIN(sequence) FROM archivevolume av INNER JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume AND av.archive = $1 INNER JOIN archivefile af ON afv.archivefile = af.id AND af.name = $2");
+
+	const char * param[] = { archive_id, archive_file };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	int index = -1;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_int(result, 0, 0, &index);
+
+	PQclear(result);
+
+	return index;
 }
 
 static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(struct so_database_connection * connect, struct so_archive * archive) {

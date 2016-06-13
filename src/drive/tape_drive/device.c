@@ -298,9 +298,39 @@ static unsigned int sodr_tape_drive_count_archives(const bool * const disconnect
 }
 
 static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db) {
-	struct so_format_writer * writer = sodr_tape_drive_get_writer(checksums, db);
-	if (writer == NULL)
+	struct so_media * media = sodr_tape_drive.slot->media;
+	if (media == NULL || media->private_data == NULL)
 		return NULL;
+
+	struct sodr_tape_drive_media * mp = media->private_data;
+	struct so_format_writer * writer = NULL;
+	switch (mp->format) {
+		case sodr_tape_drive_media_storiq_one: {
+			struct so_stream_writer * raw_writer = sodr_tape_drive_get_raw_writer(db);
+			if (raw_writer == NULL)
+				return NULL;
+
+			writer = so_format_tar_new_writer(raw_writer, checksums);
+		}
+
+		case sodr_tape_drive_media_ltfs: {
+			int fd = sodr_tape_drive_st_open();
+			if (fd < 0)
+				return NULL;
+
+			int scsi_fd = sodr_tape_drive_scsi_open();
+			if (scsi_fd < 0) {
+				close(fd);
+				return NULL;
+			}
+
+			writer = sodr_tape_drive_format_ltfs_new_writer(&sodr_tape_drive, fd, scsi_fd, volume->sequence);
+			break;
+		}
+
+		default:
+			return NULL;
+	}
 
 	volume->media = sodr_tape_drive.slot->media;
 	volume->media_position = writer->ops->file_position(writer);
@@ -573,7 +603,7 @@ static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, s
 				return NULL;
 			}
 
-			return sodr_tape_drive_format_ltfs_new_reader(&sodr_tape_drive, fd, scsi_fd);
+			return sodr_tape_drive_format_ltfs_new_reader(&sodr_tape_drive, fd, scsi_fd, 0);
 		}
 
 		default:
@@ -607,7 +637,7 @@ static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * ch
 				return NULL;
 			}
 
-			return sodr_tape_drive_format_ltfs_new_writer(&sodr_tape_drive, fd, scsi_fd);
+			return sodr_tape_drive_format_ltfs_new_writer(&sodr_tape_drive, fd, scsi_fd, 0);
 		}
 
 		default:
@@ -777,7 +807,7 @@ static struct so_format_reader * sodr_tape_drive_open_archive_volume(struct so_a
 				return NULL;
 			}
 
-			return sodr_tape_drive_format_ltfs_new_reader(&sodr_tape_drive, fd, scsi_fd);
+			return sodr_tape_drive_format_ltfs_new_reader(&sodr_tape_drive, fd, scsi_fd, volume->sequence);
 		}
 
 		default:

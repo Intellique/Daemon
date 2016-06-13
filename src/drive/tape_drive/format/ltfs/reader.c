@@ -68,6 +68,7 @@ struct sodr_tape_drive_format_ltfs_reader_private {
 
 	struct so_drive * drive;
 	struct so_media * media;
+	unsigned int volume_number;
 	struct sodr_tape_drive_format_ltfs * ltfs_info;
 };
 
@@ -105,7 +106,7 @@ static struct so_format_reader_ops sodr_tape_drive_format_ltfs_reader_ops = {
 };
 
 
-struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive * drive, int fd, int scsi_fd) {
+struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive * drive, int fd, int scsi_fd, unsigned int volume_number) {
 	struct sodr_tape_drive_format_ltfs_reader_private * self = malloc(sizeof(struct sodr_tape_drive_format_ltfs_reader_private));
 	bzero(self, sizeof(struct sodr_tape_drive_format_ltfs_reader_private));
 
@@ -137,9 +138,10 @@ struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive
 
 	self->drive = drive;
 	self->media = media;
+	self->volume_number = volume_number;
 	self->ltfs_info = &mp->data.ltfs;
 
-	if (self->next_file != NULL && self->next_file->ignored)
+	if (self->next_file != NULL && (self->next_file->ignored || self->next_file->volume_number != self->volume_number))
 		sodr_tape_drive_format_ltfs_reader_find_next_file(self);
 
 	struct so_format_reader * reader = malloc(sizeof(struct so_format_reader));
@@ -188,11 +190,13 @@ static void sodr_tape_drive_format_ltfs_reader_find_next_file(struct sodr_tape_d
 				self->next_file = self->next_file->parent;
 			} while (self->next_file->parent != NULL && self->next_file->next_sibling == NULL);
 
-			if (self->next_file->next_sibling != NULL)
+			if (self->next_file->parent == NULL)
+				break;
+			else if (self->next_file->next_sibling != NULL)
 				self->next_file = self->next_file->next_sibling;
 		}
 
-	} while (self->next_file != NULL && self->next_file->ignored);
+	} while (self->next_file != NULL && (self->next_file->ignored || self->next_file->volume_number != self->volume_number));
 }
 
 static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_forward(struct so_format_reader * fr, off_t offset) {
@@ -612,7 +616,7 @@ static int sodr_tape_drive_format_ltfs_reader_rewind(struct so_format_reader * f
 	self->last_errno = 0;
 
 	self->next_file = self->ltfs_info->root.first_child;
-	if (self->next_file != NULL && self->next_file->ignored)
+	if (self->next_file != NULL && (self->next_file->ignored || self->next_file->volume_number != self->volume_number))
 		sodr_tape_drive_format_ltfs_reader_find_next_file(self);
 
 	return 0;
