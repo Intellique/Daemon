@@ -322,7 +322,7 @@ static int soj_copyarchive_warm_up(struct so_job * job, struct so_database_conne
 		return 1;
 	}
 
-	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, db_connect);
+	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, NULL, db_connect);
 	if (reserved < data.src_archive->size) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Error: not enought space available in pool '%s'"),

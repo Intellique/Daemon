@@ -488,6 +488,7 @@ struct so_database_connection {
 		 * \return 0 on success
 		 */
 		int (*create_check_archive_job)(struct so_database_connection * connect, struct so_job * current_job, struct so_archive * archive, bool quick_mode);
+		int (*find_first_volume_of_archive_file)(struct so_database_connection * connect, struct so_archive * archive, const char * archive_file);
 		/**
 		 * \brief get a list of archives which are member of same archive mirror as \a archive
 		 *
@@ -520,6 +521,7 @@ struct so_database_connection {
 		 * \return a list of archives
 		 */
 		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((warn_unused_result));
+		int (*get_nb_archives_by_media)(struct so_database_connection * connect, const char * archive_uuid, struct so_media * media);
 		/**
 		 * \brief compute the number of volume where \a file is on \a archive
 		 *

@@ -69,6 +69,7 @@ struct sodr_tape_drive_format_ltfs_writer_private {
 
 	struct so_drive * drive;
 	struct so_media * media;
+	unsigned int volume_number;
 	struct sodr_tape_drive_format_ltfs * ltfs_info;
 	struct so_stream_writer * writer;
 };
@@ -112,7 +113,7 @@ static struct so_format_writer_ops sodr_tape_drive_format_ltfs_writer_ops = {
 };
 
 
-struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive * drive, int fd, int scsi_fd) {
+struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive * drive, int fd, int scsi_fd, unsigned int volume_number) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = malloc(sizeof(struct sodr_tape_drive_format_ltfs_writer_private));
 	bzero(self, sizeof(struct sodr_tape_drive_format_ltfs_writer_private));
 
@@ -128,6 +129,7 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 
 	self->drive = drive;
 	self->media = media;
+	self->volume_number = volume_number;
 	self->ltfs_info = &mp->data.ltfs;
 	self->writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, -1, false, NULL);
 	self->total_wrote = 0;
@@ -194,6 +196,8 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 
 			child_node->hash_name = hash_name;
 			child_node->hash_selected_path = hash_selected_path;
+
+			child_node->volume_number = self->volume_number;
 
 			child_node->parent = ptr_node;
 
@@ -398,6 +402,8 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		self->ltfs_info->highest_file_uid++;
 		child_node->file_uid = self->ltfs_info->highest_file_uid;
 
+		child_node->ignored = true;
+
 		child_node->parent = ptr_node;
 
 		if (ptr_node->first_child == NULL)
@@ -409,6 +415,9 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		}
 	} else {
 		free(filename);
+
+		self->ltfs_info->highest_file_uid++;
+		child_node->file_uid = self->ltfs_info->highest_file_uid;
 
 		child_node->file.mtime = time(NULL);
 	}

@@ -119,7 +119,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 				break;
 
 			case reserve_media:
-				reserved_size = slot->changer->ops->reserve_media(slot->changer, media, size_need, so_pool_unbreakable_level_none);
+				reserved_size = slot->changer->ops->reserve_media(slot->changer, media, size_need, NULL, NULL);
 				if (reserved_size < 0) {
 					job->status = so_job_status_waiting;
 
@@ -253,7 +253,7 @@ static void soj_media_init() {
 	soj_media_reserved_by_pool = so_value_new_hashtable2();
 }
 
-ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_database_connection * db_connect) {
+ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, const char * archive_uuid, struct so_database_connection * db_connect) {
 	if (!so_value_hashtable_has_key2(soj_media_available_by_pool, pool->uuid))
 		so_value_hashtable_put2(soj_media_available_by_pool, pool->uuid, so_value_new_linked_list(), true);
 	if (!so_value_hashtable_has_key2(soj_media_reserved_by_pool, pool->uuid))
@@ -280,7 +280,7 @@ ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_
 			continue;
 
 		if (total_reserved_size < size_needed) {
-			ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed - total_reserved_size, pool->unbreakable_level);
+			ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed - total_reserved_size, archive_uuid, pool);
 			if (reserved_size > 0) {
 				total_reserved_size += reserved_size;
 				so_value_list_push(reserved_medias, vmedia, false);
@@ -303,7 +303,7 @@ ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_
 				continue;
 
 			if (total_reserved_size < size_needed) {
-				ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed - total_reserved_size, pool->unbreakable_level);
+				ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed - total_reserved_size, archive_uuid, pool);
 				if (reserved_size > 0) {
 					total_reserved_size += reserved_size;
 					so_value_list_push(reserved_medias, vmedia, false);
