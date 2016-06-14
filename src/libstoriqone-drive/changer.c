@@ -45,6 +45,7 @@ static bool stop = false;
 
 static void sodr_changer_process(int fd, short event, void * data);
 
+static void sodr_changer_process_check_format(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_check_support(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_is_free(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_load_media(struct so_value * request, struct so_database_connection * db);
@@ -59,6 +60,7 @@ static struct sodr_socket_command {
 	char * name;
 	void (*function)(struct so_value * request, struct so_database_connection * db);
 } commands[] = {
+	{ 0, "check format",  sodr_changer_process_check_format },
 	{ 0, "check support", sodr_changer_process_check_support },
 	{ 0, "is free",       sodr_changer_process_is_free },
 	{ 0, "load media",    sodr_changer_process_load_media },
@@ -114,6 +116,38 @@ void sodr_changer_stop() {
 	so_poll_unregister(0, POLLIN);
 }
 
+
+static void sodr_changer_process_check_format(struct so_value * request, struct so_database_connection * db) {
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	struct so_value * vmedia = NULL, * vpool = NULL;
+	const char * archive_uuid = NULL;
+
+	so_value_unpack(request, "{s{sososS}}",
+		"params",
+			"media", &vmedia,
+			"pool", &vpool,
+			"archive uuid", &archive_uuid
+	);
+
+	struct so_media * media = malloc(sizeof(struct so_media));
+	bzero(media, sizeof(struct so_media));
+	so_media_sync(media, vmedia);
+
+	struct so_pool * pool = malloc(sizeof(struct so_pool));
+	bzero(pool, sizeof(struct so_pool));
+	so_pool_sync(pool, vpool);
+
+	bool ok = drive->ops->check_format(media, pool, archive_uuid, db);
+
+	struct so_value * returned = so_value_pack("{sb}", "status", ok);
+	so_json_encode_to_fd(returned, 1, true);
+	so_value_free(returned);
+
+	so_media_free(media);
+	so_pool_free(pool);
+}
 
 static void sodr_changer_process_check_support(struct so_value * request, struct so_database_connection * db) {
 	struct so_drive_driver * driver = sodr_drive_get();

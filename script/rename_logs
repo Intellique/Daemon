@@ -1,0 +1,101 @@
+#! /usr/bin/python3
+
+import bz2
+import gzip
+import lzma
+from optparse import OptionParser, OptionGroup
+import os
+import re
+import shutil
+
+# parse parameters
+parser = OptionParser()
+
+group = OptionGroup(parser, "renamming options")
+group.add_option("--if-empty", dest="rename_ifempty", default=False, action="store_true", help="Rename if empty")
+group.add_option("-r", "--rotate", dest="rename_count", type="int", default=0, help="Rotate # times (default: 0)")
+parser.add_option_group(group)
+
+group = OptionGroup(parser, "compression options")
+group.add_option("--delay-compress", dest="compress_delay", type="int", default=0, help="Postpone compression of the previous log file to the next rotation cycle")
+group.add_option("-l", "--level", dest="compress_level", type="int", default=6, help="Compression level (default: 6)")
+group.add_option("--bz2", dest="compress_format", default=None, action="store_const", const="bz2", help="Compress in bzip2 format")
+group.add_option("--gz", dest="compress_format", default=None, action="store_const", const="gz", help="Compress in gzip format")
+group.add_option("--xz", dest="compress_format", default=None, action="store_const", const="xz", help="Compress in xz format")
+parser.add_option_group(group)
+
+(options, args) = parser.parse_args()
+
+
+find_number = re.compile(r'(\d+)(\.(gz|bz2|xz))?$')
+def extract_number(string):
+    match = find_number.search(string)
+    return int(match.group(1))
+
+
+def deflate_file(filename):
+    if options.compress_format is None:
+        return
+
+    fd_src = open(filename, 'rb')
+
+    if options.compress_format == 'gz':
+        fd_dst = gzip.open(filename + '.gz', 'wb', compresslevel=options.compress_level)
+    elif options.compress_format == 'bz2':
+        fd_dst = bz2.open(filename + '.bz2', 'wb', compresslevel=options.compress_level)
+    elif options.compress_format == 'xz':
+        fd_dst = lzma.open(filename + '.xz', 'wb', preset=options.compress_level)
+
+    shutil.copyfileobj(fd_src, fd_dst, 1048576)
+
+    fd_src.close()
+    fd_dst.close()
+
+    os.unlink(filename)
+
+
+def is_deflated(filename):
+    match = find_number.search(filename)
+    return match.group(2) is not None
+
+
+def next_file(string):
+    return find_number.sub(next_file_inner, string)
+
+
+def next_file_inner(match):
+    next_int = int(match.group(1)) + 1
+    if match.group(2):
+        return '%d%s' % (next_int, match.group(2))
+    else:
+        return str(next_int)
+
+
+for arg in args:
+    directory = os.path.dirname(arg)
+    filename = os.path.basename(arg)
+
+    if directory == '':
+        directory = '.'
+
+    files = list(filter(lambda x:re.search(r'^' + re.escape(filename) + r'\.\d+', x), os.listdir(directory)))
+    files.sort(key=extract_number, reverse=True)
+
+    for file in files:
+        index = extract_number(file)
+        if index > options.rename_count:
+            os.unlink(os.path.join(directory, file))
+            continue
+
+        nf = next_file(file)
+        os.rename(os.path.join(directory, file), os.path.join(directory, nf))
+
+        if not is_deflated(nf) and index > options.compress_delay:
+            deflate_file(nf)
+
+    nf = filename + '.1'
+    os.rename(os.path.join(directory, filename), os.path.join(directory, nf))
+
+    if not is_deflated(nf) and options.compress_delay < 1:
+        deflate_file(nf)
+
