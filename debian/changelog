@@ -1,3 +1,12 @@
+storiqone (1.3rc2-1+jessie) polisher; urgency=low
+
+  * New release candidate release
+  * Bug fix:
+    - #147: Free LTFS index after ejecting tape
+    - #148: Do not use LTFS metadata file while parsing archive
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 14 Jun 2016 15:45:50 +0200
+
 storiqone (1.3rc1-1+jessie) polisher; urgency=low
 
   * New release candidate release
