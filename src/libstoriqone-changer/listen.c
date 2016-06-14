@@ -302,8 +302,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 	if (nb_free_drives == 0) {
 		if (current_peer != NULL && no_wait) {
-			struct so_value * response = so_value_pack("{sbso}",
-				"error", true,
+			struct so_value * response = so_value_pack("{sbsiso}",
+				"error", false,
+				"index", -1,
 				"changer", so_changer_convert(changer)
 			);
 			so_json_encode_to_fd(response, current_peer->fd, true);
@@ -362,8 +363,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
 						changer->vendor, changer->model, volume_name, drive->index, failed);
 
-					struct so_value * response = so_value_pack("{sbso}",
+					struct so_value * response = so_value_pack("{sbsiso}",
 						"error", true,
+						"index", -1,
 						"changer", so_changer_convert(changer)
 					);
 					so_json_encode_to_fd(response, peer->fd, true);
@@ -390,8 +392,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			if (failed != 0) {
 				so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"), changer->vendor, changer->model, volume_name, sl->index, drive->index, failed);
 
-				struct so_value * response = so_value_pack("{sbso}",
+				struct so_value * response = so_value_pack("{sbsiso}",
 					"error", true,
+					"index", -1,
 					"changer", so_changer_convert(changer)
 				);
 				so_json_encode_to_fd(response, peer->fd, true);
@@ -429,8 +432,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 	}
 
 	if (current_peer != NULL && no_wait) {
-		struct so_value * response = so_value_pack("{sbso}",
-			"error", true,
+		struct so_value * response = so_value_pack("{sbsiso}",
+			"error", false,
+			"index", -1,
 			"changer", so_changer_convert(changer)
 		);
 		so_json_encode_to_fd(response, current_peer->fd, true);
