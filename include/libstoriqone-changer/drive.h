@@ -32,6 +32,7 @@
 struct so_value;
 
 struct so_drive_ops {
+	bool (*check_format)(struct so_drive * drive, struct so_media * media, struct so_pool * pool, const char * archive_uuid);
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 	void (*free)(struct so_drive * drive);
 	bool (*is_free)(struct so_drive * drive);

@@ -64,6 +64,7 @@
 #include "device.h"
 #include "io.h"
 
+static bool sodr_vtl_drive_check_format(struct so_media * media, struct so_pool * pool, const char * archive_uuid, struct so_database_connection * db);
 static bool sodr_vtl_drive_check_header(struct so_database_connection * db);
 static bool sodr_vtl_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
 static unsigned int sodr_vtl_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
@@ -85,6 +86,7 @@ static char * sodr_vtl_media_dir = NULL;
 static struct so_media_format * sodr_vtl_media_format = NULL;
 
 static struct so_drive_ops sodr_vtl_drive_ops = {
+	.check_format          = sodr_vtl_drive_check_format,
 	.check_header          = sodr_vtl_drive_check_header,
 	.check_support         = sodr_vtl_drive_check_support,
 	.count_archives        = sodr_vtl_drive_count_archives,
@@ -126,6 +128,13 @@ static struct so_drive sodr_vtl_drive = {
 	.db_data = NULL,
 };
 
+
+static bool sodr_vtl_drive_check_format(struct so_media * media, struct so_pool * pool, const char * archive_uuid __attribute__((unused)), struct so_database_connection * db __attribute__((unused))) {
+	if (media->status == so_media_status_in_use && strcmp(media->archive_format->name, pool->archive_format->name) != 0)
+		return false;
+
+	return true;
+}
 
 static bool sodr_vtl_drive_check_header(struct so_database_connection * db) {
 	sodr_vtl_drive.status = so_drive_status_reading;
