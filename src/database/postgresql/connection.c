@@ -131,6 +131,7 @@ static struct so_archive_format * so_database_postgresql_get_archive_format_by_i
 static struct so_archive_format * so_database_postgresql_get_archive_format_by_name(struct so_database_connection * connect, const char * name);
 static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(struct so_database_connection * connect, struct so_archive * archive);
 static struct so_value * so_database_postgresql_get_archives_by_media(struct so_database_connection * connect, struct so_media * media);
+static int so_database_postgresql_get_nb_archives_by_media(struct so_database_connection * connect, const char * archive_uuid, struct so_media * media);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static char * so_database_postgresql_get_original_path_from_alternate_path(struct so_database_connection * connect, struct so_archive * archive, const char * path);
 static char * so_database_postgresql_get_selected_path_from_alternate_path(struct so_database_connection * connect, struct so_archive * archive, const char * path);
@@ -215,6 +216,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_archive_format_by_name            = so_database_postgresql_get_archive_format_by_name,
 	.get_archives_by_archive_mirror        = so_database_postgresql_get_archives_by_archive_mirror,
 	.get_archives_by_media                 = so_database_postgresql_get_archives_by_media,
+	.get_nb_archives_by_media              = so_database_postgresql_get_nb_archives_by_media,
 	.get_nb_volumes_of_file                = so_database_postgresql_get_nb_volumes_of_file,
 	.get_original_path_from_alternate_path = so_database_postgresql_get_original_path_from_alternate_path,
 	.get_selected_path_from_alternate_path = so_database_postgresql_get_selected_path_from_alternate_path,
@@ -3470,6 +3472,48 @@ static struct so_value * so_database_postgresql_get_archives_by_media(struct so_
 	PQclear(result);
 
 	return archives;
+}
+
+static int so_database_postgresql_get_nb_archives_by_media(struct so_database_connection * connect, const char * archive_uuid, struct so_media * media) {
+	if (connect == NULL || media == NULL)
+		return -1;
+
+	so_database_postgresql_sync_media(connect, media, so_database_sync_id_only);
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * media_id = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(media->db_data, key, false, false);
+	so_value_unpack(db, "{sS}", "id", &media_id);
+
+	const char * query;
+	if (archive_uuid == NULL) {
+		query = "select_nb_archives_of_media_0";
+		so_database_postgresql_prepare(self, query, "SELECT COUNT(DISTINCT archive) FROM archivevolume WHERE purged IS NULL AND media = $1");
+	} else {
+		query = "select_nb_archives_of_media_1";
+		so_database_postgresql_prepare(self, query, "SELECT COUNT(DISTINCT a.id) FROM archive a INNER JOIN archivevolume av ON a.id = av.archive AND purged IS NULL AND av.media = $1 AND a.uuid != $2");
+	}
+
+	const char * param[] = { media_id, archive_uuid };
+	PGresult * result;
+
+	if (archive_uuid == NULL)
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	else
+		result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	int nb_archives = -1;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) > 0)
+		so_database_postgresql_get_int(result, 0, 0, &nb_archives);
+
+	PQclear(result);
+
+	return nb_archives;
 }
 
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) {

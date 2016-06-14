@@ -74,6 +74,7 @@
 #include "util/scsi.h"
 #include "util/st.h"
 
+static bool sodr_tape_drive_check_format(struct so_media * media, struct so_pool * pool, const char * archive_uuid, struct so_database_connection * db);
 static bool sodr_tape_drive_check_header(struct so_database_connection * db);
 static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
@@ -100,6 +101,7 @@ static struct mtget status;
 
 
 static struct so_drive_ops sodr_tape_drive_ops = {
+	.check_format          = sodr_tape_drive_check_format,
 	.check_header          = sodr_tape_drive_check_header,
 	.check_support         = sodr_tape_drive_check_support,
 	.count_archives        = sodr_tape_drive_count_archives,
@@ -141,6 +143,20 @@ static struct so_drive sodr_tape_drive = {
 	.db_data = NULL,
 };
 
+
+static bool sodr_tape_drive_check_format(struct so_media * media, struct so_pool * pool, const char * archive_uuid, struct so_database_connection * db) {
+	if (strcmp(pool->archive_format->name, "LTFS") == 0) {
+		if (media->status == so_media_status_new)
+			return true;
+
+		if (media->status == so_media_status_in_use) {
+			int nb_archives = db->ops->get_nb_archives_by_media(db, archive_uuid, media);
+			return nb_archives == 0;
+		}
+	}
+
+	return true;
+}
 
 static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 	return sodr_tape_drive_check_header2(false, db);

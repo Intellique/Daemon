@@ -51,6 +51,7 @@ struct so_drive_driver {
 };
 
 struct so_drive_ops {
+	bool (*check_format)(struct so_media * media, struct so_pool * pool, const char * archive_uuid, struct so_database_connection * db);
 	bool (*check_header)(struct so_database_connection * db);
 	bool (*check_support)(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
 	unsigned int (*count_archives)(const bool * const disconnected, struct so_database_connection * db);

@@ -521,6 +521,7 @@ struct so_database_connection {
 		 * \return a list of archives
 		 */
 		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((warn_unused_result));
+		int (*get_nb_archives_by_media)(struct so_database_connection * connect, const char * archive_uuid, struct so_media * media);
 		/**
 		 * \brief compute the number of volume where \a file is on \a archive
 		 *
