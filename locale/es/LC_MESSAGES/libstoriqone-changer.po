@@ -31,7 +31,7 @@ msgstr  "[%s | %s]: descargando el media \"%s\" desde el lector #%d finalizado c
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"
 msgstr  "[%s | %s]: descargando el media \"%s\" desde el lector #%d finalizado con el codigo = OK"
 
-#: src/libstoriqone-changer/listen.c:281
+#: src/libstoriqone-changer/listen.c:280
 #, c-format
 msgid   "[%s | %s]: the drive (%s#%u) doesn't support media format (%s)"
 msgstr  "[%s | %s]: el lector (%s#%u) no puede utilizar los medias de formato (%s)"
