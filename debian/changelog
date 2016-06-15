@@ -1,3 +1,11 @@
+storiqone (1.3rc3-1+jessie) polisher; urgency=low
+
+  * New release candidate release
+  * Bug fix:
+    - #140: Fix scsi command to get free space of tape
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 15 Jun 2016 18:15:07 +0200
+
 storiqone (1.3rc2-1+jessie) polisher; urgency=low
 
   * New release candidate release
