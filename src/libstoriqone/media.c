@@ -492,6 +492,9 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 
 
 struct so_value * so_pool_convert(struct so_pool * pool) {
+	if (pool == NULL)
+		return so_value_new_null();
+
 	return so_value_pack("{sssssssbsssbsbsoso}",
 		"uuid", pool->uuid,
 		"name", pool->name,

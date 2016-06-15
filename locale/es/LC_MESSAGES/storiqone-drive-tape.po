@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-14 14:57+0200\n"
+        "POT-Creation-Date: 2016-06-15 16:07+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -46,75 +46,75 @@ msgstr  "[%s | %s | #%u]: fallo al leer el encabezamiento porque %m"
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:394
+#: src/drive/tape_drive/device.c:396
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
-#: src/drive/tape_drive/device.c:426
+#: src/drive/tape_drive/device.c:428
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:428 src/drive/tape_drive/device.c:436 src/drive/tape_drive/device.c:462
+#: src/drive/tape_drive/device.c:430 src/drive/tape_drive/device.c:438 src/drive/tape_drive/device.c:464
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:428 src/drive/tape_drive/device.c:436 src/drive/tape_drive/device.c:462
+#: src/drive/tape_drive/device.c:430 src/drive/tape_drive/device.c:438 src/drive/tape_drive/device.c:464
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:434
+#: src/drive/tape_drive/device.c:436
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:460
+#: src/drive/tape_drive/device.c:462
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:542
+#: src/drive/tape_drive/device.c:544
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:574
+#: src/drive/tape_drive/device.c:576
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:590
+#: src/drive/tape_drive/device.c:592
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:768
+#: src/drive/tape_drive/device.c:770
 #, c-format
 msgid   "[%s | %s | #%u]: retry #%uh to open tape drive"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:777
+#: src/drive/tape_drive/device.c:779
 #, c-format
 msgid   "[%s | %s | #%u]: failed to open tape drive because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:794
+#: src/drive/tape_drive/device.c:796
 #, c-format
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:940
+#: src/drive/tape_drive/device.c:942
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:994
+#: src/drive/tape_drive/device.c:996
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:1003
+#: src/drive/tape_drive/device.c:1005
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""

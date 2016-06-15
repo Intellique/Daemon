@@ -327,6 +327,8 @@ static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct so
 				return NULL;
 
 			writer = so_format_tar_new_writer(raw_writer, checksums);
+
+			break;
 		}
 
 		case sodr_tape_drive_media_ltfs: {
