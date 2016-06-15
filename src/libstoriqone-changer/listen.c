@@ -593,7 +593,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	}
 
 	struct so_pool * pool = NULL;
-	if (vpool != NULL) {
+	if (vpool != NULL && vpool->type != so_value_null) {
 		pool = malloc(sizeof(struct so_pool));
 		bzero(pool, sizeof(struct so_pool));
 		so_pool_sync(pool, vpool);
@@ -635,13 +635,19 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 				}
 			}
 		}
+	} else if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+		result = size_need;
+		sochgr_media_add_writer(mp, peer, size_need);
+	} else if (10 * media->free_block >= media->total_block) {
+		result = media->free_block * media->block_size - mp->size_reserved;
+		sochgr_media_add_writer(mp, peer, result);
 	}
 
 	struct so_value * response = so_value_pack("{sz}", "returned", result);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 
-	if (vpool != NULL)
+	if (vpool != NULL && vpool->type != so_value_null)
 		so_pool_free(pool);
 }
 
