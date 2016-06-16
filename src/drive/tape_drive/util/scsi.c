@@ -1255,7 +1255,7 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 		.saved_paged = false,
 		.parameter_pointer_control = false,
 		.page_code = 0x31,
-		.page_control = page_control_max_value,
+		.page_control = page_control_current_value,
 		.parameter_pointer = 0,
 		.allocation_length = htobe16(sizeof(result)),
 		.control = 0,
