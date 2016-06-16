@@ -199,7 +199,7 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 			self->media->free_block--;
 	}
 
-	if (!self->closed) {
+	if (!self->closed || close_fd) {
 		int failed = sodr_tape_drive_st_write_end_of_file(self->drive, self->fd);
 
 		self->media->last_write = time(NULL);
