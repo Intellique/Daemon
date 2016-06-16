@@ -1864,7 +1864,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			so_value_unpack(pool_db, "{ss}", "id", &pool_id);
 			so_value_hashtable_put2(db, "pool id", so_value_new_string(pool_id), true);
 		}
-	}
+	} else if (so_value_hashtable_has_key2(db, "pool id"))
+		so_value_hashtable_remove2(db, "pool id");
 
 	if (media->archive_format != NULL && archiveformat_id == NULL) {
 		if (media->archive_format->db_data != NULL) {
