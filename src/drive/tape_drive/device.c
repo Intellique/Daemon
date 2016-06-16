@@ -431,12 +431,26 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
 	close(fd);
 
-	if (failed != 0)
+	if (failed != 0) {
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-	else {
+		return failed;
+	} else
+		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_important,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
+			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+
+	fd = sodr_tape_drive_st_open();
+	if (fd < 0)
+		return -1;
+
+	failed = sodr_tape_drive_st_mk_1_partition(&sodr_tape_drive, fd);
+	close(fd);
+
+	if (failed == 0) {
 		media->uuid[0] = '\0';
 		media->status = so_media_status_new;
 		media->last_write = time(NULL);
