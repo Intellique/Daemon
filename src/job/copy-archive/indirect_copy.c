@@ -198,7 +198,6 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
 
-	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
 	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
 
 	struct so_media * media = self->dest_drive->slot->media;
