@@ -1,3 +1,22 @@
+storiqone (1.3rc4-1+wheezy) polisher; urgency=low
+
+  * New release candidate release
+  * Bug fix:
+    - #150: Erase media remove also partitions
+    - #151: Move media from one pool to another one
+    - #131, #133: Improve scsi library
+    - #152: Fix indirect copy
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 17 Jun 2016 17:48:39 +0200
+
+storiqone (1.3rc3-1+wheezy) polisher; urgency=low
+
+  * New release candidate release
+  * Bug fix:
+    - #140: Fix scsi command to get free space of tape
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 15 Jun 2016 18:15:07 +0200
+
 storiqone (1.3rc2-1+wheezy) polisher; urgency=low
 
   * New release candidate release

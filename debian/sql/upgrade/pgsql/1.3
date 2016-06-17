@@ -1,0 +1,72 @@
+-- Upgrade from v1.2.16 to v1.3.0
+
+BEGIN;
+
+-- Add new type
+CREATE TYPE JobRunStep AS ENUM (
+    'job',
+    'on error',
+    'pre job',
+    'post job',
+    'warm up'
+);
+
+-- Update Host table
+ALTER TABLE Host RENAME COLUMN updated TO old_updated;
+ALTER TABLE Host ADD COLUMN daemonVersion TEXT, ADD COLUMN updated TIMESTAMP(3) WITH TIME ZONE DEFAULT NOW();
+UPDATE Host SET daemonVersion = '', updated = old_updated;
+ALTER TABLE Host ALTER COLUMN daemonVersion SET NOT NULL, ALTER COLUMN updated SET NOT NULL, DROP COLUMN old_updated;
+
+-- Update JobRun table
+ALTER TABLE JobRun RENAME COLUMN done TO old_done;
+ALTER TABLE JobRun RENAME COLUMN exitcode TO old_exitcode;
+ALTER TABLE JobRun RENAME COLUMN stoppedbyuser TO old_stoppedbyuser;
+ALTER TABLE JobRun ADD COLUMN step JobRunStep NOT NULL DEFAULT 'pre job', ADD COLUMN done FLOAT NOT NULL DEFAULT 0, ADD COLUMN exitcode INTEGER NOT NULL DEFAULT 0, ADD COLUMN stoppedbyuser BOOLEAN NOT NULL DEFAULT FALSE;
+UPDATE JobRun SET step = CASE WHEN status = 'finished' THEN 'post job'::JobRunStep ELSE 'job'::JobRunStep END, done = old_done, exitcode = old_exitcode, stoppedbyuser = old_stoppedbyuser;
+ALTER TABLE JobRun DROP COLUMN old_done, DROP COLUMN old_exitcode, DROP COLUMN old_stoppedbyuser;
+
+-- Update ArchiveFileToArchiveVolume table
+ALTER TABLE ArchiveFileToArchiveVolume ADD COLUMN alternatePath TEXT;
+
+-- Create table Application
+CREATE TABLE Application (
+    id SERIAL NOT NULL PRIMARY KEY,
+
+    name TEXT NOT NULL UNIQUE,
+    apiKey UUID UNIQUE
+);
+
+INSERT INTO Application(name) VALUES
+    ('StoriqOne Changer'),
+    ('StoriqOne Daemon'),
+    ('StoriqOne Drive'),
+    ('StoriqOne Job'),
+    ('StoriqOne Logger'),
+    ('StoriqOne WWW');
+
+ALTER TABLE Log RENAME level TO old_level;
+ALTER TABLE Log RENAME time TO old_time;
+ALTER TABLE Log RENAME message TO old_message;
+ALTER TABLE Log RENAME host TO old_host;
+ALTER TABLE Log RENAME login TO old_login;
+ALTER TABLE Log DROP CONSTRAINT log_host_fkey, DROP CONSTRAINT log_login_fkey;
+ALTER TABLE Log ADD COLUMN application INTEGER REFERENCES Application(id) ON UPDATE CASCADE ON DELETE RESTRICT, ADD COLUMN level LogLevel, ADD COLUMN time TIMESTAMP(3) WITH TIME ZONE, ADD COLUMN message TEXT, ADD COLUMN host INTEGER REFERENCES Host(id) ON UPDATE CASCADE ON DELETE CASCADE, ADD COLUMN login INTEGER REFERENCES Users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+SELECT id AS changer FROM application WHERE name = 'StoriqOne Changer' LIMIT 1 \gset
+SELECT id AS daemon FROM application WHERE name = 'StoriqOne Daemon' LIMIT 1 \gset
+SELECT id AS drive FROM application WHERE name = 'StoriqOne Drive' LIMIT 1 \gset
+SELECT id AS job FROM application WHERE name = 'StoriqOne Job' LIMIT 1 \gset
+SELECT id AS logger FROM application WHERE name = 'StoriqOne Logger' LIMIT 1 \gset
+SELECT id AS www FROM application WHERE name = 'StoriqOne WWW' LIMIT 1 \gset
+
+UPDATE Log SET application = CASE WHEN type = 'changer' THEN :changer WHEN type = 'drive' THEN :drive WHEN type = 'job' THEN :job WHEN type IN ('logger', 'plugin log') THEN :logger WHEN type IN ('ui', 'user message') THEN :www ELSE :daemon END, level = old_level, time = old_time, message = old_message, host = old_host, login = old_login;
+
+ALTER TABLE Log DROP COLUMN type, DROP COLUMN old_level, DROP COLUMN old_time, DROP COLUMN old_message, DROP COLUMN old_host, DROP COLUMN old_login, ALTER COLUMN application SET NOT NULL, ALTER COLUMN level SET NOT NULL, ALTER COLUMN time SET NOT NULL, ALTER COLUMN message SET NOT NULL, ALTER COLUMN host SET NOT NULL;
+
+-- Drop old type
+DROP TYPE LogType;
+
+COMMIT;
+
+VACUUM FULL ANALYZE;
+
