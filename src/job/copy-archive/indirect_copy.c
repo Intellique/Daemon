@@ -214,16 +214,6 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	struct so_archive_files * ptr_file = vol->files;
 
 	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file), rdr_status == so_format_reader_header_ok && ok) {
-
-		if (i < vol->nb_files)
-			ptr_file++;
-		else {
-			vol++;
-			ptr_file = vol->files;
-			i = 0;
-		}
-
-
 		available_size = self->writer->ops->get_available_size(self->writer);
 		if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
 			failed = soj_copyarchive_util_change_media(job, db_connect, self);
@@ -340,11 +330,19 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		}
 
 		so_format_file_free(&file);
+
+		i++;
+		if (i < vol->nb_files)
+			ptr_file++;
+		else {
+			vol++;
+			ptr_file = vol->files;
+			i = 0;
+		}
 	}
 
 	soj_copyarchive_util_close_media(job, db_connect, self);
 
-	self->writer->ops->free(self->writer);
 	tmp_frmt_reader->ops->free(tmp_frmt_reader);
 
 	return failed;
