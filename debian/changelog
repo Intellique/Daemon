@@ -1,3 +1,14 @@
+storiqone (1.3rc4-1+jessie) polisher; urgency=low
+
+  * New release candidate release
+  * Bug fix:
+    - #150: Erase media remove also partitions
+    - #151: Move media from one pool to another one
+    - #131, #133: Improve scsi library
+    - #152: Fix indirect copy
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 17 Jun 2016 13:23:36 +0200
+
 storiqone (1.3rc3-1+jessie) polisher; urgency=low
 
   * New release candidate release
