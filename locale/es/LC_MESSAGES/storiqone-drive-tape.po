@@ -134,7 +134,7 @@ msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" en una sola partición"
 #: src/drive/tape_drive/format/ltfs/ltfs.c:110 src/drive/tape_drive/util/st.c:83
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
-msgstr  "[ %s | %s | #%u ]: Fallo de formateo del media \"%s\ en una sola partición porque %m"
+msgstr  "[ %s | %s | #%u ]: Fallo de formateo del media \"%s\" en una sola partición porque %m"
 
 #: src/drive/tape_drive/format/ltfs/ltfs.c:119 src/drive/tape_drive/util/st.c:91
 #, c-format
@@ -188,7 +188,7 @@ msgstr  "[ %s | %s |%u]: Actualización de la memoria auxiliar, intento de actu
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application name' with 'STORIQ ONE' on "
         "media '%s'"
-msgstr  "[%s | %s | #%u]: Actualización de la memoria auxiliar, fallo de la actualización del atributo \"application name\" con \"STORIQ ONE\" sobre el media \#%s\""
+msgstr  "[%s | %s | #%u]: Actualización de la memoria auxiliar, fallo de la actualización del atributo \"application name\" con \"STORIQ ONE\" sobre el media \"%s\""
 
 #: src/drive/tape_drive/format/ltfs/util.c:991
 #, c-format
