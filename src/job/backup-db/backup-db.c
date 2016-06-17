@@ -154,7 +154,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 		reserve_media,
 	} state = reserve_media;
 
-	bool stop = false;
+	bool error = false, stop = false;
 	ssize_t size_available;
 	struct so_stream_reader * tmp_reader = tmp_writer->ops->reopen(tmp_writer);
 	struct so_drive * drive = NULL;
@@ -215,7 +215,12 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				break;
 
 			case get_media:
-				drive = soj_media_find_and_load_next(soj_backupdb_pool, false, db_connect);
+				drive = soj_media_find_and_load_next(soj_backupdb_pool, false, &error, db_connect);
+
+				if (error) {
+					stop = true;
+					break;
+				}
 
 				if (drive != NULL)
 					state = copy_backup;
@@ -232,7 +237,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				break;
 
 			case reserve_media:
-				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, db_connect);
+				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, NULL, db_connect);
 
 				if (size_available < backup_size)
 					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
@@ -246,9 +251,12 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 	tmp_reader->ops->close(tmp_reader);
 	tmp_reader->ops->free(tmp_reader);
 
-	db_connect->ops->backup_add(db_connect, soj_backupdb_backup);
-
-	job->done = 1;
+	if (error)
+		job->status = so_job_status_error;
+	else {
+		db_connect->ops->backup_add(db_connect, soj_backupdb_backup);
+		job->done = 1;
+	}
 
 	return 0;
 

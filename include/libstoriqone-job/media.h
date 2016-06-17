@@ -37,9 +37,9 @@
 struct so_database_connection;
 struct so_pool;
 
-struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait, size_t size_need, struct so_database_connection * db_connection);
-struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wait, struct so_database_connection * db_connection);
-ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_database_connection * db_connection);
+struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait, size_t size_need, bool * error, struct so_database_connection * db_connection);
+struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wait, bool * error, struct so_database_connection * db_connection);
+ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, const char * archive_uuid, struct so_database_connection * db_connection);
 void soj_media_release_all_medias(struct so_pool * pool);
 
 #endif

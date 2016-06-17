@@ -91,7 +91,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
 
 		if (i > 0) {
-			self->src_drive = soj_media_find_and_load(vol->media, false, 0, db_connect);
+			self->src_drive = soj_media_find_and_load(vol->media, false, 0, NULL, db_connect);
 			if (self->src_drive == NULL) {
 				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Failed to load media '%s'"),
@@ -189,9 +189,15 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
+	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
+	if (self->dest_drive == NULL) {
+		tmp_frmt_reader->ops->free(tmp_frmt_reader);
+		job->status = so_job_status_error;
+		return 1;
+	}
+
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
 
-	self->dest_drive = soj_media_find_and_load_next(self->pool, false, db_connect);
 	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
 
 	struct so_media * media = self->dest_drive->slot->media;

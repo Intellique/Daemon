@@ -150,7 +150,7 @@ static ssize_t sodr_tape_drive_writer_before_close(struct so_stream_writer * sw,
 }
 
 static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
-	return sodr_tape_drive_writer_close2(sw, true);
+	return sodr_tape_drive_writer_close2(sw, false);
 }
 
 int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
@@ -199,7 +199,7 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 			self->media->free_block--;
 	}
 
-	if (!self->closed) {
+	if (!self->closed || close_fd) {
 		int failed = sodr_tape_drive_st_write_end_of_file(self->drive, self->fd);
 
 		self->media->last_write = time(NULL);
@@ -294,7 +294,7 @@ static void sodr_tape_drive_writer_free(struct so_stream_writer * sw) {
 	struct sodr_tape_drive_writer * self = sw->data;
 	if (self != NULL) {
 		if (self->fd > -1)
-			sodr_tape_drive_writer_close(sw);
+			sodr_tape_drive_writer_close2(sw, true);
 
 		free(self->buffer);
 		free(self);

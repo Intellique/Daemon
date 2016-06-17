@@ -719,8 +719,10 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 	if (directory->first_child == NULL)
 		directory->first_child = directory->last_child = file;
-	else
+	else {
+		file->previous_sibling = directory->last_child;
 		directory->last_child = directory->last_child->next_sibling = file;
+	}
 	file->parent = directory;
 
 	file->file.mode = S_IFREG | default_value->file_mask;
@@ -746,15 +748,24 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 				so_string_delete_double_char(file->file.filename, '/');
 			} else {
-				file->name = strdup(elt_name);
+				file->name = strdup(file_name);
 				file->hash_name = so_string_compute_hash2(file->name);
+
+				if (strcmp(path, "") == 0) {
+					char * index_file = NULL;
+					int size = asprintf(&index_file, "%s.meta", archive->name);
+					if (size > 0 && strcmp(file_name, index_file) == 0)
+						file->ignored = true;
+
+					free(index_file);
+				}
 
 				char * tmp_path;
 				int size = asprintf(&tmp_path, "%s/%s", path, file_name);
 				if (size < 0)
 					continue;
 
-				char * original_path = db_connect->ops->get_original_path_of_ltfs_file(db_connect, archive, tmp_path);
+				char * original_path = db_connect->ops->get_original_path_from_alternate_path(db_connect, archive, tmp_path);
 				if (original_path != NULL)
 					file->file.filename = original_path;
 				else {
@@ -763,13 +774,19 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 						free(tmp_path);
 						continue;
 					}
+
+					file->ignored = true;
 				}
 
-				char * selected_path = db_connect->ops->get_selected_path_of_ltfs_file(db_connect, archive, tmp_path);
+				char * selected_path = db_connect->ops->get_selected_path_from_alternate_path(db_connect, archive, tmp_path);
 				if (selected_path != NULL) {
 					file->hash_selected_path = so_string_compute_hash2(selected_path);
 					free(selected_path);
-				}
+				} else
+					file->ignored = true;
+
+				if (!file->ignored)
+					file->volume_number = db_connect->ops->find_first_volume_of_archive_file(db_connect, archive, original_path);
 
 				free(tmp_path);
 			}
@@ -876,8 +893,15 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 		struct so_value_iterator * iter = so_value_list_get_iterator(files);
 		while (so_value_iterator_has_next(iter)) {
-			struct so_value * child = so_value_iterator_get_value(iter, false);
-			sodr_tape_drive_format_ltfs_parse_index_inner(self, file, child, file->file.filename, default_value, archive, db_connect);
+			char * sub_path = NULL;
+			int size = asprintf(&sub_path, "%s/%s", path, file->name);
+
+			if (size > 0) {
+				struct so_value * child = so_value_iterator_get_value(iter, false);
+				sodr_tape_drive_format_ltfs_parse_index_inner(self, file, child, sub_path, default_value, archive, db_connect);
+
+				free(sub_path);
+			}
 		}
 		so_value_iterator_free(iter);
 
@@ -988,17 +1012,17 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 	strncpy(application_version.value.text, version, version_length);
 
 	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%*s' on media '%s'"),
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'application version' with '%.*s' on media '%s'"),
 		drive->vendor, drive->model, drive->index, version_length, version, media_name);
 
 	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &application_version, 0);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'application version' with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, version_length, version, media_name);
 	else
 		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' updated with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, version_length, version, media_name);
 
 	if (failed != 0)
@@ -1007,7 +1031,7 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 
 	static struct sodr_tape_drive_scsi_mam_attribute user_medium_text_label = {
 		.identifier = sodr_tape_drive_scsi_mam_user_medium_text_label,
-		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_text,
 		.read_only  = false,
 		.length     = 160,
 		.value.text = "                                                                                                                                                                "
@@ -1020,17 +1044,17 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 	strncpy(user_medium_text_label.value.text, media_name, media_name_length);
 
 	sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%*s' on media '%s'"),
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to update attribute 'user medium text label' with '%.*s' on media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
 
 	failed = sodr_tape_drive_scsi_write_attribute(scsi_fd, &user_medium_text_label, 0);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to update attribute 'user medium text label' with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
 	else
 		sodr_log_add_record(so_job_status_running, db, so_log_level_debug, so_job_record_notif_normal,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%*s' on media '%s'"),
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' updated with '%.*s' on media '%s'"),
 			drive->vendor, drive->model, drive->index, media_name_length, media_name, media_name);
 
 	if (failed != 0)

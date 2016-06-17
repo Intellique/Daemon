@@ -109,7 +109,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 
 	struct so_media * media = data.src_archive->volumes[0].media;
 
-	data.src_drive = soj_media_find_and_load(media, false, 0, db_connect);
+	data.src_drive = soj_media_find_and_load(media, false, 0, NULL, db_connect);
 	if (data.src_drive == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_error,
 			so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
@@ -128,7 +128,13 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.copy_archive->creator = strdup(job->user);
 	data.copy_archive->owner = strdup(job->user);
 
-	data.dest_drive = soj_media_find_and_load_next(data.pool, true, db_connect);
+	bool error = false;
+	data.dest_drive = soj_media_find_and_load_next(data.pool, true, &error, db_connect);
+
+	if (error) {
+		job->status = so_job_status_error;
+		return 1;
+	}
 
 	int failed = 0;
 	if (data.dest_drive == NULL)
@@ -316,7 +322,7 @@ static int soj_copyarchive_warm_up(struct so_job * job, struct so_database_conne
 		return 1;
 	}
 
-	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, db_connect);
+	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, NULL, db_connect);
 	if (reserved < data.src_archive->size) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Error: not enought space available in pool '%s'"),

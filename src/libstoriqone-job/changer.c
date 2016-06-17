@@ -58,8 +58,8 @@ struct soj_changer {
 static struct so_changer * soj_changers = NULL;
 static unsigned int soj_nb_changers = 0;
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait);
-static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error);
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, const char * archive_uuid, struct so_pool * pool);
 static int soj_changer_release_media(struct so_changer * changer, struct so_media * media);
 static int soj_changer_sync(struct so_changer * changer);
 
@@ -119,7 +119,7 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 	return NULL;
 }
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait) {
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error) {
 	struct soj_changer * self = changer->data;
 	struct so_job * job = soj_job_get();
 
@@ -158,18 +158,21 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 	pthread_mutex_unlock(&self->lock);
 
 	if (response != NULL) {
-		bool error = true;
-		unsigned int index = 0;
+		bool err = true;
+		int index = 0;
 		struct so_value * vch = NULL;
 
-		int nb_parsed = so_value_unpack(response, "{sbsosu}",
-			"error", &error,
+		int nb_parsed = so_value_unpack(response, "{sbsosi}",
+			"error", &err,
 			"changer", &vch,
 			"index", &index
 		);
 
-		if (!error) {
-			if (nb_parsed >= 3 && slot->index != index)
+		if (error != NULL)
+			*error = err;
+
+		if (!err) {
+			if (nb_parsed >= 3 && index >= 0 && slot->index != (unsigned int) index)
 				so_slot_swap(slot, changer->drives[index].slot);
 
 			so_changer_sync(changer, vch);
@@ -177,7 +180,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 
 		so_value_free(response);
 
-		if (!error) {
+		if (!err && index >= 0) {
 			job->status = so_job_status_running;
 			return changer->drives + index;
 		}
@@ -201,7 +204,7 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 
 		unsigned int j;
 		for (j = 0; j < ch->nb_drives; j++) {
-			struct so_drive * dr = ch->drives + i;
+			struct so_drive * dr = ch->drives + j;
 			if (dr->ops->check_support(dr, format, for_writing))
 				return true;
 		}
@@ -237,15 +240,16 @@ static int soj_changer_release_media(struct so_changer * changer, struct so_medi
 	return ok ? 0 : 1;
 }
 
-static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, enum so_pool_unbreakable_level unbreakable_level) {
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, const char * archive_uuid, struct so_pool * pool) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{ssszss}}",
+	struct so_value * request = so_value_pack("{sss{ssszssso}}",
 		"command", "reserve media",
 		"params",
 			"medium serial number", media->medium_serial_number,
 			"size need", size_need,
-			"unbreakable level", so_pool_unbreakable_level_to_string(unbreakable_level, false)
+			"archive uuid", archive_uuid,
+			"pool", so_pool_convert(pool)
 	);
 
 	pthread_mutex_lock(&self->lock);

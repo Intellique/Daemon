@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-backup-db v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-23 19:29+0100\n"
+        "POT-Creation-Date: 2016-06-16 17:36+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -20,33 +20,33 @@ msgstr  "Project-Id-Version: storiqone-job-backup-db v1.2\n"
 msgid   "Failed while setting worker thread name"
 msgstr  "Fallo en la definición del nombre del hilo de ejecucón"
 
-#: src/job/check-backup-db/check-backup-db.c:148
+#: src/job/check-backup-db/check-backup-db.c:155
 #, c-format
 msgid   "Checking backup volume #%u: success"
 msgstr  "verificación del volumen #%u de la copia de seguridad: éxito"
 
-#: src/job/check-backup-db/check-backup-db.c:151
+#: src/job/check-backup-db/check-backup-db.c:158
 #, c-format
 msgid   "Checking backup volume #%u: failed"
 msgstr  "Verificación del volumen #%u de la copia de seguridad: fallo "
 
-#: src/job/check-backup-db/check-backup-db.c:160
+#: src/job/check-backup-db/check-backup-db.c:167
 msgid   "Checking backup: success"
 msgstr  "verificación de la copia de seguridad: éxito "
 
-#: src/job/check-backup-db/check-backup-db.c:163
+#: src/job/check-backup-db/check-backup-db.c:170
 msgid   "Checking backup: failed"
 msgstr  "Verificación de la copia de seguriadad: fallo"
 
-#: src/job/check-backup-db/check-backup-db.c:230
+#: src/job/check-backup-db/check-backup-db.c:237
 msgid   "Backup not found"
 msgstr  "No se encuentra la copia de seguridad"
 
-#: src/job/check-backup-db/check-backup-db.c:244
+#: src/job/check-backup-db/check-backup-db.c:251
 msgid   "BUG: media should not be empty"
 msgstr  "BUG: el media no debe estar vacío"
 
-#: src/job/check-backup-db/check-backup-db.c:249
+#: src/job/check-backup-db/check-backup-db.c:256
 msgid   "Try to read a media with error status"
 msgstr  "Intento de lectura del media cuyo estatu está en error "
 
@@ -55,7 +55,7 @@ msgstr  "Intento de lectura del media cuyo estatu está en error "
 msgid   "Warning, media '%s' not found"
 msgstr  "Atención el media \"%s\" no ha sido encontrado"
 
-#: src/job/check-backup-db/worker.c:112
+#: src/job/check-backup-db/worker.c:118
 #, c-format
 msgid   "Error, failed to open backup from media '%s'"
 msgstr  "Error, fallo a la abertura de la copia de seguridad desde el media \"%s\""

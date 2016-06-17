@@ -570,7 +570,7 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     checktime TIMESTAMP(3) WITH TIME ZONE,
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
 
-    ltfsPath TEXT,
+    alternatePath TEXT,
 
     PRIMARY KEY (archiveVolume, archiveFile)
 );
@@ -788,6 +788,8 @@ CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
         ELSIF OLD != NEW THEN
             INSERT INTO MetadataLog(id, type, key, value, login, updated)
                 VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, TRUE);
+            RETURN NEW;
+        ELSE
             RETURN NEW;
         END IF;
     END;
