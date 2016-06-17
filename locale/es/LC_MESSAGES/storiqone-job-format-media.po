@@ -19,17 +19,17 @@ msgstr  "Project-Id-Version: storiqone-job-format-media v1.2\n"
 #: src/job/format-media/format-media.c:83
 #, c-format
 msgid   "parameter 'block size' should be a positive integer (not %zd) and between 1 KB and 1 MB"
-msgstr  ""
+msgstr  "El parámetro \"block size\" debe ser un entero positivo (no %zd) y comprendido entre 1KB y 1MB"
 
 #: src/job/format-media/format-media.c:92
 #, c-format
 msgid   "parameter 'block size' should be a two of two, not %zd"
-msgstr  ""
+msgstr  "El parámetro \"block size\" deber tener una potencia de dos, y no %zd"
 
 #: src/job/format-media/format-media.c:111
 #, c-format
 msgid   "Partition size should be greater than 75%% of media capacity (%s / %s = %.0f)"
-msgstr  ""
+msgstr  "El tamaño de la partición debe ser más grande que 75%% de la capacidad del media (%s / %s = %.0f)"
 
 #: src/job/format-media/format-media.c:137
 #, c-format
@@ -115,12 +115,12 @@ msgstr  "tratando de formatear un media \"%s\" que está en error \"%s\""
 #: src/job/format-media/format-media.c:338
 #, c-format
 msgid   "Trying to format a LTFS media '%s' which does not support partition (LTFS requirement)"
-msgstr  ""
+msgstr  "Intento al formatear un media \"%s\" en LTFS que no soporte las particiones (prerequeridas LTFS "
 
 #: src/job/format-media/format-media.c:344
 #, c-format
 msgid   "No write support for format '%s'"
-msgstr  ""
+msgstr  "No hay soporte para el formato en escritura \"%s\""
 
 #: src/job/format-media/format-media.c:351
 #, c-format
@@ -152,7 +152,7 @@ msgstr  "Buscará el mejor tamaño del bloque para utilizarlo con el media \"%s\
 #: src/job/format-media/format-media.c:402
 #, c-format
 msgid   "Invalid block size '%s'"
-msgstr  ""
+msgstr  "Tamaño del bloque no valido \"%s\""
 
 #: src/job/format-media/format-media.c:414
 #, c-format

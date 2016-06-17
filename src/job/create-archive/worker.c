@@ -248,6 +248,7 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 		return 0;
 	} else
 		return 1;
+
 }
 
 int soj_create_archive_worker_close(bool first_round) {

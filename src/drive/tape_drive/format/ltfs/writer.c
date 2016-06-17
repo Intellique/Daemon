@@ -54,6 +54,7 @@
 #include "../../media.h"
 #include "../../io/io.h"
 #include "../../util/scsi.h"
+#include "../../util/st.h"
 #include "../../util/xml.h"
 
 struct sodr_tape_drive_format_ltfs_writer_private {
@@ -273,17 +274,14 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_end_of_file(struct so_format_w
 static void sodr_tape_drive_format_ltfs_writer_free(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
 
-	if (self->fd >= 0) {
-		close(self->fd);
+	if (self->scsi_fd >= 0)
 		close(self->scsi_fd);
-	}
 
 	if (self->writer != NULL)
 		self->writer->ops->free(self->writer);
 	self->writer = NULL;
 
 	self->fd = self->scsi_fd = -1;
-		sodr_tape_drive_format_ltfs_writer_close(fw);
 
 	free(self);
 	free(fw);
@@ -435,7 +433,7 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 
 	free(json);
 
-	failed = sodr_tape_drive_writer_close2(self->writer, false);
+	failed = self->writer->ops->close(self->writer);
 	if (failed != 0) {
 		return failed;
 	}
@@ -472,14 +470,17 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		return failed;
 	}
 
-	failed = sodr_tape_drive_writer_close2(self->writer, false);
+	failed = self->writer->ops->close(self->writer);
 	if (failed != 0) {
 		so_value_free(index);
 		return failed;
 	}
 
-	self->writer->ops->free(self->writer);
-	self->writer = sodr_tape_drive_writer_get_raw_writer2(self->drive, self->fd, 0, -1, false, NULL);
+	failed = sodr_tape_drive_st_set_position(self->drive, self->fd, 0, 0, true, NULL);
+	if (failed != 0) {
+		so_value_free(index);
+		return failed;
+	}
 
 	failed = sodr_tape_drive_scsi_read_position(self->scsi_fd, &position);
 	if (failed != 0) {
@@ -500,7 +501,7 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		return failed;
 	}
 
-	failed = sodr_tape_drive_writer_close2(self->writer, false);
+	failed = self->writer->ops->close(self->writer);
 	if (failed != 0) {
 		return failed;
 	}
@@ -513,7 +514,6 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 	if (failed != 0)
 		return failed;
 
-	close(self->fd);
 	close(self->scsi_fd);
 
 	self->fd = self->scsi_fd = -1;

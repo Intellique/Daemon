@@ -151,10 +151,10 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 			bool checksum_ok = true;
 			for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
 				if (ptr->volume->checksum_ok)
-				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 						dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: success"), i);
 				else {
-				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 						dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: failed"), i);
 					checksum_ok = false;
 				}
@@ -163,20 +163,19 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 			}
 
 			if (checksum_ok)
-			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 					dgettext("storiqone-job-check-backup-db", "Checking backup: success"));
 			else
-			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 					dgettext("storiqone-job-check-backup-db", "Checking backup: failed"));
 		}
 
 		job->done = 1;
 	}
-
 	soj_checkbackupdb_worker_free(worker);
 
 	return error ? 1 : 0;
-}
+	}
 
 static void soj_checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_checkbackupdb_pool) < 1)

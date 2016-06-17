@@ -287,7 +287,7 @@ msgstr  "%.*f TB"
 #: src/libstoriqone/file.c:230
 #, c-format
 msgid   "%.*f PB"
-msgstr  ""
+msgstr  "%.*f PB"
 
 #: src/libstoriqone/file.c:257 src/libstoriqone/file.c:275 src/libstoriqone/file.c:305
 #, c-format
@@ -435,7 +435,7 @@ msgstr  "notificación desconocida"
 
 #: src/libstoriqone/job.c:86
 msgid   "job"
-msgstr  ""
+msgstr  "tarea"
 
 #: src/libstoriqone/job.c:87 src/libstoriqone/script.c:45
 msgid   "on error"
@@ -451,7 +451,7 @@ msgstr  "previa tarea"
 
 #: src/libstoriqone/job.c:90
 msgid   "warm up"
-msgstr  ""
+msgstr  "precalentar"
 
 #: src/libstoriqone/job.c:92 src/libstoriqone/media.c:56 src/libstoriqone/media.c:72 src/libstoriqone/media.c:93
 #: src/libstoriqone/media.c:109 src/libstoriqone/media.c:125 src/libstoriqone/media.c:141 src/libstoriqone/script.c:49
