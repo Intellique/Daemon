@@ -64,6 +64,36 @@ int sodr_tape_drive_st_get_status(struct so_drive * drive, int fd, struct mtget 
 	return failed;
 }
 
+int sodr_tape_drive_st_mk_1_partition(struct so_drive * drive, int fd) {
+	struct so_media * media = drive->slot->media;
+	if (media == NULL)
+		return -1;
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Formatting media '%s' with one partition"),
+		drive->vendor, drive->model, drive->index, media->name);
+
+	static struct mtop mk1partition = { MTMKPART, 0 };
+	sodr_time_start();
+	int failed = ioctl(fd, MTIOCTOP, &mk1partition);
+	sodr_time_stop(drive);
+
+	if (failed != 0) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"),
+			drive->vendor, drive->model, drive->index, media->name);
+
+		media->status = so_media_status_error;
+
+		return failed;
+	} else
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Succeed to format media '%s' with one partition"),
+			drive->vendor, drive->model, drive->index, media->name);
+
+	return failed;
+}
+
 int sodr_tape_drive_st_rewind(struct so_drive * drive, int fd, struct so_database_connection * db) {
 	drive->status = so_drive_status_rewinding;
 	if (db != NULL)

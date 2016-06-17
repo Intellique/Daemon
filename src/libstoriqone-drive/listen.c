@@ -215,8 +215,6 @@ static void sodr_socket_message(int fd, short event, void * data) {
 	struct sodr_peer * peer = data;
 
 	if (event & POLLHUP) {
-		so_poll_unregister(fd, POLLIN | POLLHUP);
-
 		peer->disconnected = true;
 		sodr_listen_remove_peer(peer);
 
