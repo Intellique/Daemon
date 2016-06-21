@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-04-21 19:05+0200\n"
+        "POT-Creation-Date: 2016-06-21 17:44+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -26,8 +26,17 @@ msgstr  "Pas de vérification de « %s » parce qu’il n’a pas d’empreint
 msgid   "Failed to open '%s' because %m"
 msgstr  "Échec à l’ouverture de « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:126 src/job/restore-archive/data_worker.c:145
-#: src/job/restore-archive/data_worker.c:169
+#: src/job/restore-archive/check_worker.c:159
+#, c-format
+msgid   "data integrity of file '%s' is correct"
+msgstr  "l’intégrité des données du fichier « %s » est correcte"
+
+#: src/job/restore-archive/check_worker.c:163
+#, c-format
+msgid   "data integrity of file '%s' is not correct"
+msgstr  "l’intégrité des données du fichier « %s » n’est pas correcte"
+
+#: src/job/restore-archive/data_worker.c:126 src/job/restore-archive/data_worker.c:145 src/job/restore-archive/data_worker.c:169
 #, c-format
 msgid   "Error while seeking to file '%s'"
 msgstr  "Erreur en se positionnant sur le fichier « %s »"
