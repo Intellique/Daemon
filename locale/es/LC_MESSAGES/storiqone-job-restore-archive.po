@@ -26,8 +26,17 @@ msgstr  "No hay verificación de \"%s\" porque no hay suma de verificación disp
 msgid   "Failed to open '%s' because %m"
 msgstr  "Fallo a la apertura de \"%s\" porque %m"
 
-#: src/job/restore-archive/data_worker.c:126 src/job/restore-archive/data_worker.c:145
-#: src/job/restore-archive/data_worker.c:169
+#: src/job/restore-archive/check_worker.c:159
+#, c-format
+msgid   "data integrity of file '%s' is correct"
+msgstr  "la integridad de los datos del fichero \"%s\" es correcto"
+
+#: src/job/restore-archive/check_worker.c:163
+#, c-format
+msgid   "data integrity of file '%s' is not correct"
+msgstr  "la integridad de los datos del fichero \"%s\" no está correcto"
+
+#: src/job/restore-archive/data_worker.c:126 src/job/restore-archive/data_worker.c:145 src/job/restore-archive/data_worker.c:169
 #, c-format
 msgid   "Error while seeking to file '%s'"
 msgstr  "Error al posicionarse en el fichero \"%s\""
