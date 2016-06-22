@@ -37,9 +37,6 @@ override_dh_systemd_enable:
 override_dh_systemd_start:
 	dh_systemd_start --no-start -r storiqoned
 
-override_dh_fixperms:
-	dh_fixperms -X bin -X lib
-
 override_dh_strip:
 	dh_strip --dbg-package=storiqone-dbg
 
