@@ -159,10 +159,10 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 
 	if (response != NULL) {
 		bool err = true;
-		unsigned int index = 0;
+		int index = 0;
 		struct so_value * vch = NULL;
 
-		int nb_parsed = so_value_unpack(response, "{sbsosu}",
+		int nb_parsed = so_value_unpack(response, "{sbsosi}",
 			"error", &err,
 			"changer", &vch,
 			"index", &index
@@ -172,7 +172,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 			*error = err;
 
 		if (!err) {
-			if (nb_parsed >= 3 && slot->index != index)
+			if (nb_parsed >= 3 && index >= 0 && slot->index != (unsigned int) index)
 				so_slot_swap(slot, changer->drives[index].slot);
 
 			so_changer_sync(changer, vch);
@@ -180,7 +180,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 
 		so_value_free(response);
 
-		if (!error) {
+		if (!err && index >= 0) {
 			job->status = so_job_status_running;
 			return changer->drives + index;
 		}
