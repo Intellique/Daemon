@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: guillaume clercin <gclercin@intellique.com>
 Build-Depends: cscope, debhelper (>= 9.0.0), exuberant-ctags, gettext, git, libexpat1-dev, libmagic-dev, libpq-dev, libssl-dev, nettle-dev, pkg-config, uuid-dev, make (>= 4.0)
-Standards-Version: 3.9.2
+Standards-Version: 3.9.4
 Homepage: http://www.intellique.com
 #Vcs-Git: git://git.debian.org/collab-maint/stone.git
 #Vcs-Browser: http://git.debian.org/?p=collab-maint/stone.git;a=summary
@@ -15,12 +15,16 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: libc6 (>= 2.19)
 Description: Storiq one libraries (libs)
+ .
+ This package contains common libraries
 
 Package: libstoriqone-1.2-dev
 Section: devel
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one development headers (dev)
+ .
+ This package contains include files
 
 Package: storiqone-daemon
 Section: utils
@@ -28,6 +32,7 @@ Architecture: any
 Depends: storiqone-plugin-db, ${shlibs:Depends}, ${misc:Depends}
 Recommends: gdb (>= 7.7.1)
 Description: Storiq one daemon
+ .
  This package contains daemon
 
 Package: storiqone-dbg
@@ -48,6 +53,7 @@ Recommends: postgresql (>= 9.4)
 Provides: storiqone-plugin-db
 Enhances: storiqone-daemon
 Description: Storiq one posgresql connector (db-plugin)
+ .
  Contains plugin to connect to postresql database
 
 Package: storiqone-scripts
@@ -55,5 +61,6 @@ Section: utils
 Architecture: all
 Depends: ${perl:Depends}, ${misc:Depends}, libsys-cpu-perl, libmediainfo-perl, mediainfo
 Description: Storiq one scripts (log-plugin)
+ .
  Contains scripts that the daemon will run
 
