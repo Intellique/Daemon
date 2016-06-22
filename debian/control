@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: guillaume clercin <gclercin@intellique.com>
 Build-Depends: cscope, debhelper (>= 9.0.0), dh-systemd (>= 1.5), exuberant-ctags, gettext, git, libexpat1-dev, libmagic-dev, libpq-dev, libssl-dev, nettle-dev, pkg-config, uuid-dev, make (>= 4.0)
-Standards-Version: 3.9.2
+Standards-Version: 3.9.6
 Homepage: http://www.intellique.com
 #Vcs-Git: git://git.debian.org/collab-maint/stone.git
 #Vcs-Browser: http://git.debian.org/?p=collab-maint/stone.git;a=summary
@@ -14,6 +14,7 @@ Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one libraries (libs)
+ .
  This package contains the library used by all others packages
 
 Package: libstoriqone-changer1
@@ -21,30 +22,39 @@ Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one libraries (libs)
+ .
+ This package contains the library used by all changers
 
 Package: libstoriqone-drive1
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one libraries (libs)
+ .
+ This package contains the library used by all drives
 
 Package: libstoriqone-job1
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one libraries (libs)
+ .
+ This package contains the library used by all jobs
 
 Package: libstoriqone-1.3-dev
 Section: libdevel
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one development headers (dev)
+ .
+ This package contains include files
 
 Package: storiqone-daemon
 Section: utils
 Architecture: any
 Depends: storiqone-plugin-db, ${shlibs:Depends}, ${misc:Depends}
 Description: Storiq one daemon
+ .
  This package contains daemon
 
 Package: storiqone-dbg

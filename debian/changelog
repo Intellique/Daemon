@@ -1,3 +1,11 @@
+storiqone (1.3rc4-2+jessie) polisher; urgency=low
+
+  * New release candidate release
+  * Change:
+    - Make lintian happy
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 22 Jun 2016 19:18:33 +0200
+
 storiqone (1.3rc4-1+jessie) polisher; urgency=low
 
   * New release candidate release
