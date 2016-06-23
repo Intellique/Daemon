@@ -1,3 +1,11 @@
+storiqone (1.3rc4-3+jessie) polisher; urgency=low
+
+  * New release candidate release
+  * Change:
+    - Fix permission
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 23 Jun 2016 11:47:46 +0200
+
 storiqone (1.3rc4-2+jessie) polisher; urgency=low
 
   * New release candidate release
