@@ -183,12 +183,20 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	if (nb_write < 0)
 		return failed;
 
-	sodr_tape_drive_writer_close2(writer, false);
-	writer->ops->free(writer);
+	failed = writer->ops->close(writer);
 
 	so_value_free(empty_fs);
 
-	writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 0, 0, false, db);
+	if (failed != 0)
+		return failed;
+
+	failed = sodr_tape_drive_st_set_position(drive, fd, 0, 0, true, db);
+	if (failed != 0)
+		return failed;
+
+	failed = writer->ops->create_new_file(writer);
+	if (failed != 0)
+		return failed;
 
 	/**
 	 * Write volume label on first partition
@@ -280,7 +288,7 @@ static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * 
 		return nb_write;
 	}
 
-	int failed = sodr_tape_drive_writer_close2(writer, false);
+	int failed = writer->ops->close(writer);
 	if (failed != 0)
 		return failed;
 
@@ -294,8 +302,7 @@ static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * 
 	if (nb_write < 0)
 		return 1;
 
-	failed = sodr_tape_drive_writer_close2(writer, false);
-
+	failed = writer->ops->close(writer);
 	if (failed != 0)
 		return failed;
 

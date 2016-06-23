@@ -58,35 +58,35 @@ msgstr  "[ %s | %s ]: va a suprimir la VTL"
 #: src/changer/vtl_changer/script.c:298
 #, c-format
 msgid   "[%s | %s]: there is no scripts to be run"
-msgstr  ""
+msgstr  "[ %s | %s ]:no hay scripts para ejecutar"
 
 #: src/changer/vtl_changer/script.c:149 src/changer/vtl_changer/script.c:201
 #, c-format
 msgid   "[%s | %s]: starting post-script"
-msgstr  ""
+msgstr  "[ %s | %s ]: arranque del script de post-ejecución"
 
 #: src/changer/vtl_changer/script.c:163 src/changer/vtl_changer/script.c:215 src/changer/vtl_changer/script.c:267
 #: src/changer/vtl_changer/script.c:319
 #, c-format
 msgid   "[%s | %s]: no more scripts to be run"
-msgstr  ""
+msgstr  "[ %s | %s ]: no hay script para ejecutar"
 
 #: src/changer/vtl_changer/script.c:253 src/changer/vtl_changer/script.c:305
 #, c-format
 msgid   "[%s | %s]: starting pre-script"
-msgstr  ""
+msgstr  "[ %s | %s ]: arranque de los scripts de pre-ejecución"
 
 #: src/changer/vtl_changer/script.c:331
 #, c-format
 msgid   "[%s | %s]: memory allocation failure"
-msgstr  ""
+msgstr  "[ %s | %s ]: error de la atribución de memoria" 
 
 #: src/changer/vtl_changer/script.c:344
 #, c-format
 msgid   "[%s | %s]: Starting #%d script '%s'"
-msgstr  ""
+msgstr  "[ %s | %s ]: arranque del script #%d \"%s\""
 
 #: src/changer/vtl_changer/script.c:351
 #, c-format
 msgid   "[%s | %s]: script #%d '%s' has finished with exit code: %d"
-msgstr  ""
+msgstr  "[ %s | %s ]: el scrippt #%d \"%s\" a terminado con el codigo de vuelta: %d "
