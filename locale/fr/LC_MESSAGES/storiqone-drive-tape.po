@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-20 17:54+0200\n"
+        "POT-Creation-Date: 2016-06-25 14:08+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -116,17 +116,17 @@ msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande �
 msgid   "[%s | %s | #%u]: Formatting media '%s' info LTFS format"
 msgstr  "[ %s | %s | n°%u ] : Formatage du média « %s » au format LTFS"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:104
+#: src/drive/tape_drive/format/ltfs/ltfs.c:104 src/drive/tape_drive/util/st.c:73
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
 msgstr  "[ %s | %s | n°%u ] : Formatage du média « %s » en une seule partition"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:114
+#: src/drive/tape_drive/format/ltfs/ltfs.c:114 src/drive/tape_drive/util/st.c:83
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
 msgstr  "[ %s | %s | n°%u ] : Échec tu formatage du média « %s » en une seule partition parce que %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:123
+#: src/drive/tape_drive/format/ltfs/ltfs.c:123 src/drive/tape_drive/util/st.c:91
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
 msgstr  "[ %s | %s | n°%u ] : Succès lors du formatge du média « %s » en une seule partition"
@@ -146,7 +146,7 @@ msgstr  "[ %s | %s | n°%u ] : Échec du formatage du média « %s » en de
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  "[ %s | %s | n°%u ] : Succès du formatage du média « %s » en deux partitions"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:277
+#: src/drive/tape_drive/format/ltfs/ltfs.c:285
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  "[ %s | %s | n°%u ] : Erreur lors de l’écriture de l’étiquette sur la partition « %s » parce que %m"
@@ -633,8 +633,8 @@ msgstr  "[ %s | %s | n°%u ] : Le positionnement depuis n°%u vers la positio
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  "[ %s | %s | n°%u ] : Erreur lors de la fermeture du fichier parce que « %m »"
 
-#~ msgid        "[%s | %s | #%u]: failed to rewind tape (scsi version)"
-#~ msgstr       "[ %s | %s | n°%u ] : échec du rembobinage de la bande (version scsi)"
-
 #~ msgid        "[%s | %s | #%u]: rewind tape (scsi version)"
 #~ msgstr       "[ %s | %s | n°%u ] : rembobinage de la bande (version scsi)"
+
+#~ msgid        "[%s | %s | #%u]: failed to rewind tape (scsi version)"
+#~ msgstr       "[ %s | %s | n°%u ] : échec du rembobinage de la bande (version scsi)"

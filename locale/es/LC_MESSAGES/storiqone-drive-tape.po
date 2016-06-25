@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-06 17:23+0200\n"
+        "POT-Creation-Date: 2016-06-25 14:08+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -116,17 +116,17 @@ msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la ba
 msgid   "[%s | %s | #%u]: Formatting media '%s' info LTFS format"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" al formato LTFS "
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:100 src/drive/tape_drive/util/st.c:73
+#: src/drive/tape_drive/format/ltfs/ltfs.c:104 src/drive/tape_drive/util/st.c:73
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" en una sola partición"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:110 src/drive/tape_drive/util/st.c:83
+#: src/drive/tape_drive/format/ltfs/ltfs.c:114 src/drive/tape_drive/util/st.c:83
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
 msgstr  "[ %s | %s | #%u ]: Fallo de formateo del media \"%s\" en una sola partición porque %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:119 src/drive/tape_drive/util/st.c:91
+#: src/drive/tape_drive/format/ltfs/ltfs.c:123 src/drive/tape_drive/util/st.c:91
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
 msgstr  "[ %s | %s | #%u ]: Succeso al formatear el media \"%s\" en una sola partición"
@@ -146,7 +146,7 @@ msgstr  "[ %s | %s | #%u ]: Fallo del formateo del media \"%s\" en dos partici
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  "[ %s | %s | #%u ]: Succeso del formateo del media \"%s\" en dos particiones"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:281
+#: src/drive/tape_drive/format/ltfs/ltfs.c:285
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  "[ %s | %s | #%u ]: Error a la escritura de la etiqueta sobre la partición \"%s\" porque %m"
@@ -605,8 +605,8 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  ""
 
-#~ msgid        "[%s | %s | #%u]: failed to rewind tape (scsi version)"
-#~ msgstr       "[%s | %s | #%u]: fallo de rebobinaje de la bande (versión scsi)"
-
 #~ msgid        "[%s | %s | #%u]: rewind tape (scsi version)"
 #~ msgstr       "[%s | %s | #%u]: rebobinaje de la banda (versión scsi)"
+
+#~ msgid        "[%s | %s | #%u]: failed to rewind tape (scsi version)"
+#~ msgstr       "[%s | %s | #%u]: fallo de rebobinaje de la bande (versión scsi)"
