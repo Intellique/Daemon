@@ -476,7 +476,7 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		return failed;
 	}
 
-	failed = sodr_tape_drive_st_set_position(self->drive, self->fd, 0, 0, true, NULL);
+	failed = sodr_tape_drive_st_set_position(self->drive, self->fd, 0, -1, true, NULL);
 	if (failed != 0) {
 		so_value_free(index);
 		return failed;
