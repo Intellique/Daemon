@@ -47,6 +47,7 @@ static void soctl_exit() {
 
 static void soctl_init() {
 	commands = so_value_new_hashtable2();
+	so_value_hashtable_put2(commands, "api", so_value_new_custom(soctl_api, NULL), true);
 	so_value_hashtable_put2(commands, "config", so_value_new_custom(soctl_config, NULL), true);
 	so_value_hashtable_put2(commands, "start", so_value_new_custom(soctl_start_daemon, NULL), true);
 	so_value_hashtable_put2(commands, "status", so_value_new_custom(soctl_status_daemon, NULL), true);

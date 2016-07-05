@@ -24,16 +24,13 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __STORIQONECTL_COMMON_H__
-#define __STORIQONECTL_COMMON_H__
+#ifndef __LIBSTORIQONE_APPLICATION_H__
+#define __LIBSTORIQONE_APPLICATION_H__
 
-typedef int (*command_f)(int argc, char ** argv);
-
-int soctl_api(int argc, char ** argv);
-int soctl_config(int argc, char ** argv);
-int soctl_start_daemon(int argc, char ** argv);
-int soctl_status_daemon(int argc, char ** argv);
-int soctl_stop_daemon(int argc, char ** argv);
+struct so_application {
+	char * application_name;
+	char api_key[37];
+};
 
 #endif
 
