@@ -41,6 +41,7 @@
 // uname
 #include <sys/utsname.h>
 
+#include <libstoriqone/application.h>
 #include <libstoriqone/archive.h>
 #include <libstoriqone/backup.h>
 #include <libstoriqone/changer.h>
@@ -157,6 +158,10 @@ static int so_database_postgresql_create_selected_file_if_missing(struct so_data
 static struct so_value * so_database_postgresql_get_selected_files_by_job(struct so_database_connection * connect, struct so_job * job);
 static char * so_database_postgresql_find_selected_path(struct so_database_connection * connect, const char * selected_path);
 
+static struct so_application * so_database_postgresql_api_key_create(struct so_database_connection * connect, const char * application);
+static struct so_application * so_database_postgresql_api_key_list(struct so_database_connection * connect, unsigned int * nb_keys);
+static bool so_database_postgresql_api_key_remove(struct so_database_connection * connect, const char * application);
+
 static void so_database_postgresql_prepare(struct so_database_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct so_database_connection_ops so_database_postgresql_connection_ops = {
@@ -236,6 +241,10 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 
 	.create_selected_file_if_missing = so_database_postgresql_create_selected_file_if_missing,
 	.get_selected_files_by_job       = so_database_postgresql_get_selected_files_by_job,
+
+	.api_key_create = so_database_postgresql_api_key_create,
+	.api_key_list   = so_database_postgresql_api_key_list,
+	.api_key_remove = so_database_postgresql_api_key_remove,
 };
 
 
@@ -4788,6 +4797,123 @@ static char * so_database_postgresql_find_selected_path(struct so_database_conne
 	PQclear(result);
 
 	return selected_path_id;
+}
+
+
+static struct so_application * so_database_postgresql_api_key_create(struct so_database_connection * connect, const char * application) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_api_key_by_name";
+	so_database_postgresql_prepare(self, query, "SELECT apikey IS NULL FROM application FROM application WHERE name = $1 LIMIT 1");
+
+	const char * param[] = { application };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false, ok = true;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		found = true;
+		so_database_postgresql_get_bool(result, 0, 0, &ok);
+	}
+
+	PQclear(result);
+
+	if (!ok)
+		return NULL;
+
+	struct so_application * api = NULL;
+	if (found) {
+		const char * query = "update_api_key";
+		so_database_postgresql_prepare(self, query, "UPDATE application SET apikey = uuid_generate_v4() WHERE name = $1 RETURNING apikey");
+
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK) {
+			api = malloc(sizeof(struct so_application));
+			bzero(api, sizeof(struct so_application));
+
+			api->application_name = strdup(application);
+			so_database_postgresql_get_string(result, 0, 0, api->api_key, 37);
+		}
+
+		PQclear(result);
+
+		return api;
+	} else {
+		const char * query = "create_api_key";
+		so_database_postgresql_prepare(self, query, "INSERT INTO application(name, apikey) VALUES ($1, uuid_generate_v4()) RETURNING apikey");
+
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK) {
+			api = malloc(sizeof(struct so_application));
+			bzero(api, sizeof(struct so_application));
+
+			api->application_name = strdup(application);
+			so_database_postgresql_get_string(result, 0, 0, api->api_key, 37);
+		}
+
+		PQclear(result);
+
+		return api;
+	}
+}
+
+static struct so_application * so_database_postgresql_api_key_list(struct so_database_connection * connect, unsigned int * nb_keys) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_api_key";
+	so_database_postgresql_prepare(self, query, "SELECT name, apikey FROM application FROM application WHERE apikey IS NOT NULL");
+
+	PGresult * result = PQexecPrepared(self->connect, query, 0, NULL, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	struct so_application * api = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK) {
+		api = calloc(nb_result, sizeof(struct so_application));
+
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			so_database_postgresql_get_string_dup(result, 0, 0, &api[i].application_name);
+			so_database_postgresql_get_string(result, 0, 1, api[i].api_key, 37);
+		}
+
+		if (nb_keys != NULL)
+			*nb_keys = nb_result;
+	}
+
+	PQclear(result);
+
+	return api;
+}
+
+static bool so_database_postgresql_api_key_remove(struct so_database_connection * connect, const char * application) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "delete_api_key";
+	so_database_postgresql_prepare(self, query, "UPDATE application SET apikey = NULL WHERE name = $1");
+
+	const char * param[] = { application };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 
