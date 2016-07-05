@@ -30,6 +30,7 @@
 // bool
 #include <stdbool.h>
 
+struct so_application;
 struct so_archive;
 struct so_archive_file;
 struct so_archive_volume;
@@ -572,6 +573,10 @@ struct so_database_connection {
 
 		int (*create_selected_file_if_missing)(struct so_database_connection * connect, const char * path);
 		struct so_value * (*get_selected_files_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
+
+		struct so_application * (*api_key_create)(struct so_database_connection * connect, const char * application) __attribute__((warn_unused_result));
+		struct so_application * (*api_key_list)(struct so_database_connection * connect, unsigned int * nb_keys) __attribute__((warn_unused_result));
+		bool (*api_key_remove)(struct so_database_connection * connect, const char * application);
 	} * ops;
 
 	/**

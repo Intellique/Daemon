@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqonectl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-08 23:34+0100\n"
+        "POT-Creation-Date: 2016-07-04 19:10+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -15,6 +15,98 @@ msgstr  "Project-Id-Version: storiqonectl v1.2\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/storiqonectl/api.c:84 src/storiqonectl/api.c:102 src/storiqonectl/api.c:111
+#, c-format
+msgid   "Too manu action specified, you should specify only one [-c|-l|-r]\n"
+msgstr  "Trop d'action de spécifiées, vous devez en spécifié seulement un seul [-c | -l | -r]\n"
+
+#: src/storiqonectl/api.c:93
+#, c-format
+msgid   "storiqonectl api : manage API keys\n"
+msgstr  "storiqonectl api : gestion des clés API\n"
+
+#: src/storiqonectl/api.c:94
+#, c-format
+msgid   "  -c, --create <name> : create new API key\n"
+msgstr  "  -c, --create <nom>  : crée une nouvelle clé API\n"
+
+#: src/storiqonectl/api.c:95
+#, c-format
+msgid   "  -h, --help          : show this and exit\n"
+msgstr  "  -h, --help          : affiche ceci et quitte\n"
+
+#: src/storiqonectl/api.c:96
+#, c-format
+msgid   "  -l, --list          : list API keys (default action)\n"
+msgstr  "  -l, --list          : liste les clés API (action par défault)\n"
+
+#: src/storiqonectl/api.c:97
+#, c-format
+msgid   "  -r, --remove <name> : remove a key\n"
+msgstr  "  -r, --remove <nom>  : supprime une clé\n"
+
+#: src/storiqonectl/api.c:126
+#, c-format
+msgid   "Failed to parse configuration file '%s'\n"
+msgstr  "Échec lors du parcourt du fichier de configuration « %s »\n"
+
+#: src/storiqonectl/api.c:127
+#, c-format
+msgid   "or configuration file is not a valid JSON file\n"
+msgstr  "ou le fichier de configuration n'est pas un fichier JSON valide\n"
+
+#: src/storiqonectl/api.c:135
+#, c-format
+msgid   "No database configuration found in '%s'\n"
+msgstr  "Pas de configuration de base de données trouvé dans « %s »\n"
+
+#: src/storiqonectl/api.c:141
+#, c-format
+msgid   "Failed to load database plugin\n"
+msgstr  "Échec du chargement du greffon de la base de données\n"
+
+#: src/storiqonectl/api.c:147
+#, c-format
+msgid   "Database configuration is incorrect\n"
+msgstr  "La configuration de la base de données est incorrecte\n"
+
+#: src/storiqonectl/api.c:153
+#, c-format
+msgid   "Connection to database: failure\n"
+msgstr  "La connection à la base de données : échec\n"
+
+#: src/storiqonectl/api.c:161
+#, c-format
+msgid   "New key '%s' has been created\n"
+msgstr  "Une nouvelle clé « %s » a été créée\n"
+
+#: src/storiqonectl/api.c:164
+#, c-format
+msgid   "Failed to create new key\n"
+msgstr  "Échec de la création d'une clé\n"
+
+#: src/storiqonectl/api.c:175
+#, c-format
+msgid   "Failed to retreive keys\n"
+msgstr  "Échec de la récupération des clés\n"
+
+#: src/storiqonectl/api.c:179
+#, c-format
+msgid   "There is %u api key\n"
+msgid_plural    "There is %u api keys\n"
+msgstr[0]       "Il y a %u clé\n"
+msgstr[1]       "Il y a %u clés\n"
+
+#: src/storiqonectl/api.c:189
+#, c-format
+msgid   "API key '%s' has been removed\n"
+msgstr  "La clé d’API « %s » a été supprimée\n"
+
+#: src/storiqonectl/api.c:192
+#, c-format
+msgid   "Failed to remove API key for '%s'\n"
+msgstr  "Échec de la suppression de la clé d’API pour « %s »\n"
 
 #: src/storiqonectl/config.c:77
 #, c-format
@@ -85,7 +177,7 @@ msgid_plural    "storiqonectl: Found %u standalong drives\n"
 msgstr[0]       "storiqonectl : %u lecteur autonome trouvé\n"
 msgstr[1]       "storiqonectl : %u lecteurs autonomes trouvés\n"
 
-#: src/storiqonectl/main.c:64
+#: src/storiqonectl/main.c:65
 #, c-format
 msgid   "Error: command not found (%s)\n"
 msgstr  "Erreur : commande non trouvée (%s)\n"

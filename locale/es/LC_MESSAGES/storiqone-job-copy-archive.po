@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-17 12:09+0200\n"
+        "POT-Creation-Date: 2016-06-29 10:13+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -21,64 +21,64 @@ msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
 msgid   "Failed to load media '%s'"
 msgstr  "Fallo al cargar el media \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:149
+#: src/job/copy-archive/copy-archive.c:151
 #, c-format
 msgid   "Writing metadata of copy archive '%s'"
 msgstr  "Escritura de los metadatos de la copia de archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:159
+#: src/job/copy-archive/copy-archive.c:161
 #, c-format
 msgid   "Error while writing metadata of copy archive '%s'"
 msgstr  "Error al escribir los metadatos de la copia de archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:163
+#: src/job/copy-archive/copy-archive.c:165
 #, c-format
 msgid   "Wrote sucessfully metadata of copy archive '%s'"
 msgstr  "Escritura con exito de los metadatos de la copia de archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:168
+#: src/job/copy-archive/copy-archive.c:170
 #, c-format
 msgid   "Synchronizing archive '%s' into database"
 msgstr  "Sicronozando el archivo \"%s\" en la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:183
+#: src/job/copy-archive/copy-archive.c:185
 msgid   "Failed to start database transaction"
 msgstr  "Fallo de arranque de una nueva transacción de la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:199
+#: src/job/copy-archive/copy-archive.c:201
 #, c-format
 msgid   "Failed to synchronize archive '%s' into database"
 msgstr  "Fallo de la sincronización del archivo \"%s\" con la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:203
+#: src/job/copy-archive/copy-archive.c:205
 #, c-format
 msgid   "Archive '%s' synchronized into database"
 msgstr  "Archivo \"%s\"está sincronizado con la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:295
+#: src/job/copy-archive/copy-archive.c:297
 msgid   "Archive not found"
 msgstr  "Archivo no encontrado"
 
-#: src/job/copy-archive/copy-archive.c:300
+#: src/job/copy-archive/copy-archive.c:302
 #, c-format
 msgid   "Trying to copy a deleted archive '%s'"
 msgstr  "Intentando copiar un archivo suprimido \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:308
+#: src/job/copy-archive/copy-archive.c:310
 msgid   "Pool not found"
 msgstr  "Pool no encontrado"
 
-#: src/job/copy-archive/copy-archive.c:313
+#: src/job/copy-archive/copy-archive.c:315
 #, c-format
 msgid   "Trying to copy an archive '%s' to a deleted pool '%s'"
 msgstr  "Intentando copiar un archivo \"%s\" hacia un pool \"%s\" suprimido"
 
-#: src/job/copy-archive/copy-archive.c:320
+#: src/job/copy-archive/copy-archive.c:322
 #, c-format
 msgid   "Failed to find a suitable drive to copy archive '%s'"
 msgstr  "Fallo en la busqueda de un lector apropiado para copiar el archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:328
+#: src/job/copy-archive/copy-archive.c:330
 #, c-format
 msgid   "Error: not enought space available in pool '%s'"
 msgstr  "Error: no hay suficiente espacio disponible en el pool \"%s\""
@@ -87,18 +87,18 @@ msgstr  "Error: no hay suficiente espacio disponible en el pool \"%s\""
 msgid   "Selected copy mode: direct"
 msgstr  "Seleccione el modo de copia: directo"
 
-#: src/job/copy-archive/direct_copy.c:106 src/job/copy-archive/indirect_copy.c:238
+#: src/job/copy-archive/direct_copy.c:106 src/job/copy-archive/indirect_copy.c:229
 #, c-format
 msgid   "Add file '%s' to archive"
 msgstr  "Añadir los ficheros \"%s\" en el archivo"
 
 #: src/job/copy-archive/direct_copy.c:113 src/job/copy-archive/direct_copy.c:135 src/job/copy-archive/direct_copy.c:179
-#: src/job/copy-archive/indirect_copy.c:267 src/job/copy-archive/indirect_copy.c:311
+#: src/job/copy-archive/indirect_copy.c:258 src/job/copy-archive/indirect_copy.c:302
 #, c-format
 msgid   "Error while writing file header '%s' to media '%s'"
 msgstr  "Error al escribir el encabezamiento del fichero \"%s\" en el media \"%s\""
 
-#: src/job/copy-archive/direct_copy.c:157 src/job/copy-archive/indirect_copy.c:289
+#: src/job/copy-archive/direct_copy.c:157 src/job/copy-archive/indirect_copy.c:280
 #, c-format
 msgid   "Error while writing file data '%s' to media '%s'"
 msgstr  "Error al escribir los datos del fichero \"%s\" en el media \"%s\""
@@ -135,11 +135,11 @@ msgstr  "Error al escribir los datos del fichero \"%s\" en el fichero temporal"
 msgid   "Failed to reopen temporary file"
 msgstr  "Fallo a la reabertura del fichero temporal"
 
-#: src/job/copy-archive/indirect_copy.c:244
+#: src/job/copy-archive/indirect_copy.c:235
 #, c-format
 msgid   "Error while writing header of file '%s' into media '%s'"
 msgstr  "Error al escirbir el encabezamiento del fichero \"%s\" en el media \"%s\""
 
-#: src/job/copy-archive/indirect_copy.c:333
+#: src/job/copy-archive/indirect_copy.c:324
 msgid   "Error while reading from temporary file"
 msgstr  "Error al leer desde un fichero temporal"
