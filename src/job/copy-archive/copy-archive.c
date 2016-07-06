@@ -120,6 +120,8 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 
 	data.copy_archive = so_archive_new();
 	data.copy_archive->name = strdup(data.src_archive->name);
+	if (data.src_archive->metadata != NULL)
+		data.copy_archive->metadata = so_value_share(data.src_archive->metadata);
 
 	uuid_t uuid;
 	uuid_generate(uuid);
