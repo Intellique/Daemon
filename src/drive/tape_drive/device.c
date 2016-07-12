@@ -688,6 +688,37 @@ static struct so_archive * sodr_tape_drive_parse_archive(const bool * const disc
 }
 
 static int sodr_tape_drive_reset(struct so_database_connection * db) {
+	unsigned int i;
+	bool ok = false;
+
+	for (i = 0; i < 30 && !ok; i++) {
+		int fd = sodr_tape_drive_open_drive();
+		if (fd < 0) {
+			sleep(5);
+			continue;
+		}
+
+		sodr_time_start();
+		int failed = ioctl(fd, MTIOCGET, &status);
+		sodr_time_stop(&sodr_tape_drive);
+
+		close(fd);
+
+		if (failed != 0) {
+			sleep(5);
+			continue;
+		}
+
+		bool is_online = GMT_ONLINE(status.mt_gstat);
+		ok = is_online == sodr_tape_drive.slot->full;
+
+		if (!ok)
+			sleep(5);
+	}
+
+	if (!ok)
+		return -1;
+
 	return sodr_tape_drive_update_status(db);
 }
 
