@@ -40,8 +40,9 @@ struct so_value * so_slot_convert(struct so_slot * slot) {
 	if (slot->media != NULL)
 		media = so_media_convert(slot->media);
 
-	return so_value_pack("{susssbsbso}",
+	return so_value_pack("{susbsssbsbso}",
 		"index", slot->index,
+		"full", slot->full,
 		"volume name", slot->volume_name,
 		"ie port", slot->is_ie_port,
 		"enable", slot->enable,
@@ -67,8 +68,9 @@ void so_slot_sync(struct so_slot * slot, struct so_value * new_slot) {
 
 	struct so_value * media = NULL;
 
-	so_value_unpack(new_slot, "{susssbsbso}",
+	so_value_unpack(new_slot, "{susbsssbsbso}",
 		"index", &slot->index,
+		"full", &slot->full,
 		"volume name", &slot->volume_name,
 		"ie port", &slot->is_ie_port,
 		"enable", &slot->enable,
