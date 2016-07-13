@@ -96,17 +96,17 @@ msgstr  "[ %s | %s | n°%u ] : échec lors de l’ouverture du lecteur parce 
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  "[ %s | %s | n°%u ] : Erreur en ouvrant le périphérique scsi « %s » parce que %m"
 
-#: src/drive/tape_drive/device.c:989
+#: src/drive/tape_drive/device.c:1020
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | n°%u ] : Création d’un nouveau média (numéro de série du média : %s)"
 
-#: src/drive/tape_drive/device.c:1043
+#: src/drive/tape_drive/device.c:1074
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Vérification de l’entête du média « %s »"
 
-#: src/drive/tape_drive/device.c:1052
+#: src/drive/tape_drive/device.c:1083
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande « %s »"
@@ -633,8 +633,6 @@ msgstr  "[ %s | %s | n°%u ] : Le positionnement depuis n°%u vers la positio
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  "[ %s | %s | n°%u ] : Erreur lors de la fermeture du fichier parce que « %m »"
 
-#~ msgid        "[%s | %s | #%u]: rewind tape (scsi version)"
-#~ msgstr       "[ %s | %s | n°%u ] : rembobinage de la bande (version scsi)"
 
 #~ msgid        "[%s | %s | #%u]: failed to rewind tape (scsi version)"
 #~ msgstr       "[ %s | %s | n°%u ] : échec du rembobinage de la bande (version scsi)"

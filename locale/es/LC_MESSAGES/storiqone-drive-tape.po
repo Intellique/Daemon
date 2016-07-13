@@ -96,17 +96,17 @@ msgstr  "[ %s | %s | n°%u ]: fallo a la apertura del lector porque  %m"
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  "[ %s | %s | n°%u ]: error al abrir el periferico scsi \"%s\"porque %m"
 
-#: src/drive/tape_drive/device.c:989
+#: src/drive/tape_drive/device.c:1020
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:1043
+#: src/drive/tape_drive/device.c:1074
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:1052
+#: src/drive/tape_drive/device.c:1083
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -605,8 +605,6 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  ""
 
-#~ msgid        "[%s | %s | #%u]: rewind tape (scsi version)"
-#~ msgstr       "[%s | %s | #%u]: rebobinaje de la banda (versión scsi)"
 
 #~ msgid        "[%s | %s | #%u]: failed to rewind tape (scsi version)"
 #~ msgstr       "[%s | %s | #%u]: fallo de rebobinaje de la bande (versión scsi)"
