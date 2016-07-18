@@ -100,7 +100,7 @@ sub process {
         push @params, @{ $format->{audio}->{extra} }
             if scalar( @{ $format->{audio}->{extra} } ) > 0;
 
-        my $filename = md5_hex($input) . '.' . $format_name;
+        my $filename = md5_hex(encode('UTF-8', $input)) . '.' . $format_name;
         push @params, "$output_dir/$filename";
 
         # print "run: " . join(" ", $encoder, @params) . "\n";
