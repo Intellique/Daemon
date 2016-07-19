@@ -636,9 +636,29 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 		int failed = -1;
 		if (fd > -1) {
 			failed = ioctl(fd, MTIOCGET, &status);
-			close(fd);
 		}
 		sodr_time_stop(&sodr_tape_drive);
+
+		static const struct mtop set_can_parition = { MTSETDRVBUFFER, MT_ST_CAN_PARTITIONS | MT_ST_SETBOOLEANS };
+
+		so_log_write(so_log_level_info,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Set option to 'st' driver 'can-partition'"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
+		sodr_time_start();
+		failed = ioctl(fd, MTIOCTOP, &set_can_parition);
+		sodr_time_stop(&sodr_tape_drive);
+
+		if (failed != 0)
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to set option to 'st' driver 'can-partition'"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
+		close(fd);
 
 		if (failed != 0) {
 			if (GMT_ONLINE(status.mt_gstat)) {
