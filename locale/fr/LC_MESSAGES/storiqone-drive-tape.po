@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-07-19 15:28+0200\n"
+        "POT-Creation-Date: 2016-07-19 15:43+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -56,110 +56,110 @@ msgstr  "[ %s | %s | n°%u ] : échec lors de la lecture de la mémoire auxil
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | n°%u ] : Effacement du média « %s » (mode: %s)"
 
-#: src/drive/tape_drive/device.c:353 src/drive/tape_drive/device.c:360 src/drive/tape_drive/device.c:368
+#: src/drive/tape_drive/device.c:353 src/drive/tape_drive/device.c:361 src/drive/tape_drive/device.c:369
 msgid   "long"
 msgstr  "long"
 
-#: src/drive/tape_drive/device.c:353 src/drive/tape_drive/device.c:360 src/drive/tape_drive/device.c:368
+#: src/drive/tape_drive/device.c:353 src/drive/tape_drive/device.c:361 src/drive/tape_drive/device.c:369
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/drive/tape_drive/device.c:358
+#: src/drive/tape_drive/device.c:359
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | n°%u ] : Échec lors de l’effacement du média « %s » (mode: %s)"
 
-#: src/drive/tape_drive/device.c:366
+#: src/drive/tape_drive/device.c:367
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | n°%u ] : le média « %s » a été effacé avec succès (mode: %s)"
 
-#: src/drive/tape_drive/device.c:371
+#: src/drive/tape_drive/device.c:373
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
 msgstr  "[ %s | %s | n°%u ] : Formatage du média « %s » en une seule partition"
 
-#: src/drive/tape_drive/device.c:382
+#: src/drive/tape_drive/device.c:383
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
 msgstr  "[ %s | %s | n°%u ] : Échec tu formatage du média « %s » en une seule partition parce que %m"
 
-#: src/drive/tape_drive/device.c:405
+#: src/drive/tape_drive/device.c:387
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
 msgstr  "[ %s | %s | n°%u ] : Succès lors du formatge du média « %s » en une seule partition"
 
-#: src/drive/tape_drive/device.c:474
+#: src/drive/tape_drive/device.c:479
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | n°%u ] : taille de bloc trouvé : %zd"
 
-#: src/drive/tape_drive/device.c:517
+#: src/drive/tape_drive/device.c:522
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en lecture"
 
-#: src/drive/tape_drive/device.c:547
+#: src/drive/tape_drive/device.c:552
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en écriture"
 
-#: src/drive/tape_drive/device.c:674
+#: src/drive/tape_drive/device.c:679
 #, c-format
 msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition'"
 msgstr  "[ %s | %s | n°%u ] : Activation de l’option « can-partition » du pilote « st »"
 
-#: src/drive/tape_drive/device.c:683
+#: src/drive/tape_drive/device.c:688
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to set option to 'st' driver 'can-partition'"
 msgstr  "[ %s | %s | n°%u ] : Échec de l’activation de l’option « can-partition » du pilote « st »"
 
-#: src/drive/tape_drive/device.c:687
+#: src/drive/tape_drive/device.c:692
 #, c-format
 msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"
 msgstr  "[ %s | %s | n°%u ] : L’activation de l’option « can-partition » du pilote « st » a réussi"
 
-#: src/drive/tape_drive/device.c:778
+#: src/drive/tape_drive/device.c:783
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s »"
 
-#: src/drive/tape_drive/device.c:790
+#: src/drive/tape_drive/device.c:795
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » a rencontré une erreur « %m »"
 
-#: src/drive/tape_drive/device.c:794
+#: src/drive/tape_drive/device.c:799
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » terminé avec succès"
 
-#: src/drive/tape_drive/device.c:801
+#: src/drive/tape_drive/device.c:806
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d"
 
-#: src/drive/tape_drive/device.c:814 src/drive/tape_drive/device.c:832
+#: src/drive/tape_drive/device.c:819 src/drive/tape_drive/device.c:837
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d a rencontré une erreur  « %m »"
 
-#: src/drive/tape_drive/device.c:836 src/drive/tape_drive/device.c:843
+#: src/drive/tape_drive/device.c:841 src/drive/tape_drive/device.c:848
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
 
-#: src/drive/tape_drive/device.c:935
+#: src/drive/tape_drive/device.c:940
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | n°%u ] : Création d’un nouveau média (numéro de série du média : %s)"
 
-#: src/drive/tape_drive/device.c:997
+#: src/drive/tape_drive/device.c:1002
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Vérification de l’entête du média « %s »"
 
-#: src/drive/tape_drive/device.c:1006
+#: src/drive/tape_drive/device.c:1011
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande « %s »"

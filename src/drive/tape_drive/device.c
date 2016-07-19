@@ -351,6 +351,7 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+
 	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
 
 	if (failed != 0) {
@@ -367,23 +368,31 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
 
-	so_log_write(so_log_level_debug,
-		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Formatting media '%s' with one partition"),
-		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
-
-	static struct mtop mk1partition = { MTMKPART, 0 };
-	sodr_time_start();
-	failed = ioctl(fd, MTIOCTOP, &mk1partition);
-	sodr_time_stop(&sodr_tape_drive);
-	close(fd);
-
-	if (failed != 0) {
-		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"),
+	if (media->media_format->support_partition) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Formatting media '%s' with one partition"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
 
+		static struct mtop mk1partition = { MTMKPART, 0 };
+		sodr_time_start();
+		failed = ioctl(fd, MTIOCTOP, &mk1partition);
+		sodr_time_stop(&sodr_tape_drive);
+
+		if (failed != 0)
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
+		else
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Succeed to format media '%s' with one partition"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
+	}
+
+	close(fd);
+
+	if (failed == 0)
 		media->status = so_media_status_error;
-	} else {
+	else {
 		media->uuid[0] = '\0';
 		media->status = so_media_status_new;
 		media->last_write = time(NULL);
@@ -400,10 +409,6 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 		if (media->pool != NULL)
 			so_pool_free(media->pool);
 		media->pool = NULL;
-
-		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Succeed to format media '%s' with one partition"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
 	}
 
 	return failed;
