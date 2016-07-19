@@ -50,6 +50,7 @@
 
 #include <libstoriqone/drive.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/slot.h>
 #include <libstoriqone/string.h>
 
 #include "scsi.h"
@@ -152,6 +153,8 @@ enum scsi_mam_attribute {
 	scsi_mam_unique_cardtrige_identity = 0x1000,
 };
 
+static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr);
+
 static int sodr_tape_drive_scsi_locate10(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
 /**
  * \brief Set position on tape
@@ -231,6 +234,110 @@ static struct scsi_command scsi_command_rewind = {
 	.timeout = 540,
 	.available = true
 };
+
+
+int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive) {
+	struct so_media * media = drive->slot->media;
+	const char * media_name = so_media_get_name(media);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application vendor' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	int failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_vendor);
+	if (failed != 0)
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application vendor' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application vendor' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_name);
+	if (failed != 0)
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application version' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_version);
+	if (failed != 0)
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application version' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'user medium text label' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_user_medium_text_label);
+	if (failed != 0)
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'user medium text label' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	if (failed != 0)
+		return failed;
+
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_format_version);
+	if (failed != 0)
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' removed on media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	return failed;
+}
+
+static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr) {
+	struct sodr_tape_drive_scsi_mam_attribute attribute = {
+		.identifier = attr,
+		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.read_only  = false,
+		.length     = 0,
+	};
+	return sodr_tape_drive_scsi_write_attribute(scsi_fd, &attribute, 0);
+}
 
 
 bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path) {
@@ -1188,6 +1295,73 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	unsigned long long int total_block = result.values[2].value + result.values[3].value;
 	total_block <<= 20;
 	media->total_block = total_block / media->block_size;
+
+	return 0;
+}
+
+int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part) {
+	unsigned int attribute_length = 5 + attribute->length;
+
+	attribute->identifier = htobe16(attribute->identifier);
+	attribute->length = htobe16(attribute->length);
+
+	if (attribute->format == sodr_tape_drive_scsi_mam_attribute_format_binary) {
+		if (attribute->length == 2)
+			attribute->value.be16 = htobe16(attribute->value.be16);
+		else if (attribute->length == 4)
+			attribute->value.be32 = htobe32(attribute->value.be32);
+		else if (attribute->length == 8)
+			attribute->value.be64 = htobe64(attribute->value.be64);
+	}
+
+	struct {
+		unsigned int data_available;
+		struct sodr_tape_drive_scsi_mam_attribute attr;
+	} __attribute__((packed)) data = {
+		.data_available = htobe32(attribute_length),
+		.attr = *attribute
+	};
+
+	struct {
+		unsigned char operation_code;
+		bool write_through_cache:1;
+		unsigned char reserved0:7;
+		unsigned char reserved1[3];
+		unsigned char volume_number;
+		unsigned char reserved2;
+		unsigned char partition_number;
+		unsigned short reserved3;
+		unsigned int parameter_list_length;
+		unsigned char reserved4;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8D, // WRITE ATTRIBUTE (16)
+		.write_through_cache = false,
+		.volume_number = 0,
+		.partition_number = part,
+		.parameter_list_length = htobe32(4 + attribute_length),
+		.control = 0,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+
+	struct scsi_request_sense sense;
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 4 + attribute_length;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &data;
+	header.timeout = 1000 * scsi_command_read_attribute.timeout;
+	header.dxfer_direction = SG_DXFER_TO_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
 
 	return 0;
 }
