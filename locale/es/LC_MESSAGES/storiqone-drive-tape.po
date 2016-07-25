@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-04-25 12:33+0200\n"
+        "POT-Creation-Date: 2016-07-19 15:43+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -51,85 +51,115 @@ msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
-#: src/drive/tape_drive/device.c:345
+#: src/drive/tape_drive/device.c:351
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:347 src/drive/tape_drive/device.c:355 src/drive/tape_drive/device.c:377
+#: src/drive/tape_drive/device.c:353 src/drive/tape_drive/device.c:361 src/drive/tape_drive/device.c:369
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:347 src/drive/tape_drive/device.c:355 src/drive/tape_drive/device.c:377
+#: src/drive/tape_drive/device.c:353 src/drive/tape_drive/device.c:361 src/drive/tape_drive/device.c:369
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:353
+#: src/drive/tape_drive/device.c:359
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:375
+#: src/drive/tape_drive/device.c:367
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:445
+#: src/drive/tape_drive/device.c:373
+#, c-format
+msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:383
+#, c-format
+msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:387
+#, c-format
+msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:479
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:488
+#: src/drive/tape_drive/device.c:522
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:518
+#: src/drive/tape_drive/device.c:552
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:698
+#: src/drive/tape_drive/device.c:679
+#, c-format
+msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition'"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:688
+#, c-format
+msgid   "[%s | %s | #%u]: Failed to set option to 'st' driver 'can-partition'"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:692
+#, c-format
+msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"
+msgstr  ""
+
+#: src/drive/tape_drive/device.c:783
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\""
 
-#: src/drive/tape_drive/device.c:710
+#: src/drive/tape_drive/device.c:795
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\" a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:714
+#: src/drive/tape_drive/device.c:799
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  "[ %s | %s | #%u ] : Avance rápido hacia el final del media \"%s\" terminado avec éxito"
 
-#: src/drive/tape_drive/device.c:721
+#: src/drive/tape_drive/device.c:806
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
 
-#: src/drive/tape_drive/device.c:734 src/drive/tape_drive/device.c:752
+#: src/drive/tape_drive/device.c:819 src/drive/tape_drive/device.c:837
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 msgstr  "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:756 src/drive/tape_drive/device.c:763
+#: src/drive/tape_drive/device.c:841 src/drive/tape_drive/device.c:848
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
 
-#: src/drive/tape_drive/device.c:855
+#: src/drive/tape_drive/device.c:940
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:908
+#: src/drive/tape_drive/device.c:1002
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:917
+#: src/drive/tape_drive/device.c:1011
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -219,26 +249,86 @@ msgstr  "[%s | %s | #%u]: Fallo a la lectura porque %m"
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  "[%s | %s | #%u]: fallo al rebobinar la banda porque %m"
 
-#: src/drive/tape_drive/scsi.c:913
+#: src/drive/tape_drive/scsi.c:244
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application vendor' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:250
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application vendor' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:254
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application vendor' removed on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:262 src/drive/tape_drive/scsi.c:316
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:268 src/drive/tape_drive/scsi.c:322
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:272 src/drive/tape_drive/scsi.c:326
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' removed on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:280
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application version' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:286
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application version' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:290
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' removed on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:298
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'user medium text label' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:304
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'user medium text label' on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:308
+#, c-format
+msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' removed on media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/scsi.c:1020
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Información del media %s, Frabricante del media: %s"
 
-#: src/drive/tape_drive/scsi.c:931
+#: src/drive/tape_drive/scsi.c:1038
 #, c-format
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Información del media %s, Fecha del media: %s"
 
-#: src/drive/tape_drive/scsi.c:1097
+#: src/drive/tape_drive/scsi.c:1204
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
 msgstr  "Comando SCSI soportado: \"%s\", disponible: %s, tiempo de inactividad: %u segundos"
 
-#: src/drive/tape_drive/scsi.c:1098
+#: src/drive/tape_drive/scsi.c:1205
 msgid   "no"
 msgstr  "no"
 
-#: src/drive/tape_drive/scsi.c:1098
+#: src/drive/tape_drive/scsi.c:1205
 msgid   "yes"
 msgstr  "si"
 

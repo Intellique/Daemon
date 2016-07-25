@@ -341,18 +341,57 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 		return failed;
 	}
 
+	failed = sodr_tape_drive_format_ltfs_remove_mam(fd, &sodr_tape_drive);
+	if (failed != 0) {
+		close(fd);
+		return failed;
+	}
+
 	so_log_write(so_log_level_info,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
-	close(fd);
 
-	if (failed != 0)
+	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
+
+	if (failed != 0) {
 		so_log_write(so_log_level_error,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+
+		close(fd);
+		return failed;
+	} else
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
+			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+
+	if (media->media_format->support_partition) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Formatting media '%s' with one partition"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
+
+		static struct mtop mk1partition = { MTMKPART, 0 };
+		sodr_time_start();
+		failed = ioctl(fd, MTIOCTOP, &mk1partition);
+		sodr_time_stop(&sodr_tape_drive);
+
+		if (failed != 0)
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
+		else
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Succeed to format media '%s' with one partition"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
+	}
+
+	close(fd);
+
+	if (failed == 0)
+		media->status = so_media_status_error;
 	else {
 		media->uuid[0] = '\0';
 		media->status = so_media_status_new;
@@ -370,11 +409,6 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 		if (media->pool != NULL)
 			so_pool_free(media->pool);
 		media->pool = NULL;
-
-		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
-			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
 	}
 
 	return failed;
@@ -636,9 +670,29 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 		int failed = -1;
 		if (fd > -1) {
 			failed = ioctl(fd, MTIOCGET, &status);
-			close(fd);
 		}
 		sodr_time_stop(&sodr_tape_drive);
+
+		static const struct mtop set_can_parition = { MTSETDRVBUFFER, MT_ST_CAN_PARTITIONS | MT_ST_SETBOOLEANS };
+
+		so_log_write(so_log_level_info,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Set option to 'st' driver 'can-partition'"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
+		sodr_time_start();
+		failed = ioctl(fd, MTIOCTOP, &set_can_parition);
+		sodr_time_stop(&sodr_tape_drive);
+
+		if (failed != 0)
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to set option to 'st' driver 'can-partition'"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+
+		close(fd);
 
 		if (failed != 0) {
 			if (GMT_ONLINE(status.mt_gstat)) {
@@ -688,6 +742,37 @@ static struct so_archive * sodr_tape_drive_parse_archive(const bool * const disc
 }
 
 static int sodr_tape_drive_reset(struct so_database_connection * db) {
+	unsigned int i;
+	bool ok = false;
+
+	for (i = 0; i < 30 && !ok; i++) {
+		int fd = sodr_tape_drive_open_drive();
+		if (fd < 0) {
+			sleep(5);
+			continue;
+		}
+
+		sodr_time_start();
+		int failed = ioctl(fd, MTIOCGET, &status);
+		sodr_time_stop(&sodr_tape_drive);
+
+		close(fd);
+
+		if (failed != 0) {
+			sleep(5);
+			continue;
+		}
+
+		bool is_online = GMT_ONLINE(status.mt_gstat);
+		ok = is_online == sodr_tape_drive.slot->full;
+
+		if (!ok)
+			sleep(5);
+	}
+
+	if (!ok)
+		return -1;
+
 	return sodr_tape_drive_update_status(db);
 }
 
@@ -870,6 +955,15 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 							close(fd);
 						}
 					}
+				}
+			}
+
+			if (!slot->full) {
+				slot->full = true;
+
+				if (slot->media->label != NULL) {
+					free(slot->volume_name);
+					slot->volume_name = strdup(slot->media->label);
 				}
 			}
 		}

@@ -134,7 +134,7 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 		 * maximum that we can forward in one time.
 		 */
 		long nb_records = (offset - nb_total_read) / self->block_size;
-		while (nb_records > 1000000) {
+		while ((offset - nb_total_read) > 8589934592L) {
 			int next_forward = nb_records > 8388607 ? 8388607 : nb_records;
 
 			so_log_write(so_log_level_info,

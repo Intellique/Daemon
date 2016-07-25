@@ -118,7 +118,7 @@ msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n
 #: src/changer/scsi_changer/device.c:596
 #, c-format
 msgid   "Found a media at slot #%u which is unlabeled or mislabeled."
-msgstr  "A trouvé un média dans le slot n°%u qui est soit sans étiquette soit mal étiquetée."
+msgstr  "A trouvé un média dans le slot n°%u qui est soit sans étiquette soit mal étiqueté."
 
 #: src/changer/scsi_changer/device.c:608
 #, c-format
