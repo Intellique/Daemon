@@ -1,3 +1,17 @@
+storiqone (1.2.17-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #160: Fix SCSI command with Quantum changer
+    - #170: Add delay after loading tape
+    - Fix 'Wide character in subroutine entry' in perl script
+    - #174: Erase also partition
+  * Change:
+    - Set 'can-partition' option to st driver
+    - strategy in 'forward'
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 25 Jul 2016 17:34:54 +0200
+
 storiqone (1.2.16.1-4+wheezy) polisher; urgency=low
 
   * New bug fix release
