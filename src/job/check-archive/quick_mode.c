@@ -226,11 +226,21 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, NULL, worker->db_connect);
 		if (drive == NULL) {
-			// TODO: print error
+			soj_job_add_record(worker->job, worker->db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Error while getting media '%s', skip to next volume"),
+				so_media_get_name(vol->media));
+
 			break;
 		}
 
 		struct so_stream_reader * reader = drive->ops->get_raw_reader(drive, vol->media_position);
+		if (reader == NULL) {
+			soj_job_add_record(worker->job, worker->db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Error while opening media '%s' at position %d, skip to next volume"),
+				so_media_get_name(vol->media), vol->media_position);
+			break;
+		}
+
 		reader = so_io_checksum_reader_new(reader, checksums, true);
 		so_value_free(checksums);
 
