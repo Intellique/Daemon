@@ -107,7 +107,7 @@ struct scsi_loader_data_transfer_element {
 	unsigned char reserved12;
 	unsigned char identifier_length_2;
 	unsigned char device_identifier_2[8];
-	unsigned char tape_drive_serial_number[10];
+	unsigned char tape_drive_serial_number[18];
 } __attribute__((packed));
 
 struct scsi_loader_element_status {
@@ -146,7 +146,7 @@ struct scsi_loader_medium_transport_element {
 	bool full:1;
 	bool reserved0:1;
 	bool execpt:1;
-	unsigned char reserved1:5;
+	unsigned char element_descriptor_length:5;
 	unsigned char reserved2;
 	unsigned char additional_sense_code;
 	unsigned char additional_sense_code_qualifier;
