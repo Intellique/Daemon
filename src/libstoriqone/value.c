@@ -2328,7 +2328,7 @@ struct so_value * so_value_iterator_get_key(struct so_value_iterator * iter, boo
 		iter_hash->next.node = node->next;
 
 		if (iter_hash->next.node == NULL) {
-			while (iter_hash->next.i_elements <= hash->size_node && iter_hash->next.node == NULL)
+			while (iter_hash->next.i_elements < hash->size_node && iter_hash->next.node == NULL)
 				iter_hash->next.node = hash->nodes[iter_hash->next.i_elements++];
 
 			if (iter_hash->next.i_elements < hash->size_node)
