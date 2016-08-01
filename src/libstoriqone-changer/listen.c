@@ -587,6 +587,25 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	}
 
 	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
+	if (sl == NULL) {
+		struct so_changer_driver * driver = sochgr_changer_get();
+		struct so_changer * changer = driver->device;
+
+		unsigned int i;
+		for (i = 0; i < changer->nb_drives; i++) {
+			struct so_drive * drive = changer->drives + i;
+			drive->ops->update_status(drive);
+		}
+
+		sl = sochgr_socket_find_slot_by_media(medium_serial_number);
+
+		if (sl == NULL) {
+			struct so_value * response = so_value_pack("{si}", "returned", -1);
+			so_json_encode_to_fd(response, fd, true);
+			so_value_free(response);
+			return;
+		}
+	}
 
 	struct so_media * media = sl->media;
 	if (media == NULL) {
