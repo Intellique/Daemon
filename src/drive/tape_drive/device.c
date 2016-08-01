@@ -1037,6 +1037,15 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 					}
 				}
 			}
+
+			if (!slot->full) {
+				slot->full = true;
+
+				if (slot->media->label != NULL) {
+					free(slot->volume_name);
+					slot->volume_name = strdup(slot->media->label);
+				}
+			}
 		}
 
 		if (slot->media != NULL) {
