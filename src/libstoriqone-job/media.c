@@ -221,6 +221,8 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 					return NULL;
 				}
 
+				drive->ops->sync(drive);
+
 				if (drive->ops->check_header(drive)) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 						dgettext("libstoriqone-job", "Checking media header '%s' was successful"),
