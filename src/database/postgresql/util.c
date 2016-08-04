@@ -129,14 +129,14 @@ static struct so_database_postgresql_media_type2 {
 	unsigned long long hash;
 	const char * name;
 	const enum so_media_type type;
-} so_media_types[] = {
+} so_database_postgresql_media_types[] = {
 	[so_media_type_cleaning]   = { 0, "cleaning",   so_media_type_cleaning },
 	[so_media_type_rewritable] = { 0, "rewritable", so_media_type_rewritable },
 	[so_media_type_worm]       = { 0, "worm",       so_media_type_worm },
 
 	[so_media_type_unknown]    = { 0, "unknown",    so_media_type_unknown },
 };
-static const unsigned int so_database_postgresql_media_nb_types = sizeof(so_media_types) / sizeof(*so_media_types);
+static const unsigned int so_database_postgresql_media_nb_types = sizeof(so_database_postgresql_media_types) / sizeof(*so_database_postgresql_media_types);
 
 
 static void so_database_postgresql_util_init() {
@@ -152,6 +152,9 @@ static void so_database_postgresql_util_init() {
 
 	for (i = 0; i < so_database_postgresql_log_nb_level; i++)
 		so_database_postgresql_log_levels[i].hash = so_string_compute_hash2(so_database_postgresql_log_levels[i].name);
+
+	for (i = 0; i < so_database_postgresql_media_nb_types; i++)
+		so_database_postgresql_media_types[i].hash = so_string_compute_hash2(so_database_postgresql_media_types[i].name);
 }
 
 
@@ -445,13 +448,13 @@ enum so_media_type so_database_postgresql_media_string_to_type(const char * type
 	unsigned long long hash = so_string_compute_hash2(type);
 
 	for (i = 0; i < so_database_postgresql_media_nb_types; i++)
-		if (hash == so_media_types[i].hash)
-			return so_media_types[i].type;
+		if (hash == so_database_postgresql_media_types[i].hash)
+			return so_database_postgresql_media_types[i].type;
 
 	return so_media_type_unknown;
 }
 
 const char * so_database_postgresql_media_type_to_string(enum so_media_type type) {
-	return so_media_types[type].name;
+	return so_database_postgresql_media_types[type].name;
 }
 
