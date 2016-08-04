@@ -331,44 +331,24 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 	if (media == NULL)
 		return -1;
 
-	int fd = open(scsi_device, O_RDWR);
-	if (fd < 0)
+	int scsi_fd = open(scsi_device, O_RDWR);
+	if (scsi_fd < 0)
 		return -1;
 
-	int failed = sodr_tape_drive_scsi_rewind(fd);
-	if (failed != 0) {
-		close(fd);
-		return failed;
-	}
-
-	failed = sodr_tape_drive_format_ltfs_remove_mam(fd, &sodr_tape_drive);
-	if (failed != 0) {
-		close(fd);
-		return failed;
-	}
-
-	so_log_write(so_log_level_info,
-		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
-		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
-		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-
-	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
-
-	if (failed != 0) {
-		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
-			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-
-		close(fd);
-		return failed;
-	} else
-		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
-			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-
+	int failed;
 	if (media->media_format->support_partition) {
+		failed = sodr_tape_drive_format_ltfs_remove_mam(scsi_fd, &sodr_tape_drive);
+		if (failed != 0) {
+			close(scsi_fd);
+			return failed;
+		}
+
+		int fd = sodr_tape_drive_open_drive();
+		if (fd < 0) {
+			close(scsi_fd);
+			return -1;
+		}
+
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Formatting media '%s' with one partition"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
@@ -386,11 +366,40 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 			so_log_write(so_log_level_debug,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Succeed to format media '%s' with one partition"),
 				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
+
+		close(fd);
+	} else {
+		failed = sodr_tape_drive_scsi_rewind(scsi_fd);
+		if (failed != 0) {
+			close(scsi_fd);
+			return failed;
+		}
+
+		so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
+				quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+
+		failed = sodr_tape_drive_scsi_erase_media(scsi_fd, quick_mode);
+
+		if (failed != 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
+				quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+
+			close(scsi_fd);
+			return failed;
+		} else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
+				quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
 	}
 
-	close(fd);
+	close(scsi_fd);
 
-	if (failed == 0)
+	if (failed != 0)
 		media->status = so_media_status_error;
 	else {
 		media->uuid[0] = '\0';
