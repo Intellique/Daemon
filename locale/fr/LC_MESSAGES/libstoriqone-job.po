@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-04-20 18:13+0200\n"
+        "POT-Creation-Date: 2016-08-03 11:21+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -80,12 +80,12 @@ msgstr  "Formatage automatique du média « %s »"
 msgid   "Failed to format media"
 msgstr  "Échec du formatage du média"
 
-#: src/libstoriqone-job/media.c:226
+#: src/libstoriqone-job/media.c:228
 #, c-format
 msgid   "Checking media header '%s' was successful"
 msgstr  "Vérification de l’entête du média « %s » en cours"
 
-#: src/libstoriqone-job/media.c:230
+#: src/libstoriqone-job/media.c:232
 #, c-format
 msgid   "Checking media header '%s': failed"
 msgstr  "Vérification de l’entête du média « %s » : échec"
