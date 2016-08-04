@@ -1,3 +1,13 @@
+storiqone (1.2.18-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #178: automatic formatting media (while extending pool) cause a SEGFAULT
+            at report generating.
+    - #180: bug which prevent inserting WORM media
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 04 Aug 2016 17:14:01 +0200
+
 storiqone (1.2.17-1+jessie) polisher; urgency=low
 
   * New bug fix release
