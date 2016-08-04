@@ -877,7 +877,7 @@ static int so_database_get_media_by_id(struct so_database_connection * connect, 
 		so_database_postgresql_get_size(result, 0, 21, &media->total_block);
 
 		so_database_postgresql_get_bool(result, 0, 22, &media->append);
-		media->type = so_media_string_to_type(PQgetvalue(result, 0, 23), false);
+		media->type = so_database_postgresql_media_string_to_type(PQgetvalue(result, 0, 23));
 		so_database_postgresql_get_bool(result, 0, 24, &media->write_lock);
 		so_database_postgresql_get_uint(result, 0, 25, &media->nb_volumes);
 
@@ -1999,7 +1999,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		const char * param[] = {
 			*media->uuid ? media->uuid : NULL, media->label, media->medium_serial_number, media->name, so_media_status_to_string(media->status, false),
 			buffer_first_used, buffer_use_before, media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
-			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, so_media_type_to_string(media->type, false), nbfiles,
+			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, so_database_postgresql_media_type_to_string(media->type), nbfiles,
 			blocksize, freeblock, totalblock, so_database_postgresql_bool_to_string(media->write_lock), archiveformat_id, mediaformat_id, pool_id
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 25, param, NULL, NULL, 0);
@@ -2110,7 +2110,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			*media->uuid ? media->uuid : NULL, media->name, so_media_status_to_string(media->status, false),
 			media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
 			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, nbfiles,
-			blocksize, freeblock, totalblock, archiveformat_id, pool_id, so_media_type_to_string(media->type, false),
+			blocksize, freeblock, totalblock, archiveformat_id, pool_id, so_database_postgresql_media_type_to_string(media->type),
 			so_database_postgresql_bool_to_string(media->write_lock), media_id
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 21, param2, NULL, NULL, 0);
