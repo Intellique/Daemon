@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-07-13 13:28+0200\n"
+        "POT-Creation-Date: 2016-08-09 17:32+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -389,6 +389,16 @@ msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s), débit : %s/s"
 #, c-format
 msgid   "[%s | %s | #%u]: Found best block size: %s"
 msgstr  "[ %s | %s | n°%u ] : Meilleure taille de bloc trouvé : %s"
+
+#: src/drive/tape_drive/format/storiqone/storiqone.c:168
+#, c-format
+msgid   "[%s | %s | #%u]: Trying to format a cleaning media '%s'"
+msgstr  "[ %s | %s | n°%u ] : Tentative de formater un média de nettoyage « %s »"
+
+#: src/drive/tape_drive/format/storiqone/storiqone.c:180
+#, c-format
+msgid   "[%s | %s | #%u]: Using default block size (%s) for WORM media '%s'"
+msgstr  "[ %s | %s | n°%u ] : Utilisation de la taille de bloc par défaut (%s) pour le média WORM « %s »"
 
 #: src/drive/tape_drive/io/reader.c:155
 #, c-format
