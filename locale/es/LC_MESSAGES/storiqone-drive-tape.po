@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-25 14:08+0200\n"
+        "POT-Creation-Date: 2016-08-10 12:36+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -111,42 +111,47 @@ msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:100
+#: src/drive/tape_drive/format/ltfs/ltfs.c:81
+#, c-format
+msgid   "[%s | %s | #%u]: Formatting WORM media '%s' into LTFS format is forbidden"
+msgstr  ""
+
+#: src/drive/tape_drive/format/ltfs/ltfs.c:106
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' info LTFS format"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" al formato LTFS "
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:104 src/drive/tape_drive/util/st.c:73
+#: src/drive/tape_drive/format/ltfs/ltfs.c:110 src/drive/tape_drive/util/st.c:73
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" en una sola partición"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:114 src/drive/tape_drive/util/st.c:83
+#: src/drive/tape_drive/format/ltfs/ltfs.c:120 src/drive/tape_drive/util/st.c:83
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
 msgstr  "[ %s | %s | #%u ]: Fallo de formateo del media \"%s\" en una sola partición porque %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:123 src/drive/tape_drive/util/st.c:91
+#: src/drive/tape_drive/format/ltfs/ltfs.c:129 src/drive/tape_drive/util/st.c:91
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
 msgstr  "[ %s | %s | #%u ]: Succeso al formatear el media \"%s\" en una sola partición"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:131
+#: src/drive/tape_drive/format/ltfs/ltfs.c:137
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with two partitions (second partition size: %s)"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" en dos particiones (talla de la segunda partición:%s)"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:142
+#: src/drive/tape_drive/format/ltfs/ltfs.c:148
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with two partition because %m"
 msgstr  "[ %s | %s | #%u ]: Fallo del formateo del media \"%s\" en dos particiones porque %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:151
+#: src/drive/tape_drive/format/ltfs/ltfs.c:157
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  "[ %s | %s | #%u ]: Succeso del formateo del media \"%s\" en dos particiones"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:285
+#: src/drive/tape_drive/format/ltfs/ltfs.c:291
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  "[ %s | %s | #%u ]: Error a la escritura de la etiqueta sobre la partición \"%s\" porque %m"
@@ -361,6 +366,26 @@ msgstr  "[ %s | %s | #%u ]: Prueba (tamaño del bloque: %s), throughput: %s/s"
 #, c-format
 msgid   "[%s | %s | #%u]: Found best block size: %s"
 msgstr  "[ %s | %s | #%u ]: Mejor tamaño de bloque encontrado: %s"
+
+#: src/drive/tape_drive/format/storiqone/storiqone.c:167
+#, c-format
+msgid   "[%s | %s | #%u]: Trying to format a cleaning media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/format/storiqone/storiqone.c:180
+#, c-format
+msgid   "[%s | %s | #%u]: Using default block size (%s) for WORM media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/format/storiqone/storiqone.c:190
+#, c-format
+msgid   "[%s | %s | #%u]: Failed to find the best block size for media '%s'"
+msgstr  ""
+
+#: src/drive/tape_drive/format/storiqone/storiqone.c:195
+#, c-format
+msgid   "[%s | %s | #%u]: Reusing block size (%s) of pool '%s' for media '%s'"
+msgstr  ""
 
 #: src/drive/tape_drive/io/reader.c:155
 #, c-format

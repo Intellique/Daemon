@@ -29,6 +29,8 @@
 
 // bool
 #include <stdbool.h>
+// ssize_t
+#include <sys/types.h>
 
 struct so_application;
 struct so_archive;
@@ -201,6 +203,7 @@ struct so_database_connection {
 		 * \return 0 on success
 		 */
 		int (*delete_drive)(struct so_database_connection * connect, struct so_drive * drive);
+		ssize_t (*get_block_size_by_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull));
 		/**
 		 * \brief get a list of scsi changers
 		 *
