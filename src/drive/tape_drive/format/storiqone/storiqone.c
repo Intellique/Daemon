@@ -157,25 +157,40 @@ int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int f
 
 	struct so_media * media = drive->slot->media;
 
+	if (media->type == so_media_type_cleaning) {
+		so_log_write(so_log_level_notice,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Trying to format a cleaning media '%s'"),
+			drive->vendor, drive->model, drive->index, media->name);
+		return -1;
+	}
+
 	if (block_size == 0) {
-		if (media->type == so_media_type_cleaning) {
-			so_log_write(so_log_level_notice,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Trying to format a cleaning media '%s'"),
-				drive->vendor, drive->model, drive->index, media->name);
-			return -1;
-		}
+		char str_block_size[16];
 
 		if (media->type == so_media_type_worm) {
 			block_size = media->media_format->block_size;
-
-			char str_block_size[16];
 			so_file_convert_size_to_string(block_size, str_block_size, 16);
 
 			so_log_write(so_log_level_warning,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Using default block size (%s) for WORM media '%s'"),
 				drive->vendor, drive->model, drive->index, str_block_size, media->name);
-		} else
-			block_size = sodr_tape_drive_format_storiqone_find_best_block_size(drive, fd, db);
+		} else {
+			block_size = db->ops->get_block_size_by_pool(db, pool);
+
+			if (block_size <= 0) {
+				block_size = sodr_tape_drive_format_storiqone_find_best_block_size(drive, fd, db);
+
+				if (block_size < 0)
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to find the best block size for media '%s'"),
+						drive->vendor, drive->model, drive->index, media->name);
+			} else {
+				so_file_convert_size_to_string(block_size, str_block_size, 16);
+				so_log_write(so_log_level_warning,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Reusing block size (%s) of pool '%s' for media '%s'"),
+					drive->vendor, drive->model, drive->index, str_block_size, pool->name, media->name);
+			}
+		}
 	}
 
 	if (block_size < 0)
