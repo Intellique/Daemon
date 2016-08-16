@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-10 12:29+0200\n"
+        "POT-Creation-Date: 2016-08-16 16:02+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -111,47 +111,47 @@ msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:81
+#: src/drive/tape_drive/format/ltfs/ltfs.c:82
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting WORM media '%s' into LTFS format is forbidden"
 msgstr  ""
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:102
+#: src/drive/tape_drive/format/ltfs/ltfs.c:103
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' info LTFS format"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" al formato LTFS "
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:106 src/drive/tape_drive/util/st.c:73
+#: src/drive/tape_drive/format/ltfs/ltfs.c:107 src/drive/tape_drive/util/st.c:73
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" en una sola partición"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:116 src/drive/tape_drive/util/st.c:83
+#: src/drive/tape_drive/format/ltfs/ltfs.c:117 src/drive/tape_drive/util/st.c:83
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
 msgstr  "[ %s | %s | #%u ]: Fallo de formateo del media \"%s\" en una sola partición porque %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:125 src/drive/tape_drive/util/st.c:91
+#: src/drive/tape_drive/format/ltfs/ltfs.c:126 src/drive/tape_drive/util/st.c:91
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
 msgstr  "[ %s | %s | #%u ]: Succeso al formatear el media \"%s\" en una sola partición"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:133
+#: src/drive/tape_drive/format/ltfs/ltfs.c:134
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with two partitions (second partition size: %s)"
 msgstr  "[ %s | %s | #%u ]: Formateo del media \"%s\" en dos particiones (talla de la segunda partición:%s)"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:144
+#: src/drive/tape_drive/format/ltfs/ltfs.c:145
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with two partition because %m"
 msgstr  "[ %s | %s | #%u ]: Fallo del formateo del media \"%s\" en dos particiones porque %m"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:153
+#: src/drive/tape_drive/format/ltfs/ltfs.c:154
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with two partition"
 msgstr  "[ %s | %s | #%u ]: Succeso del formateo del media \"%s\" en dos particiones"
 
-#: src/drive/tape_drive/format/ltfs/ltfs.c:287
+#: src/drive/tape_drive/format/ltfs/ltfs.c:288
 #, c-format
 msgid   "[%s | %s | #%u]: Error while writing label on partition '%s' because %m"
 msgstr  "[ %s | %s | #%u ]: Error a la escritura de la etiqueta sobre la partición \"%s\" porque %m"
