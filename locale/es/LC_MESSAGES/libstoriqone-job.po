@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-30 10:48+0100\n"
+        "POT-Creation-Date: 2016-08-03 11:55+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -33,7 +33,8 @@ msgstr  "El demonio se ha cerrado inesperadamente"
 #: src/libstoriqone-job/main.c:108
 #, c-format
 msgid   "Error, user '%s' has been disabled consequently job (type: %s, key: %s, name: %s) cannot proceed"
-msgstr  "Error, el usuario \"%s\" ha sido desactivado en consecuancia la tarea (tipo: %s, llave: %s, nombre: %s) no pude ejecutarse"
+msgstr  "Error, el usuario \"%s\" ha sido desactivado en consecuancia la tarea (tipo: %s, llave: %s, nombre: %s) no pude "
+        "ejecutarse"
 
 #: src/libstoriqone-job/main.c:117
 #, c-format
@@ -79,12 +80,12 @@ msgstr  "Formateo automático del media \"%s\""
 msgid   "Failed to format media"
 msgstr  "Fallo de formateo del media"
 
-#: src/libstoriqone-job/media.c:224
+#: src/libstoriqone-job/media.c:226
 #, c-format
 msgid   "Checking media header '%s' was successful"
 msgstr  "Verificación del encabezamiento del media  \"%s\" en curso"
 
-#: src/libstoriqone-job/media.c:228
+#: src/libstoriqone-job/media.c:230
 #, c-format
 msgid   "Checking media header '%s': failed"
 msgstr  "Verificación del encabezamiento del media \"%s\": fallo"
