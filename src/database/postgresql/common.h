@@ -91,6 +91,8 @@ enum so_changer_action so_database_postgresql_string_to_action(const char * acti
 enum so_changer_status so_database_postgresql_string_to_status(const char * status);
 const char * so_database_postgresql_drive_status_to_string(enum so_drive_status status);
 const char * so_database_postgresql_log_level_to_string(enum so_log_level level);
+enum so_media_type so_database_postgresql_media_string_to_type(const char * type);
+const char * so_database_postgresql_media_type_to_string(enum so_media_type type);
 
 #endif
 

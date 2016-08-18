@@ -72,10 +72,17 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	} default_parition_sizes[] = {
 		{ 0x58, 1424000L << 20 },
 		{ 0x5A, 2450000L << 20 },
+		{ 0x5C, 5722045L << 20 },
 	};
 	static const unsigned int nb_default_parition_size = sizeof(default_parition_sizes) / sizeof(*default_parition_sizes);
 
 	struct so_media * media = drive->slot->media;
+	if (media->type == so_media_type_worm) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Formatting WORM media '%s' into LTFS format is forbidden"),
+			drive->vendor, drive->model, drive->index, media->name);
+		return -1;
+	}
 
 	if (partition_size == 0) {
 		unsigned int i;

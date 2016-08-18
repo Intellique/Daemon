@@ -83,6 +83,7 @@ static int so_database_postgresql_update_host(struct so_database_connection * co
 
 static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive);
+static ssize_t so_database_postgresql_get_block_size_by_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_checksums_from_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_database_connection * connect, const char * changer_id);
@@ -180,6 +181,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 
 	.delete_changer          = so_database_postgresql_delete_changer,
 	.delete_drive            = so_database_postgresql_delete_drive,
+	.get_block_size_by_pool  = so_database_postgresql_get_block_size_by_pool,
 	.get_changers            = so_database_postgresql_get_changers,
 	.get_checksums_from_pool = so_database_postgresql_get_checksums_from_pool,
 	.get_free_medias         = so_database_postgresql_get_free_medias,
@@ -618,6 +620,30 @@ static int so_database_postgresql_delete_drive(struct so_database_connection * c
 	return status != PGRES_COMMAND_OK;
 }
 
+static ssize_t so_database_postgresql_get_block_size_by_pool(struct so_database_connection * connect, struct so_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_medias_of_pools";
+	so_database_postgresql_prepare(self, query, "SELECT COALESCE(MAX(blocksize), 0) FROM media WHERE pool IN (SELECT id FROM pool WHERE uuid = $1 LIMIT 1);");
+
+	const char * param[] = { pool->uuid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	ssize_t block_size = -1;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK)
+		so_database_postgresql_get_ssize(result, 0, 0, &block_size);
+
+	PQclear(result);
+
+	return block_size;
+}
+
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect) {
 	struct so_value * changers = so_value_new_linked_list();
 
@@ -896,7 +922,7 @@ static int so_database_get_media_by_id(struct so_database_connection * connect, 
 		so_database_postgresql_get_size(result, 0, 21, &media->total_block);
 
 		so_database_postgresql_get_bool(result, 0, 22, &media->append);
-		media->type = so_media_string_to_type(PQgetvalue(result, 0, 23), false);
+		media->type = so_database_postgresql_media_string_to_type(PQgetvalue(result, 0, 23));
 		so_database_postgresql_get_bool(result, 0, 24, &media->write_lock);
 		so_database_postgresql_get_uint(result, 0, 25, &media->nb_volumes);
 
@@ -2021,7 +2047,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		const char * param[] = {
 			*media->uuid ? media->uuid : NULL, media->label, media->medium_serial_number, media->name, so_media_status_to_string(media->status, false),
 			buffer_first_used, buffer_use_before, media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
-			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, so_media_type_to_string(media->type, false), nbfiles,
+			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, so_database_postgresql_media_type_to_string(media->type), nbfiles,
 			blocksize, freeblock, totalblock, so_database_postgresql_bool_to_string(media->write_lock), archiveformat_id, mediaformat_id, pool_id
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 25, param, NULL, NULL, 0);
@@ -2132,7 +2158,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			*media->uuid ? media->uuid : NULL, media->name, so_media_status_to_string(media->status, false),
 			media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
 			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, nbfiles,
-			blocksize, freeblock, totalblock, archiveformat_id, pool_id, so_media_type_to_string(media->type, false),
+			blocksize, freeblock, totalblock, archiveformat_id, pool_id, so_database_postgresql_media_type_to_string(media->type),
 			so_database_postgresql_bool_to_string(media->write_lock), media_id
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 21, param2, NULL, NULL, 0);
