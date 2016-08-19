@@ -124,7 +124,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				break;
 
 			case reserve_media:
-				slot->changer->ops->reserve_media(slot->changer, worker->volume->media, 0, false, NULL);
+				slot->changer->ops->reserve_media(slot->changer, worker->volume->media, 0, NULL, worker->volume->media->pool);
 				state = get_media;
 				break;
 		}

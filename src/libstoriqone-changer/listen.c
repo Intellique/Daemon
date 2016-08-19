@@ -579,7 +579,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 			"pool", &vpool
 	);
 
-	if (nb_parsed < 3) {
+	if (nb_parsed < 3 || vpool == NULL) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
@@ -627,51 +627,55 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	struct sochgr_media * mp = media->private_data;
 	ssize_t reserved_space = (media->total_block * media->block_size) >> 8;
 
-	if (size_need == 0) {
-		result = 0;
-		sochgr_media_add_reader(mp, peer);
-	} else if (pool != NULL) {
-		struct so_changer_driver * driver = sochgr_changer_get();
-		struct so_changer * changer = driver->device;
-		bool supported_format = false;
+	if (!(media->status == so_media_status_new && mp->future_pool != NULL && strcmp(mp->future_pool->uuid, pool->uuid)) != 0) {
+		if (size_need == 0) {
+			result = 0;
+			sochgr_media_add_reader(mp, peer);
+		} else if (pool != NULL) {
+			struct so_changer_driver * driver = sochgr_changer_get();
+			struct so_changer * changer = driver->device;
+			bool supported_format = false;
 
-		unsigned int i;
-		for (i = 0; i < changer->nb_drives && !supported_format; i++) {
-			struct so_drive * dr = changer->drives + i;
-			if (dr->ops->check_format(dr, media, pool, archive_uuid))
-				supported_format = true;
-		}
+			unsigned int i;
+			for (i = 0; i < changer->nb_drives && !supported_format; i++) {
+				struct so_drive * dr = changer->drives + i;
+				if (dr->ops->check_format(dr, media, pool, archive_uuid))
+					supported_format = true;
+			}
 
-		if (supported_format) {
-			if (pool->unbreakable_level == so_pool_unbreakable_level_archive) {
-				if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
-					result = size_need;
-					sochgr_media_add_writer(mp, peer, size_need);
-				}
-			} else {
-				if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
-					result = size_need;
-					sochgr_media_add_writer(mp, peer, size_need);
-				} else if (10 * media->free_block >= media->total_block) {
-					result = media->free_block * media->block_size - mp->size_reserved;
-					sochgr_media_add_writer(mp, peer, result);
+			if (supported_format) {
+				if (pool->unbreakable_level == so_pool_unbreakable_level_archive) {
+					if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+						result = size_need;
+						sochgr_media_add_writer(mp, peer, size_need);
+					}
+				} else {
+					if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+						result = size_need;
+						sochgr_media_add_writer(mp, peer, size_need);
+					} else if (10 * media->free_block >= media->total_block) {
+						result = media->free_block * media->block_size - mp->size_reserved;
+						sochgr_media_add_writer(mp, peer, result);
+					}
 				}
 			}
+		} else if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+			result = size_need;
+			sochgr_media_add_writer(mp, peer, size_need);
+		} else if (10 * media->free_block >= media->total_block) {
+			result = media->free_block * media->block_size - mp->size_reserved;
+			sochgr_media_add_writer(mp, peer, result);
 		}
-	} else if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
-		result = size_need;
-		sochgr_media_add_writer(mp, peer, size_need);
-	} else if (10 * media->free_block >= media->total_block) {
-		result = media->free_block * media->block_size - mp->size_reserved;
-		sochgr_media_add_writer(mp, peer, result);
+
+		if (result > 0 && media->status == so_media_status_new)
+			mp->future_pool = pool;
+		else
+			so_pool_free(pool);
 	}
 
 	struct so_value * response = so_value_pack("{sz}", "returned", result);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
-
-	if (vpool != NULL && vpool->type != so_value_null)
-		so_pool_free(pool);
 }
 
 static void sochgr_socket_command_sync(struct sochgr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
