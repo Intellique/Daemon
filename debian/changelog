@@ -1,3 +1,17 @@
+storiqone (1.2.19-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * New
+    - #185: New strategy to format media, reuse previous block size
+    - #188: Add support to LTO-7
+  * Changes:
+    - #183: VTL default block size, (now use 128KB)
+  * Bug fix:
+    - #128: Fix space reservation on new media
+    - #181: Fix WORM formatting
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 22 Aug 2016 11:23:59 +0200
+
 storiqone (1.2.18-1+wheezy) polisher; urgency=low
 
   * New bug fix release
