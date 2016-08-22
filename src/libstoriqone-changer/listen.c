@@ -545,19 +545,16 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	char * medium_serial_number = NULL;
 	size_t size_need = 0;
-	char * str_unbreakable_level;
+	struct so_value * vpool = NULL;
 
-	int nb_parsed = so_value_unpack(request, "{s{ssszss}}",
+	int nb_parsed = so_value_unpack(request, "{s{ssszso}}",
 		"params",
 			"medium serial number", &medium_serial_number,
 			"size need", &size_need,
-			"unbreakable level", &str_unbreakable_level
+			"pool", &vpool
 	);
 
-	enum so_pool_unbreakable_level unbreakable_level = so_pool_string_to_unbreakable_level(str_unbreakable_level, false);
-	free(str_unbreakable_level);
-
-	if (nb_parsed < 3 || unbreakable_level == so_pool_unbreakable_level_unknown) {
+	if (nb_parsed < 3 || vpool == NULL) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
@@ -565,37 +562,49 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 		return;
 	}
 
+	struct so_pool * pool = malloc(sizeof(struct so_pool));
+	bzero(pool, sizeof(struct so_pool));
+	so_pool_sync(pool, vpool);
+
 	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
 	free(medium_serial_number);
 
-	if (sl->media == NULL) {
+	struct so_media * media = sl->media;
+	if (media == NULL) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		so_pool_free(pool);
 		return;
 	}
 
 	ssize_t result = -1L;
-	struct so_media * media = sl->media;
 	struct sochgr_media * mp = media->private_data;
 	ssize_t reserved_space = (media->total_block * media->block_size) >> 8;
 
-	if (size_need == 0) {
-		result = 0;
-		sochgr_media_add_reader(mp, peer);
-	} else if (unbreakable_level == so_pool_unbreakable_level_archive) {
-		if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
-			result = size_need;
-			sochgr_media_add_writer(mp, peer, size_need);
+	if (!(media->status == so_media_status_new && mp->future_pool != NULL && strcmp(mp->future_pool->uuid, pool->uuid)) != 0) {
+		if (size_need == 0) {
+			result = 0;
+			sochgr_media_add_reader(mp, peer);
+		} else if (pool->unbreakable_level == so_pool_unbreakable_level_archive) {
+			if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+				result = size_need;
+				sochgr_media_add_writer(mp, peer, size_need);
+			}
+		} else {
+			if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+				result = size_need;
+				sochgr_media_add_writer(mp, peer, size_need);
+			} else if (10 * media->free_block >= media->total_block) {
+				result = media->free_block * media->block_size - mp->size_reserved;
+				sochgr_media_add_writer(mp, peer, result);
+			}
 		}
-	} else {
-		if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
-			result = size_need;
-			sochgr_media_add_writer(mp, peer, size_need);
-		} else if (10 * media->free_block >= media->total_block) {
-			result = media->free_block * media->block_size - mp->size_reserved;
-			sochgr_media_add_writer(mp, peer, result);
-		}
+
+		if (result > 0 && media->status == so_media_status_new)
+			mp->future_pool = pool;
+		else
+			so_pool_free(pool);
 	}
 
 	struct so_value * response = so_value_pack("{sz}", "returned", result);

@@ -29,6 +29,8 @@
 
 // bool
 #include <stdbool.h>
+// ssize_t
+#include <sys/types.h>
 
 struct so_archive;
 struct so_archive_file;
@@ -140,6 +142,7 @@ struct so_database_connection {
 
 		int (*delete_changer)(struct so_database_connection * connect, struct so_changer * changer);
 		int (*delete_drive)(struct so_database_connection * connect, struct so_drive * drive);
+		ssize_t (*get_block_size_by_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull));
 		struct so_value * (*get_changers)(struct so_database_connection * connect);
 		struct so_value * (*get_checksums_from_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((warn_unused_result));
 		struct so_value * (*get_free_medias)(struct so_database_connection * connect, struct so_media_format * media_format, bool online) __attribute__((warn_unused_result));
