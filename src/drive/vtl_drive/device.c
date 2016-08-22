@@ -303,18 +303,16 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 	free(files);
 
 	if (block_size == 0) {
-		struct stat st;
-		int failed = stat(sodr_vtl_media_dir, &st);
-		if (failed != 0) {
-			struct so_media * media = sodr_vtl_drive.slot->media;
-			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to find optimal block size for media '%s'"),
-				sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index,
-				media != NULL ? media->name : dgettext("storiqone-drive-vtl", "NULL"));
-			return 1;
-		}
+		block_size = 131072;
 
-		block_size = st.st_blksize;
+		char str_block_size[16];
+		so_file_convert_size_to_string(block_size, str_block_size, 16);
+
+		struct so_media * media = sodr_vtl_drive.slot->media;
+
+		so_log_write(so_log_level_warning,
+			dgettext("storiqone-drive-vtl", "[%s %s #%u]: Using default block size (%s) for media '%s'"),
+			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, str_block_size, media->name);
 	}
 
 	char * header = malloc(block_size);

@@ -84,6 +84,7 @@ void sochgr_media_init_slot(struct so_slot * slot) {
 	struct so_media * media = slot->media;
 	if (media != NULL && media->private_data == NULL) {
 		struct sochgr_media * md = media->private_data = malloc(sizeof(struct sochgr_media));
+		bzero(md, sizeof(struct sochgr_media));
 		md->first = md->last = NULL;
 		md->size_reserved = 0;
 	}
@@ -105,6 +106,7 @@ void sochgr_media_release(struct so_changer * changer) {
 			next = peer->next;
 			free(peer);
 		}
+		so_pool_free(md->future_pool);
 		free(md);
 	}
 }

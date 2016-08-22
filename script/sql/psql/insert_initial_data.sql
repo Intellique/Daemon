@@ -1,11 +1,13 @@
 INSERT INTO MediaFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWriteCount, maxOpCount, lifespan, capacity, blockSize, densityCode, supportPartition, supportMAM) VALUES
-	('LTO-6', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 2620446998528, 32768, 90, TRUE, TRUE),
-	('LTO-5', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 1529931104256, 32768, 88, TRUE, TRUE),
-	('LTO-4', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P8Y', 764965552128, 32768, 70, FALSE, TRUE),
-	('LTO-3', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 382482776064, 32768, 68, FALSE, TRUE),
-	('LTO-2', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 191241388032, 32768, 66, FALSE, TRUE);
+	('LTO-7', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 5999999057920, 131072, 92, TRUE, TRUE),
+	('LTO-6', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 2620446998528, 131072, 90, TRUE, TRUE),
+	('LTO-5', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 1529931104256, 131072, 88, TRUE, TRUE),
+	('LTO-4', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P8Y', 764965552128, 131072, 70, FALSE, TRUE),
+	('LTO-3', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 382482776064, 131072, 68, FALSE, TRUE),
+	('LTO-2', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 191241388032, 131072, 66, FALSE, TRUE);
 
 INSERT INTO DriveFormat(name, densityCode, mode, cleaningInterval) VALUES
+	('LTO-7', 92, 'linear', INTERVAL 'P1M'),
 	('LTO-6', 90, 'linear', INTERVAL 'P1M'),
 	('LTO-5', 88, 'linear', INTERVAL 'P1M'),
 	('LTO-4', 70, 'linear', INTERVAL 'P1M'),
@@ -24,7 +26,10 @@ INSERT INTO DriveFormatSupport(driveFormat, mediaFormat, read, write) VALUES
 	(3, 5, TRUE, FALSE),
 	(4, 4, TRUE, TRUE),
 	(4, 5, TRUE, TRUE),
-	(5, 5, TRUE, TRUE);
+	(4, 6, TRUE, FALSE),
+	(5, 5, TRUE, TRUE),
+	(5, 6, TRUE, TRUE),
+	(6, 6, TRUE, TRUE);
 
 INSERT INTO ArchiveFormat(name, readable, writable) VALUES
     ('Storiq One (TAR)', TRUE, TRUE);

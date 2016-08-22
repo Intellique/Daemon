@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-12-28 16:32+0100\n"
+        "POT-Creation-Date: 2016-08-09 18:32+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -21,13 +21,12 @@ msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
 msgid   "[%s %s %d]: Failed to erase file '%s' because %m"
 msgstr  "[ %s %s %d ] : Fallo al borrar el fichero \"%s\" porque %m"
 
-#: src/drive/vtl_drive/device.c:195 src/drive/vtl_drive/device.c:288 src/drive/vtl_drive/device.c:416
+#: src/drive/vtl_drive/device.c:195 src/drive/vtl_drive/device.c:288 src/drive/vtl_drive/device.c:414
 #, c-format
 msgid   "[%s %s %d]: Failed to list files from media '%s'"
 msgstr  "[ %s %s %d ]: Fallo en la enumeración de los ficheros del media \"%s\""
 
-#: src/drive/vtl_drive/device.c:197 src/drive/vtl_drive/device.c:290 src/drive/vtl_drive/device.c:313
-#: src/drive/vtl_drive/device.c:418
+#: src/drive/vtl_drive/device.c:197 src/drive/vtl_drive/device.c:290 src/drive/vtl_drive/device.c:416
 msgid   "NULL"
 msgstr  "VACÍO"
 
@@ -46,22 +45,22 @@ msgstr  "[ %s %s %d]: Fallo al lanzamiento del comando \"shred\" para suprimir 
 msgid   "[%s %s %d]: VTL does only support Storiq One format"
 msgstr  "[ %s %s %d]: VTL soporta únicamente el formato \"Storiq One\""
 
-#: src/drive/vtl_drive/device.c:311
+#: src/drive/vtl_drive/device.c:314
 #, c-format
-msgid   "[%s %s %d]: Failed to find optimal block size for media '%s'"
-msgstr  "[ %s %s %d ]: Fallo al buscar el tamaño del bloque optimal para el media \"%s\""
+msgid   "[%s %s #%u]: Using default block size (%s) for media '%s'"
+msgstr  ""
 
-#: src/drive/vtl_drive/device.c:333
+#: src/drive/vtl_drive/device.c:331
 #, c-format
 msgid   "[%s %s %d]: Failed to write media header '%s'"
 msgstr  "[%s %s %d]: Fallo de escritura en el encabezamiento del media \"%s\""
 
-#: src/drive/vtl_drive/device.c:397
+#: src/drive/vtl_drive/device.c:395
 #, c-format
 msgid   "[%s %s %d]: Failed to open file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ]: Fallo a la abertura del fichero del media \"%s\" en la posición \"%d\" porque %m "
 
-#: src/drive/vtl_drive/device.c:521
+#: src/drive/vtl_drive/device.c:519
 #, c-format
 msgid   "[%s %s %d]: Failed to find media with UUID '%s' from database"
 msgstr  "[%s %s %d]: Fallo al buscar el media con l'UUID \"%s\" desde la base de datos"

@@ -82,6 +82,7 @@ static int so_database_postgresql_update_host(struct so_database_connection * co
 
 static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive);
+static ssize_t so_database_postgresql_get_block_size_by_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_checksums_from_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_database_connection * connect, const char * changer_id);
@@ -170,6 +171,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 
 	.delete_changer          = so_database_postgresql_delete_changer,
 	.delete_drive            = so_database_postgresql_delete_drive,
+	.get_block_size_by_pool  = so_database_postgresql_get_block_size_by_pool,
 	.get_changers            = so_database_postgresql_get_changers,
 	.get_checksums_from_pool = so_database_postgresql_get_checksums_from_pool,
 	.get_free_medias         = so_database_postgresql_get_free_medias,
@@ -596,6 +598,30 @@ static int so_database_postgresql_delete_drive(struct so_database_connection * c
 	free(drive_id);
 
 	return status != PGRES_COMMAND_OK;
+}
+
+static ssize_t so_database_postgresql_get_block_size_by_pool(struct so_database_connection * connect, struct so_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_medias_of_pools";
+	so_database_postgresql_prepare(self, query, "SELECT COALESCE(MAX(blocksize), 0) FROM media WHERE pool IN (SELECT id FROM pool WHERE uuid = $1 LIMIT 1);");
+
+	const char * param[] = { pool->uuid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	ssize_t block_size = -1;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK)
+		so_database_postgresql_get_ssize(result, 0, 0, &block_size);
+
+	PQclear(result);
+
+	return block_size;
 }
 
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect) {
