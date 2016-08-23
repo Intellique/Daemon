@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqoned v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 13:56+0100\n"
+        "POT-Creation-Date: 2016-08-23 16:12+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -20,7 +20,7 @@ msgstr  "Project-Id-Version: storiqoned v1.2\n"
 msgid   "New connection 'admin'"
 msgstr  "Nueva conexión \"admin\""
 
-#: src/storiqoned/device.c:251
+#: src/storiqoned/device.c:257
 #, c-format
 msgid   "Restarting changer: %s"
 msgstr  "Reinicio del brazo artículado: %s"

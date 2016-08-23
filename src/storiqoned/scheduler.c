@@ -125,6 +125,8 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 
 	last_start = now;
 
+	unsigned int nb_running_jobs = 0, nb_drives = sod_device_get_nb_drives();
+
 	struct so_value_iterator * iter = so_value_hashtable_get_iterator(jobs);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * vjob = so_value_iterator_get_value(iter, false);
@@ -140,6 +142,9 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			if (response != NULL)
 				so_job_sync(job, response);
 			so_value_free(response);
+
+			if (job->status == so_job_status_running)
+				nb_running_jobs++;
 		}
 	}
 	so_value_iterator_free(iter);
@@ -200,7 +205,7 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 		}
 
 		time_t now = time(NULL);
-		if (job->status == so_job_status_scheduled && now > job->next_start && job->repetition != 0) {
+		if (nb_running_jobs < nb_drives && job->status == so_job_status_scheduled && now > job->next_start && job->repetition != 0) {
 			struct so_job_private * self = job->data;
 
 			self->fd_in = so_process_pipe_to(&self->process);
@@ -213,6 +218,7 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			so_json_encode_to_fd(self->config, self->fd_in, true);
 
 			self->started = true;
+			nb_running_jobs++;
 		}
 	}
 	so_value_iterator_free(iter);
