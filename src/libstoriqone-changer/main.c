@@ -74,6 +74,18 @@ static void sochgr_daemon_request(int fd, short event __attribute__((unused)), v
 		struct so_value * response = so_value_pack("{ss}", "return", "pong");
 		so_json_encode_to_fd(response, 1, true);
 		so_value_free(response);
+	} else if (!strcmp("get number of drives", command)) {
+		struct so_changer_driver * driver = sochgr_changer_get();
+		struct so_changer * changer = driver->device;
+
+		unsigned int nb_drives = 0, i;
+		for (i = 0; i < changer->nb_drives; i++)
+			if (changer->drives[i].enable)
+				nb_drives++;
+
+		struct so_value * response = so_value_pack("{su}", "return", nb_drives);
+		so_json_encode_to_fd(response, 1, true);
+		so_value_free(response);
 	}
 
 	so_value_free(request);
