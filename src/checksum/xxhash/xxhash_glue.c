@@ -82,8 +82,13 @@ static char * so_checksum_xxhash_digest(struct so_checksum * checksum) {
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
+	/**
+	 * Make sure that result store a 64 bits bigger endian integer.
+	 * In order to be compatible with default output of xxhsum.
+	 * See issue #194
+	 */
 	struct XXH64_state_s xxhash = self->xxhash;
-	XXH64_hash_t result = XXH64_digest(&xxhash);
+	XXH64_hash_t result = htobe64(XXH64_digest(&xxhash));
 
 	so_checksum_convert_to_hex((unsigned char *) &result, 8, self->digest);
 
