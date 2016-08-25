@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-07-25 15:31+0200\n"
+        "POT-Creation-Date: 2016-08-25 12:04+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -93,27 +93,32 @@ msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » n
 msgid   "Starting check archive (%s) in thorough mode"
 msgstr  "Démarrage de la vérification de l’archive (%s) en mode minutieux"
 
-#: src/job/check-archive/thorough_mode.c:155
+#: src/job/check-archive/thorough_mode.c:108
+#, c-format
+msgid   "Failed to open volume #%u of archive '%s'"
+msgstr  "Échec lors de l’ouverture du volume n°%u de l’archive « %s »"
+
+#: src/job/check-archive/thorough_mode.c:162
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Erreur en lisant depuis le média « %s »"
 
-#: src/job/check-archive/thorough_mode.c:176
+#: src/job/check-archive/thorough_mode.c:183
 #, c-format
 msgid   "Data integrity of file '%s' is correct"
 msgstr  "L’intégrité des données du fichier « %s » est correcte"
 
-#: src/job/check-archive/thorough_mode.c:180
+#: src/job/check-archive/thorough_mode.c:187
 #, c-format
 msgid   "Data integrity of file '%s' is not correct"
 msgstr  "L’intégrité des données du fichier « %s » n’est pas correcte"
 
-#: src/job/check-archive/thorough_mode.c:218
+#: src/job/check-archive/thorough_mode.c:225
 #, c-format
 msgid   "Data integrity of volume '%s' is correct"
 msgstr  "L’intégrité des données du volume « %s » est correcte"
 
-#: src/job/check-archive/thorough_mode.c:222
+#: src/job/check-archive/thorough_mode.c:229
 #, c-format
 msgid   "Data integrity of volume '%s' is not correct"
 msgstr  "L’intégrité des données du volume « %s » n’est pas correcte"
