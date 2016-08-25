@@ -46,6 +46,7 @@ struct sochgr_media {
 		struct sochgr_peer_list * next;
 	} * first, * last;
 	size_t size_reserved;
+	struct so_pool * future_pool;
 };
 
 void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * peer);

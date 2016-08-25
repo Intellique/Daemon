@@ -103,6 +103,13 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		drive->ops->sync(drive);
 
 		struct so_format_reader * reader = drive->ops->open_archive_volume(drive, vol, checksums);
+		if (reader == NULL) {
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Failed to open volume #%u of archive '%s'"),
+				i, vol->archive->name);
+
+			return 1;
+		}
 
 		enum so_format_reader_header_status status;
 		struct so_format_file file_in;

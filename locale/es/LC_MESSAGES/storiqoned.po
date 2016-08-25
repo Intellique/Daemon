@@ -20,7 +20,7 @@ msgstr  "Project-Id-Version: storiqoned v1.2\n"
 msgid   "New connection 'admin'"
 msgstr  "Nueva conexión \"admin\""
 
-#: src/storiqoned/device.c:251
+#: src/storiqoned/device.c:257
 #, c-format
 msgid   "Restarting changer: %s"
 msgstr  "Reinicio del brazo artículado: %s"

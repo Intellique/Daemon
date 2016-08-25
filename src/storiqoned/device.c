@@ -59,6 +59,7 @@ struct sod_device {
 
 static struct so_value * devices = NULL;
 static struct so_value * devices_json = NULL;
+static unsigned int nb_total_drives = 0;
 
 static void sod_device_free(void * d);
 static void sod_device_exited(int fd, short event, void * data);
@@ -220,19 +221,24 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 
 	sleep(5);
 
+	nb_total_drives = 0;
+
 	iter = so_value_list_get_iterator(devices);
-	struct so_value * cmd_ping = so_value_pack("{ss}", "command", "ping");
+	struct so_value * cmd_count = so_value_pack("{ss}", "command", "get number of drives");
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * elt = so_value_iterator_get_value(iter, false);
 		struct sod_device * dev = so_value_custom_get(elt);
 
-		so_json_encode_to_fd(cmd_ping, dev->fd_in, true);
+		so_json_encode_to_fd(cmd_count, dev->fd_in, true);
 
+		unsigned int nb_drives = 0;
 		struct so_value * response = so_json_parse_fd(dev->fd_out, -1);
-		// TODO: check response
+		so_value_unpack(response, "{su}", "return", &nb_drives);
 		so_value_free(response);
+
+		nb_total_drives += nb_drives;
 	}
-	so_value_free(cmd_ping);
+	so_value_free(cmd_count);
 	so_value_iterator_free(iter);
 }
 
@@ -274,6 +280,10 @@ struct so_value * sod_device_get(bool shared) {
 	if (shared)
 		return so_value_share(devices_json);
 	return devices_json;
+}
+
+unsigned int sod_device_get_nb_drives() {
+	return nb_total_drives;
 }
 
 static void sod_device_pong(int fd, short event __attribute__((unused)), void * data) {

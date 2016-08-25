@@ -70,6 +70,10 @@ void soj_media_check_reserved() {
 }
 
 struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait, size_t size_need, bool * error, struct so_database_connection * db_connect) {
+	return soj_media_find_and_load2(media, media->pool, no_wait, size_need, error, db_connect);
+}
+
+struct so_drive * soj_media_find_and_load2(struct so_media * media, struct so_pool * pool, bool no_wait, size_t size_need, bool * error, struct so_database_connection * db_connect) {
 	struct so_job * job = soj_job_get();
 
 	enum {
@@ -119,7 +123,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 				break;
 
 			case reserve_media:
-				reserved_size = slot->changer->ops->reserve_media(slot->changer, media, size_need, NULL, NULL);
+				reserved_size = slot->changer->ops->reserve_media(slot->changer, media, size_need, NULL, pool);
 				if (reserved_size < 0) {
 					job->status = so_job_status_waiting;
 
