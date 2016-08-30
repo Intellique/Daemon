@@ -53,7 +53,7 @@ Package: storiqone-daemon
 Section: utils
 Architecture: any
 Depends: storiqone-plugin-db, ${shlibs:Depends}, ${misc:Depends}
-Recommends: storiqone-dbg
+Recommends: gdb, storiqone-dbg
 Description: Storiq one daemon
  .
  This package contains daemon
