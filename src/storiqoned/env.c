@@ -36,7 +36,9 @@
 // access
 #include <unistd.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/file.h>
+#include <libstoriqone/value.h>
 
 #include "env.h"
 
@@ -49,8 +51,12 @@ bool sod_env_setup() {
 	if (so_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
 		return false;
 
-	if (!access(DAEMON_SOCKET_DIR, F_OK))
-		so_file_mkdir(DAEMON_CRASH_DIR, 0700);
+	const char * crash_directory = DAEMON_CRASH_DIR;
+	struct so_value * config = so_config_get();
+	so_value_unpack(config, "{s{s{sS}}}", "default values", "paths", "crash", &crash_directory);
+
+	if (!access(crash_directory, F_OK))
+		so_file_mkdir(crash_directory, 0700);
 
 	char * path = getenv("PATH");
 	char * new_path = NULL;

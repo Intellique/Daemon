@@ -35,6 +35,7 @@
 // getpid, getsid
 #include <unistd.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/crash.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
@@ -126,6 +127,7 @@ int main(int argc, char ** argv) {
 	struct so_value * config = so_json_parse_file(config_file);
 	if (config == NULL)
 		return 2;
+	so_config_set(config);
 
 	if (!sod_env_setup())
 		return 3;

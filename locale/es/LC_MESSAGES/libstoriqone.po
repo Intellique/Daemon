@@ -177,7 +177,7 @@ msgstr  "so_checksum_register_driver: el controlador de cálculo de comprobació
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
 msgstr  "so_checksum_salt_password: parámetro invalido (contraseña: %p, sal: %p)"
 
-#: src/libstoriqone/crash.c:62
+#: src/libstoriqone/crash.c:64
 #, c-format
 msgid   "Oops!!!, programs '%s' catch signal: %s"
 msgstr  "Vaya!!!, programas \"%s\" capta la señal: %s"
