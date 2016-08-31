@@ -44,12 +44,15 @@
 #include <unistd.h>
 
 #include <libstoriqone/drive.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone-drive/time.h>
 
+#include "device.h"
 #include "io.h"
+#include "scsi.h"
 
 struct sodr_tape_drive_writer {
 	int fd;
@@ -60,6 +63,7 @@ struct sodr_tape_drive_writer {
 	ssize_t position;
 	int file_position;
 
+	bool end_of_tape_warning;
 	int last_errno;
 
 	struct so_drive * drive;
@@ -269,6 +273,7 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive 
 	self->position = 0;
 	self->file_position = file_position;
 	self->last_errno = 0;
+	self->end_of_tape_warning = false;
 
 	self->drive = drive;
 	self->media = drive->slot->media;
@@ -310,6 +315,9 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 	struct sodr_tape_drive_writer * self = sw->data;
 	self->last_errno = 0;
 
+	if (length == 0)
+		return 0;
+
 	ssize_t buffer_available = self->block_size - self->buffer_used;
 	if (buffer_available > length) {
 		memcpy(self->buffer + self->buffer_used, buffer, length);
@@ -328,6 +336,22 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 	if (nb_write < 0) {
 		switch (errno) {
 			case ENOSPC:
+				if (!self->end_of_tape_warning) {
+					self->end_of_tape_warning = true;
+
+					int fd = sodr_tape_drive_open_scsi();
+					sodr_tape_drive_scsi_size_available(fd, self->media);
+					close(fd);
+
+					char str_remaining_space[16];
+					ssize_t remaining_space = self->media->block_size * self->media->free_block;
+					so_file_convert_size_to_string(remaining_space, str_remaining_space, 16);
+
+					so_log_write(so_log_level_info,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Space remaing on tape '%s': %s"),
+						self->drive->vendor, self->drive->model, self->drive->index, self->media->label, str_remaining_space);
+				}
+
 				sodr_time_start();
 				nb_write = write(self->fd, self->buffer, self->block_size);
 				sodr_time_stop(self->drive);
@@ -362,6 +386,22 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 		if (nb_write < 0) {
 			switch (errno) {
 				case ENOSPC:
+					if (!self->end_of_tape_warning) {
+						self->end_of_tape_warning = true;
+
+						int fd = sodr_tape_drive_open_scsi();
+						sodr_tape_drive_scsi_size_available(fd, self->media);
+						close(fd);
+
+						char str_remaining_space[16];
+						ssize_t remaining_space = self->media->block_size * self->media->free_block;
+						so_file_convert_size_to_string(remaining_space, str_remaining_space, 16);
+
+						so_log_write(so_log_level_info,
+							dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Space remaing on tape '%s': %s"),
+							self->drive->vendor, self->drive->model, self->drive->index, self->media->label, str_remaining_space);
+					}
+
 					sodr_time_start();
 					nb_write = write(self->fd, self->buffer, self->block_size);
 					sodr_time_stop(self->drive);

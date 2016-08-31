@@ -730,6 +730,10 @@ static int sodr_tape_drive_open_drive() {
 	return fd;
 }
 
+int sodr_tape_drive_open_scsi() {
+	return open(scsi_device, O_RDWR);
+}
+
 static struct so_archive * sodr_tape_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db) {
 	struct so_media * media = sodr_tape_drive.slot->media;
 	if (media == NULL)

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-10 12:17+0200\n"
+        "POT-Creation-Date: 2016-08-26 18:00+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -119,47 +119,47 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"
 msgstr  ""
 
-#: src/drive/tape_drive/device.c:792
+#: src/drive/tape_drive/device.c:796
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\""
 
-#: src/drive/tape_drive/device.c:804
+#: src/drive/tape_drive/device.c:808
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  "[ %s | %s | #%u ]: Avance rápido hacia el final del media \"%s\" a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:808
+#: src/drive/tape_drive/device.c:812
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  "[ %s | %s | #%u ] : Avance rápido hacia el final del media \"%s\" terminado avec éxito"
 
-#: src/drive/tape_drive/device.c:815
+#: src/drive/tape_drive/device.c:819
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | #%u ]: Posicionamiento del media \"%s\" hacia la posición #%d"
 
-#: src/drive/tape_drive/device.c:828 src/drive/tape_drive/device.c:846
+#: src/drive/tape_drive/device.c:832 src/drive/tape_drive/device.c:850
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 msgstr  "[%s | %s | #%u]: Posicionamiento del media \"%s\" hacia la posicion #%d a encontrado un error \"%m\""
 
-#: src/drive/tape_drive/device.c:850 src/drive/tape_drive/device.c:857
+#: src/drive/tape_drive/device.c:854 src/drive/tape_drive/device.c:861
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | #%u ]: Posicionamento del media \"%s\" hacia la posicion #%d terminado con éxito"
 
-#: src/drive/tape_drive/device.c:949
+#: src/drive/tape_drive/device.c:953
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:1011
+#: src/drive/tape_drive/device.c:1015
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:1020
+#: src/drive/tape_drive/device.c:1024
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -352,17 +352,22 @@ msgstr  "no"
 msgid   "yes"
 msgstr  "si"
 
-#: src/drive/tape_drive/writer.c:170 src/drive/tape_drive/writer.c:340 src/drive/tape_drive/writer.c:374
+#: src/drive/tape_drive/writer.c:174 src/drive/tape_drive/writer.c:364 src/drive/tape_drive/writer.c:414
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing because %m"
 msgstr  "[%s | %s | #%u]: fallo al escribir porque %m"
 
-#: src/drive/tape_drive/writer.c:196
+#: src/drive/tape_drive/writer.c:200
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing end of file because %m"
 msgstr  "[%s | %s | #%u]: fallo al escribir el fin del marcador de fin de archivo porque %m"
 
-#: src/drive/tape_drive/writer.c:210
+#: src/drive/tape_drive/writer.c:214
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
+
+#: src/drive/tape_drive/writer.c:351 src/drive/tape_drive/writer.c:401
+#, c-format
+msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
+msgstr  ""
