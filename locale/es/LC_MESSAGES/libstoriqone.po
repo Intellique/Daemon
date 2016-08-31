@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-24 15:15+0100\n"
+        "POT-Creation-Date: 2016-08-31 19:28+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -379,7 +379,7 @@ msgstr  "so_file_read_all_from: fallo al leer desde \"%s\" porque %m"
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm: fallo a la obtención de informaciones de \"%s\" porque %m"
 
-#: src/libstoriqone/io/tmp.c:108
+#: src/libstoriqone/io/tmp.c:118
 #, c-format
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
 msgstr  "so_io_tmp_writer: no se pudo crear el fichero temporal en el directorio \"%s\" porque %m"
