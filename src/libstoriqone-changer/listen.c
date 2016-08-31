@@ -582,29 +582,45 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	struct sochgr_media * mp = media->private_data;
 	ssize_t reserved_space = (media->total_block * media->block_size) >> 8;
 
-	if (!(media->status == so_media_status_new && mp->future_pool != NULL && strcmp(mp->future_pool->uuid, pool->uuid)) != 0) {
-		if (size_need == 0) {
-			result = 0;
-			sochgr_media_add_reader(mp, peer);
-		} else if (pool->unbreakable_level == so_pool_unbreakable_level_archive) {
-			if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
-				result = size_need;
-				sochgr_media_add_writer(mp, peer, size_need);
-			}
-		} else {
-			if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
-				result = size_need;
-				sochgr_media_add_writer(mp, peer, size_need);
-			} else if (10 * media->free_block >= media->total_block) {
-				result = media->free_block * media->block_size - mp->size_reserved;
-				sochgr_media_add_writer(mp, peer, result);
-			}
-		}
+	switch (media->status) {
+		case so_media_status_new:
+		case so_media_status_foreign:
+			if (mp->future_pool != NULL && strcmp(mp->future_pool->uuid, pool->uuid) != 0)
+				break;
 
-		if (result > 0 && media->status == so_media_status_new)
+			/**
+			 * Assume that media is empty to allow formatting media
+			 * See redmine issue #204
+			 */
+			media->free_block = media->total_block;
 			mp->future_pool = pool;
-		else
-			so_pool_free(pool);
+
+		case so_media_status_in_use:
+			if (size_need == 0) {
+				result = 0;
+				sochgr_media_add_reader(mp, peer);
+			} else if (pool->unbreakable_level == so_pool_unbreakable_level_archive) {
+				if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+					result = size_need;
+					sochgr_media_add_writer(mp, peer, size_need);
+				}
+			} else {
+				if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
+					result = size_need;
+					sochgr_media_add_writer(mp, peer, size_need);
+				} else if (10 * media->free_block >= media->total_block) {
+					result = media->free_block * media->block_size - mp->size_reserved;
+					sochgr_media_add_writer(mp, peer, result);
+				}
+			}
+
+			if (result > 0 && media->status == so_media_status_new)
+				mp->future_pool = pool;
+			else
+				so_pool_free(pool);
+
+		default:
+			break;
 	}
 
 	struct so_value * response = so_value_pack("{sz}", "returned", result);
