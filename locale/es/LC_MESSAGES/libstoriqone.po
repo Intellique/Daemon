@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-03-13 15:02+0100\n"
+        "POT-Creation-Date: 2016-08-30 16:34+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -177,7 +177,7 @@ msgstr  "so_checksum_register_driver: el controlador de cálculo de comprobació
 msgid   "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"
 msgstr  "so_checksum_salt_password: parámetro invalido (contraseña: %p, sal: %p)"
 
-#: src/libstoriqone/crash.c:62
+#: src/libstoriqone/crash.c:64
 #, c-format
 msgid   "Oops!!!, programs '%s' catch signal: %s"
 msgstr  "Vaya!!!, programas \"%s\" capta la señal: %s"
@@ -384,7 +384,7 @@ msgstr  "so_file_read_all_from: fallo al leer desde \"%s\" porque %m"
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm: fallo a la obtención de informaciones de \"%s\" porque %m"
 
-#: src/libstoriqone/io/tmp.c:116
+#: src/libstoriqone/io/tmp.c:126
 #, c-format
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
 msgstr  "so_io_tmp_writer: no se pudo crear el fichero temporal en el directorio \"%s\" porque %m"
