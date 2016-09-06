@@ -3168,7 +3168,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
 	const char * query = "select_archive_by_id";
-	so_database_postgresql_prepare(self, query, "SELECT a.uuid, a.name, uc.login, uo.login, a.canappend, a.deleted FROM archive a INNER JOIN users uc ON a.creator = uc.id INNER JOIN users uo ON a.owner = uo.id WHERE a.id = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT a.uuid, a.name, uc.login, uo.login, a.canappend, a.status, a.deleted FROM archive a INNER JOIN users uc ON a.creator = uc.id INNER JOIN users uo ON a.owner = uo.id WHERE a.id = $1 LIMIT 1");
 
 	const char * param[] = { archive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -3186,7 +3186,8 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 		so_database_postgresql_get_string_dup(result, 0, 2, &archive->creator);
 		so_database_postgresql_get_string_dup(result, 0, 3, &archive->owner);
 		so_database_postgresql_get_bool(result, 0, 4, &archive->can_append);
-		so_database_postgresql_get_bool(result, 0, 5, &archive->deleted);
+		archive->status = so_database_postgresql_string_to_archive_status(PQgetvalue(result, 0, 5));
+		so_database_postgresql_get_bool(result, 0, 6, &archive->deleted);
 
 		archive->metadata = so_value_new_hashtable2();
 
@@ -3903,10 +3904,10 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 
 	if (archive_id == NULL) {
 		const char * query = "insert_archive";
-		so_database_postgresql_prepare(self, query, "WITH u AS (SELECT $1::UUID, $2::TEXT, id, id FROM users WHERE login = $3 LIMIT 1) INSERT INTO archive(uuid, name, owner, creator) SELECT * FROM u RETURNING id");
+		so_database_postgresql_prepare(self, query, "WITH u AS (SELECT $1::UUID, $2::TEXT, id, id, $4::archivestatus FROM users WHERE login = $3 LIMIT 1) INSERT INTO archive(uuid, name, owner, creator, status) SELECT * FROM u RETURNING id");
 
-		const char * param[] = { archive->uuid, archive->name, archive->creator };
-		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		const char * param[] = { archive->uuid, archive->name, archive->creator, so_database_postgresql_archive_status_to_string(archive->status) };
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3915,6 +3916,18 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 			so_database_postgresql_get_string_dup(result, 0, 0, &archive_id);
 			so_value_hashtable_put2(db, "id", so_value_new_string(archive_id), true);
 		}
+
+		PQclear(result);
+	} else {
+		const char * query = "update_archive";
+		so_database_postgresql_prepare(self, query, "UPDATE archive SET status = $1 WHERE id = $2");
+
+		const char * param[] = { so_database_postgresql_archive_status_to_string(archive->status), archive_id };
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
 
 		PQclear(result);
 	}
@@ -4172,6 +4185,9 @@ static int so_database_postgresql_sync_archive_format(struct so_database_connect
 }
 
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files) {
+	if (volume->end_time == 0)
+		return 0;
+
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);

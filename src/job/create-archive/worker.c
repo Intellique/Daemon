@@ -226,6 +226,8 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 	worker->writer->ops->free(worker->writer);
 	worker->writer = NULL;
 
+	soj_create_archive_worker_sync_archives(false, db_connect);
+
 	worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
 	if (worker->drive != NULL) {
 		worker->drive->ops->sync(worker->drive);
@@ -251,7 +253,7 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 
 }
 
-int soj_create_archive_worker_close(bool first_round) {
+int soj_create_archive_worker_close(bool first_round, struct so_database_connection * db_connect) {
 	if (first_round)
 		soj_create_archive_meta_worker_wait(true);
 
@@ -259,8 +261,14 @@ int soj_create_archive_worker_close(bool first_round) {
 		int failed = soj_create_archive_worker_close2(primary_worker, 0);
 		if (failed != 0)
 			primary_worker->state = soj_worker_status_error;
-		else
+		else {
+			primary_worker->archive->status = so_archive_status_data_complete;
+			soj_create_archive_worker_sync_archives(false, db_connect);
+
 			soj_create_archive_worker_write_meta(primary_worker);
+
+			primary_worker->archive->status = so_archive_status_complete;
+		}
 
 		primary_worker->writer->ops->free(primary_worker->writer);
 		primary_worker->writer = NULL;
@@ -276,8 +284,14 @@ int soj_create_archive_worker_close(bool first_round) {
 		int failed = soj_create_archive_worker_close2(worker, 0);
 		if (failed != 0)
 			worker->state = soj_worker_status_error;
-		else
-			soj_create_archive_worker_write_meta(worker);
+		else {
+			worker->archive->status = so_archive_status_data_complete;
+			soj_create_archive_worker_sync_archives(false, db_connect);
+
+			soj_create_archive_worker_write_meta(primary_worker);
+
+			worker->archive->status = so_archive_status_complete;
+		}
 
 		worker->writer->ops->free(worker->writer);
 		worker->writer = NULL;
@@ -523,8 +537,10 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 		worker->archive->creator = strdup(job->user);
 		worker->archive->owner = strdup(job->user);
 		worker->archive->metadata = so_value_new_hashtable2();
-	} else
+	} else {
 		worker->archive = archive;
+		worker->archive->status = so_archive_status_incomplete;
+	}
 
 	struct so_value * metadata = NULL;
 	so_value_unpack(job->meta, "{so}", "archive", &metadata);
@@ -689,7 +705,7 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 	}
 }
 
-int soj_create_archive_worker_sync_archives(struct so_database_connection * db_connect) {
+int soj_create_archive_worker_sync_archives(bool close_archive, struct so_database_connection * db_connect) {
 	int failed = db_connect->ops->start_transaction(db_connect);
 	if (failed != 0) {
 		soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -707,7 +723,7 @@ int soj_create_archive_worker_sync_archives(struct so_database_connection * db_c
 			db_connect->ops->cancel_transaction(db_connect);
 			primary_worker->state = soj_worker_status_error;
 			return failed;
-		} else
+		} else if (close_archive)
 			primary_worker->state = soj_worker_status_finished;
 	}
 
@@ -729,7 +745,7 @@ int soj_create_archive_worker_sync_archives(struct so_database_connection * db_c
 				db_connect->ops->cancel_transaction(db_connect);
 				worker->state = soj_worker_status_error;
 				return failed;
-			} else
+			} else if (close_archive)
 				worker->state = soj_worker_status_finished;
 		}
 	}

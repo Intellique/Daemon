@@ -39,7 +39,7 @@ struct so_value;
 
 struct so_value * soj_create_archive_worker_archives(void);
 enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect);
-int soj_create_archive_worker_close(bool first_round);
+int soj_create_archive_worker_close(bool first_round, struct so_database_connection * db_connect);
 int soj_create_archive_worker_create_check_archive(bool quick_mode, struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_end_of_file(void);
 bool soj_create_archive_worker_finished(void);
@@ -50,7 +50,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 void soj_create_archive_worker_prepare_medias2(struct so_database_connection * db_connect);
 float soj_create_archive_progress(void);
 void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_database_connection * db_connect);
-int soj_create_archive_worker_sync_archives(struct so_database_connection * db_connect);
+int soj_create_archive_worker_sync_archives(bool close_archive, struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
 
 #endif
