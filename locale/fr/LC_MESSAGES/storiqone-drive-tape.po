@@ -443,7 +443,7 @@ msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %m"
 #: src/drive/tape_drive/io/writer.c:209
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing end of file because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de find de fichier parce que %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fin de fichier parce que %m"
 
 #: src/drive/tape_drive/io/writer.c:223
 #, c-format
