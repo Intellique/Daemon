@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-16 16:02+0200\n"
+        "POT-Creation-Date: 2016-09-15 17:28+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,97 +16,97 @@ msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/tape_drive/device.c:177 src/drive/tape_drive/device.c:197
+#: src/drive/tape_drive/device.c:176 src/drive/tape_drive/device.c:196
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (using st driver)"
 msgstr  "[%s | %s | #%u]: rebobinaje de la banda (utilizando los driver st)"
 
-#: src/drive/tape_drive/device.c:186
+#: src/drive/tape_drive/device.c:185
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"
 msgstr  "[%s | %s | #%u]: fallo de rebobinaje de la banda (utilizando los driver st) porque %m"
 
-#: src/drive/tape_drive/device.c:211
+#: src/drive/tape_drive/device.c:210
 #, c-format
 msgid   "[%s | %s | #%u]: error while reading header because %m"
 msgstr  "[%s | %s | #%u]: fallo al leer el encabezamiento porque %m"
 
-#: src/drive/tape_drive/device.c:230
+#: src/drive/tape_drive/device.c:229
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Fallo al analisar el encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:361
+#: src/drive/tape_drive/device.c:360
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
 msgstr  "[ %s | %s | #%u ] : Falló a la lectura de la memoria auxiliar del media"
 
-#: src/drive/tape_drive/device.c:393
+#: src/drive/tape_drive/device.c:392
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Borrando los medias \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:395 src/drive/tape_drive/device.c:403 src/drive/tape_drive/device.c:409
-#: src/drive/tape_drive/device.c:443
+#: src/drive/tape_drive/device.c:394 src/drive/tape_drive/device.c:402 src/drive/tape_drive/device.c:408
+#: src/drive/tape_drive/device.c:442
 msgid   "long"
 msgstr  "largo"
 
-#: src/drive/tape_drive/device.c:395 src/drive/tape_drive/device.c:403 src/drive/tape_drive/device.c:409
-#: src/drive/tape_drive/device.c:443
+#: src/drive/tape_drive/device.c:394 src/drive/tape_drive/device.c:402 src/drive/tape_drive/device.c:408
+#: src/drive/tape_drive/device.c:442
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/drive/tape_drive/device.c:401
+#: src/drive/tape_drive/device.c:400
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: Fallo al borra el media \"%s\" (mode: %s)"
 
-#: src/drive/tape_drive/device.c:407 src/drive/tape_drive/device.c:441
+#: src/drive/tape_drive/device.c:406 src/drive/tape_drive/device.c:440
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
 msgstr  "[ %s | %s | #%u ]: el media \"%s\" a sido eliminado con éxito (mode: %s)"
 
-#: src/drive/tape_drive/device.c:523
+#: src/drive/tape_drive/device.c:522
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ]: tamaño del bloque encontrado: %zd"
 
-#: src/drive/tape_drive/device.c:555
+#: src/drive/tape_drive/device.c:554
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en lectura"
 
-#: src/drive/tape_drive/device.c:571
+#: src/drive/tape_drive/device.c:570
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ]: abertura del lector en escritura"
 
-#: src/drive/tape_drive/device.c:749
+#: src/drive/tape_drive/device.c:748
 #, c-format
 msgid   "[%s | %s | #%u]: retry #%uh to open tape drive"
 msgstr  "[ %s | %s | n°%u ]: reintento de apetura en #%uh"
 
-#: src/drive/tape_drive/device.c:758
+#: src/drive/tape_drive/device.c:757
 #, c-format
 msgid   "[%s | %s | #%u]: failed to open tape drive because %m"
 msgstr  "[ %s | %s | n°%u ]: fallo a la apertura del lector porque  %m"
 
-#: src/drive/tape_drive/device.c:775
+#: src/drive/tape_drive/device.c:774
 #, c-format
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  "[ %s | %s | n°%u ]: error al abrir el periferico scsi \"%s\"porque %m"
 
-#: src/drive/tape_drive/device.c:1020
+#: src/drive/tape_drive/device.c:1019
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | #%u ]: Creación de un nuevo media (número de serie del media: %s)"
 
-#: src/drive/tape_drive/device.c:1083
+#: src/drive/tape_drive/device.c:1082
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Verificación del encabezamiento del media \"%s\""
 
-#: src/drive/tape_drive/device.c:1092
+#: src/drive/tape_drive/device.c:1091
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | #%u ]: Error de vericicación del encabezamiento de la banda \"%s\""
@@ -407,20 +407,25 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:186 src/drive/tape_drive/io/writer.c:422 src/drive/tape_drive/io/writer.c:456
+#: src/drive/tape_drive/io/writer.c:190 src/drive/tape_drive/io/writer.c:462 src/drive/tape_drive/io/writer.c:512
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:209
+#: src/drive/tape_drive/io/writer.c:213
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing end of file because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:223
+#: src/drive/tape_drive/io/writer.c:227
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
+
+#: src/drive/tape_drive/io/writer.c:280 src/drive/tape_drive/io/writer.c:449 src/drive/tape_drive/io/writer.c:499
+#, c-format
+msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
+msgstr  ""
 
 #: src/drive/tape_drive/media.c:70
 #, c-format
