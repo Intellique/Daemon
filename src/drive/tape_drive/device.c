@@ -90,7 +90,6 @@ static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * ch
 static int sodr_tape_drive_init(struct so_value * config, struct so_database_connection * db_connect);
 static struct so_format_reader * sodr_tape_drive_open_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_st_open(void);
-static int sodr_tape_drive_scsi_open(void);
 static struct so_archive * sodr_tape_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_reset(struct so_database_connection * db);
 static int sodr_tape_drive_reset_position(struct so_database_connection * db);
@@ -767,7 +766,7 @@ static int sodr_tape_drive_st_open() {
 	return -1;
 }
 
-static int sodr_tape_drive_scsi_open() {
+int sodr_tape_drive_scsi_open() {
 	int fd = open(scsi_device, O_RDWR);
 
 	if (fd < 0)
