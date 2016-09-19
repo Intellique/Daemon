@@ -1,3 +1,13 @@
+storiqone (1.3.6-1+jessie) polisher; urgency=low
+
+  * New release
+  * Bug fix:
+    - #203: Allow formatting of full foreign medias
+    - #205: Can specify temporary and core-dump directory from configuration
+            file
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 19 Sep 2016 16:38:48 +0200
+
 storiqone (1.3.5-1+jessie) polisher; urgency=low
 
   * New release
