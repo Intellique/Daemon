@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-09-06 11:00+0200\n"
+        "POT-Creation-Date: 2016-09-27 11:03+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -51,85 +51,85 @@ msgstr  "Archive synchronisée avec la base de données"
 msgid   "Generating report"
 msgstr  "Génération du rapport"
 
-#: src/job/create-archive/create-archive.c:342
+#: src/job/create-archive/create-archive.c:330
 msgid   "There are no selected files to create a new archive or to add into an archive"
 msgstr  "Il n’y a pas de fichiers sélectionnés pour créer une nouvelle archive ou à ajouter à une archive"
 
-#: src/job/create-archive/create-archive.c:356
+#: src/job/create-archive/create-archive.c:344
 #, c-format
 msgid   "Error, path '%s' does not exist"
 msgstr  "Erreur, le chemin « %s » n’existe pas"
 
-#: src/job/create-archive/create-archive.c:378
+#: src/job/create-archive/create-archive.c:366
 msgid   "Error, no pool and no archive defined"
 msgstr  "Erreur, aucun pool et aucune archive de défini"
 
-#: src/job/create-archive/create-archive.c:389
+#: src/job/create-archive/create-archive.c:377
 #, c-format
 msgid   "Error, you can't add files to archive '%s' by policy"
 msgstr  "Erreur, la politique n’autorise pas l'ajout de fichiers à l’archive « %s » "
 
-#: src/job/create-archive/create-archive.c:396
+#: src/job/create-archive/create-archive.c:384
 #, c-format
 msgid   "Bug: archive '%s' does not contain files"
 msgstr  "Bogue : l’archive « %s » ne contient pas de fichier"
 
-#: src/job/create-archive/create-archive.c:404
+#: src/job/create-archive/create-archive.c:392
 #, c-format
 msgid   "Error, trying to create an archive '%s' into a deleted pool '%s'"
 msgstr  "Erreur, tentative de créer une archive « %s » dans un pool supprimé « %s »"
 
-#: src/job/create-archive/create-archive.c:411
+#: src/job/create-archive/create-archive.c:399
 #, c-format
 msgid   "Error, can't add file to the archive '%s' because it should be synchronized first"
 msgstr  "Erreur, ne peut pas ajouter de fichier dans l’archive « %s » parce qu’elle n’est pas synchronisée"
 
-#: src/job/create-archive/create-archive.c:417
+#: src/job/create-archive/create-archive.c:405
 #, c-format
 msgid   "Space required (%s) for creating new archive '%s'"
 msgstr  "Espace requis (%s) pour créer une nouvelle archive « %s »"
 
-#: src/job/create-archive/create-archive.c:423
+#: src/job/create-archive/create-archive.c:411
 #, c-format
 msgid   "Error: not enought space available in pool (%s)"
 msgstr  "Erreur : espace insuffisant dans le pool (%s)"
 
-#: src/job/create-archive/create-archive.c:439
+#: src/job/create-archive/create-archive.c:427
 #, c-format
 msgid   "Warning, skipping archive '%s' from pool '%s' because this archive is not synchronized"
 msgstr  "Attention, l’archive « %s » du pool « %s » n’est pas traitée parce qu’elle n’est pas synchronisée"
 
-#: src/job/create-archive/create-archive.c:446
+#: src/job/create-archive/create-archive.c:434
 #, c-format
 msgid   "Error, trying to create an archive into a deleted pool '%s'"
 msgstr  "Erreur, tentative de créer une archive dans un pool supprimé « %s »"
 
-#: src/job/create-archive/create-archive.c:452
+#: src/job/create-archive/create-archive.c:440
 #, c-format
 msgid   "Space required (%s) to add to archive '%s'"
 msgstr  "Espace requis (%s) pour ajouter à l’archive « %s »"
 
-#: src/job/create-archive/create-archive.c:458
+#: src/job/create-archive/create-archive.c:446
 #, c-format
 msgid   "Error: not enough space available in pool (%s)"
 msgstr  "Erreur : espace insuffisant dans le pool (%s)"
 
-#: src/job/create-archive/worker.c:133 src/job/create-archive/worker.c:150
+#: src/job/create-archive/worker.c:134 src/job/create-archive/worker.c:151
 #, c-format
 msgid   "Error while adding file (%s) to pool %s"
 msgstr  "Erreur en ajoutant un fichier (%s) au pool %s"
 
-#: src/job/create-archive/worker.c:237
+#: src/job/create-archive/worker.c:238
 #, c-format
 msgid   "Archive continue on media (%s)"
 msgstr  "L’archive continue sur le média (%s)"
 
-#: src/job/create-archive/worker.c:702
+#: src/job/create-archive/worker.c:722
 #, c-format
 msgid   "Warning, not archiving to pool '%s': not enough space (space reserved: %s, space required: %s)"
 msgstr  "Attention, impossible d’archiver dans le pool « %s » : pas assez d’espace dans celui-ci (espace réservé : %s, espace "
         "requis : %s)"
 
-#: src/job/create-archive/worker.c:712
+#: src/job/create-archive/worker.c:732
 msgid   "Failed to start database transaction"
 msgstr  "Échec lors du démarrage d’une nouvelle transaction de base de données"
