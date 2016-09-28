@@ -89,6 +89,10 @@ static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * 
 
 static void sodr_worker_command_erase_media(void * peer);
 static void sodr_worker_command_format_media(void * params);
+static void sodr_worker_command_get_raw_reader(void * params);
+static void sodr_worker_command_get_raw_writer(void * peer);
+static void sodr_worker_command_get_reader(void * params);
+static void sodr_worker_command_get_writer(void * params);
 
 static struct sodr_socket_command {
 	unsigned long hash;
@@ -125,6 +129,22 @@ struct sodr_socket_params_format_media {
 struct sodr_socket_params_parse_archive {
 	struct sodr_peer * peer;
 	unsigned int archive_position;
+	struct so_value * checksums;
+};
+
+struct sodr_socket_params_get_raw_reader {
+	struct sodr_peer * peer;
+	int position;
+};
+
+struct sodr_socket_params_get_reader {
+	struct sodr_peer * peer;
+	int position;
+	struct so_value * checksums;
+};
+
+struct sodr_socket_params_get_writer {
+	struct sodr_peer * peer;
 	struct so_value * checksums;
 };
 
@@ -369,7 +389,11 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
 	int position = -1;
 	char * job_key = NULL;
-	so_value_unpack(request, "{s{sssi}}", "params", "job key", &job_key, "file position", &position);
+	so_value_unpack(request, "{s{sssi}}",
+		"params",
+			"job key", &job_key,
+			"file position", &position
+	);
 
 	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
@@ -390,56 +414,13 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 		return;
 	}
 
-	struct so_media * media = drive->slot->media;
-
-	const char * media_name = so_media_get_name(media);
-
-	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
-		drive->vendor, drive->model, drive->index, media_name, position);
-
-	peer->stream_reader = drive->ops->get_raw_reader(position, sodr_db);
-
-	if (peer->stream_reader == NULL) {
-		so_log_write(so_log_level_error,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for reading at position #%d"),
-			drive->vendor, drive->model, drive->index, media_name, position);
-
-		struct so_value * response = so_value_pack("{sb}", "status", false);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		return;
-	}
-
-	peer->buffer_length = 16384;
-	peer->buffer = malloc(peer->buffer_length);
-
-	clock_gettime(CLOCK_MONOTONIC, &peer->start_time);
-
-	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
-	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
-
-	int cmd_socket = so_socket_server_temp(socket_cmd_config);
-	int data_socket = so_socket_server_temp(socket_data_config);
-
-	struct so_value * response = so_value_pack("{sbs{sOsO}sz}",
-		"status", true,
-		"socket",
-			"command", socket_cmd_config,
-			"data", socket_data_config,
-		"block size", peer->stream_reader->ops->get_block_size(peer->stream_reader)
-	);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
-
-	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
-	peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
-
-	so_value_free(socket_cmd_config);
-	so_value_free(socket_data_config);
+	struct sodr_socket_params_get_raw_reader * params = malloc(sizeof(struct sodr_socket_params_get_raw_reader));
+	bzero(params, sizeof(struct sodr_socket_params_get_raw_reader));
+	params->peer = peer;
+	params->position = position;
 
 	peer->owned = true;
-	so_thread_pool_run("raw reader", sodr_io_raw_reader, peer);
+	so_thread_pool_run("raw reader", sodr_worker_command_get_raw_reader, params);
 }
 
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -465,26 +446,12 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 		return;
 	}
 
-	struct so_media * media = drive->slot->media;
+	peer->owned = true;
+	so_thread_pool_run("raw writer", sodr_worker_command_get_raw_writer, peer);
 
-	const char * media_name = so_media_get_name(media);
 
-	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
-		drive->vendor, drive->model, drive->index, media_name);
 
-	peer->stream_writer = drive->ops->get_raw_writer(sodr_db);
 
-	if (peer->stream_writer == NULL) {
-		so_log_write(so_log_level_error,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for writing"),
-			drive->vendor, drive->model, drive->index, media_name);
-
-		struct so_value * response = so_value_pack("{sb}", "status", false);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		return;
-	}
 
 	peer->buffer_length = 16384;
 	peer->buffer = malloc(peer->buffer_length);
@@ -512,9 +479,6 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 
 	so_value_free(socket_cmd_config);
 	so_value_free(socket_data_config);
-
-	peer->owned = true;
-	so_thread_pool_run("raw writer", sodr_io_raw_writer, peer);
 }
 
 static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -547,55 +511,14 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 		return;
 	}
 
-	struct so_media * media = drive->slot->media;
-
-	const char * media_name = so_media_get_name(media);
-
-	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
-		drive->vendor, drive->model, drive->index, media_name, position);
-
-	peer->format_reader = drive->ops->get_reader(position, checksums, sodr_db);
-
-	if (peer->format_reader == NULL) {
-		so_log_write(so_log_level_error,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for reading at position #%d"),
-			drive->vendor, drive->model, drive->index, media_name, position);
-
-		struct so_value * response = so_value_pack("{sb}", "status", false);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		return;
-	}
-
-	peer->buffer_length = 16384;
-	peer->buffer = malloc(peer->buffer_length);
-	peer->has_checksums = so_value_list_get_length(checksums) > 0;
-
-	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
-	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
-
-	int cmd_socket = so_socket_server_temp(socket_cmd_config);
-	int data_socket = so_socket_server_temp(socket_data_config);
-
-	struct so_value * response = so_value_pack("{sbs{sOsO}sz}",
-		"status", true,
-		"socket",
-			"command", socket_cmd_config,
-			"data", socket_data_config,
-		"block size", peer->format_reader->ops->get_block_size(peer->format_reader)
-	);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
-
-	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
-	peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
-
-	so_value_free(socket_cmd_config);
-	so_value_free(socket_data_config);
+	struct sodr_socket_params_get_reader * params = malloc(sizeof(struct sodr_socket_params_get_reader));
+	bzero(params, sizeof(struct sodr_socket_params_get_reader));
+	params->peer = peer;
+	params->position = position;
+	params->checksums = so_value_share(checksums);
 
 	peer->owned = true;
-	so_thread_pool_run("format reader", sodr_io_format_reader, peer);
+	so_thread_pool_run("format reader", sodr_worker_command_get_reader, peer);
 }
 
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -626,57 +549,13 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 		return;
 	}
 
-	struct so_media * media = drive->slot->media;
-
-	const char * media_name = so_media_get_name(media);
-
-	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
-		drive->vendor, drive->model, drive->index, media_name);
-
-	peer->format_writer = drive->ops->get_writer(checksums, sodr_db);
-
-	if (peer->format_writer == NULL) {
-		so_log_write(so_log_level_error,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for writing"),
-			drive->vendor, drive->model, drive->index, media_name);
-
-		struct so_value * response = so_value_pack("{sb}", "status", false);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		return;
-	}
-
-	peer->buffer_length = 16384;
-	peer->buffer = malloc(peer->buffer_length);
-	peer->has_checksums = so_value_list_get_length(checksums) > 0;
-
-	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
-	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
-
-	int cmd_socket = so_socket_server_temp(socket_cmd_config);
-	int data_socket = so_socket_server_temp(socket_data_config);
-
-	struct so_value * response = so_value_pack("{sbs{sOsO}szsisz}",
-		"status", true,
-		"socket",
-			"command", socket_cmd_config,
-			"data", socket_data_config,
-		"block size", peer->format_writer->ops->get_block_size(peer->format_writer),
-		"file position", peer->format_writer->ops->file_position(peer->format_writer),
-		"available size", peer->format_writer->ops->get_available_size(peer->format_writer)
-	);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
-
-	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
-	peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
-
-	so_value_free(socket_cmd_config);
-	so_value_free(socket_data_config);
+	struct sodr_socket_params_get_writer * params = malloc(sizeof(struct sodr_socket_params_get_writer));
+	bzero(params, sizeof(struct sodr_socket_params_get_reader));
+	params->peer = peer;
+	params->checksums = so_value_share(checksums);
 
 	peer->owned = true;
-	so_thread_pool_run("format writer", sodr_io_format_writer, peer);
+	so_thread_pool_run("format writer", sodr_worker_command_get_writer, peer);
 }
 
 static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -820,5 +699,277 @@ static void sodr_worker_command_format_media(void * data) {
 
 	db_connect->ops->free(db_connect);
 	free(params);
+}
+
+static void sodr_worker_command_get_raw_reader(void * data) {
+	struct sodr_socket_params_get_raw_reader * params = data;
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+	struct so_media * media = drive->slot->media;
+	const char * media_name = so_media_get_name(media);
+
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
+		drive->vendor, drive->model, drive->index, media_name, params->position);
+
+	params->peer->stream_reader = drive->ops->get_raw_reader(params->position, db_connect);
+
+	if (params->peer->stream_reader == NULL) {
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for reading at position #%d"),
+			drive->vendor, drive->model, drive->index, media_name, params->position);
+
+		struct so_value * response = so_value_pack("{sb}", "status", false);
+		so_json_encode_to_fd(response, params->peer->fd, true);
+		so_value_free(response);
+
+		params->peer->owned = false;
+		sodr_listen_remove_peer(params->peer);
+
+		return;
+	}
+
+	params->peer->buffer_length = 16384;
+	params->peer->buffer = malloc(params->peer->buffer_length);
+
+	clock_gettime(CLOCK_MONOTONIC, &params->peer->start_time);
+
+	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
+	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
+
+	int cmd_socket = so_socket_server_temp(socket_cmd_config);
+	int data_socket = so_socket_server_temp(socket_data_config);
+
+	struct so_value * response = so_value_pack("{sbs{sOsO}sz}",
+		"status", true,
+		"socket",
+			"command", socket_cmd_config,
+			"data", socket_data_config,
+		"block size", params->peer->stream_reader->ops->get_block_size(params->peer->stream_reader)
+	);
+	so_json_encode_to_fd(response, params->peer->fd, true);
+	so_value_free(response);
+
+	params->peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
+	params->peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
+
+	so_value_free(socket_cmd_config);
+	so_value_free(socket_data_config);
+
+	sodr_io_raw_reader(params->peer);
+
+	params->peer->owned = false;
+	sodr_listen_remove_peer(params->peer);
+
+	db_connect->ops->free(db_connect);
+	free(params);
+}
+
+static void sodr_worker_command_get_raw_writer(void * arg) {
+	struct sodr_peer * peer = arg;
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+	struct so_media * media = drive->slot->media;
+
+	const char * media_name = so_media_get_name(media);
+
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	peer->stream_writer = drive->ops->get_raw_writer(db_connect);
+
+	if (peer->stream_writer == NULL) {
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for writing"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+		struct so_value * response = so_value_pack("{sb}", "status", false);
+		so_json_encode_to_fd(response, peer->fd, true);
+		so_value_free(response);
+
+		peer->owned = false;
+		sodr_listen_remove_peer(peer);
+
+		return;
+	}
+
+	peer->buffer_length = 16384;
+	peer->buffer = malloc(peer->buffer_length);
+
+	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
+	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
+
+	int cmd_socket = so_socket_server_temp(socket_cmd_config);
+	int data_socket = so_socket_server_temp(socket_data_config);
+
+	struct so_value * response = so_value_pack("{sbs{sOsO}szsisz}",
+		"status", true,
+		"socket",
+			"command", socket_cmd_config,
+			"data", socket_data_config,
+		"block size", peer->stream_writer->ops->get_block_size(peer->stream_writer),
+		"file position", peer->stream_writer->ops->file_position(peer->stream_writer),
+		"available size", peer->stream_writer->ops->get_available_size(peer->stream_writer)
+	);
+	so_json_encode_to_fd(response, peer->fd, true);
+	so_value_free(response);
+
+	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
+	peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
+
+	so_value_free(socket_cmd_config);
+	so_value_free(socket_data_config);
+
+	sodr_io_raw_writer(peer);
+
+	peer->owned = false;
+	sodr_listen_remove_peer(peer);
+
+	db_connect->ops->free(db_connect);
+}
+
+static void sodr_worker_command_get_reader(void * data) {
+	struct sodr_socket_params_get_reader * params = data;
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+	struct so_media * media = drive->slot->media;
+	const char * media_name = so_media_get_name(media);
+
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
+		drive->vendor, drive->model, drive->index, media_name, params->position);
+
+	params->peer->format_reader = drive->ops->get_reader(params->position, params->checksums, db_connect);
+
+	if (params->peer->format_reader == NULL) {
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for reading at position #%d"),
+			drive->vendor, drive->model, drive->index, media_name, params->position);
+
+		struct so_value * response = so_value_pack("{sb}", "status", false);
+		so_json_encode_to_fd(response, params->peer->fd, true);
+		so_value_free(response);
+
+		params->peer->owned = false;
+		sodr_listen_remove_peer(params->peer);
+
+		so_value_free(params->checksums);
+		free(params);
+		db_connect->ops->free(db_connect);
+
+		return;
+	}
+
+	params->peer->buffer_length = 16384;
+	params->peer->buffer = malloc(params->peer->buffer_length);
+	params->peer->has_checksums = so_value_list_get_length(params->checksums) > 0;
+
+	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
+	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
+
+	int cmd_socket = so_socket_server_temp(socket_cmd_config);
+	int data_socket = so_socket_server_temp(socket_data_config);
+
+	struct so_value * response = so_value_pack("{sbs{sOsO}sz}",
+		"status", true,
+		"socket",
+			"command", socket_cmd_config,
+			"data", socket_data_config,
+		"block size", params->peer->format_reader->ops->get_block_size(params->peer->format_reader)
+	);
+	so_json_encode_to_fd(response, params->peer->fd, true);
+	so_value_free(response);
+
+	params->peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
+	params->peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
+
+	so_value_free(socket_cmd_config);
+	so_value_free(socket_data_config);
+
+	sodr_io_format_reader(params->peer);
+
+	so_value_free(params->checksums);
+	free(params);
+	db_connect->ops->free(db_connect);
+}
+
+static void sodr_worker_command_get_writer(void * data) {
+	struct sodr_socket_params_get_writer * params = data;
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+	struct so_media * media = drive->slot->media;
+	const char * media_name = so_media_get_name(media);
+
+	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	params->peer->format_writer = drive->ops->get_writer(params->checksums, db_connect);
+
+	if (params->peer->format_writer == NULL) {
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to open media '%s' for writing"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+		struct so_value * response = so_value_pack("{sb}", "status", false);
+		so_json_encode_to_fd(response, params->peer->fd, true);
+		so_value_free(response);
+
+		params->peer->owned = false;
+		sodr_listen_remove_peer(params->peer);
+
+		so_value_free(params->checksums);
+		free(params);
+		db_connect->ops->free(db_connect);
+
+		return;
+	}
+
+	params->peer->buffer_length = 16384;
+	params->peer->buffer = malloc(params->peer->buffer_length);
+	params->peer->has_checksums = so_value_list_get_length(params->checksums) > 0;
+
+	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
+	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
+
+	int cmd_socket = so_socket_server_temp(socket_cmd_config);
+	int data_socket = so_socket_server_temp(socket_data_config);
+
+	struct so_value * response = so_value_pack("{sbs{sOsO}szsisz}",
+		"status", true,
+		"socket",
+			"command", socket_cmd_config,
+			"data", socket_data_config,
+		"block size", params->peer->format_writer->ops->get_block_size(params->peer->format_writer),
+		"file position", params->peer->format_writer->ops->file_position(params->peer->format_writer),
+		"available size", params->peer->format_writer->ops->get_available_size(params->peer->format_writer)
+	);
+	so_json_encode_to_fd(response, params->peer->fd, true);
+	so_value_free(response);
+
+	params->peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
+	params->peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
+
+	so_value_free(socket_cmd_config);
+	so_value_free(socket_data_config);
+
+	sodr_io_format_writer(params->peer);
+
+	so_value_free(params->checksums);
+	free(params);
+	db_connect->ops->free(db_connect);
 }
 
