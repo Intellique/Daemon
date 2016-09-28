@@ -448,37 +448,6 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 
 	peer->owned = true;
 	so_thread_pool_run("raw writer", sodr_worker_command_get_raw_writer, peer);
-
-
-
-
-
-	peer->buffer_length = 16384;
-	peer->buffer = malloc(peer->buffer_length);
-
-	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
-	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
-
-	int cmd_socket = so_socket_server_temp(socket_cmd_config);
-	int data_socket = so_socket_server_temp(socket_data_config);
-
-	struct so_value * response = so_value_pack("{sbs{sOsO}szsisz}",
-		"status", true,
-		"socket",
-			"command", socket_cmd_config,
-			"data", socket_data_config,
-		"block size", peer->stream_writer->ops->get_block_size(peer->stream_writer),
-		"file position", peer->stream_writer->ops->file_position(peer->stream_writer),
-		"available size", peer->stream_writer->ops->get_available_size(peer->stream_writer)
-	);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
-
-	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
-	peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
-
-	so_value_free(socket_cmd_config);
-	so_value_free(socket_data_config);
 }
 
 static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -518,7 +487,7 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 	params->checksums = so_value_share(checksums);
 
 	peer->owned = true;
-	so_thread_pool_run("format reader", sodr_worker_command_get_reader, peer);
+	so_thread_pool_run("format reader", sodr_worker_command_get_reader, params);
 }
 
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -555,7 +524,7 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	params->checksums = so_value_share(checksums);
 
 	peer->owned = true;
-	so_thread_pool_run("format writer", sodr_worker_command_get_writer, peer);
+	so_thread_pool_run("format writer", sodr_worker_command_get_writer, params);
 }
 
 static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd) {
