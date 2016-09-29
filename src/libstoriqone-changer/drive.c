@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include <libstoriqone/config.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/poll.h>
@@ -223,6 +224,7 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 	const char * params[] = { buffer_index };
 	so_process_new(&self->process, process_name, params, 1);
 
+	self->index = drive->index;
 	self->fd_in = so_process_pipe_to(&self->process);
 	self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
 	so_process_set_null(&self->process, so_process_stderr);
@@ -249,6 +251,8 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 
 	if (so_value_list_get_length(drives_config) <= drive->index)
 		so_value_list_push(drives_config, dr_config, true);
+	else
+		so_value_free(dr_config);
 }
 
 static int sochgr_drive_reset(struct so_drive * drive) {
@@ -285,6 +289,13 @@ static void sochgr_drive_restart(int fd, short event __attribute__((unused)), vo
 		self->process.fds[i].fd = i;
 		self->process.fds[i].type = so_process_fd_type_default;
 	}
+
+	// delete socket
+	struct so_value * socket = so_value_list_get(drives_config, self->index, true);
+	const char * path = NULL;
+	if (so_value_unpack(socket, "{sS}", "path", &path) == 1)
+		so_file_rm(path);
+	so_value_hashtable_put2(self->config, "socket", socket, true);
 
 	close(self->fd_in);
 	close(self->fd_out);
