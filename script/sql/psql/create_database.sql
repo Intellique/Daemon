@@ -835,6 +835,29 @@ CREATE TRIGGER log_metadata
 BEFORE UPDATE OR DELETE ON Metadata
 FOR EACH ROW EXECUTE PROCEDURE log_metadata();
 
+CREATE MATERIALIZED VIEW milestones_files AS
+SELECT sa.id AS archive, sa.archive_name, sa.archive_size, sa.starttime AS archive_starttime, sa.endtime AS archive_endtime,
+       af.id AS archivefile, af.name, "substring"(af.name, char_length("substring"(af.name, '(.+/)[^/]+'::text)) + 1) AS file_name,
+       af.type, af.mimetype, af.ctime AS file_ctime, af.size AS file_size,
+       ('['::text || array_to_string(sf.medias, ','::text)) || ']'::text AS medias, sf.medias_length, sp.id AS pool, sp.name AS pool_name
+FROM archivefile af
+    JOIN (
+        SELECT afv.archivefile, av.archive,
+            array_agg(('"'::text || COALESCE(m.name, m.label, m.mediumserialnumber)::text) || '"'::text) AS medias,
+            max(char_length(COALESCE(m.name, m.label, m.mediumserialnumber)::text)) AS medias_length, m.pool
+        FROM archivefiletoarchivevolume afv
+            JOIN archivevolume av ON afv.archivevolume = av.id
+            JOIN media m ON av.media = m.id
+        GROUP BY afv.archivefile, av.archive, m.pool
+        ) sf ON af.id = sf.archivefile
+        JOIN (
+            SELECT a.id, a.name AS archive_name, sum(av.size) AS archive_size, min(av.starttime) AS starttime, max(av.endtime) AS endtime
+            FROM archive a
+                JOIN archivevolume av ON a.id = av.archive
+            GROUP BY a.id, a.name
+        ) sa ON sf.archive = sa.id
+        JOIN pool sp ON sf.pool = sp.id;
+
 -- Comments
 COMMENT ON COLUMN ArchiveVolume.starttime IS 'Start time of archive volume creation';
 COMMENT ON COLUMN ArchiveVolume.endtime IS 'End time of archive volume creation';
