@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-23 17:49+0200\n"
+        "POT-Creation-Date: 2016-09-28 19:31+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -15,6 +15,16 @@ msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/libstoriqone-changer/drive.c:283
+#, c-format
+msgid   "Drive (pid: %d) has exited"
+msgstr  ""
+
+#: src/libstoriqone-changer/drive.c:315
+#, c-format
+msgid   "Restart drive (pid: %d)"
+msgstr  ""
 
 #: src/libstoriqone-changer/listen.c:257 src/libstoriqone-changer/listen.c:365
 #, c-format

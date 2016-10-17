@@ -31,6 +31,7 @@
 #include <libstoriqone-changer/drive.h>
 
 struct sochgr_drive {
+	unsigned int index;
 	struct so_process process;
 	int fd_in;
 	int fd_out;
