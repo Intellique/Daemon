@@ -212,14 +212,14 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 		}
 
 		if (failed == 0) {
-			bool check_archive = false;
+			bool check_archive = data.pool->auto_check == so_pool_autocheck_quick_mode || data.pool->auto_check == so_pool_autocheck_thorough_mode;
 			so_value_unpack(job->option, "{sb}", "check_archive", &check_archive);
 
 			if (check_archive) {
 				char * mode = NULL;
 				so_value_unpack(job->option, "{ss}", "check_archive_mode", &mode);
 
-				bool quick_mode = true;
+				bool quick_mode = data.pool->auto_check == so_pool_autocheck_quick_mode;
 				if (mode != NULL) {
 					quick_mode = strcmp(mode, "quick_mode") == 0;
 					free(mode);

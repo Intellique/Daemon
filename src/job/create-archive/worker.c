@@ -94,6 +94,7 @@ static void soj_create_archive_add_file3(struct soj_create_archive_worker * work
 static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file, char * alternate_path);
+static int soj_create_archive_worker_create_check_archive2(struct soj_create_archive_worker * worker, struct so_value * option, struct so_database_connection * db_connect);
 static void soj_create_archive_worker_generate_report2(struct so_archive * archive, struct so_value * selected_path, struct so_database_connection * db_connect);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
 ssize_t soj_create_archive_worker_write2(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
@@ -379,21 +380,40 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 	return new_file;
 }
 
-int soj_create_archive_worker_create_check_archive(bool quick_mode, struct so_database_connection * db_connect) {
+int soj_create_archive_worker_create_check_archive(struct so_value * option, struct so_database_connection * db_connect) {
 	int failed = 0;
 
 	if (primary_worker->state == soj_worker_status_finished)
-		failed = db_connect->ops->create_check_archive_job(db_connect, current_job, primary_worker->archive, quick_mode);
+		failed = soj_create_archive_worker_create_check_archive2(primary_worker, option, db_connect);
 
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
 		if (worker->state == soj_worker_status_finished)
-			failed += db_connect->ops->create_check_archive_job(db_connect, current_job, worker->archive, quick_mode);
+			failed += soj_create_archive_worker_create_check_archive2(worker, option, db_connect);
 	}
 
 	return failed;
+}
+
+static int soj_create_archive_worker_create_check_archive2(struct soj_create_archive_worker * worker, struct so_value * option, struct so_database_connection * db_connect) {
+	bool check_archive = worker->pool->auto_check == so_pool_autocheck_quick_mode || worker->pool->auto_check == so_pool_autocheck_thorough_mode;
+	so_value_unpack(option, "{sb}", "check_archive", &check_archive);
+
+	if (check_archive) {
+		bool quick_mode = worker->pool->auto_check == so_pool_autocheck_quick_mode;
+
+		char * mode = NULL;
+		so_value_unpack(option, "{ss}", "check_archive_mode", &mode);
+		if (mode != NULL) {
+			quick_mode = strcmp(mode, "quick_mode") == 0;
+			free(mode);
+		}
+
+		return db_connect->ops->create_check_archive_job(db_connect, current_job, worker->archive, quick_mode);
+	} else
+		return 0;
 }
 
 ssize_t soj_create_archive_worker_end_of_file() {

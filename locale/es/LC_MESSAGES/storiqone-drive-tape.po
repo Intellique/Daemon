@@ -407,23 +407,23 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:193 src/drive/tape_drive/io/writer.c:296 src/drive/tape_drive/io/writer.c:465
-#: src/drive/tape_drive/io/writer.c:515
+#: src/drive/tape_drive/io/writer.c:202 src/drive/tape_drive/io/writer.c:311 src/drive/tape_drive/io/writer.c:485
+#: src/drive/tape_drive/io/writer.c:542
 #, c-format
 msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:206 src/drive/tape_drive/io/writer.c:478 src/drive/tape_drive/io/writer.c:528
+#: src/drive/tape_drive/io/writer.c:219 src/drive/tape_drive/io/writer.c:502 src/drive/tape_drive/io/writer.c:559
 #, c-format
-msgid   "[%s | %s | #%u]: error while writing because %m"
-msgstr  ""
-
-#: src/drive/tape_drive/io/writer.c:229
-#, c-format
-msgid   "[%s | %s | #%u]: error while writing end of file because %m"
+msgid   "[%s | %s | #%u]: error while writing because %s"
 msgstr  ""
 
 #: src/drive/tape_drive/io/writer.c:243
+#, c-format
+msgid   "[%s | %s | #%u]: error while writing end of file because %s"
+msgstr  ""
+
+#: src/drive/tape_drive/io/writer.c:256
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"

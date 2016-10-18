@@ -32,7 +32,7 @@
 #include <stdbool.h>
 // free, malloc
 #include <stdlib.h>
-// memcpy
+// memcpy, strerror
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -120,22 +120,29 @@ static ssize_t sodr_tape_drive_writer_before_close(struct so_stream_writer * sw,
 		self->position += will_copy;
 
 		if (self->buffer_used == self->block_size) {
+			self->last_errno = 0;
+
 			sodr_time_start();
 			ssize_t nb_write = write(self->fd, self->buffer, self->block_size);
+			if (nb_write < 0)
+				self->last_errno = errno;
 			sodr_time_stop(self->drive);
 
 			if (nb_write < 0) {
-				switch (errno) {
+				switch (self->last_errno) {
 					case ENOSPC:
+						self->last_errno = 0;
+
 						sodr_time_start();
 						nb_write = write(self->fd, self->buffer, self->block_size);
+						if (nb_write < 0)
+							self->last_errno = errno;
 						sodr_time_stop(self->drive);
 
 						if (nb_write == self->block_size)
 							break;
 
 					default:
-						self->last_errno = errno;
 						self->media->nb_write_errors++;
 						return -1;
 				}
@@ -173,10 +180,12 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 
 		sodr_time_start();
 		ssize_t nb_write = write(self->fd, self->buffer, nb_will_write);
+		if (nb_write < 0)
+			self->last_errno = errno;
 		sodr_time_stop(self->drive);
 
 		if (nb_write < 0) {
-			switch (errno) {
+			switch (self->last_errno) {
 				case ENOSPC:
 					if (!self->end_of_tape_warning) {
 						self->end_of_tape_warning = true;
@@ -194,8 +203,12 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 							self->drive->vendor, self->drive->model, self->drive->index, self->media->label, str_remaining_space);
 					}
 
+					self->last_errno = 0;
+
 					sodr_time_start();
 					nb_write = write(self->fd, self->buffer, self->block_size);
+					if (nb_write < 0)
+						self->last_errno = errno;
 					sodr_time_stop(self->drive);
 
 					if (nb_write == self->block_size)
@@ -203,10 +216,9 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 
 				default:
 					so_log_write(so_log_level_error,
-						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %m"),
-						self->drive->vendor, self->drive->model, self->drive->index);
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %s"),
+						self->drive->vendor, self->drive->model, self->drive->index, strerror(self->last_errno));
 
-					self->last_errno = errno;
 					self->media->nb_write_errors++;
 					return -1;
 			}
@@ -221,15 +233,16 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 
 	if (!self->closed || close_fd) {
 		int failed = sodr_tape_drive_st_write_end_of_file(self->drive, self->fd);
+		if (failed != 0)
+			self->last_errno = errno;
 
 		self->media->last_write = time(NULL);
 
-		if (failed) {
+		if (failed != 0) {
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing end of file because %m"),
-				self->drive->vendor, self->drive->model, self->drive->index);
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing end of file because %s"),
+				self->drive->vendor, self->drive->model, self->drive->index, strerror(self->last_errno));
 
-			self->last_errno = errno;
 			self->media->nb_write_errors++;
 			return -1;
 		}
@@ -276,10 +289,12 @@ ssize_t sodr_tape_drive_writer_flush(struct so_stream_writer * sw) {
 	if (self->buffer_used > 0) {
 		sodr_time_start();
 		ssize_t nb_write = write(self->fd, self->buffer, self->buffer_used);
+		if (nb_write < 0)
+			self->last_errno = errno;
 		sodr_time_stop(self->drive);
 
 		if (nb_write < 0) {
-			switch (errno) {
+			switch (self->last_errno) {
 				case ENOSPC:
 					if (!self->end_of_tape_warning) {
 						self->end_of_tape_warning = true;
@@ -297,15 +312,18 @@ ssize_t sodr_tape_drive_writer_flush(struct so_stream_writer * sw) {
 							self->drive->vendor, self->drive->model, self->drive->index, self->media->label, str_remaining_space);
 					}
 
+					self->last_errno = 0;
+
 					sodr_time_start();
 					nb_write = write(self->fd, self->buffer, self->block_size);
+					if (nb_write < 0)
+						self->last_errno = errno;
 					sodr_time_stop(self->drive);
 
 					if (nb_write == self->block_size)
 						break;
 
 				default:
-					self->last_errno = errno;
 					self->media->nb_write_errors++;
 					return -1;
 			}
@@ -445,10 +463,12 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 
 	sodr_time_start();
 	ssize_t nb_write = write(self->fd, self->buffer, self->block_size);
+	if (nb_write < 0)
+		self->last_errno = errno;
 	sodr_time_stop(self->drive);
 
 	if (nb_write < 0) {
-		switch (errno) {
+		switch (self->last_errno) {
 			case ENOSPC:
 				if (!self->end_of_tape_warning) {
 					self->end_of_tape_warning = true;
@@ -466,8 +486,12 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 						self->drive->vendor, self->drive->model, self->drive->index, self->media->label, str_remaining_space);
 				}
 
+				self->last_errno = 0;
+
 				sodr_time_start();
 				nb_write = write(self->fd, self->buffer, self->block_size);
+				if (nb_write < 0)
+					self->last_errno = errno;
 				sodr_time_stop(self->drive);
 
 				if (nb_write == self->block_size)
@@ -475,10 +499,9 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 
 			default:
 				so_log_write(so_log_level_error,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %m"),
-					self->drive->vendor, self->drive->model, self->drive->index);
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %s"),
+					self->drive->vendor, self->drive->model, self->drive->index, strerror(self->last_errno));
 
-				self->last_errno = errno;
 				self->media->nb_write_errors++;
 				return -1;
 		}
@@ -493,12 +516,16 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 
 	const char * c_buffer = buffer;
 	while (length - nb_total_write >= self->block_size) {
+		self->last_errno = 0;
+
 		sodr_time_start();
 		nb_write = write(self->fd, c_buffer + nb_total_write, self->block_size);
+		if (nb_write < 0)
+			self->last_errno = errno;
 		sodr_time_stop(self->drive);
 
 		if (nb_write < 0) {
-			switch (errno) {
+			switch (self->last_errno) {
 				case ENOSPC:
 					if (!self->end_of_tape_warning) {
 						self->end_of_tape_warning = true;
@@ -516,8 +543,12 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 							self->drive->vendor, self->drive->model, self->drive->index, self->media->label, str_remaining_space);
 					}
 
+					self->last_errno = 0;
+
 					sodr_time_start();
 					nb_write = write(self->fd, self->buffer, self->block_size);
+					if (nb_write < 0)
+						self->last_errno = errno;
 					sodr_time_stop(self->drive);
 
 					if (nb_write == self->block_size)
@@ -525,10 +556,9 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 
 				default:
 					so_log_write(so_log_level_error,
-						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %m"),
-						self->drive->vendor, self->drive->model, self->drive->index);
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while writing because %s"),
+						self->drive->vendor, self->drive->model, self->drive->index, strerror(self->last_errno));
 
-					self->last_errno = errno;
 					self->media->nb_write_errors++;
 					return -1;
 			}

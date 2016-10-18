@@ -280,7 +280,7 @@ foreach my $lib_name ( sort keys %libs ) {
             my @cmds = ( 'gcc', '-o', '/tmp/a.out' );
             push @cmds, $lib->{result}->{include}
                 if defined $lib->{result}->{include} and length($lib->{result}->{include}) > 0;
-            push @cmds, "-l$lib_bin", $lib->{'dummy file'};
+            push @cmds, $lib->{'dummy file'}, "-l$lib_bin";
 
             run3 \@cmds, undef, \undef, \undef;
 
