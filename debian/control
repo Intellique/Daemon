@@ -2,7 +2,7 @@ Source: storiqone
 Section: utils
 Priority: extra
 Maintainer: guillaume clercin <gclercin@intellique.com>
-Build-Depends: cscope, debhelper (>= 9.0.0), exuberant-ctags, gettext, git, libexpat1-dev, libmagic-dev, libpq-dev, libssl-dev, nettle-dev, pkg-config, uuid-dev, make (>= 4.0)
+Build-Depends: cscope, debhelper (>= 9.0.0), exuberant-ctags, gettext, git, libexpat1-dev, libipc-run3-perl, libmagic-dev, libpq-dev, libssl-dev, nettle-dev, pkg-config, uuid-dev, make (>= 4.0)
 Standards-Version: 3.9.4
 Homepage: http://www.intellique.com
 #Vcs-Git: git://git.debian.org/collab-maint/stone.git
