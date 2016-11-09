@@ -1,3 +1,10 @@
+storiqone (1.3.8-1+jessie) polisher; urgency=low
+
+  * New release
+    - #226: Use “CONCURRENTLY” to allow refreshing view without locking out concurrent selects.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 09 Nov 2016 16:52:59 +0100
+
 storiqone (1.3.7-1+jessie) polisher; urgency=low
 
   * New release
