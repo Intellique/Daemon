@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-26 18:00+0200\n"
+        "POT-Creation-Date: 2016-09-29 15:45+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -352,22 +352,22 @@ msgstr  "no"
 msgid   "yes"
 msgstr  "si"
 
-#: src/drive/tape_drive/writer.c:174 src/drive/tape_drive/writer.c:364 src/drive/tape_drive/writer.c:414
+#: src/drive/tape_drive/writer.c:180 src/drive/tape_drive/writer.c:379 src/drive/tape_drive/writer.c:436
 #, c-format
-msgid   "[%s | %s | #%u]: error while writing because %m"
-msgstr  "[%s | %s | #%u]: fallo al escribir porque %m"
+msgid   "[%s | %s | #%u]: error while writing because %s"
+msgstr  "[%s | %s | #%u]: fallo al escribir porque %s"
 
-#: src/drive/tape_drive/writer.c:200
+#: src/drive/tape_drive/writer.c:209
 #, c-format
-msgid   "[%s | %s | #%u]: error while writing end of file because %m"
-msgstr  "[%s | %s | #%u]: fallo al escribir el fin del marcador de fin de archivo porque %m"
+msgid   "[%s | %s | #%u]: error while writing end of file because %s"
+msgstr  "[%s | %s | #%u]: fallo al escribir el fin del marcador de fin de archivo porque %s"
 
-#: src/drive/tape_drive/writer.c:214
+#: src/drive/tape_drive/writer.c:223
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
 
-#: src/drive/tape_drive/writer.c:351 src/drive/tape_drive/writer.c:401
+#: src/drive/tape_drive/writer.c:362 src/drive/tape_drive/writer.c:419
 #, c-format
 msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
 msgstr  ""
