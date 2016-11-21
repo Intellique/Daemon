@@ -1,3 +1,18 @@
+storiqone (1.2.20-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * New
+    - #193: Limit number of running jobs to number of drives
+    - #206: Temporary directory and core-dump path can be configured into configuration file
+    - #239: Add and refresh materialized view
+  * Changes:
+    - #214: Default value for checking archive after archiving depend on archive's pool.
+  * Bug fix:
+    - #204: Format full foreign media
+    - #216: Restart drive after crash
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 21 Nov 2016 17:02:37 +0100
+
 storiqone (1.2.19-1+wheezy) polisher; urgency=low
 
   * New bug fix release
