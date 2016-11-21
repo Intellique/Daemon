@@ -28,6 +28,8 @@
 #include <errno.h>
 // dgettext
 #include <libintl.h>
+// snprintf
+#include <stdio.h>
 // mkstemp
 #include <stdlib.h>
 // fstat
@@ -39,8 +41,10 @@
 // close, fstat, lseek, read, unlink, write
 #include <unistd.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/value.h>
 
 #include "config.h"
 
@@ -101,11 +105,17 @@ static struct so_stream_writer_ops so_io_tmp_writer_ops = {
 
 
 struct so_stream_writer * so_io_tmp_writer() {
-	char filename[64] = TMP_DIR "/StoriqOne_XXXXXX";
+	const char * directory = TMP_DIR;
+
+	struct so_value * config = so_config_get();
+	so_value_unpack(config, "{s{s{sS}}}", "default values", "paths", "temporary", &directory);
+
+	char filename[128];
+	snprintf(filename, 128, "%s/StoriqOne_XXXXXX", directory);
 
 	int fd = mkstemp(filename);
 	if (fd < 0) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"), TMP_DIR);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"), directory);
 		return NULL;
 	}
 

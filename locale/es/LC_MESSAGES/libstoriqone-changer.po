@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-14 20:02+0200\n"
+        "POT-Creation-Date: 2016-09-27 19:23+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -15,6 +15,16 @@ msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/libstoriqone-changer/drive.c:253
+#, c-format
+msgid   "Drive (pid: %d) has exited"
+msgstr  ""
+
+#: src/libstoriqone-changer/drive.c:278
+#, c-format
+msgid   "Restart drive (pid: %d)"
+msgstr  ""
 
 #: src/libstoriqone-changer/listen.c:257 src/libstoriqone-changer/listen.c:357
 #, c-format
@@ -55,47 +65,47 @@ msgstr  "[%s | %s]: cargando el media \"%s\" desde la ranura #%u al lector #%d f
 msgid   "Stoned has hang up"
 msgstr  "El demonio se ha colgado inesperadamente"
 
-#: src/libstoriqone-changer/main.c:93
+#: src/libstoriqone-changer/main.c:105
 #, c-format
 msgid   "Starting changer (type: %s)"
 msgstr  "Iniciando el movimiento del brazo articulado (type : %s)"
 
-#: src/libstoriqone-changer/main.c:130
+#: src/libstoriqone-changer/main.c:142
 #, c-format
 msgid   "Initialize changer (type: %s)"
 msgstr  "Inicialización del brazo articulado (type : %s)"
 
-#: src/libstoriqone-changer/main.c:148
+#: src/libstoriqone-changer/main.c:160
 #, c-format
 msgid   "[%s | %s]: changer will be offline"
 msgstr  "[%s | %s]: el brazo articulado se va a desconectar"
 
-#: src/libstoriqone-changer/main.c:153
+#: src/libstoriqone-changer/main.c:165
 #, c-format
 msgid   "[%s | %s]: changer is now offline"
 msgstr  "[%s | %s]: el brazo articulado está fuera de linea"
 
-#: src/libstoriqone-changer/main.c:157
+#: src/libstoriqone-changer/main.c:169
 #, c-format
 msgid   "[%s | %s]: failed to set changer offline"
 msgstr  "[%s | %s]: fallo al ponerse fuera de linea el brazo articulado"
 
-#: src/libstoriqone-changer/main.c:163
+#: src/libstoriqone-changer/main.c:175
 #, c-format
 msgid   "[%s | %s]: changer will be online"
 msgstr  "[%s | %s]: el brazo articulado se va a poner en linea"
 
-#: src/libstoriqone-changer/main.c:168
+#: src/libstoriqone-changer/main.c:180
 #, c-format
 msgid   "[%s | %s]: changer is now online"
 msgstr  "[%s | %s]: el brazo articulado está en linea"
 
-#: src/libstoriqone-changer/main.c:174
+#: src/libstoriqone-changer/main.c:186
 #, c-format
 msgid   "[%s | %s]: failed to set changer online"
 msgstr  "[%s | %s]: fallo al ponerse en linea el brazo articulado"
 
-#: src/libstoriqone-changer/main.c:203
+#: src/libstoriqone-changer/main.c:215
 #, c-format
 msgid   "Changer (type: %s) will stop"
 msgstr  "El brazo articulado (type: %s) se va a detener"
