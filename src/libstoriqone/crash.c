@@ -39,9 +39,11 @@
 // close, execlp, fork, getpid
 #include <unistd.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/crash.h>
 #include <libstoriqone/debug.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/value.h>
 
 #include "config.h"
 
@@ -85,8 +87,13 @@ static void so_crash(int signal) {
 }
 
 void so_crash_init(const char * prog_name) {
+	const char * directory = DAEMON_CRASH_DIR;
+
+	struct so_value * config = so_config_get();
+	so_value_unpack(config, "{s{s{sS}}}", "default values", "paths", "crash", &directory);
+
 	so_crash_pid = getpid();
-	snprintf(so_crash_prog_name, 256, DAEMON_CRASH_DIR "/%s", prog_name);
+	snprintf(so_crash_prog_name, 256, "%s/%s", directory, prog_name);
 
 	signal(SIGSEGV, so_crash);
 	signal(SIGABRT, so_crash);

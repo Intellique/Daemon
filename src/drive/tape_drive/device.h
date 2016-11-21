@@ -28,6 +28,7 @@
 #define __SO_TAPEDRIVE_DEVICE_H__
 
 struct so_drive * sodr_tape_drive_get_device(void);
+int sodr_tape_drive_open_scsi(void);
 
 #endif
 

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-10 12:12+0200\n"
+        "POT-Creation-Date: 2016-09-29 15:45+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -119,47 +119,47 @@ msgstr  "[ %s | %s | n°%u ] : Échec de l’activation de l’option « can
 msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"
 msgstr  "[ %s | %s | n°%u ] : L’activation de l’option « can-partition » du pilote « st » a réussi"
 
-#: src/drive/tape_drive/device.c:792
+#: src/drive/tape_drive/device.c:796
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s »"
 
-#: src/drive/tape_drive/device.c:804
+#: src/drive/tape_drive/device.c:808
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
 msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » a rencontré une erreur « %m »"
 
-#: src/drive/tape_drive/device.c:808
+#: src/drive/tape_drive/device.c:812
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
 msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » terminé avec succès"
 
-#: src/drive/tape_drive/device.c:815
+#: src/drive/tape_drive/device.c:819
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d"
 
-#: src/drive/tape_drive/device.c:828 src/drive/tape_drive/device.c:846
+#: src/drive/tape_drive/device.c:832 src/drive/tape_drive/device.c:850
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
 msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d a rencontré une erreur  « %m »"
 
-#: src/drive/tape_drive/device.c:850 src/drive/tape_drive/device.c:857
+#: src/drive/tape_drive/device.c:854 src/drive/tape_drive/device.c:861
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
 
-#: src/drive/tape_drive/device.c:949
+#: src/drive/tape_drive/device.c:953
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | n°%u ] : Création d’un nouveau média (numéro de série du média : %s)"
 
-#: src/drive/tape_drive/device.c:1011
+#: src/drive/tape_drive/device.c:1015
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Vérification de l’entête du média « %s »"
 
-#: src/drive/tape_drive/device.c:1020
+#: src/drive/tape_drive/device.c:1024
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande « %s »"
@@ -364,17 +364,22 @@ msgstr  "non"
 msgid   "yes"
 msgstr  "oui"
 
-#: src/drive/tape_drive/writer.c:170 src/drive/tape_drive/writer.c:340 src/drive/tape_drive/writer.c:374
+#: src/drive/tape_drive/writer.c:180 src/drive/tape_drive/writer.c:379 src/drive/tape_drive/writer.c:436
 #, c-format
-msgid   "[%s | %s | #%u]: error while writing because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %m"
+msgid   "[%s | %s | #%u]: error while writing because %s"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %s"
 
-#: src/drive/tape_drive/writer.c:196
+#: src/drive/tape_drive/writer.c:209
 #, c-format
-msgid   "[%s | %s | #%u]: error while writing end of file because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fine de fichier parce que %m"
+msgid   "[%s | %s | #%u]: error while writing end of file because %s"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fine de fichier parce que %s"
 
-#: src/drive/tape_drive/writer.c:210
+#: src/drive/tape_drive/writer.c:223
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | n°%u ] : le lecteur est fermé"
+
+#: src/drive/tape_drive/writer.c:362 src/drive/tape_drive/writer.c:419
+#, c-format
+msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
+msgstr  "[ %s | %s | n°%u ] : Espace restante sur le média « %s » : %s"

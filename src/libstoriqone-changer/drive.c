@@ -24,6 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dgettext
+#include <libintl.h>
 // snprintf
 #include <stdio.h>
 // free, malloc
@@ -35,6 +37,7 @@
 
 #include <libstoriqone/config.h>
 #include <libstoriqone/json.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
@@ -47,6 +50,7 @@ static bool sochgr_drive_is_free(struct so_drive * drive);
 static int sochgr_drive_load_media(struct so_drive * drive, struct so_media * media);
 static int sochgr_drive_lock(struct so_drive * drive, const char * job_key);
 static int sochgr_drive_reset(struct so_drive * drive);
+static void sochgr_drive_restart(int fd, short event, void * data);
 static int sochgr_drive_stop(struct so_drive * drive);
 static int sochgr_drive_update_status(struct so_drive * drive);
 
@@ -204,6 +208,8 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 		"default values", so_config_get()
 	);
 
+	so_poll_register(self->fd_in, POLLHUP, sochgr_drive_restart, self, NULL);
+
 	drive->ops = &drive_ops;
 	drive->data = self;
 
@@ -237,6 +243,43 @@ static int sochgr_drive_reset(struct so_drive * drive) {
 	}
 
 	return val;
+}
+
+static void sochgr_drive_restart(int fd, short event __attribute__((unused)), void * data) {
+	struct sochgr_drive * self = data;
+	so_poll_unregister(fd, POLLHUP);
+
+	so_log_write(so_log_level_critical,
+		dgettext("libstoriqone-changer", "Drive (pid: %d) has exited"),
+		self->process.pid);
+
+	so_process_wait(&self->process, 1);
+	unsigned int i;
+	for (i = 0; i < 3; i++) {
+		self->process.fds[i].fd = i;
+		self->process.fds[i].type = so_process_fd_type_default;
+	}
+
+	close(self->fd_in);
+	close(self->fd_out);
+	self->process.pid = -1;
+	self->fd_in = self->fd_out = -1;
+
+	self->fd_in = so_process_pipe_to(&self->process);
+	self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
+	so_process_set_null(&self->process, so_process_stderr);
+
+	so_poll_register(self->fd_in, POLLHUP, sochgr_drive_restart, self, NULL);
+
+	so_process_start(&self->process, 1);
+	so_json_encode_to_fd(self->config, self->fd_in, true);
+
+	so_log_write(so_log_level_critical,
+		dgettext("libstoriqone-changer", "Restart drive (pid: %d)"),
+		self->process.pid);
+
+	struct so_value * dr_config = so_json_parse_fd(self->fd_out, -1);
+	so_value_free(dr_config);
 }
 
 void sochgr_drive_set_config(struct so_value * logger, struct so_value * db, struct so_value * socket_template) {
