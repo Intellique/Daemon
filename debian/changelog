@@ -1,3 +1,9 @@
+storiqone (1.2.20-2+wheezy) polisher; urgency=low
+
+  * Rebuild with gcc 4.9.1
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Tue, 29 Nov 2016 13:07:56 +0100
+
 storiqone (1.2.20-1+wheezy) polisher; urgency=low
 
   * New bug fix release
