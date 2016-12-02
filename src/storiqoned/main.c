@@ -182,7 +182,7 @@ int main(int argc, char ** argv) {
 	if (logger_config != NULL && db_configs != NULL)
 		sod_device_configure(log_file, db_configs, default_values, connection, false);
 
-	sod_scheduler_init();
+	sod_scheduler_init(connection);
 
 	while (sod_daemon_run) {
 		connection->ops->update_host(connection, host_info->uuid, STORIQONE_VERSION);
