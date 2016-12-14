@@ -760,10 +760,10 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 
 	if (online) {
 		query = "select_online_medias";
-		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id IN (SELECT media FROM changerslot) AND m.status IN ('new', 'foreign') AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+		so_database_postgresql_prepare(self, query, "SELECT id FROM media WHERE id IN (SELECT media FROM changerslot WHERE media IS NOT NULL) AND status IN ('new', 'foreign') AND mediaformat = (SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1) ORDER BY label");
 	} else {
 		query = "select_offline_medias";
-		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id NOT IN (SELECT media FROM changerslot) AND m.status IN ('new', 'foreign') AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+		so_database_postgresql_prepare(self, query, "SELECT id FROM media WHERE id NOT IN (SELECT media FROM changerslot WHERE media IS NOT NULL) AND status IN ('new', 'foreign') AND mediaformat = (SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1) ORDER BY label");
 	}
 
 	char * density_code;

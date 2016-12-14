@@ -223,7 +223,12 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 
 	worker->drive->ops->release(worker->drive);
 
-	worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
+	ssize_t total_done = 0;
+	unsigned int i;
+	for (i = 0; i < worker->archive->nb_volumes; i++)
+		total_done += worker->archive->volumes[i].size;
+
+	worker->drive = soj_media_find_and_load_next(worker->pool, worker->archive_size - total_done, false, NULL, db_connect);
 	if (worker->drive != NULL) {
 		worker->drive->ops->sync(worker->drive);
 		worker->media = worker->drive->slot->media;
@@ -573,7 +578,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 void soj_create_archive_worker_prepare_medias(struct so_database_connection * db_connect) {
 	struct so_value * checksums = so_value_new_hashtable2();
 
-	primary_worker->drive = soj_media_find_and_load_next(primary_worker->pool, false, NULL, db_connect);
+	primary_worker->drive = soj_media_find_and_load_next(primary_worker->pool, primary_worker->archive_size, false, NULL, db_connect);
 
 	if (primary_worker->drive != NULL) {
 		primary_worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, primary_worker->pool);
@@ -604,7 +609,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 			continue;
 
 		bool error = false;
-		worker->drive = soj_media_find_and_load_next(worker->pool, true, &error, db_connect);
+		worker->drive = soj_media_find_and_load_next(worker->pool, worker->archive_size, true, &error, db_connect);
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->pool);
 
 		if (error)
@@ -643,7 +648,7 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
+		worker->drive = soj_media_find_and_load_next(worker->pool, worker->archive_size, false, NULL, db_connect);
 
 		if (worker->drive != NULL) {
 			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);

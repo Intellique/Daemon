@@ -70,7 +70,12 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 
 	self->dest_drive->ops->release(self->dest_drive);
 
-	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
+	ssize_t total_done = 0;
+	unsigned int i;
+	for (i = 0; i < self->copy_archive->nb_volumes; i++)
+		total_done += self->copy_archive->volumes[i].size;
+
+	self->dest_drive = soj_media_find_and_load_next(self->pool, self->src_archive->size - total_done, false, NULL, db_connect);
 	if (self->dest_drive == NULL)
 		return 3;
 

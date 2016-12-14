@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-05-31 16:01+0200\n"
+        "POT-Creation-Date: 2016-12-08 18:13+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -126,7 +126,7 @@ msgstr  "Error al escribir el encabezamiento del fichero \"%s\" en el fichero te
 msgid   "Error while writing file data '%s' to temporary file"
 msgstr  "Error al escribir los datos del fichero \"%s\" en el fichero temporal"
 
-#: src/job/copy-archive/indirect_copy.c:181 src/job/copy-archive/util.c:93
+#: src/job/copy-archive/indirect_copy.c:181 src/job/copy-archive/util.c:98
 msgid   "Failed to reopen temporary file"
 msgstr  "Fallo a la reabertura del fichero temporal"
 

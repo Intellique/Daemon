@@ -1221,6 +1221,11 @@ unsigned long long so_value_custom_compute_hash(const struct so_value * value) {
 	return (unsigned long) custom->data;
 }
 
+void so_value_custom_dont_release(struct so_value * value) {
+	struct so_value_custom * custom = so_value_get(value);
+	custom->release = NULL;
+}
+
 void * so_value_custom_get(const struct so_value * value) {
 	struct so_value_custom * custom = so_value_get(value);
 	return custom->data;
