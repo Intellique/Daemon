@@ -760,10 +760,10 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 
 	if (online) {
 		query = "select_online_medias";
-		so_database_postgresql_prepare(self, query, "SELECT id FROM media WHERE id IN (SELECT media FROM changerslot WHERE media IS NOT NULL) AND status IN ('new', 'foreign') AND mediaformat = (SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1) ORDER BY label");
+		so_database_postgresql_prepare(self, query, "SELECT id FROM media WHERE id IN (SELECT media FROM changerslot WHERE media IS NOT NULL) AND status IN ('new', 'foreign') AND mediaformat = (SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1) AND NOT writelock ORDER BY label");
 	} else {
 		query = "select_offline_medias";
-		so_database_postgresql_prepare(self, query, "SELECT id FROM media WHERE id NOT IN (SELECT media FROM changerslot WHERE media IS NOT NULL) AND status IN ('new', 'foreign') AND mediaformat = (SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1) ORDER BY label");
+		so_database_postgresql_prepare(self, query, "SELECT id FROM media WHERE id NOT IN (SELECT media FROM changerslot WHERE media IS NOT NULL) AND status IN ('new', 'foreign') AND mediaformat = (SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1) AND NOT writelock ORDER BY label");
 	}
 
 	char * density_code;
@@ -935,7 +935,7 @@ static struct so_value * so_database_postgresql_get_medias_of_pool(struct so_dat
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_medias_of_pools";
-	so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN pool p ON m.pool = p.id AND p.uuid = $1 ORDER BY m.label");
+	so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN pool p ON m.pool = p.id AND p.uuid = $1 AND NOT m.writelock ORDER BY m.label");
 
 	const char * param[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
