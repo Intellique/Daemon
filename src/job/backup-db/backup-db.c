@@ -215,7 +215,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				break;
 
 			case get_media:
-				drive = soj_media_find_and_load_next(soj_backupdb_pool, false, &error, db_connect);
+				drive = soj_media_find_and_load_next(soj_backupdb_pool, size_available, false, &error, db_connect);
 
 				if (error) {
 					stop = true;

@@ -160,6 +160,7 @@ struct so_database_connection {
 
 		int (*add_job_record)(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
+		int (*disable_old_jobs)(struct so_database_connection * connect);
 		char * (*get_restore_path)(struct so_database_connection * connect, struct so_job * job) __attribute__((warn_unused_result));
 		bool (*is_user_disabled)(struct so_database_connection * connect, struct so_job * job);
 		int (*start_job)(struct so_database_connection * connect, struct so_job * job);
