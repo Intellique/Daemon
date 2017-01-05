@@ -284,7 +284,8 @@ static struct so_media * soj_media_get_next(struct so_pool * pool, ssize_t size_
 
 	struct so_value * available_medias = so_value_hashtable_get2(soj_media_available_by_pool, pool->uuid, false, false);
 	if (available_medias != NULL) {
-		while (so_value_list_get_length(available_medias) > 0) {
+		ssize_t total_reserved_size = 0;
+		while (total_reserved_size >= size_needed && so_value_list_get_length(available_medias) > 0) {
 			struct so_value * vmedia = so_value_list_shift(available_medias);
 			struct so_media * media = so_value_custom_get(vmedia);
 
@@ -296,12 +297,17 @@ static struct so_media * soj_media_get_next(struct so_pool * pool, ssize_t size_
 
 			ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed, pool);
 			if (reserved_size > 0) {
-				so_value_custom_dont_release(vmedia);
-				so_value_free(vmedia);
-				return media;
+				total_reserved_size += reserved_size;
+				so_value_list_push(reserved_medias, vmedia, false);
 			}
+		}
 
+		if (total_reserved_size >= size_needed) {
+			struct so_value * vmedia = so_value_list_shift(reserved_medias);
+			struct so_media * media = so_value_custom_get(vmedia);
+			so_value_custom_dont_release(vmedia);
 			so_value_free(vmedia);
+			return media;
 		}
 	}
 
