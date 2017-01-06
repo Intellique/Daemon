@@ -1,3 +1,12 @@
+storiqone (1.2.21-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #246: archiving on medias with write lock
+    - #247: all jobs with status 'pause', 'running' or 'waiting' will be set to 'error' at daemon starting up
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 06 Jan 2017 15:50:57 +0100
+
 storiqone (1.2.20-1+jessie) polisher; urgency=low
 
   * New bug fix release
