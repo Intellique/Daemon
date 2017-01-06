@@ -64,6 +64,7 @@ Priority: extra
 Architecture: any
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}, storiqone-daemon (= ${binary:Version})
+Suggests: storiqone-src
 Description: StoriqOne daemon (debug files)
  .
  This package contains the debugging symbols.
@@ -74,12 +75,22 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, dbconfig-common, postgresql-client
 Provides: storiqone-plugin-db
 Description: Storiq one posgresql connector (db-plugin)
+ .
  Contains plugin to connect to postresql database
 
 Package: storiqone-scripts
 Section: utils
 Architecture: all
 Depends: ${perl:Depends}, ${misc:Depends}, libsys-cpu-perl, libmediainfo-perl, mediainfo
-Description: Storiq one scripts (log-plugin)
+Description: Storiq one scripts
+ .
  Contains scripts that the daemon will run
 
+Package: storiqone-src
+Section: utils
+Architecture: all
+Depends: ${misc:Depends}
+Recommends: storiqone-dbg
+Description: Storiq one src
+ .
+ Source of storiq one daemon at /usr/src/storiqone-src
