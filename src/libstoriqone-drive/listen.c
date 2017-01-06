@@ -519,7 +519,7 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	}
 
 	struct sodr_socket_params_get_writer * params = malloc(sizeof(struct sodr_socket_params_get_writer));
-	bzero(params, sizeof(struct sodr_socket_params_get_reader));
+	bzero(params, sizeof(struct sodr_socket_params_get_writer));
 	params->peer = peer;
 	params->checksums = so_value_share(checksums);
 

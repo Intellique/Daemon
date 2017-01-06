@@ -45,6 +45,7 @@ struct so_value * soj_media_available_by_pool = NULL;
 struct so_value * soj_media_reserved_by_pool = NULL;
 
 static void soj_media_exit(void) __attribute__((destructor));
+static struct so_media * soj_media_get_next(struct so_pool * pool, ssize_t size_needed);
 static void soj_media_init(void) __attribute__((constructor));
 
 
@@ -67,6 +68,13 @@ void soj_media_check_reserved() {
 		so_value_iterator_free(iter_media);
 	}
 	so_value_iterator_free(iter_pool);
+}
+
+static void soj_media_exit() {
+	so_value_free(soj_media_available_by_pool);
+	soj_media_available_by_pool = NULL;
+	so_value_free(soj_media_reserved_by_pool);
+	soj_media_reserved_by_pool = NULL;
 }
 
 struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait, size_t size_need, bool * error, struct so_database_connection * db_connect) {
@@ -143,34 +151,30 @@ struct so_drive * soj_media_find_and_load2(struct so_media * media, struct so_po
 	return drive;
 }
 
-struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wait, bool * error, struct so_database_connection * db_connect) {
+struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, ssize_t size_needed, bool no_wait, bool * error, struct so_database_connection * db_connect) {
 	struct so_job * job = soj_job_get();
 
-	struct so_value * medias = so_value_hashtable_get2(soj_media_reserved_by_pool, pool->uuid, false, false);
-	struct so_media * media = NULL;
+	struct so_media * media = soj_media_get_next(pool, size_needed);
 
-	if (so_value_list_get_length(medias) > 0) {
-		struct so_value * vmedia = so_value_list_shift(medias);
-		media = so_value_custom_get(vmedia);
+	enum {
+		alert_user,
+		check_media,
+		get_media,
+		look_for_media,
+	} state = look_for_media;
 
-		enum {
-			alert_user,
-			get_media,
-			look_for_media,
-		} state = look_for_media;
+	bool stop = false, has_alert_user = false;
+	struct so_slot * slot = NULL;
+	struct so_drive * drive = NULL;
 
-		bool stop = false, has_alert_user = false;
-		struct so_slot * slot = NULL;
-		struct so_drive * drive = NULL;
-
-		while (!stop && !job->stopped_by_user) {
-			switch (state) {
-				case alert_user:
-					job->status = so_job_status_waiting;
-					if (!has_alert_user)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-							dgettext("libstoriqone-job", "Media not found (named: %s)"), media->name);
-					has_alert_user = true;
+	while (!stop && !job->stopped_by_user) {
+		switch (state) {
+			case alert_user:
+				job->status = so_job_status_waiting;
+				if (!has_alert_user)
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+						dgettext("libstoriqone-job", "Media not found (named: %s)"), media->name);
+				has_alert_user = true;
 
 					sleep(15);
 
@@ -179,10 +183,34 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 					soj_changer_sync_all();
 					break;
 
+				case check_media:
+					drive->ops->sync(drive);
+					media = drive->slot->media;
+
+					if (media->write_lock) {
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+							dgettext("libstoriqone-job", "Skip media '%s' because we cannot write on it"),
+							media->name);
+
+						drive->ops->release(drive);
+
+						drive = NULL;
+						slot = NULL;
+
+						media = soj_media_get_next(pool, size_needed);
+
+						state = look_for_media;
+					} else
+						stop = true;
+
+					break;
+
 				case get_media:
 					drive = slot->changer->ops->get_media(slot->changer, media, no_wait, error);
 
-					if (drive != NULL || no_wait)
+					if (drive != NULL)
+						state = check_media;
+					else if (no_wait)
 						stop = true;
 					else {
 						job->status = so_job_status_waiting;
@@ -202,20 +230,16 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 			}
 		}
 
-		if (drive == NULL)
-			so_value_list_unshift(medias, vmedia, false);
-		else {
-			so_value_free(vmedia);
+	if (drive == NULL) {
+		// so_value_list_unshift(medias, vmedia, false);
+	} else {
+		media = drive->slot->media;
+		if (media->status == so_media_status_new || media->status == so_media_status_foreign) {
+			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("libstoriqone-job", "Automatic formatting media '%s'"),
+				media->name);
 
-			drive->ops->sync(drive);
-
-			media = drive->slot->media;
-			if (media->status == so_media_status_new || media->status == so_media_status_foreign) {
-				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-					dgettext("libstoriqone-job", "Automatic formatting media '%s'"),
-					media->name);
-
-				int failed = drive->ops->format_media(drive, 0, pool);
+			int failed = drive->ops->format_media(drive, 0, pool);
 				if (failed != 0) {
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("libstoriqone-job", "Failed to format media"));
@@ -243,19 +267,51 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 			}
 		}
 
-		job->status = so_job_status_running;
+	job->status = so_job_status_running;
 
-		return drive;
+	return drive;
+}
+
+static struct so_media * soj_media_get_next(struct so_pool * pool, ssize_t size_needed) {
+	struct so_value * reserved_medias = so_value_hashtable_get2(soj_media_reserved_by_pool, pool->uuid, false, false);
+	if (reserved_medias != NULL && so_value_list_get_length(reserved_medias) > 0) {
+		struct so_value * vmedia = so_value_list_shift(reserved_medias);
+		struct so_media * media = so_value_custom_get(vmedia);
+		so_value_custom_dont_release(vmedia);
+		so_value_free(vmedia);
+		return media;
+	}
+
+	struct so_value * available_medias = so_value_hashtable_get2(soj_media_available_by_pool, pool->uuid, false, false);
+	if (available_medias != NULL) {
+		ssize_t total_reserved_size = 0;
+		while (total_reserved_size >= size_needed && so_value_list_get_length(available_medias) > 0) {
+			struct so_value * vmedia = so_value_list_shift(available_medias);
+			struct so_media * media = so_value_custom_get(vmedia);
+
+			struct so_slot * sl = soj_changer_find_slot(media);
+			if (sl == NULL) {
+				so_value_free(vmedia);
+				continue;
+			}
+
+			ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, media, size_needed, pool);
+			if (reserved_size > 0) {
+				total_reserved_size += reserved_size;
+				so_value_list_push(reserved_medias, vmedia, false);
+			}
+		}
+
+		if (total_reserved_size >= size_needed) {
+			struct so_value * vmedia = so_value_list_shift(reserved_medias);
+			struct so_media * media = so_value_custom_get(vmedia);
+			so_value_custom_dont_release(vmedia);
+			so_value_free(vmedia);
+			return media;
+		}
 	}
 
 	return NULL;
-}
-
-static void soj_media_exit() {
-	so_value_free(soj_media_available_by_pool);
-	soj_media_available_by_pool = NULL;
-	so_value_free(soj_media_reserved_by_pool);
-	soj_media_reserved_by_pool = NULL;
 }
 
 static void soj_media_init() {

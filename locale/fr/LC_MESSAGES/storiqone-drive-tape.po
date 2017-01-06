@@ -5,71 +5,71 @@
 #
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
-        "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-09-29 15:45+0200\n"
-        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
-        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
-        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
-        "Language: fr\n"
-        "MIME-Version: 1.0\n"
-        "Content-Type: text/plain; charset=UTF-8\n"
-        "Content-Transfer-Encoding: 8bit\n"
-        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+		"Report-Msgid-Bugs-To: \n"
+		"POT-Creation-Date: 2016-11-30 15:28+0100\n"
+		"PO-Revision-Date: 2014-11-13 09:03+0100\n"
+		"Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+		"Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+		"Language: fr\n"
+		"MIME-Version: 1.0\n"
+		"Content-Type: text/plain; charset=UTF-8\n"
+		"Content-Transfer-Encoding: 8bit\n"
+		"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: src/drive/tape_drive/device.c:155
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (scsi version)"
-msgstr  "[ %s | %s | #%u ] : rembobinage de la bande (version scsi)"
+msgstr  "[ %s | %s | #%u ] : rembobinage de la bande (version scsi)"
 
 #: src/drive/tape_drive/device.c:166
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (scsi version)"
-msgstr  "[ %s | %s | #%u ] : échec du rembobinage de la bande (version scsi)"
+msgstr  "[ %s | %s | #%u ] : échec du rembobinage de la bande (version scsi)"
 
 #: src/drive/tape_drive/device.c:177 src/drive/tape_drive/device.c:198
 #, c-format
 msgid   "[%s | %s | #%u]: rewind tape (using st driver)"
-msgstr  "[ %s | %s | #%u ] : rembobinage de la bande (utilisant le pilote st)"
+msgstr  "[ %s | %s | #%u ] : rembobinage de la bande (utilisant le pilote st)"
 
 #: src/drive/tape_drive/device.c:187
 #, c-format
 msgid   "[%s | %s | #%u]: failed to rewind tape (using st driver) because %m"
-msgstr  "[ %s | %s | #%u ] : échec du rembobinage de la bande (utilisant le pilote st) parce que %m"
+msgstr  "[ %s | %s | #%u ] : échec du rembobinage de la bande (utilisant le pilote st) parce que %m"
 
 #: src/drive/tape_drive/device.c:212
 #, c-format
 msgid   "[%s | %s | #%u]: error while reading header because %m"
-msgstr  "[ %s | %s | #%u ] : erreur en lisant l’entête parce que %m"
+msgstr  "[ %s | %s | #%u ] : erreur en lisant l’entête parce que %m"
 
 #: src/drive/tape_drive/device.c:231
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
-msgstr  "[ %s | %s | n°%u ] : échec lors de l’analyse de l’entête du média « %s »"
+msgstr  "[ %s | %s | n°%u ] : échec lors de l’analyse de l’entête du média « %s »"
 
 #: src/drive/tape_drive/device.c:319
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium auxiliary memory"
-msgstr  "[ %s | %s | n°%u ] : échec lors de la lecture de la mémoire auxiliaire du média"
+msgstr  "[ %s | %s | n°%u ] : échec lors de la lecture de la mémoire auxiliaire du média"
 
 #: src/drive/tape_drive/device.c:353
 #, c-format
 msgid   "[%s | %s | #%u]: Formatting media '%s' with one partition"
-msgstr  "[ %s | %s | n°%u ] : Formatage du média « %s » en une seule partition"
+msgstr  "[ %s | %s | n°%u ] : Formatage du média « %s » en une seule partition"
 
 #: src/drive/tape_drive/device.c:363
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to Format media '%s' with one partition because %m"
-msgstr  "[ %s | %s | n°%u ] : Échec tu formatage du média « %s » en une seule partition parce que %m"
+msgstr  "[ %s | %s | n°%u ] : Échec tu formatage du média « %s » en une seule partition parce que %m"
 
 #: src/drive/tape_drive/device.c:367
 #, c-format
 msgid   "[%s | %s | #%u]: Succeed to format media '%s' with one partition"
-msgstr  "[ %s | %s | n°%u ] : Succès lors du formatge du média « %s » en une seule partition"
+msgstr  "[ %s | %s | n°%u ] : Succès lors du formatge du média « %s » en une seule partition"
 
 #: src/drive/tape_drive/device.c:379
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
-msgstr  "[ %s | %s | n°%u ] : Effacement du média « %s » (mode: %s)"
+msgstr  "[ %s | %s | n°%u ] : Effacement du média « %s » (mode: %s)"
 
 #: src/drive/tape_drive/device.c:381 src/drive/tape_drive/device.c:389 src/drive/tape_drive/device.c:397
 msgid   "long"
@@ -82,264 +82,269 @@ msgstr  "rapide"
 #: src/drive/tape_drive/device.c:387
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
-msgstr  "[ %s | %s | n°%u ] : Échec lors de l’effacement du média « %s » (mode: %s)"
+msgstr  "[ %s | %s | n°%u ] : Échec lors de l’effacement du média « %s » (mode: %s)"
 
 #: src/drive/tape_drive/device.c:395
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased successfully (mode: %s)"
-msgstr  "[ %s | %s | n°%u ] : le média « %s » a été effacé avec succès (mode: %s)"
+msgstr  "[ %s | %s | n°%u ] : le média « %s » a été effacé avec succès (mode: %s)"
 
 #: src/drive/tape_drive/device.c:488
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
-msgstr  "[ %s | %s | n°%u ] : taille de bloc trouvé : %zd"
+msgstr  "[ %s | %s | n°%u ] : taille de bloc trouvé : %zd"
 
 #: src/drive/tape_drive/device.c:531
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
-msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en lecture"
+msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en lecture"
 
-#: src/drive/tape_drive/device.c:561
+#: src/drive/tape_drive/device.c:545
+#, c-format
+msgid   "[%s | %s | #%u]: try to write on a media '%s' with write lock"
+msgstr  "[ %s | %s | n°%u ] : Tentative d’écriture sur un média « %s » protégé en écriture"
+
+#: src/drive/tape_drive/device.c:570
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
-msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en écriture"
-
-#: src/drive/tape_drive/device.c:688
-#, c-format
-msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition'"
-msgstr  "[ %s | %s | n°%u ] : Activation de l’option « can-partition » du pilote « st »"
+msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en écriture"
 
 #: src/drive/tape_drive/device.c:697
 #, c-format
-msgid   "[%s | %s | #%u]: Failed to set option to 'st' driver 'can-partition'"
-msgstr  "[ %s | %s | n°%u ] : Échec de l’activation de l’option « can-partition » du pilote « st »"
+msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition'"
+msgstr  "[ %s | %s | n°%u ] : Activation de l’option « can-partition » du pilote « st »"
 
-#: src/drive/tape_drive/device.c:701
+#: src/drive/tape_drive/device.c:706
+#, c-format
+msgid   "[%s | %s | #%u]: Failed to set option to 'st' driver 'can-partition'"
+msgstr  "[ %s | %s | n°%u ] : Échec de l’activation de l’option « can-partition » du pilote « st »"
+
+#: src/drive/tape_drive/device.c:710
 #, c-format
 msgid   "[%s | %s | #%u]: Set option to 'st' driver 'can-partition' with success"
-msgstr  "[ %s | %s | n°%u ] : L’activation de l’option « can-partition » du pilote « st » a réussi"
+msgstr  "[ %s | %s | n°%u ] : L’activation de l’option « can-partition » du pilote « st » a réussi"
 
-#: src/drive/tape_drive/device.c:796
+#: src/drive/tape_drive/device.c:805
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s »"
 
-#: src/drive/tape_drive/device.c:808
+#: src/drive/tape_drive/device.c:817
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"
-msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » a rencontré une erreur « %m »"
+msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » a rencontré une erreur « %m »"
 
-#: src/drive/tape_drive/device.c:812
+#: src/drive/tape_drive/device.c:821
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"
-msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » terminé avec succès"
+msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » terminé avec succès"
 
-#: src/drive/tape_drive/device.c:819
+#: src/drive/tape_drive/device.c:828
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
-msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d"
 
-#: src/drive/tape_drive/device.c:832 src/drive/tape_drive/device.c:850
+#: src/drive/tape_drive/device.c:841 src/drive/tape_drive/device.c:859
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d encountered an error '%m'"
-msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d a rencontré une erreur  « %m »"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d a rencontré une erreur  « %m »"
 
-#: src/drive/tape_drive/device.c:854 src/drive/tape_drive/device.c:861
+#: src/drive/tape_drive/device.c:863 src/drive/tape_drive/device.c:870
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
-msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
 
-#: src/drive/tape_drive/device.c:953
+#: src/drive/tape_drive/device.c:962
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
-msgstr  "[ %s | %s | n°%u ] : Création d’un nouveau média (numéro de série du média : %s)"
-
-#: src/drive/tape_drive/device.c:1015
-#, c-format
-msgid   "[%s | %s | #%u]: Checking media header '%s'"
-msgstr  "[ %s | %s | n°%u ] : Vérification de l’entête du média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Création d’un nouveau média (numéro de série du média : %s)"
 
 #: src/drive/tape_drive/device.c:1024
 #, c-format
+msgid   "[%s | %s | #%u]: Checking media header '%s'"
+msgstr  "[ %s | %s | n°%u ] : Vérification de l’entête du média « %s »"
+
+#: src/drive/tape_drive/device.c:1033
+#, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
-msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande « %s »"
+msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande « %s »"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:61
 #, c-format
 msgid   "[%s | %s | #%u]: Finding best block size"
-msgstr  "[ %s | %s | n°%u ] : Recheche de la meilleure taille de bloc"
+msgstr  "[ %s | %s | n°%u ] : Recheche de la meilleure taille de bloc"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:86
 #, c-format
 msgid   "[%s | %s | #%u]: Test (block size: %s)"
-msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s)"
+msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s)"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:127
 #, c-format
 msgid   "[%s | %s | #%u]: Test (block size: %s), throughput: %s/s"
-msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s), débit : %s/s"
+msgstr  "[ %s | %s | n°%u ] : Test (taille de bloc : %s), débit : %s/s"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:145
 #, c-format
 msgid   "[%s | %s | #%u]: Found best block size: %s"
-msgstr  "[ %s | %s | n°%u ] : Meilleure taille de bloc trouvé : %s"
+msgstr  "[ %s | %s | n°%u ] : Meilleure taille de bloc trouvé : %s"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:162
 #, c-format
 msgid   "[%s | %s | #%u]: Trying to format a cleaning media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Tentative de formater un média de nettoyage « %s »"
+msgstr  "[ %s | %s | n°%u ] : Tentative de formater un média de nettoyage « %s »"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:175
 #, c-format
 msgid   "[%s | %s | #%u]: Using default block size (%s) for WORM media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Utilisation de la taille de bloc par défaut (%s) pour le média WORM « %s »"
+msgstr  "[ %s | %s | n°%u ] : Utilisation de la taille de bloc par défaut (%s) pour le média WORM « %s »"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:185
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to find the best block size for media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Échec lors de la recherche de la meilleur taille de bloc pour le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Échec lors de la recherche de la meilleur taille de bloc pour le média « %s »"
 
 #: src/drive/tape_drive/format/storiqone/storiqone.c:190
 #, c-format
 msgid   "[%s | %s | #%u]: Reusing block size (%s) of pool '%s' for media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Réutilisation de la taille de bloc (%s) du pool « %s » pour le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Réutilisation de la taille de bloc (%s) du pool « %s » pour le média « %s »"
 
 #: src/drive/tape_drive/media.c:66
 #, c-format
 msgid   "Found LTFS header in media with (volume id: %s)"
-msgstr  "Entête de bande LTFS trouvé (id du volume : %s)"
+msgstr  "Entête de bande LTFS trouvé (id du volume : %s)"
 
 #: src/drive/tape_drive/media.c:143
 #, c-format
 msgid   "Failed to read LTFS index from media '%s'"
-msgstr  "Échec lors de la lecture de l’index LTFS du média « %s »"
+msgstr  "Échec lors de la lecture de l’index LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:155
 #, c-format
 msgid   "Error while reading LTFS index from media '%s'"
-msgstr  "Erreur en lisant l’index LTFS du média « %s »"
+msgstr  "Erreur en lisant l’index LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:166
 #, c-format
 msgid   "Found corrupted LTFS index on media '%s'"
-msgstr  "Trouvé un index LTFS corrompu sur le média « %s »"
+msgstr  "Trouvé un index LTFS corrompu sur le média « %s »"
 
 #: src/drive/tape_drive/media.c:186
 #, c-format
 msgid   "Error, not enough memory to read LTFS index from media '%s'"
-msgstr  "Erreur, pas assez de mémoire pour lire l’index LTFS du média « %s »"
+msgstr  "Erreur, pas assez de mémoire pour lire l’index LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:214
 #, c-format
 msgid   "Failed to read LTFS label from media '%s'"
-msgstr  "Échec lors de la lecture de l’étiquette LTFS du média « %s »"
+msgstr  "Échec lors de la lecture de l’étiquette LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:226
 #, c-format
 msgid   "Error while reading LTFS label from media '%s'"
-msgstr  "Erreur en lisant l’étiquette LTFS du média « %s »"
+msgstr  "Erreur en lisant l’étiquette LTFS du média « %s »"
 
 #: src/drive/tape_drive/media.c:237
 #, c-format
 msgid   "Found corrupted LTFS label on media '%s'"
-msgstr  "Trouvé une étiquette LTFS corrompue sur le média « %s »"
+msgstr  "Trouvé une étiquette LTFS corrompue sur le média « %s »"
 
 #: src/drive/tape_drive/media.c:257
 #, c-format
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
-msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média « %s »"
+msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média « %s »"
 
 #: src/drive/tape_drive/reader.c:141
 #, c-format
 msgid   "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"
-msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la position n°%u et le numéro d’enregistrement %ld"
+msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la position n°%u et le numéro d’enregistrement %ld"
 
 #: src/drive/tape_drive/reader.c:151
 #, c-format
 msgid   "[%s | %s | #%u]: error while fast forwarding of %d blocks because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en avançant de %d blocks parce que %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en avançant de %d blocks parce que %m"
 
 #: src/drive/tape_drive/reader.c:170 src/drive/tape_drive/reader.c:192 src/drive/tape_drive/reader.c:299
 #, c-format
 msgid   "[%s | %s | #%u]: error while reading because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en lisant parce que %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en lisant parce que %m"
 
 #: src/drive/tape_drive/reader.c:353
 #, c-format
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en rembobinant la bande parce que %m"
+msgstr  "[ %s | %s | n°%u ] : erreur en rembobinant la bande parce que %m"
 
 #: src/drive/tape_drive/scsi.c:244
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application vendor' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « application "
-        "vendor » sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « application "
+		"vendor » sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:250
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application vendor' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « application "
-        "vendor » sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « application "
+		"vendor » sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:254
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application vendor' removed on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « application vendor » a été supprimé sur le "
-        "média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « application vendor » a été supprimé sur le "
+		"média « %s »"
 
 #: src/drive/tape_drive/scsi.c:262 src/drive/tape_drive/scsi.c:316
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « application "
-        "name » sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « application "
+		"name » sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:268 src/drive/tape_drive/scsi.c:322
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « application name » "
-        "sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « application name » "
+		"sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:272 src/drive/tape_drive/scsi.c:326
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application name' removed on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « application name » a été supprimé sur le "
-        "média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « application name » a été supprimé sur le "
+		"média « %s »"
 
 #: src/drive/tape_drive/scsi.c:280
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application version' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « application "
-        "version » sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « application "
+		"version » sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:286
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application version' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « application "
-        "version » sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « application "
+		"version » sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:290
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'application version' removed on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « application version » a été supprimé sur le "
-        "média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « application version » a été supprimé sur le "
+		"média « %s »"
 
 #: src/drive/tape_drive/scsi.c:298
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'user medium text label' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « user medium text "
-        "label » sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, tentative de suppression de l’attribut « user medium text "
+		"label » sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:304
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'user medium text label' on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « user medium text "
-        "label » sur le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, échec de la suppression de l’attribut « user medium text "
+		"label » sur le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:308
 #, c-format
 msgid   "[%s | %s | #%u]: Update medium auxiliary memory, attribute 'user medium text label' removed on media '%s'"
-msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « user medium text label » a été supprimé sur "
-        "le média « %s »"
+msgstr  "[ %s | %s | n°%u ] : Mise à jour de la mémoire auxiliaire, l’attribut « user medium text label » a été supprimé sur "
+		"le média « %s »"
 
 #: src/drive/tape_drive/scsi.c:1020
 #, c-format
@@ -354,7 +359,7 @@ msgstr  "Information du média %s, date du média: %s"
 #: src/drive/tape_drive/scsi.c:1204
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
-msgstr  "Commande SCSI supportée : « %s », disponible : %s, temps morts : %u secondes"
+msgstr  "Commande SCSI supportée : « %s », disponible : %s, temps morts : %u secondes"
 
 #: src/drive/tape_drive/scsi.c:1205
 msgid   "no"
@@ -367,19 +372,19 @@ msgstr  "oui"
 #: src/drive/tape_drive/writer.c:180 src/drive/tape_drive/writer.c:379 src/drive/tape_drive/writer.c:436
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing because %s"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %s"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %s"
 
 #: src/drive/tape_drive/writer.c:209
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing end of file because %s"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fine de fichier parce que %s"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fine de fichier parce que %s"
 
 #: src/drive/tape_drive/writer.c:223
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
-msgstr  "[ %s | %s | n°%u ] : le lecteur est fermé"
+msgstr  "[ %s | %s | n°%u ] : le lecteur est fermé"
 
 #: src/drive/tape_drive/writer.c:362 src/drive/tape_drive/writer.c:419
 #, c-format
 msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
-msgstr  "[ %s | %s | n°%u ] : Espace restante sur le média « %s » : %s"
+msgstr  "[ %s | %s | n°%u ] : Espace restante sur le média « %s » : %s"

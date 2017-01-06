@@ -245,6 +245,7 @@ bool so_value_vvalid(struct so_value * value, const char * format, va_list param
 bool so_value_boolean_get(const struct so_value * value);
 
 unsigned long long so_value_custom_compute_hash(const struct so_value * value);
+void so_value_custom_dont_release(struct so_value * value);
 void * so_value_custom_get(const struct so_value * value);
 
 double so_value_float_get(const struct so_value * value);

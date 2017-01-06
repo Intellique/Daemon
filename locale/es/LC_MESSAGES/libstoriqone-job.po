@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-17 19:27+0200\n"
+        "POT-Creation-Date: 2016-12-07 16:18+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -66,26 +66,31 @@ msgstr  "Arranque de la tarea (tipo: %s)"
 msgid   "Initializing job (type: %s)"
 msgstr  "Inicializanción de la tarea (tipo : %s)"
 
-#: src/libstoriqone-job/media.c:96 src/libstoriqone-job/media.c:172
+#: src/libstoriqone-job/media.c:104 src/libstoriqone-job/media.c:176
 #, c-format
 msgid   "Media not found (named: %s)"
 msgstr  "Media no encontrado (llamado: %s)"
 
-#: src/libstoriqone-job/media.c:215
+#: src/libstoriqone-job/media.c:192
+#, c-format
+msgid   "Skip media '%s' because we cannot write on it"
+msgstr  ""
+
+#: src/libstoriqone-job/media.c:239
 #, c-format
 msgid   "Automatic formatting media '%s'"
 msgstr  "Formateo automático del media \"%s\""
 
-#: src/libstoriqone-job/media.c:221
+#: src/libstoriqone-job/media.c:245
 msgid   "Failed to format media"
 msgstr  "Fallo de formateo del media"
 
-#: src/libstoriqone-job/media.c:232
+#: src/libstoriqone-job/media.c:256
 #, c-format
 msgid   "Checking media header '%s' was successful"
 msgstr  "verificación del encabezamiento del media  \"%s\" en curso"
 
-#: src/libstoriqone-job/media.c:236
+#: src/libstoriqone-job/media.c:260
 #, c-format
 msgid   "Checking media header '%s': failed"
 msgstr  "verificación del encabezamiento del media \"%s\" fallo"

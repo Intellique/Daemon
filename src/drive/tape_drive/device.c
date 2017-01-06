@@ -535,8 +535,17 @@ static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_positio
 }
 
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db) {
-	if (sodr_tape_drive.slot->media == NULL)
+	struct so_media * media = sodr_tape_drive.slot->media;
+
+	if (media == NULL)
 		return NULL;
+
+	if (media->write_lock) {
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: try to write on a media '%s' with write lock"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, so_media_get_name(media));
+		return NULL;
+	}
 
 	int fd = sodr_tape_drive_open_drive();
 	if (fd < 0)

@@ -319,6 +319,16 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		sochgr_scsi_changer_scsi_new_status(&sochgr_scsi_changer, sochgr_scsi_changer_device, sochgr_scsi_changer_available_drives, &sochgr_scsi_changer_transport_address);
 		so_value_free(sochgr_scsi_changer_available_drives);
 		sochgr_scsi_changer_available_drives = NULL;
+
+		for (i = 0; i < sochgr_scsi_changer.nb_slots; i++) {
+			struct so_slot * sl = sochgr_scsi_changer.slots + i;
+			struct so_media * media = sl->media;
+
+			if (sl->drive != NULL || media == NULL)
+				continue;
+
+			media->write_lock = false;
+		}
 	}
 
 
@@ -600,6 +610,8 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name, NULL);
 			if (sl->media == NULL)
 				need_init++;
+			else if (sl->drive == NULL)
+				sl->media->write_lock = false;
 		}
 	}
 
@@ -679,7 +691,6 @@ retry:
 		if (!dr->is_empty)
 			sochgr_scsi_changer_unload(dr, db_connect);
 	}
-
 	sochgr_media_release(&sochgr_scsi_changer);
 
 	for (i = sochgr_scsi_changer.nb_drives; i < sochgr_scsi_changer.nb_slots; i++) {

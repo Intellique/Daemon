@@ -128,7 +128,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.copy_archive->owner = strdup(job->user);
 
 	bool error = false;
-	data.dest_drive = soj_media_find_and_load_next(data.pool, true, &error, db_connect);
+	data.dest_drive = soj_media_find_and_load_next(data.pool, data.src_archive->size, true, &error, db_connect);
 
 	if (error) {
 		job->status = so_job_status_error;
