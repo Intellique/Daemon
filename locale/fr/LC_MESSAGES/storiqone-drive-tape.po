@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-09-15 17:45+0200\n"
+        "POT-Creation-Date: 2017-01-17 16:39+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -435,23 +435,23 @@ msgstr  "[ %s | %s | n°%u ] : erreur en lisant parce que %m"
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  "[ %s | %s | n°%u ] : erreur en rembobinant la bande parce que %m"
 
-#: src/drive/tape_drive/io/writer.c:193 src/drive/tape_drive/io/writer.c:296 src/drive/tape_drive/io/writer.c:465
-#: src/drive/tape_drive/io/writer.c:515
+#: src/drive/tape_drive/io/writer.c:202 src/drive/tape_drive/io/writer.c:311 src/drive/tape_drive/io/writer.c:485
+#: src/drive/tape_drive/io/writer.c:542
 #, c-format
 msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
 msgstr  "[ %s | %s | n°%u ] : Espace restante sur le média « %s » : %s"
 
-#: src/drive/tape_drive/io/writer.c:206 src/drive/tape_drive/io/writer.c:478 src/drive/tape_drive/io/writer.c:528
+#: src/drive/tape_drive/io/writer.c:219 src/drive/tape_drive/io/writer.c:502 src/drive/tape_drive/io/writer.c:559
 #, c-format
-msgid   "[%s | %s | #%u]: error while writing because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %m"
-
-#: src/drive/tape_drive/io/writer.c:229
-#, c-format
-msgid   "[%s | %s | #%u]: error while writing end of file because %m"
-msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fin de fichier parce que %m"
+msgid   "[%s | %s | #%u]: error while writing because %s"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %s"
 
 #: src/drive/tape_drive/io/writer.c:243
+#, c-format
+msgid   "[%s | %s | #%u]: error while writing end of file because %s"
+msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fin de fichier parce que %s"
+
+#: src/drive/tape_drive/io/writer.c:256
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | n°%u ] : le lecteur est fermé"
@@ -663,3 +663,9 @@ msgstr  "[ %s | %s | n°%u ] : Le positionnement depuis n°%u vers la positio
 #, c-format
 msgid   "[%s | %s | #%u]: Error while closing file because '%m'"
 msgstr  "[ %s | %s | n°%u ] : Erreur lors de la fermeture du fichier parce que « %m »"
+
+#~ msgid        "[%s | %s | #%u]: error while writing end of file because %m"
+#~ msgstr       "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fin de fichier parce que %m"
+
+#~ msgid        "[%s | %s | #%u]: error while writing because %m"
+#~ msgstr       "[ %s | %s | n°%u ] : erreur en écrivant parce que %m"

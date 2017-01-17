@@ -3993,6 +3993,16 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 
 	free(archive_id);
 
+
+	const char * query = "refresh_materialize_view_milestones_files";
+	PGresult * result = PQexec(self->connect, "REFRESH MATERIALIZED VIEW CONCURRENTLY milestones_files");
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
 	return failed;
 }
 
