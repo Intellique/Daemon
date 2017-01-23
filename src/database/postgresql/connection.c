@@ -108,6 +108,7 @@ static struct so_value * so_database_postgresql_update_vtl(struct so_database_co
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_job_record2(struct so_database_connection * connect, const char * job_id, unsigned int num_run, enum so_job_status status, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
+static int so_database_postgresql_disable_old_jobs(struct so_database_connection * connect);
 static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job);
 static bool so_database_postgresql_get_is_user_disabled(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
@@ -200,6 +201,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.add_job_record   = so_database_postgresql_add_job_record,
 	.add_job_record2  = so_database_postgresql_add_job_record2,
 	.add_report       = so_database_postgresql_add_report,
+	.disable_old_jobs = so_database_postgresql_disable_old_jobs,
 	.get_restore_path = so_database_postgresql_get_restore_path,
 	.is_user_disabled = so_database_postgresql_get_is_user_disabled,
 	.start_job        = so_database_postgresql_start_job,
@@ -2496,6 +2498,48 @@ static int so_database_postgresql_add_report(struct so_database_connection * con
 	PQclear(result);
 
 	return status != PGRES_COMMAND_OK;
+}
+
+static int so_database_postgresql_disable_old_jobs(struct so_database_connection * connect) {
+	if (connect == NULL)
+		return 1;
+
+	char * host_id = so_database_postgresql_get_host(connect);
+	if (host_id == NULL)
+		return 2;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "disable_old_jobs";
+	so_database_postgresql_prepare(self, query, "UPDATE job SET status = 'error' WHERE status IN ('pause', 'running', 'waiting') AND host = $1");
+
+	const char * param[] = { host_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR) {
+		free(host_id);
+		return 3;
+	}
+
+	query = "disable_old_jobruns";
+	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET status = 'error' WHERE job IN (SELECT id FROM job WHERE host = $1) AND status IN ('pause', 'running', 'waiting')");
+
+	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(host_id);
+
+	return status == PGRES_FATAL_ERROR ? 4 : 0;
 }
 
 static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job) {

@@ -361,6 +361,7 @@ struct so_database_connection {
 		 * \return 0 on success
 		 */
 		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
+		int (*disable_old_jobs)(struct so_database_connection * connect);
 		/**
 		 * \brief get alternative path of restore-archive job
 		 *
