@@ -4239,9 +4239,6 @@ static int so_database_postgresql_sync_archive_format(struct so_database_connect
 }
 
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files) {
-	if (volume->end_time == 0)
-		return 0;
-
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
@@ -4263,30 +4260,26 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		struct so_value * db_media = so_value_hashtable_get(volume->media->db_data, key, false, false);
 		struct so_value * db_job = so_value_hashtable_get(volume->job->db_data, key, false, false);
 
-		char * sequence = NULL, * size = NULL, starttime[32] = "", endtime[32] = "", * media_id = NULL, * media_position = NULL, * job_run = NULL;
-		int str_size = asprintf(&sequence, "%u", volume->sequence);
-		str_size = asprintf(&size, "%zd", volume->size);
-		if (str_size < 0) {
-			free(volume_id);
-			return -2;
-		}
+		char sequence[16], size[16], starttime[32] = "", endtime[32] = "", media_position[16];
+		const char * media_id = NULL, * job_run = NULL;
 
-		str_size = asprintf(&media_position, "%u", volume->media_position);
-		if (str_size < 0) {
-			free(volume_id);
-			free(size);
-			return -2;
-		}
+		snprintf(sequence, 16, "%u", volume->sequence);
+		snprintf(size, 16, "%zd", volume->size);
+		snprintf(media_position, 16, "%u", volume->media_position);
 
 		so_time_convert(&volume->start_time, "%F %T", starttime, 32);
 		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
-		so_value_unpack(db_media, "{ss}", "id", &media_id);
-		so_value_unpack(db_job, "{ss}", "jobrun id", &job_run);
+		so_value_unpack(db_media, "{sS}", "id", &media_id);
+		so_value_unpack(db_job, "{sS}", "jobrun id", &job_run);
+
+		char * pEndTime = NULL;
+		if (volume->end_time > 0)
+			pEndTime = endtime;
 
 		const char * query = "insert_archive_volume";
 		so_database_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, jobrun) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
-		const char * param[] = { sequence, size, starttime, endtime, archive_id, media_id, media_position, job_run };
+		const char * param[] = { sequence, size, starttime, pEndTime, archive_id, media_id, media_position, job_run };
 		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
@@ -4298,46 +4291,58 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		}
 
 		PQclear(result);
-		free(job_run);
-		free(media_position);
-		free(media_id);
-		free(size);
-		free(sequence);
+	} else {
+		char size[16], endtime[32];
+		snprintf(size, 16, "%zd", volume->size);
+		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
 
-		if (volume->digests != NULL) {
-			const char * query = "insert_archive_volume_to_checksum";
-			so_database_postgresql_prepare(self, query, "INSERT INTO archivevolumetochecksumresult VALUES ($1, $2)");
+		const char * query = "update_archive_volume";
+		so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET size = $1, endtime = $2 WHERE id = $3");
 
-			struct so_value_iterator * iter = so_value_hashtable_get_iterator(volume->digests);
-			while (so_value_iterator_has_next(iter)) {
-				struct so_value * key = so_value_iterator_get_key(iter, false, false);
-				struct so_value * value = so_value_iterator_get_value(iter, false);
+		const char * param[] = { size, endtime, volume_id };
+		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
 
-				const char * checksum = so_value_string_get(key);
-				const char * digest = so_value_string_get(value);
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
 
-				char * digest_id = NULL;
-				if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
-					const char * param[] = { volume_id, digest_id };
-					PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
-					ExecStatusType status = PQresultStatus(result);
+		PQclear(result);
+	}
 
-					if (status == PGRES_FATAL_ERROR)
-						so_database_postgresql_get_error(result, query);
+	if (volume->digests != NULL) {
+		const char * query = "insert_archive_volume_to_checksum";
+		so_database_postgresql_prepare(self, query, "WITH avcr AS (SELECT $1::BIGINT AS archivevolume, $2::BIGINT AS checksumresult WHERE $1 || '@' || $2 NOT IN (SELECT archivevolume || '@' || checksumresult FROM archivevolumetochecksumresult)) INSERT INTO archivevolumetochecksumresult SELECT archivevolume, checksumresult FROM avcr");
 
-					PQclear(result);
-				}
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(volume->digests);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_key(iter, false, false);
+			struct so_value * value = so_value_iterator_get_value(iter, false);
 
-				free(digest_id);
+			const char * checksum = so_value_string_get(key);
+			const char * digest = so_value_string_get(value);
+
+			char * digest_id = NULL;
+			if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
+				const char * param[] = { volume_id, digest_id };
+				PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+				ExecStatusType status = PQresultStatus(result);
+
+				if (status == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result, query);
+
+				PQclear(result);
 			}
-			so_value_iterator_free(iter);
+
+			free(digest_id);
 		}
+		so_value_iterator_free(iter);
+	}
 
-		const char * queryA = "insert_archivefiletoarchivevolume";
-		so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime, alternatepath) VALUES ($1, $2, $3, $4, $5)");
+	const char * queryA = "insert_archivefiletoarchivevolume";
+	so_database_postgresql_prepare(self, queryA, "WITH afav AS (SELECT $1:: BIGINT AS archivevolume, $2::BIGINT AS archivefile, $3::BIGINT AS blocknumber, $4::TIMESTAMPTZ AS archivetime, $5::TEXT AS alternatepath WHERE $1 || '@' || $2 NOT IN (SELECT archivevolume || '@' || archivefile FROM archivefiletoarchivevolume)) INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime, alternatepath) SELECT archivevolume, archivefile, blocknumber, archivetime, alternatepath FROM afav");
 
-		unsigned int i;
-		for (i = 0; i < volume->nb_files; i++) {
+	unsigned int i;
+	for (i = 0; i < volume->nb_files; i++) {
 			struct so_archive_files * ptr_file = volume->files + i;
 			struct so_archive_file * file = ptr_file->file;
 
@@ -4349,12 +4354,8 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 				so_value_hashtable_put2(files, file->path, so_value_new_string(file_id), true);
 			}
 
-			char * block_number = NULL, archive_time[32] = "";
-			int size = asprintf(&block_number, "%zd", ptr_file->position);
-			if (size < 0) {
-				free(volume_id);
-				return -2;
-			}
+			char block_number[24], archive_time[32] = "";
+			snprintf(block_number, 24, "%zd", ptr_file->position);
 
 			so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
 
@@ -4366,10 +4367,8 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 				so_database_postgresql_get_error(resultA, queryA);
 
 			PQclear(resultA);
-			free(block_number);
 			free(file_id);
 		}
-	}
 
 	free(volume_id);
 
