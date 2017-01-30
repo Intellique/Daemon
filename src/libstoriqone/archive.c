@@ -602,6 +602,7 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 
 	if (volume->digests != NULL)
 		so_value_free(volume->digests);
+	volume->digests = NULL;
 
 	long int sequence = 0;
 	long int start_time = 0;
@@ -609,7 +610,7 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 	long int check_time = 0;
 	long int media_position = 0;
 
-	so_value_unpack(new_volume, "{suszsisisbsisososuso}",
+	so_value_unpack(new_volume, "{suszsisisbsisOsosuso}",
 		"sequence", &sequence,
 		"size", &volume->size,
 
@@ -666,4 +667,3 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 		so_value_iterator_free(iter);
 	}
 }
-
