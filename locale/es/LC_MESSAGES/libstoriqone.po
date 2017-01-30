@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-09-01 16:32+0200\n"
+        "POT-Creation-Date: 2017-01-30 19:39+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -635,7 +635,7 @@ msgstr  "fallo al definir el nombre del hilo de ejecución \"%s\" porque %m"
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work: iniciar un nuevo hilo de ejecución #%ld (pid : %d) a la función: %p con parámetro: %p"
 
-#: src/libstoriqone/thread_pool.c:274
+#: src/libstoriqone/thread_pool.c:268
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
 msgstr  "so_thread_pool_work: hilo de ejecución #%ld (pid: %d) está en epera"
