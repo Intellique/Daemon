@@ -2915,7 +2915,7 @@ static bool so_database_postgresql_find_plugin_checksum(struct so_database_conne
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_checksum_by_name";
-	so_database_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE name = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT id FROM checksum WHERE name = $1 LIMIT 1");
 
 	const char * param[] = { checksum };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
