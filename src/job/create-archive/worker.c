@@ -487,7 +487,7 @@ static void soj_create_archive_worker_generate_report2(struct so_archive * archi
 	struct so_archive_volume * vol = archive->volumes;
 	struct so_pool * pool = vol->media->pool;
 
-	struct so_value * report = so_value_pack("{sisosososOsO}",
+	struct so_value * report = so_value_pack("{sisososososO}",
 		"report version", 2,
 		"job", so_job_convert(current_job),
 		"host", so_host_get_info2(),
