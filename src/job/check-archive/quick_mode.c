@@ -183,11 +183,15 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		if (ptr_worker->nb_errors > 0)
 			nb_errors++;
 
-		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important,
-			dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), i,
+		char * message = NULL;
+		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), i,
 			dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", ptr_worker->nb_warnings),
-			dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors)
-		);
+			dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors));
+
+		if (size > 0) {
+			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, ptr_worker->nb_warnings, ptr_worker->nb_errors);
+			free(message);
+		}
 
 		free(ptr_worker);
 		ptr_worker = next;
