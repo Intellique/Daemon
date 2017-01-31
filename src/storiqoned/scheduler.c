@@ -223,7 +223,8 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 	so_value_iterator_free(iter);
 }
 
-void sod_scheduler_init(void) {
+void sod_scheduler_init(struct so_database_connection * db_connection) {
 	jobs = so_value_new_hashtable2();
+	db_connection->ops->disable_old_jobs(db_connection);
 }
 

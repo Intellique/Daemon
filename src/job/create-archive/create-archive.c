@@ -126,9 +126,10 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	soj_create_archive_worker_reserve_medias(archive_size, db_connect);
 	soj_create_archive_worker_prepare_medias(db_connect);
 
+	int failed = soj_create_archive_worker_sync_archives(false, db_connect);
+
 	bool stop = false;
 	unsigned int i, round;
-	int failed = 0;
 	for (round = 1; !stop; round++) {
 		for (i = 0; i < nb_src_files; i++) {
 			char * root = src_files[i]->ops->get_root(src_files[i]);
@@ -185,11 +186,11 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Closing archive"));
-		soj_create_archive_worker_close(round == 1);
+		soj_create_archive_worker_close(round == 1, db_connect);
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
-		failed = soj_create_archive_worker_sync_archives(db_connect);
+		failed = soj_create_archive_worker_sync_archives(true, db_connect);
 
 		if (failed != 0)
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
