@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-30 16:34+0200\n"
+        "POT-Creation-Date: 2017-01-30 19:39+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -17,34 +17,51 @@ msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: src/libstoriqone/archive.c:56
+msgid   "imcomplete"
+msgstr  ""
+
+#: src/libstoriqone/archive.c:57
+msgid   "data-complete"
+msgstr  ""
+
+#: src/libstoriqone/archive.c:58
+msgid   "complete"
+msgstr  ""
+
+#: src/libstoriqone/archive.c:59 src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:50
+#: src/libstoriqone/media.c:85
+msgid   "error"
+msgstr  "error"
+
+#: src/libstoriqone/archive.c:71
 msgid   "block device"
 msgstr  "dispositivo de bloques"
 
-#: src/libstoriqone/archive.c:57
+#: src/libstoriqone/archive.c:72
 msgid   "character device"
 msgstr  "dispositivo de caracteres"
 
-#: src/libstoriqone/archive.c:58
+#: src/libstoriqone/archive.c:73
 msgid   "directory"
 msgstr  "directorio"
 
-#: src/libstoriqone/archive.c:59
+#: src/libstoriqone/archive.c:74
 msgid   "fifo"
 msgstr  "tubería nombrada fifo"
 
-#: src/libstoriqone/archive.c:60
+#: src/libstoriqone/archive.c:75
 msgid   "regular file"
 msgstr  "fichero regular"
 
-#: src/libstoriqone/archive.c:61
+#: src/libstoriqone/archive.c:76
 msgid   "socket"
 msgstr  "conector socket"
 
-#: src/libstoriqone/archive.c:62
+#: src/libstoriqone/archive.c:77
 msgid   "symbolic link"
 msgstr  "enlace simbólico"
 
-#: src/libstoriqone/archive.c:64
+#: src/libstoriqone/archive.c:79
 msgid   "unknown file type"
 msgstr  "tipo de fichero desconocido"
 
@@ -63,10 +80,6 @@ msgstr  "poner en linea"
 #: src/libstoriqone/changer.c:52
 msgid   "unknown action"
 msgstr  "acción desconocida"
-
-#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:50 src/libstoriqone/media.c:85
-msgid   "error"
-msgstr  "error"
 
 #: src/libstoriqone/changer.c:65
 msgid   "exporting"
@@ -622,7 +635,7 @@ msgstr  "fallo al definir el nombre del hilo de ejecución \"%s\" porque %m"
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work: iniciar un nuevo hilo de ejecución #%ld (pid : %d) a la función: %p con parámetro: %p"
 
-#: src/libstoriqone/thread_pool.c:274
+#: src/libstoriqone/thread_pool.c:268
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
 msgstr  "so_thread_pool_work: hilo de ejecución #%ld (pid: %d) está en epera"

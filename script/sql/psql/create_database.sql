@@ -1,4 +1,11 @@
 -- Types
+CREATE TYPE ArchiveStatus AS ENUM (
+    'incomplete',
+    'data-complete',
+    'complete',
+    'error'
+);
+
 CREATE TYPE AutoCheckMode AS ENUM (
     'quick mode',
     'thorough mode',
@@ -435,6 +442,7 @@ CREATE TABLE Archive (
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     canAppend BOOLEAN NOT NULL DEFAULT TRUE,
+    status ArchiveStatus NOT NULL,
     deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -531,7 +539,7 @@ CREATE TABLE ArchiveVolume (
     size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
 
     starttime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
-    endtime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+    endtime TIMESTAMP(3) WITH TIME ZONE,
 
     checktime TIMESTAMP(3) WITH TIME ZONE,
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,

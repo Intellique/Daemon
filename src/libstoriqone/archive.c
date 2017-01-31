@@ -45,6 +45,21 @@
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
+static struct so_archive_status2 {
+	unsigned long long hash;
+	unsigned long long hash_translated;
+
+	const char * name;
+	const char * translation;
+	const enum so_archive_status status;
+} so_archive_status[] = {
+	[so_archive_status_incomplete]    = { 0, 0, gettext_noop("imcomplete"),    NULL, so_archive_status_incomplete },
+	[so_archive_status_data_complete] = { 0, 0, gettext_noop("data-complete"), NULL, so_archive_status_data_complete },
+	[so_archive_status_complete]      = { 0, 0, gettext_noop("complete"),      NULL, so_archive_status_complete },
+	[so_archive_status_error]         = { 0, 0, gettext_noop("error"),         NULL, so_archive_status_error },
+};
+static const unsigned int so_archive_nb_status = sizeof(so_archive_status) / sizeof(*so_archive_status);
+
 static struct so_archive_file_type2 {
 	unsigned long long hash;
 	unsigned long long hash_translated;
@@ -103,7 +118,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		so_value_list_push(volumes, so_archive_volume_convert(vol), true);
 	}
 
-	return so_value_pack("{ssssszsosssssOsbsb}",
+	return so_value_pack("{ssssszsosssssOsbsssb}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
@@ -117,6 +132,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		"metadata", archive->metadata,
 
 		"can append", archive->can_append,
+		"status", so_archive_status_to_string(archive->status, false),
 		"deleted", archive->deleted
 	);
 }
@@ -147,6 +163,12 @@ void so_archive_free2(void * archive) {
 
 static void so_archive_init() {
 	unsigned int i;
+	for (i = 0; i < so_archive_nb_status; i++) {
+		so_archive_status[i].hash = so_string_compute_hash2(so_archive_status[i].name);
+		so_archive_status[i].translation = dgettext("libstoriqone", so_archive_status[i].name);
+		so_archive_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_archive_status[i].name));
+	}
+
 	for (i = 0; i < so_archive_file_nb_data_types; i++) {
 		so_archive_file_types[i].hash = so_string_compute_hash2(so_archive_file_types[i].name);
 		so_archive_file_types[i].translation = dgettext("libstoriqone", so_archive_file_types[i].name);
@@ -157,8 +179,36 @@ static void so_archive_init() {
 struct so_archive * so_archive_new() {
 	struct so_archive * archive = malloc(sizeof(struct so_archive));
 	bzero(archive, sizeof(struct so_archive));
+	archive->status = so_archive_status_incomplete;
 
 	return archive;
+}
+
+const char * so_archive_status_to_string(enum so_archive_status status, bool translate) {
+	if (translate)
+		return so_archive_status[status].translation;
+	else
+		return so_archive_status[status].name;
+}
+
+enum so_archive_status so_archive_string_to_status(const char * status, bool translate) {
+	if (status == NULL)
+		return so_archive_status_error;
+
+	unsigned int i;
+	unsigned long long hash = so_string_compute_hash2(status);
+
+	if (translate) {
+		for (i = 0; i < so_archive_nb_status; i++)
+			if (hash == so_archive_status[i].hash_translated)
+				return so_archive_status[i].status;
+	} else {
+		for (i = 0; i < so_archive_nb_status; i++)
+			if (hash == so_archive_status[i].hash)
+				return so_archive_status[i].status;
+	}
+
+	return so_archive_status_error;
 }
 
 void so_archive_sync(struct so_archive * archive, struct so_value * new_archive) {
@@ -170,8 +220,9 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 	struct so_value * uuid = NULL;
 	struct so_value * volumes = NULL;
 	archive->metadata = NULL;
+	const char * archive_status = NULL;
 
-	so_value_unpack(new_archive, "{sossszsosssssOsbsb}",
+	so_value_unpack(new_archive, "{sossszsosssssOsbsSsb}",
 		"uuid", &uuid,
 		"name", &archive->name,
 
@@ -185,6 +236,7 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 		"metadata", &archive->metadata,
 
 		"can append", &archive->can_append,
+		"status", &archive_status,
 		"deleted", &archive->deleted
 	);
 
@@ -194,6 +246,8 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 		archive->uuid[36] = '\0';
 	} else
 		archive->uuid[0] = '\0';
+
+	archive->status = so_archive_string_to_status(archive_status, false);
 
 	unsigned int nb_volumes = so_value_list_get_length(volumes);
 	if (archive->nb_volumes != nb_volumes) {
@@ -548,6 +602,7 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 
 	if (volume->digests != NULL)
 		so_value_free(volume->digests);
+	volume->digests = NULL;
 
 	long int sequence = 0;
 	long int start_time = 0;
@@ -555,7 +610,7 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 	long int check_time = 0;
 	long int media_position = 0;
 
-	so_value_unpack(new_volume, "{suszsisisbsisososuso}",
+	so_value_unpack(new_volume, "{suszsisisbsisOsosuso}",
 		"sequence", &sequence,
 		"size", &volume->size,
 
@@ -612,4 +667,3 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 		so_value_iterator_free(iter);
 	}
 }
-

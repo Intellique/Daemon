@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-format-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-01-30 10:48+0100\n"
+        "POT-Creation-Date: 2017-01-30 14:49+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -31,130 +31,130 @@ msgstr  "El parámetro \"block size\" deber tener una potencia de dos, y no %zd"
 msgid   "Partition size should be greater than 75%% of media capacity (%s / %s = %.0f)"
 msgstr  "El tamaño de la partición debe ser más grande que 75%% de la capacidad del media (%s / %s = %.0f)"
 
-#: src/job/format-media/format-media.c:137
+#: src/job/format-media/format-media.c:139
 #, c-format
 msgid   "Failed to load media '%s'"
 msgstr  "Fallo al cargar el media \"%s\""
 
-#: src/job/format-media/format-media.c:153
+#: src/job/format-media/format-media.c:155
 #, c-format
 msgid   "Trying to format a write protected media '%s'"
 msgstr  "Tratando de formatear un media \"%s\" que está protegido"
 
-#: src/job/format-media/format-media.c:159
+#: src/job/format-media/format-media.c:161
 #, c-format
 msgid   "Formatting media '%s' in progress"
 msgstr  "Formateando el media \"%s\" en progreso"
 
-#: src/job/format-media/format-media.c:166
+#: src/job/format-media/format-media.c:168
 msgid   "Failed to format media"
 msgstr  "Fallo al formatear lo medios"
 
-#: src/job/format-media/format-media.c:175
+#: src/job/format-media/format-media.c:177
 #, c-format
 msgid   "Checking media header '%s' in progress"
 msgstr  "Verificación del encabezamiento del media \"%s\" en progreso"
 
-#: src/job/format-media/format-media.c:180
+#: src/job/format-media/format-media.c:182
 #, c-format
 msgid   "Checking media header '%s' was successful"
 msgstr  "Verificación del encabezamiento \"%s\" a sido exitoso"
 
-#: src/job/format-media/format-media.c:188
+#: src/job/format-media/format-media.c:190
 #, c-format
 msgid   "Checking media header '%s': failed"
 msgstr  "Verificacón del encabezamiento del media \"%s\": Fallo"
 
-#: src/job/format-media/format-media.c:258
+#: src/job/format-media/format-media.c:260
 msgid   "Invalid UUID provided by script, ignoring it"
 msgstr  "UUID inválido proporcionado por el script, ignorado"
 
-#: src/job/format-media/format-media.c:261
+#: src/job/format-media/format-media.c:263
 #, c-format
 msgid   "Script request to format media with this UUID (%s) instead of (%s)"
 msgstr  "El script pide formatear el media con UUID (%s) en lugar de (%s)"
 
-#: src/job/format-media/format-media.c:271
+#: src/job/format-media/format-media.c:273
 #, c-format
 msgid   "Script request to format media with this name (%s) instead of (%s)"
 msgstr  "El script pide formatear el media con el nombre (%s) en lugar de (%s)"
 
-#: src/job/format-media/format-media.c:290 src/job/format-media/format-media.c:326
-msgid   "No pool related to this job"
-msgstr  "No hay pool liado a ésta tarea"
-
-#: src/job/format-media/format-media.c:297
+#: src/job/format-media/format-media.c:292
 msgid   "No media linked to the current job"
 msgstr  "No hay media liado a la tarea actual"
 
-#: src/job/format-media/format-media.c:302
+#: src/job/format-media/format-media.c:297
 #, c-format
 msgid   "Trying to format a cleaning media '%s'"
 msgstr  "Trantando de formatear un media de limpieza \"%s\""
 
-#: src/job/format-media/format-media.c:308
+#: src/job/format-media/format-media.c:303
 #, c-format
 msgid   "Trying to format a worm media '%s' containing data"
 msgstr  "Tratando de formatear un media no regradable \"%s\" que contiene datos "
 
-#: src/job/format-media/format-media.c:314
+#: src/job/format-media/format-media.c:309
 #, c-format
 msgid   "Trying to format a media '%s' which is member of pool '%s'"
 msgstr  "tratando de formatear  \"%s\" que es miembro de un pool \"%s\""
 
-#: src/job/format-media/format-media.c:320
+#: src/job/format-media/format-media.c:315
 #, c-format
 msgid   "Trying to format a media '%s' with error status"
 msgstr  "Tratando de formatear un media \"%s\" "
 
-#: src/job/format-media/format-media.c:331
+#: src/job/format-media/format-media.c:321
+msgid   "No pool related to this job"
+msgstr  "No hay pool liado a ésta tarea"
+
+#: src/job/format-media/format-media.c:326
 #, c-format
 msgid   "Trying to format a media '%s' to a deleted pool '%s'"
 msgstr  "tratando de formatear un media \"%s\" que está en error \"%s\""
 
-#: src/job/format-media/format-media.c:338
+#: src/job/format-media/format-media.c:333
 #, c-format
 msgid   "Trying to format a LTFS media '%s' which does not support partition (LTFS requirement)"
 msgstr  "Intento al formatear un media \"%s\" en LTFS que no soporte las particiones (prerequeridas LTFS "
 
-#: src/job/format-media/format-media.c:344
+#: src/job/format-media/format-media.c:339
 #, c-format
 msgid   "No write support for format '%s'"
 msgstr  "No hay soporte para el formato en escritura \"%s\""
 
-#: src/job/format-media/format-media.c:351
+#: src/job/format-media/format-media.c:346
 #, c-format
 msgid   "Trying to format a media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
 msgstr  "Tratando de formatear un media \"%s\" (formato del media: %s) donde el nombre no corresponde al formato del pool \"%s"
         "\" (formato del pool: %s)"
 
-#: src/job/format-media/format-media.c:358
+#: src/job/format-media/format-media.c:353
 #, c-format
 msgid   "Failed to find a suitable drive to format media '%s'"
 msgstr  "ho hay lector disponible para formatear el media \"%s\""
 
-#: src/job/format-media/format-media.c:379
+#: src/job/format-media/format-media.c:374
 #, c-format
 msgid   "Will use default block size '%s' defined by media format '%s'"
 msgstr  "Utilise el tamaño del boque predeterminado \"%s\" defina el formato del media \"%s\""
 
-#: src/job/format-media/format-media.c:388
+#: src/job/format-media/format-media.c:383
 #, c-format
 msgid   "Will use default block size '%s' defined by media format '%s' because type of media '%s' is WORM"
 msgstr  "Utilizará el tamaño del bloque \"%s\" predeterminado por el formato de media \"%s\" porque el tipo de media \"%s\" es "
         "WORM"
 
-#: src/job/format-media/format-media.c:394
+#: src/job/format-media/format-media.c:389
 #, c-format
 msgid   "Will look for the best block size to use with media '%s'"
 msgstr  "Buscará el mejor tamaño del bloque para utilizarlo con el media \"%s\""
 
-#: src/job/format-media/format-media.c:402
+#: src/job/format-media/format-media.c:397
 #, c-format
 msgid   "Invalid block size '%s'"
 msgstr  "Tamaño del bloque no valido \"%s\""
 
-#: src/job/format-media/format-media.c:414
+#: src/job/format-media/format-media.c:409
 #, c-format
 msgid   "parameter 'block size' should be a positive integer (not %zd)"
 msgstr  "El parámetro \"block size\" debe ser un número entero positivo (no %zd)"

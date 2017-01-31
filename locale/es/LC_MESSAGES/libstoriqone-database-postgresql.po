@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2017-01-18 15:56+0100\n"
+        "POT-Creation-Date: 2017-01-24 13:00+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -56,7 +56,7 @@ msgstr  "PSQL: error de sincronización de la ubicación de una librería de ban
 msgid   "Checking '%s'"
 msgstr  "Verificación \"%s\""
 
-#: src/database/postgresql/connection.c:5007
+#: src/database/postgresql/connection.c:5022
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL: nueva consulta preparada (%s) => {%s}, status: %s"

@@ -118,6 +118,8 @@ static bool soj_formatmedia_check_partition_size(struct so_job * job, ssize_t pa
 }
 
 static void soj_formatmedia_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	so_media_free(soj_formatmedia_media);
+	soj_formatmedia_media = NULL;
 	so_pool_free(soj_formatmedia_pool);
 	soj_formatmedia_pool = NULL;
 }
@@ -284,13 +286,6 @@ static bool soj_formatmedia_script_pre_run(struct so_job * job, struct so_databa
 }
 
 static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
-	if (soj_formatmedia_pool == NULL) {
-		soj_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
-			dgettext("storiqone-job-format-media", "No pool related to this job"));
-		return 1;
-	}
-
 	soj_formatmedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
 	if (soj_formatmedia_media == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
