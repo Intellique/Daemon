@@ -100,7 +100,7 @@ int main(int argc __attribute__((unused)), char ** argv) {
 	if (driver == NULL)
 		return 1;
 
-	so_log_write(so_log_level_info,
+	so_log_write2(so_log_level_info, so_log_type_changer,
 		dgettext("libstoriqone-changer", "Starting changer (type: %s)"),
 		driver->name);
 

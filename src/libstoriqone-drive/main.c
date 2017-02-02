@@ -71,7 +71,7 @@ int main(int argc __attribute__((unused)), char ** argv) {
 	if (config == NULL)
 		return 2;
 
-	so_log_write(so_log_level_info,
+	so_log_write2(so_log_level_info, so_log_type_drive,
 		dgettext("libstoriqone-drive", "Starting drive (type: %s)"),
 		driver->name);
 

@@ -196,7 +196,7 @@ int main(int argc __attribute__((unused)), char ** argv) {
 	if (log_config == NULL || db_config == NULL || devices == NULL || vjob == NULL)
 		return 3;
 
-	so_log_write(so_log_level_info,
+	so_log_write2(so_log_level_info, so_log_type_job,
 		dgettext("libstoriqone-job", "Starting job (type: %s)"),
 		job_dr->name);
 
