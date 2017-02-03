@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-09-28 19:31+0200\n"
+        "POT-Creation-Date: 2017-02-03 12:04+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -105,17 +105,17 @@ msgstr  "[%s | %s]: fallo al ponerse fuera de linea el brazo articulado"
 msgid   "[%s | %s]: changer will be online"
 msgstr  "[%s | %s]: el brazo articulado se va a poner en linea"
 
-#: src/libstoriqone-changer/main.c:179
+#: src/libstoriqone-changer/main.c:181
 #, c-format
 msgid   "[%s | %s]: changer is now online"
 msgstr  "[%s | %s]: el brazo articulado está en linea"
 
-#: src/libstoriqone-changer/main.c:185
+#: src/libstoriqone-changer/main.c:187
 #, c-format
 msgid   "[%s | %s]: failed to set changer online"
 msgstr  "[%s | %s]: fallo al ponerse en linea el brazo articulado"
 
-#: src/libstoriqone-changer/main.c:214
+#: src/libstoriqone-changer/main.c:216
 #, c-format
 msgid   "Changer (type: %s) will stop"
 msgstr  "El brazo articulado (type: %s) se va a detener"
