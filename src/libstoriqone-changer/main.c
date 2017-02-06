@@ -100,7 +100,7 @@ int main(int argc __attribute__((unused)), char ** argv) {
 	if (driver == NULL)
 		return 1;
 
-	so_log_write(so_log_level_info,
+	so_log_write2(so_log_level_info, so_log_type_changer,
 		dgettext("libstoriqone-changer", "Starting changer (type: %s)"),
 		driver->name);
 
@@ -175,6 +175,8 @@ int main(int argc __attribute__((unused)), char ** argv) {
 					changer->vendor, changer->model);
 
 				if (changer->ops->put_online(db_connect) == 0) {
+					sochgr_media_init(changer);
+
 					so_log_write(so_log_level_notice,
 						dgettext("libstoriqone-changer", "[%s | %s]: changer is now online"),
 						changer->vendor, changer->model);

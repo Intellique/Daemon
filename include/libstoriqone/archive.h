@@ -81,6 +81,13 @@ enum so_archive_file_type {
 	so_archive_file_type_unknown,
 };
 
+enum so_archive_status {
+	so_archive_status_incomplete,
+	so_archive_status_data_complete,
+	so_archive_status_complete,
+	so_archive_status_error
+};
+
 /**
  * \struct so_archive
  * \brief Represents an archive
@@ -129,6 +136,7 @@ struct so_archive {
 	 * \brief Flag which allows (or not) to append volume to current archive
 	 */
 	bool can_append;
+	enum so_archive_status status;
 	/**
 	 * \brief \a true if archive has been logicaly (or really) deleted
 	 *
@@ -413,6 +421,8 @@ void so_archive_free2(void * archive);
  * \return new archive
  */
 struct so_archive * so_archive_new(void);
+const char * so_archive_status_to_string(enum so_archive_status status, bool translate);
+enum so_archive_status so_archive_string_to_status(const char * status, bool translate);
 /**
  * \brief synchronize an \a archive with \a new_archive
  *

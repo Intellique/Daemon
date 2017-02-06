@@ -143,6 +143,23 @@ void soj_copyarchive_util_init(struct so_archive * archive) {
 	}
 }
 
+int soj_copyarchive_util_sync_archive(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect) {
+	int failed = db_connect->ops->start_transaction(db_connect);
+	if (failed != 0) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Failed to start database transaction"));
+	} else {
+		failed = db_connect->ops->sync_archive(db_connect, archive, NULL);
+
+		if (failed != 0)
+			db_connect->ops->cancel_transaction(db_connect);
+		else
+			db_connect->ops->finish_transaction(db_connect);
+	}
+
+	return failed;
+}
+
 int soj_copyarchive_util_write_meta(struct soj_copyarchive_private * self) {
 	struct so_value * archive = so_archive_convert(self->copy_archive);
 	ssize_t nb_write = self->writer->ops->write_metadata(self->writer, archive);
