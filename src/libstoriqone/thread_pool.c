@@ -262,12 +262,6 @@ static void * so_thread_pool_work(void * arg) {
 
 		th->function(th->arg);
 
-		pthread_mutex_lock(&so_thread_pool_lock);
-		bool exit_now = so_thread_pool_exit_now;
-		pthread_mutex_unlock(&so_thread_pool_lock);
-		if (exit_now)
-			return NULL;
-
 		so_thread_pool_set_name2(tid, "idle");
 
 		so_log_write(so_log_level_debug,
@@ -279,6 +273,12 @@ static void * so_thread_pool_work(void * arg) {
 		th->function = NULL;
 		th->arg = NULL;
 		th->state = so_thread_pool_state_waiting;
+
+		if (so_thread_pool_exit_now) {
+			th->state = so_thread_pool_state_exited;
+			pthread_mutex_unlock(&so_thread_pool_lock);
+			break;
+		}
 
 		struct timespec timeout;
 		clock_gettime(CLOCK_REALTIME, &timeout);

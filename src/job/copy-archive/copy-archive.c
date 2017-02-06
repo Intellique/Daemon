@@ -130,6 +130,8 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.copy_archive->creator = strdup(job->user);
 	data.copy_archive->owner = strdup(job->user);
 
+	int failed = soj_copyarchive_util_sync_archive(job, data.copy_archive, db_connect);
+
 	bool error = false;
 	data.dest_drive = soj_media_find_and_load_next(data.pool, true, &error, db_connect);
 
@@ -138,7 +140,6 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 		return 1;
 	}
 
-	int failed = 0;
 	if (data.dest_drive == NULL)
 		failed = soj_copyarchive_indirect_copy(job, db_connect, &data);
 	else

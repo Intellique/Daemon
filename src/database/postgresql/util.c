@@ -43,6 +43,7 @@
 // mktime, strptime
 #include <time.h>
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/changer.h>
 #include <libstoriqone/drive.h>
 #include <libstoriqone/string.h>
@@ -53,6 +54,18 @@ static int so_database_postgresql_get(const char * string, const char * format, 
 
 static void so_database_postgresql_util_init(void) __attribute__((constructor));
 
+
+static struct so_database_postgresql_archive_status2 {
+	unsigned long long hash;
+	const char * name;
+	const enum so_archive_status status;
+} so_database_postgresql_archive_status[] = {
+	[so_archive_status_incomplete]    = { 0, "incomplete",    so_archive_status_incomplete },
+	[so_archive_status_data_complete] = { 0, "data-complete", so_archive_status_data_complete },
+	[so_archive_status_complete]      = { 0, "complete",      so_archive_status_complete },
+	[so_archive_status_error]         = { 0, "error",         so_archive_status_error },
+};
+static const unsigned int so_database_postgresql_archive_nb_status = sizeof(so_database_postgresql_archive_status) / sizeof(*so_database_postgresql_archive_status);
 
 static struct so_database_postgresql_changer_action2 {
 	unsigned long long hash;
@@ -141,6 +154,9 @@ static const unsigned int so_database_postgresql_media_nb_types = sizeof(so_data
 
 static void so_database_postgresql_util_init() {
 	unsigned int i;
+	for (i = 0; i < so_database_postgresql_archive_nb_status; i++)
+		so_database_postgresql_archive_status[i].hash = so_string_compute_hash2(so_database_postgresql_archive_status[i].name);
+
 	for (i = 0; i < so_database_postgresql_changer_nb_actions; i++)
 		so_database_postgresql_changer_actions[i].hash = so_string_compute_hash2(so_database_postgresql_changer_actions[i].name);
 
@@ -396,6 +412,10 @@ char * so_database_postgresql_set_float(double fl) {
 }
 
 
+const char * so_database_postgresql_archive_status_to_string(enum so_archive_status status) {
+	return so_database_postgresql_archive_status[status].name;
+}
+
 const char * so_database_postgresql_changer_action_to_string(enum so_changer_action action) {
 	return so_database_postgresql_changer_actions[action].name;
 }
@@ -416,6 +436,20 @@ enum so_changer_action so_database_postgresql_string_to_action(const char * acti
 			return so_database_postgresql_changer_actions[i].action;
 
 	return so_changer_action_unknown;
+}
+
+enum so_archive_status so_database_postgresql_string_to_archive_status(const char * status) {
+	if (status == NULL)
+		return so_archive_status_error;
+
+	unsigned int i;
+	const unsigned long long hash = so_string_compute_hash2(status);
+
+	for (i = 0; i < so_database_postgresql_archive_nb_status; i++)
+		if (hash == so_database_postgresql_archive_status[i].hash)
+			return so_database_postgresql_archive_status[i].status;
+
+	return so_archive_status_error;
 }
 
 enum so_changer_status so_database_postgresql_string_to_status(const char * status) {
