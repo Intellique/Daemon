@@ -1,0 +1,47 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+#
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+#
+# Modified to make a template file for a multi-binary package with separated
+# build-arch and build-indep targets  by Bill Allombert 2001
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+.PHONY: override_dh_strip
+
+override_dh_auto_configure:
+	@echo 'fake auto configure'
+
+override_dh_build:
+	./script/restore-link.pl
+	make
+
+override_dh_auto_test:
+	@echo 'fake auto test'
+
+override_dh_auto_install:
+	make install DESTDIR=debian/tmp
+
+override_dh_fixperms:
+	dh_fixperms -Xusr/lib/storiqone/1.2/lib
+
+override_dh_systemd_enable:
+	dh_systemd_enable --name=storiqoned
+
+override_dh_systemd_start:
+	dh_systemd_start --no-start -r storiqoned
+
+override_dh_strip:
+	dh_strip --dbg-package=storiqone-dbg
+
+%:
+	dh $@ --with=systemd

@@ -1,0 +1,4 @@
+include/* usr/include/storiqone
+lib/libstoriqone*.so usr/lib
+
+debian/copyright /usr/share/doc/libstoriqone-1.2-dev

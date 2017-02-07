@@ -1,0 +1,3 @@
+script/pre-post-run/* usr/lib/storiqone/1.2/scripts
+
+debian/copyright /usr/share/doc/storiqone-scripts

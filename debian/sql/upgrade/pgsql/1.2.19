@@ -1,0 +1,14 @@
+-- Upgrade from v1.3.0 to v1.3.4
+
+BEGIN;
+
+INSERT INTO MediaFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWriteCount, maxOpCount, lifespan, capacity, blockSize, densityCode, supportPartition, supportMAM)
+	SELECT 'LTO-7', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 5999999057920, 131072, 92, TRUE, TRUE
+	WHERE 'LTO-7' NOT IN (SELECT name FROM mediaformat);
+
+INSERT INTO DriveFormat(name, densityCode, mode, cleaningInterval)
+	SELECT 'LTO-7', 92, 'linear', INTERVAL 'P1M'
+	WHERE 'LTO-7' NOT IN (SELECT name FROM DriveFormat);
+
+COMMIT;
+
