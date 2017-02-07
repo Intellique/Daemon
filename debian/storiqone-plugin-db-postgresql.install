@@ -1,0 +1,14 @@
+lib/lib*-postgresql.so usr/lib/storiqone/1.3/lib
+
+script/sql/psql/create_database.sql usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql/insert_initial_data.sql usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql/delete_database.sql usr/share/storiqone-plugin-db-postgresql/scripts
+
+usr/share/locale/es/LC_MESSAGES/libstoriqone-database-postgresql.mo
+usr/share/locale/fr/LC_MESSAGES/libstoriqone-database-postgresql.mo
+
+debian/copyright /usr/share/doc/storiqone-plugin-db-postgresql
+debian/etc/dbconfig-common/storiqone-plugin-db-postgresql.conf etc/dbconfig-common
+debian/sql/install/pgsql usr/share/dbconfig-common/data/storiqone-plugin-db-postgresql/install
+debian/sql/install-dbadmin/pgsql usr/share/dbconfig-common/data/storiqone-plugin-db-postgresql/install-dbadmin
+debian/sql/upgrade/pgsql usr/share/dbconfig-common/data/storiqone-plugin-db-postgresql/upgrade
