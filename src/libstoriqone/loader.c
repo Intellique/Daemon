@@ -105,4 +105,3 @@ void so_loader_register_ok(void) {
 	if (so_loader_loading)
 		so_loader_loaded = true;
 }
-
