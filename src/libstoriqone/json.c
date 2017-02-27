@@ -89,7 +89,7 @@ static ssize_t so_json_parse_fd_read(struct so_json_parser * parser, char * buff
 static struct so_value * so_json_parse_inner(struct so_json_parser * parser);
 static struct so_value * so_json_parse_pipe(int fd, int timeout);
 static bool so_json_parse_pipe_read(struct so_json_parser * parser);
-static bool so_json_parse_read_more(struct so_json_parser * parser, bool wait);
+static bool so_json_parse_read_more(struct so_json_parser * parser);
 static struct so_value * so_json_parse_reg_file(int fd, struct stat * info);
 static bool so_json_parse_skip(struct so_json_parser * parser);
 static struct so_value * so_json_parse_socket(int fd, int timeout);
@@ -695,7 +695,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 				unsigned int str_length, position;
 				for (str_length = 0, position = 0; str[position] != '"'; str_length++, position++) {
 					if (parser->position + position >= parser->used) {
-						if (!so_json_parse_read_more(parser, false))
+						if (!so_json_parse_read_more(parser))
 							return NULL;
 
 						str = parser->buffer;
@@ -711,7 +711,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 						position++;
 
 						if (parser->position + position >= parser->used) {
-							if (!so_json_parse_read_more(parser, false))
+							if (!so_json_parse_read_more(parser))
 								return NULL;
 
 							str = parser->buffer;
@@ -727,7 +727,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 							position++;
 
 							while (parser->position + position + 4 >= parser->used) {
-								if (!so_json_parse_read_more(parser, false))
+								if (!so_json_parse_read_more(parser))
 									return NULL;
 
 								str = parser->buffer;
@@ -819,7 +819,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 				ssize_t length_float = strspn(parser->buffer + parser->position, "0123456789.+-eE");
 
 				if (parser->position + length_float == parser->used) {
-					so_json_parse_read_more(parser, false);
+					so_json_parse_read_more(parser);
 
 					length_integer = strspn(parser->buffer, "0123456789-");
 					length_float = strspn(parser->buffer, "0123456789.+-eE");
@@ -846,7 +846,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 				parser->position += 4;
 				ret_val = so_value_new_boolean(true);
 			} else {
-				so_json_parse_read_more(parser, false);
+				so_json_parse_read_more(parser);
 
 				if (strncmp(parser->buffer + parser->position, "true", 4) == 0) {
 					parser->position += 4;
@@ -860,7 +860,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 				parser->position += 5;
 				ret_val = so_value_new_boolean(false);
 			} else {
-				so_json_parse_read_more(parser, false);
+				so_json_parse_read_more(parser);
 
 				if (strncmp(parser->buffer + parser->position, "false", 5) == 0) {
 					parser->position += 5;
@@ -874,7 +874,7 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 				parser->position += 4;
 				ret_val = so_value_new_null();
 			} else {
-				so_json_parse_read_more(parser, false);
+				so_json_parse_read_more(parser);
 
 				if (strncmp(parser->buffer + parser->position, "null", 4) == 0) {
 					parser->position += 4;
@@ -975,7 +975,7 @@ static bool so_json_parse_pipe_read(struct so_json_parser * parser) {
 	return true;
 }
 
-static bool so_json_parse_read_more(struct so_json_parser * parser, bool wait) {
+static bool so_json_parse_read_more(struct so_json_parser * parser) {
 	if (parser->read == NULL)
 		return false;
 
@@ -986,7 +986,7 @@ static bool so_json_parse_read_more(struct so_json_parser * parser, bool wait) {
 			return false;
 	}
 
-	if (!parser->has_more_data(parser, wait))
+	if (!parser->has_more_data(parser, true))
 		return false;
 
 	if (parser->position < parser->used) {
@@ -1055,7 +1055,7 @@ static struct so_value * so_json_parse_reg_file(int fd, struct stat * info) {
 
 static bool so_json_parse_skip(struct so_json_parser * parser) {
 	do {
-		if (parser->position == parser->used && !so_json_parse_read_more(parser, true))
+		if (parser->position == parser->used && !so_json_parse_read_more(parser))
 			return false;
 
 		ssize_t length = strspn(parser->buffer + parser->position, " \t\n");
