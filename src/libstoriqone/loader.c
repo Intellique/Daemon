@@ -50,8 +50,8 @@
 
 static void * so_loader_load_file(const char * filename);
 
-static bool so_loader_loading = false;
-static bool so_loader_loaded = false;
+static volatile bool so_loader_loading = false;
+static volatile bool so_loader_loaded = false;
 
 
 void * so_loader_load(const char * module, const char * name) {
@@ -105,4 +105,3 @@ void so_loader_register_ok(void) {
 	if (so_loader_loading)
 		so_loader_loaded = true;
 }
-
