@@ -262,17 +262,8 @@ int soj_create_archive_worker_close(bool first_round, struct so_database_connect
 		int failed = soj_create_archive_worker_close2(primary_worker, 0);
 		if (failed != 0)
 			primary_worker->state = soj_worker_status_error;
-		else {
+		else
 			primary_worker->archive->status = so_archive_status_data_complete;
-			soj_create_archive_worker_sync_archives(false, db_connect);
-
-			soj_create_archive_worker_write_meta(primary_worker);
-
-			primary_worker->archive->status = so_archive_status_complete;
-		}
-
-		primary_worker->writer->ops->free(primary_worker->writer);
-		primary_worker->writer = NULL;
 	}
 
 	unsigned int i;
@@ -285,14 +276,28 @@ int soj_create_archive_worker_close(bool first_round, struct so_database_connect
 		int failed = soj_create_archive_worker_close2(worker, 0);
 		if (failed != 0)
 			worker->state = soj_worker_status_error;
-		else {
+		else
 			worker->archive->status = so_archive_status_data_complete;
-			soj_create_archive_worker_sync_archives(false, db_connect);
+	}
 
-			soj_create_archive_worker_write_meta(primary_worker);
+	soj_create_archive_worker_sync_archives(false, db_connect);
 
-			worker->archive->status = so_archive_status_complete;
-		}
+	if (primary_worker->state == soj_worker_status_ready) {
+		soj_create_archive_worker_write_meta(primary_worker);
+		primary_worker->archive->status = so_archive_status_complete;
+
+		primary_worker->writer->ops->free(primary_worker->writer);
+		primary_worker->writer = NULL;
+	}
+
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (worker->state != soj_worker_status_ready)
+			continue;
+
+		soj_create_archive_worker_write_meta(worker);
+		worker->archive->status = so_archive_status_complete;
 
 		worker->writer->ops->free(worker->writer);
 		worker->writer = NULL;
@@ -844,4 +849,3 @@ static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worke
 
 	return nb_write <= 0;
 }
-
