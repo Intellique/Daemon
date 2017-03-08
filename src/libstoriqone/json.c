@@ -724,6 +724,28 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 
 							if (sscanf(*json, "%4x", &unicode) < 1)
 								return NULL;
+
+							if ((unicode & 0xD800) == 0xD800) {
+								(*json) += 4;
+
+								if (**json != '\\')
+									return NULL;
+
+								(*json)++;
+
+								if (**json != 'u')
+									return NULL;
+
+								(*json)++;
+
+								unsigned int p2 = 0;
+								if (sscanf(*json, "%4x", &p2) < 1 || (p2 & 0xDC00) != 0xDC00)
+									return NULL;
+
+								// 0x10000 + ((U - 0xD800) << 10) + (next - 0xDC00)
+								unicode = 0x10000 + ((unicode - 0xD800) << 10) + (p2 - 0xDC00);
+							}
+
 							size_t char_length = so_string_unicode_length(unicode);
 
 							if (char_length == 0)
@@ -772,6 +794,17 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 								from++;
 								sscanf(string + from, "%4x", &unicode);
 								from += 3;
+
+								if ((unicode & 0xD800) == 0xD800) {
+									from += 3;
+
+									unsigned int p2 = 0;
+									sscanf(string + from, "%4x", &p2);
+									from += 3;
+
+									// 0x10000 + ((U - 0xD800) << 10) + (next - 0xDC00)
+									unicode = 0x10000 + ((unicode - 0xD800) << 10) + (p2 - 0xDC00);
+								}
 
 								so_string_convert_unicode_to_utf8(unicode, tmp_string + to, length - to, false);
 								to += so_string_unicode_length(unicode) - 1;
