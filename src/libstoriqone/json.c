@@ -757,6 +757,34 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 							if (sscanf(str + position, "%4x", &unicode) < 1)
 								return NULL;
 
+							if ((unicode & 0xD800) == 0xD800) {
+								position += 4;
+
+								while (parser->position + position + 6 >= parser->used) {
+									if (!so_json_parse_read_more(parser))
+										return NULL;
+
+									str = parser->buffer;
+								}
+
+								if (str[position] != '\\')
+									return NULL;
+
+								position++;
+
+								if (str[position] != 'u')
+									return NULL;
+
+								position++;
+
+								unsigned int p2 = 0;
+								if (sscanf(str + position, "%4x", &p2) < 1 || (p2 & 0xDC00) != 0xDC00)
+									return NULL;
+
+								// 0x10000 + ((U - 0xD800) << 10) + (next - 0xDC00)
+								unicode = 0x10000 + ((unicode - 0xD800) << 10) + (p2 - 0xDC00);
+							}
+
 							size_t char_length = so_string_unicode_length(unicode);
 
 							if (char_length == 0)
@@ -807,6 +835,17 @@ static struct so_value * so_json_parse_inner(struct so_json_parser * parser) {
 								from++;
 								sscanf(str + from, "%4x", &unicode);
 								from += 3;
+
+								if ((unicode & 0xD800) == 0xD800) {
+									from += 3;
+
+									unsigned int p2 = 0;
+									sscanf(str + from, "%4x", &p2);
+									from += 3;
+
+									// 0x10000 + ((U - 0xD800) << 10) + (next - 0xDC00)
+									unicode = 0x10000 + ((unicode - 0xD800) << 10) + (p2 - 0xDC00);
+								}
 
 								so_string_convert_unicode_to_utf8(unicode, tmp_string + to, position - to, false);
 								to += so_string_unicode_length(unicode) - 1;
