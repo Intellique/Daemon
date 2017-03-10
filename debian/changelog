@@ -1,3 +1,14 @@
+storiqone (1.2.22-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #278: scsi changer: ignore disabled slots
+    - #280: Json: Use UTF-16 surrogate pair in order to use unicode
+            character between 0x10000 and 0x1FFFF.
+    - #284: 'so_string_unescape' unescape wrong charaters.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 10 Mar 2017 13:02:38 +0100
+
 storiqone (1.2.21-1+wheezy) polisher; urgency=low
 
   * New bug fix release
