@@ -227,7 +227,7 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 	worker->writer->ops->free(worker->writer);
 	worker->writer = NULL;
 
-	soj_create_archive_worker_sync_archives(false, db_connect);
+	soj_create_archive_worker_sync_archives(false, false, db_connect);
 
 	worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
 	if (worker->drive != NULL) {
@@ -262,17 +262,8 @@ int soj_create_archive_worker_close(bool first_round, struct so_database_connect
 		int failed = soj_create_archive_worker_close2(primary_worker, 0);
 		if (failed != 0)
 			primary_worker->state = soj_worker_status_error;
-		else {
+		else
 			primary_worker->archive->status = so_archive_status_data_complete;
-			soj_create_archive_worker_sync_archives(false, db_connect);
-
-			soj_create_archive_worker_write_meta(primary_worker);
-
-			primary_worker->archive->status = so_archive_status_complete;
-		}
-
-		primary_worker->writer->ops->free(primary_worker->writer);
-		primary_worker->writer = NULL;
 	}
 
 	unsigned int i;
@@ -285,14 +276,28 @@ int soj_create_archive_worker_close(bool first_round, struct so_database_connect
 		int failed = soj_create_archive_worker_close2(worker, 0);
 		if (failed != 0)
 			worker->state = soj_worker_status_error;
-		else {
+		else
 			worker->archive->status = so_archive_status_data_complete;
-			soj_create_archive_worker_sync_archives(false, db_connect);
+	}
 
-			soj_create_archive_worker_write_meta(primary_worker);
+	soj_create_archive_worker_sync_archives(false, false, db_connect);
 
-			worker->archive->status = so_archive_status_complete;
-		}
+	if (primary_worker->state == soj_worker_status_ready) {
+		soj_create_archive_worker_write_meta(primary_worker);
+		primary_worker->archive->status = so_archive_status_complete;
+
+		primary_worker->writer->ops->free(primary_worker->writer);
+		primary_worker->writer = NULL;
+	}
+
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (worker->state != soj_worker_status_ready)
+			continue;
+
+		soj_create_archive_worker_write_meta(worker);
+		worker->archive->status = so_archive_status_complete;
 
 		worker->writer->ops->free(worker->writer);
 		worker->writer = NULL;
@@ -725,7 +730,7 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 	}
 }
 
-int soj_create_archive_worker_sync_archives(bool close_archive, struct so_database_connection * db_connect) {
+int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archive, struct so_database_connection * db_connect) {
 	int failed = db_connect->ops->start_transaction(db_connect);
 	if (failed != 0) {
 		soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -736,7 +741,7 @@ int soj_create_archive_worker_sync_archives(bool close_archive, struct so_databa
 	if (primary_worker->state == soj_worker_status_ready) {
 		failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive, NULL);
 
-		if (failed == 0 && soj_create_archive_adding_file)
+		if (failed == 0 && close_archive)
 			failed = db_connect->ops->update_link_archive(db_connect, primary_worker->archive, current_job);
 
 		if (failed != 0) {
@@ -755,10 +760,10 @@ int soj_create_archive_worker_sync_archives(bool close_archive, struct so_databa
 			failed = db_connect->ops->sync_archive(db_connect, worker->archive, primary_worker->archive);
 
 			if (failed == 0) {
-				if (soj_create_archive_adding_file)
-					failed = db_connect->ops->update_link_archive(db_connect, worker->archive, current_job);
-				else
+				if (first_synchro && !soj_create_archive_adding_file)
 					failed = db_connect->ops->link_archives(db_connect, current_job, primary_worker->archive, worker->archive);
+				else if (close_archive)
+					failed = db_connect->ops->update_link_archive(db_connect, worker->archive, current_job);
 			}
 
 			if (failed != 0) {
@@ -844,4 +849,3 @@ static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worke
 
 	return nb_write <= 0;
 }
-
