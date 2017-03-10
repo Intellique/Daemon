@@ -1,3 +1,15 @@
+storiqone (1.3.11-1+wheezy) polisher; urgency=low
+
+  * New release
+  * Bug fix:
+    - #281: Json: Use UTF-16 surrogate pair in order to use unicode
+            character between 0x10000 and 0x1FFFF.
+    - #282: Archiving into pool mirror. Introduced by #201.
+    - #283: Avoid having duplication in table archivetoarchivemirror.
+    - #285: 'so_string_unescape' unescape wrong charaters.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Fri, 10 Mar 2017 10:22:41 +0100
+
 storiqone (1.3.10-1+wheezy) polisher; urgency=low
 
   * New release
