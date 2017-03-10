@@ -133,11 +133,15 @@ static size_t so_json_compute_length(struct so_value * val) {
 						short utf8_length = so_string_valid_utf8_char(str);
 						unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
 
-						const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
-						if (char_info->category == so_string_character_category_other)
-							nb_write += 6;
-						else
-							nb_write += utf8_length;
+						if (unicode_char >= 0x10000) {
+							nb_write += 12;
+						} else {
+							const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
+							if (char_info->category == so_string_character_category_other)
+								nb_write += 6;
+							else
+								nb_write += utf8_length;
+						}
 
 						str += utf8_length;
 					}
@@ -272,11 +276,19 @@ ssize_t so_json_encode_to_fd(struct so_value * val, int fd, bool use_buffer) {
 							short utf8_length = so_string_valid_utf8_char(str);
 							unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
 
-							const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
-							if (char_info->category == so_string_character_category_other)
-								nb_write += dprintf(fd, "\\u%04x", unicode_char);
-							else
-								nb_write += dprintf(fd, "%.*s", utf8_length, str);
+							if (unicode_char >= 0x10000) {
+								// WTF-8
+								unsigned int p1 = ((unicode_char - 0x10000) >> 10) + 0xD800;
+								unsigned int p2 = ((unicode_char - 0x10000) & 0x3FF) + 0xDC00;
+
+								nb_write += dprintf(fd, "\\u%04x\\u%04x", p1, p2);
+							} else {
+								const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
+								if (char_info->category == so_string_character_category_other)
+									nb_write += dprintf(fd, "\\u%04x", unicode_char);
+								else
+									nb_write += dprintf(fd, "%.*s", utf8_length, str);
+							}
 
 							str += utf8_length;
 						}
@@ -415,11 +427,19 @@ static ssize_t so_json_encode_to_string_inner(struct so_value * val, char * buff
 						int utf8_length = so_string_valid_utf8_char(str);
 						unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
 
-						const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
-						if (char_info->category == so_string_character_category_other)
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\u%04x", unicode_char);
-						else
-							nb_write += snprintf(buffer + nb_write, length - nb_write, "%.*s", utf8_length, str);
+						if (unicode_char >= 0x10000) {
+							// WTF-8
+							unsigned int p1 = ((unicode_char - 0x10000) >> 10) + 0xD800;
+							unsigned int p2 = ((unicode_char - 0x10000) & 0x3FF) + 0xDC00;
+
+							nb_write += snprintf(buffer + nb_write, length - nb_write, "\\u%04x\\u%04x", p1, p2);
+						} else {
+							const struct so_string_character * char_info = so_string_get_character_info(unicode_char);
+							if (char_info->category == so_string_character_category_other)
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "\\u%04x", unicode_char);
+							else
+								nb_write += snprintf(buffer + nb_write, length - nb_write, "%.*s", utf8_length, str);
+						}
 
 						str += utf8_length;
 					}
@@ -704,6 +724,28 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 
 							if (sscanf(*json, "%4x", &unicode) < 1)
 								return NULL;
+
+							if ((unicode & 0xD800) == 0xD800) {
+								(*json) += 4;
+
+								if (**json != '\\')
+									return NULL;
+
+								(*json)++;
+
+								if (**json != 'u')
+									return NULL;
+
+								(*json)++;
+
+								unsigned int p2 = 0;
+								if (sscanf(*json, "%4x", &p2) < 1 || (p2 & 0xDC00) != 0xDC00)
+									return NULL;
+
+								// 0x10000 + ((U - 0xD800) << 10) + (next - 0xDC00)
+								unicode = 0x10000 + ((unicode - 0xD800) << 10) + (p2 - 0xDC00);
+							}
+
 							size_t char_length = so_string_unicode_length(unicode);
 
 							if (char_length == 0)
@@ -752,6 +794,17 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 								from++;
 								sscanf(string + from, "%4x", &unicode);
 								from += 3;
+
+								if ((unicode & 0xD800) == 0xD800) {
+									from += 3;
+
+									unsigned int p2 = 0;
+									sscanf(string + from, "%4x", &p2);
+									from += 3;
+
+									// 0x10000 + ((U - 0xD800) << 10) + (next - 0xDC00)
+									unicode = 0x10000 + ((unicode - 0xD800) << 10) + (p2 - 0xDC00);
+								}
 
 								so_string_convert_unicode_to_utf8(unicode, tmp_string + to, length - to, false);
 								to += so_string_unicode_length(unicode) - 1;
@@ -829,4 +882,3 @@ static void so_json_parse_string_strip(const char ** json) {
 	if (length > 0)
 		(*json) += length;
 }
-
