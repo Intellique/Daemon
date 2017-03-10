@@ -368,7 +368,7 @@ char * so_string_unescape(const char * str) {
 		size_t utf8_length = so_string_valid_utf8_char(str);
 		unsigned int unicode_char = so_string_convert_utf8_to_unicode(str);
 
-		if ((unicode_char & 0xE080) == 0xE080) {
+		if ((unicode_char >= 0xE080) && (unicode_char <= 0xE0FF)) {
 			dup_str[copied] = unicode_char & 0xFF;
 			copied++;
 		} else {
@@ -439,4 +439,3 @@ static int so_string_valid_utf8_char2(const unsigned char * ptr, unsigned short 
 			return 1;
 	return 0;
 }
-

@@ -117,7 +117,7 @@ static struct so_slot * sochgr_socket_find_slot_by_media(const char * medium_ser
 	for (i = 0; i < changer->nb_slots; i++) {
 		struct so_slot * sl = changer->slots + i;
 
-		if (sl->full && strcmp(medium_serial_number, sl->media->medium_serial_number) == 0)
+		if (sl->enable && sl->full && strcmp(medium_serial_number, sl->media->medium_serial_number) == 0)
 			return sl;
 	}
 
@@ -220,8 +220,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 	unsigned int i, nb_free_drives = 0;
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct so_drive * drive = changer->drives + i;
+		struct so_slot * sl = drive->slot;
 
-		if (!drive->enable)
+		if (!drive->enable || !sl->enable)
 			continue;
 
 		drive->ops->update_status(drive);
@@ -229,7 +230,6 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 		if (!drive->ops->is_free(drive))
 			continue;
 
-		struct so_slot * sl = drive->slot;
 		if (!sl->full) {
 			nb_free_drives++;
 			continue;
@@ -320,7 +320,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 		for (i = changer->nb_drives; i < changer->nb_slots && nb_free_drives > 0; i++) {
 			struct so_slot * sl = changer->slots + i;
-			if (!sl->full)
+			if (!sl->enable || !sl->full)
 				continue;
 
 			struct so_media * media = sl->media;
@@ -636,4 +636,3 @@ static void sochgr_socket_command_sync(struct sochgr_peer * peer __attribute__((
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 }
-
