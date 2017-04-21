@@ -433,57 +433,57 @@ msgstr  "[ %s | %s | #%u ]: el lector está cerrado"
 msgid   "Found LTFS header in media with (volume id: %s)"
 msgstr  "Encabezamiento de banda LTFS encontrado (id del volumen: %s"
 
-#: src/drive/tape_drive/media.c:152
+#: src/drive/tape_drive/media.c:155
 #, c-format
 msgid   "LTFS media '%s' should contains at most one archive but not %d archives"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:174
+#: src/drive/tape_drive/media.c:177
 #, c-format
 msgid   "Error opening media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:190
+#: src/drive/tape_drive/media.c:193
 #, c-format
 msgid   "Error while reading label on media '%s' because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:211
+#: src/drive/tape_drive/media.c:214
 #, c-format
 msgid   "Failed to read LTFS index from media '%s'"
 msgstr  "Fallo en la lectura del indice LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:226
+#: src/drive/tape_drive/media.c:229
 #, c-format
 msgid   "Error while reading LTFS index from media '%s'"
 msgstr  "Error leyendo el indice LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:239
+#: src/drive/tape_drive/media.c:242
 #, c-format
 msgid   "Found corrupted LTFS index on media '%s'"
 msgstr  "encontró un indice LTFS corrupto en el media \"%s\""
 
-#: src/drive/tape_drive/media.c:261
+#: src/drive/tape_drive/media.c:264
 #, c-format
 msgid   "Error, not enough memory to read LTFS index from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer el indice LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:294
+#: src/drive/tape_drive/media.c:297
 #, c-format
 msgid   "Failed to read LTFS label from media '%s'"
 msgstr  "Fallo a la lectura de la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:306
+#: src/drive/tape_drive/media.c:309
 #, c-format
 msgid   "Error while reading LTFS label from media '%s'"
 msgstr  "Error leyendo la etiqueta LTFS del media \"%s\""
 
-#: src/drive/tape_drive/media.c:317
+#: src/drive/tape_drive/media.c:320
 #, c-format
 msgid   "Found corrupted LTFS label on media '%s'"
 msgstr  "Encontró una etiqueta LTFS corrupto en el media \"%s\""
 
-#: src/drive/tape_drive/media.c:337
+#: src/drive/tape_drive/media.c:340
 #, c-format
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Error, no hay suficiente memoria para leer la etiqueta LTFS del media \"%s\""
