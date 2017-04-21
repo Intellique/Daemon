@@ -74,6 +74,9 @@ static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media __at
 }
 
 void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
+	if (media_data == NULL)
+		return;
+
 	switch (media_data->format) {
 		case sodr_tape_drive_media_ltfs:
 			if (media_data->data.ltfs.root.first_child != NULL) {

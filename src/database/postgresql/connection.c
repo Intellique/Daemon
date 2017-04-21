@@ -4339,7 +4339,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 	}
 
 	const char * queryA = "insert_archivefiletoarchivevolume";
-	so_database_postgresql_prepare(self, queryA, "WITH afav AS (SELECT $1:: BIGINT AS archivevolume, $2::BIGINT AS archivefile, $3::BIGINT AS blocknumber, $4::TIMESTAMPTZ AS archivetime, $5::TEXT AS alternatepath WHERE $1 || '@' || $2 NOT IN (SELECT archivevolume || '@' || archivefile FROM archivefiletoarchivevolume)) INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime, alternatepath) SELECT archivevolume, archivefile, blocknumber, archivetime, alternatepath FROM afav");
+	so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) SELECT $1::BIGINT, $2::BIGINT, $3::BIGINT, $4::TIMESTAMPTZ WHERE NOT EXISTS (SELECT * FROM archivefiletoarchivevolume WHERE archivefile = $2 AND archivevolume = $1)");
 
 	unsigned int i;
 	for (i = 0; i < volume->nb_files; i++) {
