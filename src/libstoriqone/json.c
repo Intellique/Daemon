@@ -795,7 +795,7 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 								sscanf(string + from, "%4x", &unicode);
 								from += 3;
 
-								if ((unicode & 0xD800) == 0xD800) {
+								if (unicode >= 0xD800 && unicode < 0xDC00) {
 									from += 3;
 
 									unsigned int p2 = 0;
