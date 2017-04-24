@@ -1,3 +1,12 @@
+storiqone (1.2.23-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #280: Json: Use UTF-16 surrogate pair in order to use unicode
+            character between 0x10000 and 0x1FFFF. Wrong test
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 24 Apr 2017 12:07:40 +0200
+
 storiqone (1.2.22-1+jessie) polisher; urgency=low
 
   * New bug fix release
