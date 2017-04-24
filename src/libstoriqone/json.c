@@ -725,7 +725,7 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 							if (sscanf(*json, "%4x", &unicode) < 1)
 								return NULL;
 
-							if ((unicode & 0xD800) == 0xD800) {
+							if (unicode >= 0xD800 && unicode < 0xDC00) {
 								(*json) += 4;
 
 								if (**json != '\\')
@@ -739,7 +739,7 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 								(*json)++;
 
 								unsigned int p2 = 0;
-								if (sscanf(*json, "%4x", &p2) < 1 || (p2 & 0xDC00) != 0xDC00)
+								if (sscanf(*json, "%4x", &p2) < 1 || (p2 >= 0xDC00 && p2 < 0xE000))
 									return NULL;
 
 								// 0x10000 + ((U - 0xD800) << 10) + (next - 0xDC00)
