@@ -1,3 +1,11 @@
+storiqone (1.3.12.2-1+jessie) polisher; urgency=low
+
+  * New release
+  * Bug fix:
+    - #291: Slow query: missing parameter
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 07 Jun 2017 11:48:27 +0200
+
 storiqone (1.3.12.1-1+jessie) polisher; urgency=low
 
   * New release
