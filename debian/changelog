@@ -1,3 +1,11 @@
+storiqone (1.2.23.2-1+wheezy) polisher; urgency=low
+
+  * New bug fix release
+  * Bug fix:
+    - #304: Miss to copy metadata while copying archive
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 08 Jun 2017 16:02:39 +0200
+
 storiqone (1.2.23.1-1+wheezy) polisher; urgency=low
 
   * New bug fix release
