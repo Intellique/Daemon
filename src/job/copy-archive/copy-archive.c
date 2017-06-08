@@ -104,7 +104,7 @@ static void soj_copyarchive_init() {
 }
 
 static int soj_copyarchive_run(struct so_job * job, struct so_database_connection * db_connect) {
-	job->done = 0.01;
+	job->done = 0.01f;
 
 	struct so_media * media = data.src_archive->volumes[0].media;
 
@@ -116,7 +116,6 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 		return 2;
 	}
 
-
 	data.copy_archive = so_archive_new();
 	data.copy_archive->name = strdup(data.src_archive->name);
 
@@ -126,6 +125,9 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 
 	data.copy_archive->creator = strdup(job->user);
 	data.copy_archive->owner = strdup(job->user);
+
+	if (data.src_archive->metadata != NULL)
+		data.copy_archive->metadata = so_value_copy(data.src_archive->metadata, false);
 
 	bool error = false;
 	data.dest_drive = soj_media_find_and_load_next(data.pool, data.src_archive->size, true, &error, db_connect);
@@ -142,7 +144,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 		failed = soj_copyarchive_direct_copy(job, db_connect, &data);
 
 	if (failed == 0) {
-		job->done = 0.99;
+		job->done = 0.99f;
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Writing metadata of copy archive '%s'"),
@@ -328,4 +330,3 @@ static bool soj_copyarchive_script_pre_run(struct so_job * job, struct so_databa
 
 	return should_run;
 }
-
