@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqonectl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-07-04 19:10+0200\n"
+        "POT-Creation-Date: 2017-06-14 19:12+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -157,20 +157,20 @@ msgid_plural    "storiqonectl: Found %zd drives\n"
 msgstr[0]       "storiqonectl : %zd lecteur trouvé\n"
 msgstr[1]       "storiqonectl : %zd lecteurs trouvés\n"
 
-#: src/storiqonectl/hardware.c:88 src/storiqonectl/hardware.c:100 src/storiqonectl/hardware.c:121
-#: src/storiqonectl/hardware.c:165 src/storiqonectl/hardware.c:181
+#: src/storiqonectl/hardware.c:88 src/storiqonectl/hardware.c:102 src/storiqonectl/hardware.c:123
+#: src/storiqonectl/hardware.c:167 src/storiqonectl/hardware.c:183
 #, c-format
 msgid   "storiqonectl: Failed while reading file link '%s' because %m\n"
 msgstr  "storiqonectl : Échec en lisant le lien du fichier « %s » parce que %m\n"
 
-#: src/storiqonectl/hardware.c:159
+#: src/storiqonectl/hardware.c:161
 #, c-format
 msgid   "storiqonectl: Found %zd changer\n"
 msgid_plural    "storiqonectl: Found %zd changers\n"
 msgstr[0]       "storiqonectl : %zd échangeur trouvé\n"
 msgstr[1]       "storiqonectl : %zd échangeurs trouvés\n"
 
-#: src/storiqonectl/hardware.c:251
+#: src/storiqonectl/hardware.c:253
 #, c-format
 msgid   "storiqonectl: Found %u standalong drive\n"
 msgid_plural    "storiqonectl: Found %u standalong drives\n"

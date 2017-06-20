@@ -580,4 +580,3 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 
 	return length;
 }
-

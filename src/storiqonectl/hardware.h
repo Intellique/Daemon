@@ -32,4 +32,3 @@ struct so_value;
 struct so_value * soctl_detect_hardware(void);
 
 #endif
-

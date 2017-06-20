@@ -87,4 +87,3 @@ struct so_value * sod_admin_login(struct sod_admin_client * client, struct so_va
 			return so_value_pack("{sbss}", "error", true, "message", "parameter step : invalid step value");
 	}
 }
-

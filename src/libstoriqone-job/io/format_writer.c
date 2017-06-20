@@ -428,4 +428,3 @@ static ssize_t soj_format_writer_write_metadata(struct so_format_writer * fw, st
 
 	return nb_write;
 }
-

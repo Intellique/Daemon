@@ -286,4 +286,3 @@ static ssize_t soj_stream_writer_write(struct so_stream_writer * sw, const void 
 
 	return nb_write;
 }
-

@@ -53,4 +53,3 @@ int soctl_scsi_loaderinfo(const char * filename, struct so_changer * changer, st
 int soctl_scsi_tapeinfo(const char * filename, struct so_drive * drive);
 
 #endif
-
