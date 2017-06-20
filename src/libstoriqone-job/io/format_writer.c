@@ -161,6 +161,40 @@ static enum so_format_writer_status soj_format_writer_add_file(struct so_format_
 	return status;
 }
 
+void soj_format_writer_add_file_async(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path) {
+	struct soj_format_writer_private * self = fw->data;
+
+	struct so_value * request = so_value_pack("{sss{soss}}",
+		"command", "add file",
+		"params",
+			"file", so_format_file_convert(file),
+			"selected path", selected_path
+	);
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+}
+
+enum so_format_writer_status soj_format_writer_add_file_return(struct so_format_writer * fw) {
+	struct soj_format_writer_private * self = fw->data;
+
+	enum so_format_writer_status status = so_format_writer_error;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{si}", "returned", &status);
+
+		if (status == so_format_writer_error)
+			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+		else
+			so_value_unpack(response, "{szsz}",
+				"position", &self->position,
+				"available size", &self->available_size
+			);
+		so_value_free(response);
+	}
+
+	return status;
+}
+
 static enum so_format_writer_status soj_format_writer_add_label(struct so_format_writer * fw, const char * label) {
 	struct soj_format_writer_private * self = fw->data;
 
