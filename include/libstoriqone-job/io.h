@@ -32,5 +32,9 @@
 struct so_format_reader * soj_io_filesystem_reader(const char * path);
 struct so_format_writer * soj_io_filesystem_writer(const char * path);
 
-#endif
+void soj_format_writer_write_async(struct so_format_writer * fw, const void * buffer, ssize_t length);
+ssize_t soj_format_writer_write_return(struct so_format_writer * sw);
+void soj_stream_writer_write_async(struct so_stream_writer * sw, const void * buffer, ssize_t length);
+ssize_t soj_stream_writer_write_return(struct so_stream_writer * sw);
 
+#endif
