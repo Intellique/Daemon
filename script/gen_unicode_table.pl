@@ -127,6 +127,7 @@ open my $fd_out, '>', $outputfile;
 my $current_index = -1;
 my $last_unicode  = -1;
 my @tabs          = ();
+my $number_chars  = 0;
 
 foreach my $character (@lstBlocks) {
     my $index = int( $character->{'unicode'} / 32 );
@@ -182,7 +183,11 @@ foreach my $character (@lstBlocks) {
         $characterSubCategory{$generalCategory},
         $characterBidiClass{ $character->{'bidirectionalCategory'} },
         $mirrored, $offset, $character->{'unicode'}, $character->{'unicode'};
+
+	$number_chars++;
 }
+
+printf "There is $number_chars characters into database\n";
 
 my $last_index = 32 * ( $current_index + 1 );
 while ( $last_unicode < $last_index ) {
