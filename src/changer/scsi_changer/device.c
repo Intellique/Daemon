@@ -67,6 +67,7 @@
 #include "scsi.h"
 
 static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
+static ssize_t sochgr_scsi_changer_get_reserved_space(struct so_media_format * format);
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_init_worker(void * arg);
 static int sochgr_scsi_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
@@ -87,13 +88,14 @@ static pthread_mutex_t sochgr_scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
 static volatile unsigned int sochgr_scsi_changer_nb_worker = 0;
 
 struct so_changer_ops sochgr_scsi_changer_ops = {
-	.check       = sochgr_scsi_changer_check,
-	.init        = sochgr_scsi_changer_init,
-	.load        = sochgr_scsi_changer_load,
-	.put_offline = sochgr_scsi_changer_put_offline,
-	.put_online  = sochgr_scsi_changer_put_online,
-	.shut_down   = sochgr_scsi_changer_shut_down,
-	.unload      = sochgr_scsi_changer_unload,
+	.check              = sochgr_scsi_changer_check,
+	.get_reserved_space = sochgr_scsi_changer_get_reserved_space,
+	.init               = sochgr_scsi_changer_init,
+	.load               = sochgr_scsi_changer_load,
+	.put_offline        = sochgr_scsi_changer_put_offline,
+	.put_online         = sochgr_scsi_changer_put_online,
+	.shut_down          = sochgr_scsi_changer_shut_down,
+	.unload             = sochgr_scsi_changer_unload,
 };
 
 static struct so_changer sochgr_scsi_changer = {
@@ -180,6 +182,10 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 
 struct so_changer * sochgr_scsi_changer_get_device() {
 	return &sochgr_scsi_changer;
+}
+
+static ssize_t sochgr_scsi_changer_get_reserved_space(struct so_media_format * format) {
+	return format->capacity / 500;
 }
 
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
@@ -931,4 +937,3 @@ static void sochgr_scsi_changer_wait() {
 		sleep(5);
 	}
 }
-

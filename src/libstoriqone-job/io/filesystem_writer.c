@@ -253,4 +253,3 @@ static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, 
 
 	return nb_write;
 }
-

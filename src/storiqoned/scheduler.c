@@ -227,4 +227,3 @@ void sod_scheduler_init(struct so_database_connection * db_connection) {
 	jobs = so_value_new_hashtable2();
 	db_connection->ops->disable_old_jobs(db_connection);
 }
-

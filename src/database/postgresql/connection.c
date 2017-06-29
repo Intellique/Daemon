@@ -5026,4 +5026,3 @@ static void so_database_postgresql_prepare(struct so_database_postgresql_connect
 		PQclear(prepare);
 	}
 }
-

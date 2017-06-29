@@ -27,10 +27,14 @@
 #ifndef __LIBSTORIQONE_CHANGER_CHANGER_H__
 #define __LIBSTORIQONE_CHANGER_CHANGER_H__
 
+// ssize_t
+#include <sys/types.h>
+
 #include <libstoriqone/changer.h>
 
 struct so_database_connection;
 struct so_media;
+struct so_media_format;
 struct so_value;
 struct sochgr_peer;
 
@@ -46,6 +50,7 @@ struct so_changer_driver {
 
 struct so_changer_ops {
 	int (*check)(unsigned int nb_clients, struct so_database_connection * db_connection);
+	ssize_t (*get_reserved_space)(struct so_media_format * format);
 	int (*init)(struct so_value * config, struct so_database_connection * db_connection);
 	int (*load)(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 	int (*put_offline)(struct so_database_connection * db_connection);
@@ -57,4 +62,3 @@ struct so_changer_ops {
 void sochgr_changer_register(struct so_changer_driver * chngr);
 
 #endif
-
