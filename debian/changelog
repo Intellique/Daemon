@@ -1,3 +1,13 @@
+storiqone (1.3.13-1+wheezy) polisher; urgency=low
+
+  * New release
+  * Improve:
+    - Speed of parallel archiving
+  * Bug fix:
+    - End of tape writing
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Thu, 29 Jun 2017 16:37:03 +0200
+
 storiqone (1.3.12.2-1+wheezy) polisher; urgency=low
 
   * New release
