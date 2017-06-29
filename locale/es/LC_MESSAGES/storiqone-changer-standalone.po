@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-standalone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-18 11:01+0100\n"
+        "POT-Creation-Date: 2017-06-28 16:38+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: storiqone-changer-standalone v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/changer/standalone_changer/device.c:156
+#: src/changer/standalone_changer/device.c:162
 #, c-format
 msgid   "Critical, standalone drive %s %s (serial: %s) is not enabled"
 msgstr  "Critico, el lector autónomo %s %s (número de serie: %s) no está activo"

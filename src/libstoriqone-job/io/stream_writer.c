@@ -287,3 +287,38 @@ static ssize_t soj_stream_writer_write(struct so_stream_writer * sw, const void 
 	return nb_write;
 }
 
+void soj_stream_writer_write_async(struct so_stream_writer * sw, const void * buffer, ssize_t length) {
+	struct soj_stream_writer * self = sw->data;
+
+	struct so_value * request = so_value_pack("{sss{sz}}",
+		"command", "write",
+		"params",
+			"length", length
+	);
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	send(self->data_fd, buffer, length, 0);
+}
+
+ssize_t soj_stream_writer_write_return(struct so_stream_writer * sw) {
+	struct soj_stream_writer * self = sw->data;
+
+	ssize_t nb_write = -1;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{szsz}",
+			"returned", &nb_write,
+			"available size", &self->available_size
+		);
+
+		if (nb_write < 0)
+			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+		so_value_free(response);
+	}
+
+	if (nb_write > 0)
+		self->position += nb_write;
+
+	return nb_write;
+}

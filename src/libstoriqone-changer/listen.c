@@ -623,9 +623,12 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	} else
 		pool = sl->media->pool;
 
+	struct so_changer_driver * driver = sochgr_changer_get();
+	struct so_changer * changer = driver->device;
+
 	ssize_t result = -1L;
 	struct sochgr_media * mp = media->private_data;
-	ssize_t reserved_space = (media->total_block * media->block_size) >> 8;
+	ssize_t reserved_space = changer->ops->get_reserved_space(media->media_format);
 
 	switch (media->status) {
 		case so_media_status_new:
@@ -668,7 +671,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 					result = size_need;
 					sochgr_media_add_writer(mp, peer, size_need);
 				} else if (10 * media->free_block >= media->total_block) {
-					result = media->free_block * media->block_size - mp->size_reserved;
+					result = media->free_block * media->block_size - mp->size_reserved - reserved_space;
 					sochgr_media_add_writer(mp, peer, result);
 				}
 			}

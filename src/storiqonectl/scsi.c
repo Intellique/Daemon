@@ -791,4 +791,3 @@ int soctl_scsi_tapeinfo(const char * filename, struct so_drive * drive) {
 
 	return 0;
 }
-
