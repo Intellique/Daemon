@@ -47,7 +47,7 @@
 
 #include "config.h"
 
-static int sod_plugin_job_filter(const struct dirent * dirent);
+static int sod_plugin_job_filter(const struct dirent * file);
 static int sod_plugin_sync_checksum_inner(void * arg);
 
 
@@ -120,4 +120,3 @@ void sod_plugin_sync_scripts(struct so_database_connection * connection) {
 	}
 	free(files);
 }
-

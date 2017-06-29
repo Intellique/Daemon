@@ -49,8 +49,8 @@
 #include "env.h"
 #include "logger.h"
 #include "main.h"
-#include "scheduler.h"
 #include "plugin.h"
+#include "scheduler.h"
 
 #include "checksum/storiqoned.chcksum"
 #include "config.h"
@@ -216,4 +216,3 @@ static void sod_show_help(void) {
 void sod_shutdown() {
 	sod_daemon_run = false;
 }
-

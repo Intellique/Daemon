@@ -94,6 +94,8 @@ struct so_value * soctl_detect_hardware() {
 
 		char * path = NULL;
 		int size = asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		if (size < 0)
+			continue;
 
 		length = readlink(path, link, 256);
 		if (length < 0) {
@@ -330,4 +332,3 @@ error_read_sas_address:
 	free(filename);
 	return NULL;
 }
-

@@ -128,4 +128,3 @@ static void sod_admin_new_connection(int fd_server __attribute__((unused)), int 
 	so_poll_register(fd_client, POLLIN | POLLERR | POLLHUP, sod_admin_client_do, new_client, sod_admin_client_free);
 	so_poll_set_timeout(fd_client, 600000, sod_admin_client_timeout);
 }
-

@@ -208,4 +208,3 @@ static void sodr_io_raw_writer_write(struct sodr_peer * peer, struct so_value * 
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }
-

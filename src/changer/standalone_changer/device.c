@@ -46,6 +46,7 @@
 #include "device.h"
 
 static int sochgr_standalone_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
+static ssize_t sochgr_standalone_changer_get_reserved_space(struct so_media_format * format);
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_remain_online(struct so_database_connection * db_connection);
@@ -53,13 +54,14 @@ static int sochgr_standalone_changer_shut_down(struct so_database_connection * d
 static int sochgr_standalone_changer_unload(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection);
 
 struct so_changer_ops sochgr_standalone_changer_ops = {
-	.check       = sochgr_standalone_changer_check,
-	.init        = sochgr_standalone_changer_init,
-	.load        = sochgr_standalone_changer_load,
-	.put_offline = sochgr_standalone_changer_remain_online,
-	.put_online  = sochgr_standalone_changer_remain_online,
-	.shut_down   = sochgr_standalone_changer_shut_down,
-	.unload      = sochgr_standalone_changer_unload,
+	.check              = sochgr_standalone_changer_check,
+	.get_reserved_space =sochgr_standalone_changer_get_reserved_space,
+	.init               = sochgr_standalone_changer_init,
+	.load               = sochgr_standalone_changer_load,
+	.put_offline        = sochgr_standalone_changer_remain_online,
+	.put_online         = sochgr_standalone_changer_remain_online,
+	.shut_down          = sochgr_standalone_changer_shut_down,
+	.unload             = sochgr_standalone_changer_unload,
 };
 
 static struct so_changer sochgr_standalone_changer = {
@@ -135,6 +137,10 @@ static int sochgr_standalone_changer_check(unsigned int nb_clients __attribute__
 
 struct so_changer * sochgr_standalone_changer_get_device() {
 	return &sochgr_standalone_changer;
+}
+
+static ssize_t sochgr_standalone_changer_get_reserved_space(struct so_media_format * format) {
+	return format->capacity / 500;
 }
 
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection) {

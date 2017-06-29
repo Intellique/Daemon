@@ -394,4 +394,3 @@ void soj_media_reserve_new_media() {
 	}
 	so_value_iterator_free(iter);
 }
-

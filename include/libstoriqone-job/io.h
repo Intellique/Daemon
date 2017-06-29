@@ -29,8 +29,16 @@
 
 #include <libstoriqone/io.h>
 
+struct so_format_file;
+
 struct so_format_reader * soj_io_filesystem_reader(const char * path);
 struct so_format_writer * soj_io_filesystem_writer(const char * path);
 
-#endif
+void soj_format_writer_add_file_async(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
+enum so_format_writer_status soj_format_writer_add_file_return(struct so_format_writer * fw);
+void soj_format_writer_write_async(struct so_format_writer * fw, const void * buffer, ssize_t length);
+ssize_t soj_format_writer_write_return(struct so_format_writer * sw);
+void soj_stream_writer_write_async(struct so_stream_writer * sw, const void * buffer, ssize_t length);
+ssize_t soj_stream_writer_write_return(struct so_stream_writer * sw);
 
+#endif
