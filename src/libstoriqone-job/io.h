@@ -24,10 +24,10 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_IO_H__
-#define __LIBSTORIQONE_JOB_IO_H__
+#ifndef __LIBSTORIQONE_JOB_IO2_H__
+#define __LIBSTORIQONE_JOB_IO2_H__
 
-#include <libstoriqone/io.h>
+#include <libstoriqone-job/io.h>
 
 struct so_drive;
 struct so_value;

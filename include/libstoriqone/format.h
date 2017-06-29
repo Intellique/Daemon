@@ -126,4 +126,3 @@ struct so_format_reader * so_format_tar_new_reader(struct so_stream_reader * rea
 struct so_format_writer * so_format_tar_new_writer(struct so_stream_writer * writer, struct so_value * checksums);
 
 #endif
-

@@ -362,10 +362,11 @@ static void sodr_tape_drive_writer_free(struct so_stream_writer * sw) {
 static ssize_t sodr_tape_drive_writer_get_available_size(struct so_stream_writer * sw) {
 	struct sodr_tape_drive_writer * self = sw->data;
 
-	if (self->media == NULL)
+	struct so_media * media = self->media;
+	if (media == NULL)
 		return 0;
 
-	return self->media->free_block * self->media->block_size;
+	return media->free_block * media->block_size - media->media_format->capacity / 500;
 }
 
 static ssize_t sodr_tape_drive_writer_get_block_size(struct so_stream_writer * sw) {
@@ -580,4 +581,3 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 
 	return length;
 }
-

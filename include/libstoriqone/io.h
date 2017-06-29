@@ -129,4 +129,3 @@ struct so_value * so_io_checksum_reader_get_checksums(struct so_stream_reader * 
 struct so_value * so_io_checksum_writer_get_checksums(struct so_stream_writer * stream);
 
 #endif
-

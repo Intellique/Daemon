@@ -42,8 +42,8 @@
 
 #include "listen.h"
 
-#include "config.h"
 #include "checksum/logger.chcksum"
+#include "config.h"
 #include "storiqone.version"
 
 static bool stop = false;
@@ -119,4 +119,3 @@ int main() {
 
 	return 0;
 }
-

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-10-18 08:27+0200\n"
+        "POT-Creation-Date: 2017-06-27 16:38+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -435,13 +435,13 @@ msgstr  "[ %s | %s | n°%u ] : erreur en lisant parce que %m"
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  "[ %s | %s | n°%u ] : erreur en rembobinant la bande parce que %m"
 
-#: src/drive/tape_drive/io/writer.c:202 src/drive/tape_drive/io/writer.c:311 src/drive/tape_drive/io/writer.c:485
-#: src/drive/tape_drive/io/writer.c:542
+#: src/drive/tape_drive/io/writer.c:202 src/drive/tape_drive/io/writer.c:311 src/drive/tape_drive/io/writer.c:486
+#: src/drive/tape_drive/io/writer.c:543
 #, c-format
 msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
 msgstr  "[ %s | %s | n°%u ] : Espace restante sur le média « %s » : %s"
 
-#: src/drive/tape_drive/io/writer.c:219 src/drive/tape_drive/io/writer.c:502 src/drive/tape_drive/io/writer.c:559
+#: src/drive/tape_drive/io/writer.c:219 src/drive/tape_drive/io/writer.c:503 src/drive/tape_drive/io/writer.c:560
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing because %s"
 msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %s"

@@ -61,6 +61,7 @@ static char * sochgr_vtl_prefix = NULL;
 static char * sochgr_vtl_root_dir = NULL;
 
 static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
+static ssize_t sochgr_vtl_changer_get_reserved_space(struct so_media_format * format);
 static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_load(struct sochgr_peer * peer, struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connection);
@@ -70,13 +71,14 @@ static int sochgr_vtl_changer_unload(struct sochgr_peer * peer, struct so_drive 
 static int sochgr_vtl_changer_unload_all_drives(struct so_database_connection * db_connection);
 
 struct so_changer_ops sochgr_vtl_changer_ops = {
-	.check       = sochgr_vtl_changer_check,
-	.init        = sochgr_vtl_changer_init,
-	.load        = sochgr_vtl_changer_load,
-	.put_offline = sochgr_vtl_changer_put_offline,
-	.put_online  = sochgr_vtl_changer_put_online,
-	.shut_down   = sochgr_vtl_changer_shut_down,
-	.unload      = sochgr_vtl_changer_unload,
+	.check              = sochgr_vtl_changer_check,
+	.get_reserved_space = sochgr_vtl_changer_get_reserved_space,
+	.init               = sochgr_vtl_changer_init,
+	.load               = sochgr_vtl_changer_load,
+	.put_offline        = sochgr_vtl_changer_put_offline,
+	.put_online         = sochgr_vtl_changer_put_online,
+	.shut_down          = sochgr_vtl_changer_shut_down,
+	.unload             = sochgr_vtl_changer_unload,
 };
 
 static struct so_changer sochgr_vtl_changer = {
@@ -369,6 +371,10 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 
 struct so_changer * sochgr_vtl_changer_get_device() {
 	return &sochgr_vtl_changer;
+}
+
+static ssize_t sochgr_vtl_changer_get_reserved_space(struct so_media_format * format __attribute__((unused))) {
+	return 0;
 }
 
 static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_connection * db_connection) {

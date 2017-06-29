@@ -127,6 +127,7 @@ open my $fd_out, '>', $outputfile;
 my $current_index = -1;
 my $last_unicode  = -1;
 my @tabs          = ();
+my $number_chars  = 0;
 
 foreach my $character (@lstBlocks) {
     my $index = int( $character->{'unicode'} / 32 );
@@ -135,7 +136,7 @@ foreach my $character (@lstBlocks) {
             my $last_index = 32 * ( $current_index + 1 );
             while ( $last_unicode < $last_index ) {
                 printf {$fd_out}
-                    "\t{NULL, NULL, so_string_character_category_other, so_string_character_subcategory_other_not_assigned, so_string_bidi_class_other_neutrals, false, 0}, // %d 0x%x\n",
+                    "\t{NULL, NULL, so_string_character_category_other, so_string_character_subcategory_other_not_assigned, so_string_bidi_class_other_neutrals, false, 0}, // %d 0x%06x\n",
                     $last_unicode, $last_unicode;
                 $last_unicode++;
             }
@@ -154,7 +155,7 @@ foreach my $character (@lstBlocks) {
 
     while ( $last_unicode < $character->{'unicode'} ) {
         printf {$fd_out}
-            "\t{NULL, NULL, so_string_character_category_other, so_string_character_subcategory_other_not_assigned, so_string_bidi_class_other_neutrals, false, 0}, // %d 0x%x\n",
+            "\t{NULL, NULL, so_string_character_category_other, so_string_character_subcategory_other_not_assigned, so_string_bidi_class_other_neutrals, false, 0}, // %d 0x%06x\n",
             $last_unicode, $last_unicode;
         $last_unicode++;
     }
@@ -176,13 +177,17 @@ foreach my $character (@lstBlocks) {
         $offset = $character->{'lowercaseMapping'} - $character->{'unicode'};
     }
 
-    printf {$fd_out} "\t{%s, %s, %s, %s, %s, %s, %d}, // %d 0x%x\n",
+    printf {$fd_out} "\t{%s, %s, %s, %s, %s, %s, %d}, // %d 0x%06x\n",
         $character->{'name'}, $character->{'unicode10Name'},
         $characterCategory{ substr( $generalCategory, 0, 1 ) },
         $characterSubCategory{$generalCategory},
         $characterBidiClass{ $character->{'bidirectionalCategory'} },
         $mirrored, $offset, $character->{'unicode'}, $character->{'unicode'};
+
+	$number_chars++;
 }
+
+printf "There is $number_chars characters into database\n";
 
 my $last_index = 32 * ( $current_index + 1 );
 while ( $last_unicode < $last_index ) {
