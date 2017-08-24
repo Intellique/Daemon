@@ -266,7 +266,7 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 	worker->writer->ops->free(worker->writer);
 	worker->writer = NULL;
 
-	soj_create_archive_worker_sync_archives(false, false, db_connect);
+	soj_create_archive_worker_sync_archives(false, false, worker->archive, db_connect);
 
 	worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
 	if (worker->drive != NULL) {
@@ -319,7 +319,7 @@ int soj_create_archive_worker_close(bool first_round, struct so_database_connect
 			worker->archive->status = so_archive_status_data_complete;
 	}
 
-	soj_create_archive_worker_sync_archives(false, false, db_connect);
+	soj_create_archive_worker_sync_archives(false, false, NULL, db_connect);
 
 	if (primary_worker->state == soj_worker_status_ready) {
 		soj_create_archive_worker_write_meta(primary_worker);
@@ -773,7 +773,7 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 	}
 }
 
-int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archive, struct so_database_connection * db_connect) {
+int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archive, struct so_archive * archive, struct so_database_connection * db_connect) {
 	int failed = db_connect->ops->start_transaction(db_connect);
 	if (failed != 0) {
 		soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -781,7 +781,7 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 		return 1;
 	}
 
-	if (primary_worker->state == soj_worker_status_ready) {
+	if (primary_worker->state == soj_worker_status_ready && (archive == NULL || archive == primary_worker->archive)) {
 		failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive, NULL);
 
 		if (failed == 0 && close_archive)
@@ -798,6 +798,9 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers && failed == 0; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (archive != NULL && archive != worker->archive)
+			continue;
 
 		if (worker->state == soj_worker_status_ready) {
 			failed = db_connect->ops->sync_archive(db_connect, worker->archive, primary_worker->archive);
