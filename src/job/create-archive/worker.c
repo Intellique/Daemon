@@ -813,13 +813,17 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 		if (archive != NULL && archive != worker->archive)
 			continue;
 
-		if (worker->state == soj_worker_status_ready) {
+		if ((worker->state == soj_worker_status_reserved && first_synchro) || worker->state == soj_worker_status_ready) {
 			failed = db_connect->ops->sync_archive(db_connect, worker->archive, primary_worker->archive);
 
 			if (failed == 0) {
-				if (first_synchro && !soj_create_archive_adding_file)
-					failed = db_connect->ops->link_archives(db_connect, current_job, primary_worker->archive, worker->archive);
-				else if (close_archive)
+				if (first_synchro && !soj_create_archive_adding_file) {
+					struct so_pool * pool = primary_worker->pool;
+					if (pool == NULL && primary_worker->archive != NULL && primary_worker->archive->nb_volumes > 0 && primary_worker->archive->volumes->media != NULL)
+						pool = primary_worker->archive->volumes->media->pool;
+
+					failed = db_connect->ops->link_archives(db_connect, current_job, primary_worker->archive, worker->archive, pool);
+				} else if (close_archive)
 					failed = db_connect->ops->update_link_archive(db_connect, worker->archive, current_job);
 			}
 

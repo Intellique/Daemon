@@ -187,7 +187,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 			} else {
 				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive, data.src_archive);
 				if (failed == 0)
-					failed = db_connect->ops->link_archives(db_connect, job, data.src_archive, data.copy_archive);
+					failed = db_connect->ops->link_archives(db_connect, job, data.src_archive, data.copy_archive, data.pool);
 
 				db_connect->ops->add_report(db_connect, job, data.copy_archive, NULL, json);
 
