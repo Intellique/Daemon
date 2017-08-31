@@ -131,6 +131,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	bool stop = false;
 	unsigned int i, round;
 	for (round = 1; !stop; round++) {
+		soj_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Starting round #%u"), round);
+
 		for (i = 0; i < nb_src_files; i++) {
 			char * root = src_files[i]->ops->get_root(src_files[i]);
 
@@ -141,10 +144,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 					dgettext("storiqone-job-create-archive", "Adding file '%s' to archive"),
 					file.filename);
 
-				if (round == 1)
-					soj_create_archive_meta_worker_add_file(file.filename, root);
+				soj_create_archive_meta_worker_add_file(file.filename, root);
 
-				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file, root, round == 1, db_connect);
+				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file, root, db_connect);
 				if (write_status != so_format_writer_ok) {
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
@@ -156,7 +158,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 					static char buffer[16384];
 					ssize_t nb_read;
 					while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 16384), nb_read > 0) {
-						ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, round == 1, db_connect);
+						ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, db_connect);
 						if (nb_write < 0) {
 							failed = -2;
 							break;
@@ -186,7 +188,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Closing archive"));
-		soj_create_archive_worker_close(round == 1, db_connect);
+		soj_create_archive_worker_close(db_connect);
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
@@ -207,6 +209,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				src_files[i]->ops->rewind(src_files[i]);
 		}
 	}
+
+	soj_create_archive_meta_worker_wait(true);
 
 	job->done = 0.99;
 

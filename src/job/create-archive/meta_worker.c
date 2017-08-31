@@ -74,6 +74,19 @@ static pthread_cond_t wait = PTHREAD_COND_INITIALIZER;
 
 
 void soj_create_archive_meta_worker_add_file(const char * filename, const char * selected_file) {
+	struct meta_worker_list * ptr;
+
+	pthread_mutex_lock(&lock);
+
+	bool found = so_value_hashtable_has_key2(files, filename);
+	for (ptr = file_first; !found && ptr != NULL; ptr = ptr->next)
+		found = strcmp(filename, ptr->filename) == 0;
+
+	pthread_mutex_unlock(&lock);
+
+	if (found)
+		return;
+
 	struct meta_worker_list * file = malloc(sizeof(struct meta_worker_list));
 	file->filename = so_string_unescape(filename);
 	file->selected_file = strdup(selected_file);
@@ -200,4 +213,3 @@ void soj_create_archive_meta_worker_wait(bool stop) {
 	pthread_cond_wait(&wait, &lock);
 	pthread_mutex_unlock(&lock);
 }
-

@@ -209,4 +209,3 @@ enum so_pool_unbreakable_level so_pool_string_to_unbreakable_level(const char * 
 const char * so_pool_unbreakable_level_to_string(enum so_pool_unbreakable_level level, bool translate);
 
 #endif
-

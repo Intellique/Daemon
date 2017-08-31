@@ -598,7 +598,6 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 		}
 
 		sl = sochgr_socket_find_slot_by_media(medium_serial_number);
-
 		if (sl == NULL) {
 			struct so_value * response = so_value_pack("{si}", "returned", -1);
 			so_json_encode_to_fd(response, fd, true);
