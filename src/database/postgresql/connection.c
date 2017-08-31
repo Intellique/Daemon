@@ -1135,7 +1135,7 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_pool_by_pool_mirror";
-	so_database_postgresql_prepare(self, query, "SELECT id FROM pool WHERE uuid::TEXT != $1 AND poolmirror = (SELECT poolmirror FROM pool WHERE uuid::TEXT = $1 LIMIT 1)");
+	so_database_postgresql_prepare(self, query, "SELECT p.id FROM pool p INNER JOIN poolmirror pm ON p.poolmirror = pm.id AND pm.synchronized AND pm.id = (SELECT poolmirror FROM pool WHERE uuid::TEXT = $1 LIMIT 1) WHERE p.uuid::TEXT != $1");
 
 	const char * param[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
