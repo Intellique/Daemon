@@ -229,6 +229,9 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 		self->media->nb_total_write++;
 		if (self->media->free_block > 0)
 			self->media->free_block--;
+
+		if (self->end_of_tape_warning)
+			self->media->append = false;
 	}
 
 	if (!self->closed || close_fd) {

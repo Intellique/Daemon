@@ -133,7 +133,7 @@ static void soj_formatmedia_init() {
 static int soj_formatmedia_run(struct so_job * job, struct so_database_connection * db_connect) {
 	job->done = 0.25;
 
-	struct so_drive * drive = soj_media_find_and_load2(soj_formatmedia_media, soj_formatmedia_pool, false, soj_formatmedia_media->media_format->block_size, NULL, db_connect);
+	struct so_drive * drive = soj_media_find_and_load2(soj_formatmedia_media, soj_formatmedia_pool, false, soj_formatmedia_media->media_format->block_size, false, NULL, NULL, db_connect);
 	if (drive == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
@@ -445,4 +445,3 @@ static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_conne
 
 	return 0;
 }
-

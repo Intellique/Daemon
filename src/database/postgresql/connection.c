@@ -140,7 +140,7 @@ static char * so_database_postgresql_get_original_path_from_alternate_path(struc
 static char * so_database_postgresql_get_selected_path_from_alternate_path(struct so_database_connection * connect, struct so_archive * archive, const char * path);
 static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive);
-static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
+static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy, struct so_pool * pool);
 static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id);
@@ -1135,7 +1135,7 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_pool_by_pool_mirror";
-	so_database_postgresql_prepare(self, query, "SELECT id FROM pool WHERE uuid::TEXT != $1 AND poolmirror = (SELECT poolmirror FROM pool WHERE uuid::TEXT = $1 LIMIT 1)");
+	so_database_postgresql_prepare(self, query, "SELECT p.id FROM pool p INNER JOIN poolmirror pm ON p.poolmirror = pm.id AND pm.synchronized AND pm.id = (SELECT poolmirror FROM pool WHERE uuid::TEXT = $1 LIMIT 1) WHERE p.uuid::TEXT != $1");
 
 	const char * param[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -3766,7 +3766,7 @@ static bool so_database_postgresql_is_archive_synchronized(struct so_database_co
 	return synchronized_archive;
 }
 
-static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy) {
+static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy, struct so_pool * pool) {
 	if (connect == NULL || source == NULL || copy == NULL)
 		return -1;
 
@@ -3788,10 +3788,10 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 	so_value_free(key);
 
 
-	const char * query = "select_poolmirror_by_archive";
-	so_database_postgresql_prepare(self, query, "SELECT p.poolmirror FROM archivevolume av INNER JOIN media m ON av.archive = $1 AND av.sequence = 0 AND av.media = m.id INNER JOIN pool p ON m.pool = p.id LIMIT 1");
+	const char * query = "select_poolmirror_by_pool";
+	so_database_postgresql_prepare(self, query, "SELECT poolmirror FROM pool WHERE uuid = $1 LIMIT 1");
 
-	const char * param_1[] = { copy_archive_id };
+	const char * param_1[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param_1, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
