@@ -177,4 +177,3 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 
 	return so_value_pack("{sisosb}", "status", status, "datas", datas, "should run", should_run);
 }
-

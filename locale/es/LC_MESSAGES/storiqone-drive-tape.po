@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-tape v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2017-06-27 16:38+0200\n"
+        "POT-Creation-Date: 2017-08-31 22:48+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -407,23 +407,23 @@ msgstr  ""
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:202 src/drive/tape_drive/io/writer.c:311 src/drive/tape_drive/io/writer.c:486
-#: src/drive/tape_drive/io/writer.c:543
+#: src/drive/tape_drive/io/writer.c:202 src/drive/tape_drive/io/writer.c:314 src/drive/tape_drive/io/writer.c:489
+#: src/drive/tape_drive/io/writer.c:546
 #, c-format
 msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:219 src/drive/tape_drive/io/writer.c:503 src/drive/tape_drive/io/writer.c:560
+#: src/drive/tape_drive/io/writer.c:219 src/drive/tape_drive/io/writer.c:506 src/drive/tape_drive/io/writer.c:563
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing because %s"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:243
+#: src/drive/tape_drive/io/writer.c:246
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing end of file because %s"
 msgstr  ""
 
-#: src/drive/tape_drive/io/writer.c:256
+#: src/drive/tape_drive/io/writer.c:259
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | #%u ]: el lector está cerrado"

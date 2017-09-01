@@ -94,16 +94,16 @@ struct soj_create_archive_worker {
 	} state;
 };
 
-static enum so_format_writer_status soj_create_archive_worker_add_file_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect);
-static enum so_format_writer_status soj_create_archive_worker_add_file_return(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
+static enum so_format_writer_status soj_create_archive_worker_add_file_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * selected_path, struct so_database_connection * db_connect);
+static enum so_format_writer_status soj_create_archive_worker_add_file_return(struct soj_create_archive_worker * worker, struct so_format_file * file, struct so_database_connection * db_connect);
 static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, char * alternate_path, ssize_t position);
-static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
-static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
+static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, struct so_database_connection * db_connect);
+static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool skip_last_file, struct so_database_connection * db_connect);
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file, char * alternate_path);
 static int soj_create_archive_worker_create_check_archive2(struct soj_create_archive_worker * worker, struct so_value * option, struct so_database_connection * db_connect);
 static void soj_create_archive_worker_generate_report2(struct so_archive * archive, struct so_value * selected_path, struct so_database_connection * db_connect);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
-void soj_create_archive_worker_write_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
+static void soj_create_archive_worker_write_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, struct so_database_connection * db_connect);
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 static ssize_t soj_create_archive_worker_write_return(struct soj_create_archive_worker * worker);
 
@@ -133,13 +133,14 @@ struct so_value * soj_create_archive_worker_archives() {
 	);
 }
 
-enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect) {
+enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file, const char * selected_path, struct so_database_connection * db_connect) {
 	if (primary_worker->state == soj_worker_status_ready) {
-		enum so_format_writer_status status = soj_create_archive_worker_add_file_async(primary_worker, file, selected_path, first_round, db_connect);
+		enum so_format_writer_status status = soj_create_archive_worker_add_file_async(primary_worker, file, selected_path, db_connect);
 		if (status != so_format_writer_ok) {
 			soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
 				file->filename, primary_worker->pool->name);
+			soj_create_archive_worker_close2(primary_worker, false, db_connect);
 			primary_worker->state = soj_worker_status_error;
 			return status;
 		}
@@ -152,21 +153,23 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		enum so_format_writer_status status = soj_create_archive_worker_add_file_async(worker, file, selected_path, first_round, db_connect);
+		enum so_format_writer_status status = soj_create_archive_worker_add_file_async(worker, file, selected_path, db_connect);
 		if (status != so_format_writer_ok) {
 			soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
 				file->filename, worker->pool->name);
+			soj_create_archive_worker_close2(worker, false, db_connect);
 			worker->state = soj_worker_status_error;
 		}
 	}
 
 	if (primary_worker->state == soj_worker_status_ready) {
-		enum so_format_writer_status status = soj_create_archive_worker_add_file_return(primary_worker, file, first_round, db_connect);
+		enum so_format_writer_status status = soj_create_archive_worker_add_file_return(primary_worker, file, db_connect);
 		if (status != so_format_writer_ok) {
 			soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
 				file->filename, primary_worker->pool->name);
+			soj_create_archive_worker_close2(primary_worker, false, db_connect);
 			primary_worker->state = soj_worker_status_error;
 			return status;
 		}
@@ -178,11 +181,12 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		enum so_format_writer_status status = soj_create_archive_worker_add_file_return(worker, file, first_round, db_connect);
+		enum so_format_writer_status status = soj_create_archive_worker_add_file_return(worker, file, db_connect);
 		if (status != so_format_writer_ok) {
 			soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
 				file->filename, worker->pool->name);
+			soj_create_archive_worker_close2(worker, false, db_connect);
 			worker->state = soj_worker_status_error;
 		}
 	}
@@ -197,7 +201,7 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format
 	return so_format_writer_error;
 }
 
-static enum so_format_writer_status soj_create_archive_worker_add_file_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * selected_path, bool first_round, struct so_database_connection * db_connect) {
+static enum so_format_writer_status soj_create_archive_worker_add_file_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * selected_path, struct so_database_connection * db_connect) {
 	worker->last_position = worker->writer->ops->position(worker->writer) / worker->writer->ops->get_block_size(worker->writer);
 
 	if (worker->pool->unbreakable_level == so_pool_unbreakable_level_file) {
@@ -205,7 +209,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file_async(str
 		ssize_t file_size = worker->writer->ops->compute_size_of_file(worker->writer, file);
 
 		if (available_size < file_size) {
-			if (soj_create_archive_worker_change_volume(worker, NULL, first_round, db_connect) != 0)
+			if (soj_create_archive_worker_change_volume(worker, NULL, db_connect) != 0)
 				return so_format_writer_error;
 
 			worker->last_position = 0;
@@ -216,13 +220,13 @@ static enum so_format_writer_status soj_create_archive_worker_add_file_async(str
 	return so_format_writer_ok;
 }
 
-static enum so_format_writer_status soj_create_archive_worker_add_file_return(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect) {
+static enum so_format_writer_status soj_create_archive_worker_add_file_return(struct soj_create_archive_worker * worker, struct so_format_file * file, struct so_database_connection * db_connect) {
 	enum so_format_writer_status status = soj_format_writer_add_file_return(worker->writer);
 
 	int failed = 0;
 	switch (status) {
 		case so_format_writer_end_of_volume:
-			failed = soj_create_archive_worker_change_volume(worker, file, first_round, db_connect);
+			failed = soj_create_archive_worker_change_volume(worker, file, db_connect);
 			if (failed != 0)
 				return so_format_writer_error;
 			worker->last_position = 0;
@@ -241,7 +245,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file_return(st
 
 	worker->partial_done = worker->writer->ops->position(worker->writer);
 
-	return status;
+	return so_format_writer_ok;
 }
 
 static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, char * alternate_path, ssize_t position) {
@@ -260,13 +264,11 @@ static void soj_create_archive_add_file3(struct soj_create_archive_worker * work
 	worker->position = 0;
 }
 
-static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect) {
-	soj_create_archive_worker_close2(worker, first_round);
+static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker, struct so_format_file * file, struct so_database_connection * db_connect) {
+	soj_create_archive_worker_close2(worker, false, db_connect);
 
 	worker->writer->ops->free(worker->writer);
 	worker->writer = NULL;
-
-	soj_create_archive_worker_sync_archives(false, false, db_connect);
 
 	worker->drive = soj_media_find_and_load_next(worker->pool, false, NULL, db_connect);
 	if (worker->drive != NULL) {
@@ -293,12 +295,11 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 
 }
 
-int soj_create_archive_worker_close(bool first_round, struct so_database_connection * db_connect) {
-	if (first_round)
-		soj_create_archive_meta_worker_wait(true);
+int soj_create_archive_worker_close(struct so_database_connection * db_connect) {
+	soj_create_archive_meta_worker_wait(false);
 
 	if (primary_worker->state == soj_worker_status_ready) {
-		int failed = soj_create_archive_worker_close2(primary_worker, 0);
+		int failed = soj_create_archive_worker_close2(primary_worker, false, db_connect);
 		if (failed != 0)
 			primary_worker->state = soj_worker_status_error;
 		else
@@ -312,14 +313,12 @@ int soj_create_archive_worker_close(bool first_round, struct so_database_connect
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		int failed = soj_create_archive_worker_close2(worker, 0);
+		int failed = soj_create_archive_worker_close2(worker, false, db_connect);
 		if (failed != 0)
 			worker->state = soj_worker_status_error;
 		else
 			worker->archive->status = so_archive_status_data_complete;
 	}
-
-	soj_create_archive_worker_sync_archives(false, false, db_connect);
 
 	if (primary_worker->state == soj_worker_status_ready) {
 		soj_create_archive_worker_write_meta(primary_worker);
@@ -327,25 +326,28 @@ int soj_create_archive_worker_close(bool first_round, struct so_database_connect
 
 		primary_worker->writer->ops->free(primary_worker->writer);
 		primary_worker->writer = NULL;
+	} else if (primary_worker->state == soj_worker_status_error && primary_worker->writer != NULL) {
+		primary_worker->writer->ops->free(primary_worker->writer);
+		primary_worker->writer = NULL;
 	}
 
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
-		if (worker->state != soj_worker_status_ready)
-			continue;
+		if (worker->state == soj_worker_status_ready) {
+			soj_create_archive_worker_write_meta(worker);
+			worker->archive->status = so_archive_status_complete;
+		}
 
-		soj_create_archive_worker_write_meta(worker);
-		worker->archive->status = so_archive_status_complete;
-
-		worker->writer->ops->free(worker->writer);
+		if (worker->writer != NULL)
+			worker->writer->ops->free(worker->writer);
 		worker->writer = NULL;
 	}
 
 	return 0;
 }
 
-static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round) {
+static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool skip_last_file, struct so_database_connection * db_connect) {
 	worker->writer->ops->close(worker->writer);
 
 	worker->partial_done = 0;
@@ -357,11 +359,13 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 
 	last_vol->digests = worker->writer->ops->get_digests(worker->writer);
 
-	if (first_round)
-		soj_create_archive_meta_worker_wait(false);
+	soj_create_archive_meta_worker_wait(false);
 
 	struct so_value * files_metadata = NULL;
 	so_value_unpack(current_job->meta, "{so}", "files", &files_metadata);
+
+	if (skip_last_file)
+		worker->nb_files--;
 
 	unsigned int i;
 	struct soj_create_archive_files * ptr_file = worker->first_files;
@@ -381,14 +385,21 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 		else
 			new_file->file->metadata = so_value_new_hashtable2();
 
-		struct soj_create_archive_files * next = ptr_file->next;
+		worker->first_files = ptr_file->next;
 		free(ptr_file->path);
 		free(ptr_file);
-		ptr_file = next;
+		ptr_file = worker->first_files;
+	}
+
+	if (worker->first_files != NULL) {
+		free(worker->first_files->path);
+		free(worker->first_files);
 	}
 
 	worker->first_files = worker->last_files = NULL;
 	worker->nb_files = 0;
+
+	soj_create_archive_worker_sync_archives(false, false, worker->archive, db_connect);
 
 	return 0;
 }
@@ -752,7 +763,7 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
-		ssize_t reserved = soj_media_prepare(worker->pool, archive_size, worker->archive->uuid, db_connect);
+		ssize_t reserved = soj_media_prepare(worker->pool, archive_size, true, worker->archive->uuid, db_connect);
 		if (reserved >= archive_size) {
 			worker->state = soj_worker_status_reserved;
 			worker->archive_size = archive_size;
@@ -773,7 +784,7 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 	}
 }
 
-int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archive, struct so_database_connection * db_connect) {
+int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archive, struct so_archive * archive, struct so_database_connection * db_connect) {
 	int failed = db_connect->ops->start_transaction(db_connect);
 	if (failed != 0) {
 		soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -781,7 +792,7 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 		return 1;
 	}
 
-	if (primary_worker->state == soj_worker_status_ready) {
+	if (primary_worker->state == soj_worker_status_ready && (archive == NULL || archive == primary_worker->archive)) {
 		failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive, NULL);
 
 		if (failed == 0 && close_archive)
@@ -799,13 +810,20 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 	for (i = 0; i < nb_mirror_workers && failed == 0; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
-		if (worker->state == soj_worker_status_ready) {
+		if (archive != NULL && archive != worker->archive)
+			continue;
+
+		if ((worker->state == soj_worker_status_reserved && first_synchro) || worker->state == soj_worker_status_ready) {
 			failed = db_connect->ops->sync_archive(db_connect, worker->archive, primary_worker->archive);
 
 			if (failed == 0) {
-				if (first_synchro && !soj_create_archive_adding_file)
-					failed = db_connect->ops->link_archives(db_connect, current_job, primary_worker->archive, worker->archive);
-				else if (close_archive)
+				if (first_synchro && !soj_create_archive_adding_file) {
+					struct so_pool * pool = primary_worker->pool;
+					if (pool == NULL && primary_worker->archive != NULL && primary_worker->archive->nb_volumes > 0 && primary_worker->archive->volumes->media != NULL)
+						pool = primary_worker->archive->volumes->media->pool;
+
+					failed = db_connect->ops->link_archives(db_connect, current_job, primary_worker->archive, worker->archive, pool);
+				} else if (close_archive)
 					failed = db_connect->ops->update_link_archive(db_connect, worker->archive, current_job);
 			}
 
@@ -823,10 +841,10 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 	return 0;
 }
 
-ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect) {
+ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char * buffer, ssize_t length, struct so_database_connection * db_connect) {
 	ssize_t nb_write = 0;
 	if (primary_worker->state == soj_worker_status_ready)
-		soj_create_archive_worker_write_async(primary_worker, file, buffer, length, first_round, db_connect);
+		soj_create_archive_worker_write_async(primary_worker, file, buffer, length, db_connect);
 
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
@@ -835,13 +853,15 @@ ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		soj_create_archive_worker_write_async(worker, file, buffer, length, first_round, db_connect);
+		soj_create_archive_worker_write_async(worker, file, buffer, length, db_connect);
 	}
 
 	if (primary_worker->state == soj_worker_status_ready) {
 		nb_write = soj_create_archive_worker_write_return(primary_worker);
-		if (nb_write < 0)
+		if (nb_write < 0) {
 			primary_worker->state = soj_worker_status_error;
+			soj_create_archive_worker_close2(primary_worker, true, db_connect);
+		}
 	}
 
 	for (i = 0; i < nb_mirror_workers; i++) {
@@ -851,20 +871,22 @@ ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char
 			continue;
 
 		nb_write = soj_create_archive_worker_write_return(worker);
-		if (nb_write < 0)
+		if (nb_write < 0) {
 			worker->state = soj_worker_status_error;
+			soj_create_archive_worker_close2(worker, true, db_connect);
+		}
 	}
 
 	return nb_write;
 }
 
-void soj_create_archive_worker_write_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect) {
+static void soj_create_archive_worker_write_async(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, struct so_database_connection * db_connect) {
 	ssize_t available = worker->writer->ops->get_available_size(worker->writer);
 	ssize_t nb_total_write = 0;
 	ssize_t current_file_position = file->position;
 	while (nb_total_write < length) {
 		if (available <= 0) {
-			int failed = soj_create_archive_worker_change_volume(worker, file, first_round, db_connect);
+			int failed = soj_create_archive_worker_change_volume(worker, file, db_connect);
 			if (failed) {
 				file->position = current_file_position;
 				worker->state = soj_worker_status_error;

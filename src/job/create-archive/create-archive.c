@@ -126,11 +126,14 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	soj_create_archive_worker_reserve_medias(archive_size, db_connect);
 	soj_create_archive_worker_prepare_medias(db_connect);
 
-	int failed = soj_create_archive_worker_sync_archives(true, false, db_connect);
+	int failed = soj_create_archive_worker_sync_archives(true, false, NULL, db_connect);
 
 	bool stop = false;
 	unsigned int i, round;
 	for (round = 1; !stop; round++) {
+		soj_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Starting round #%u"), round);
+
 		for (i = 0; i < nb_src_files; i++) {
 			char * root = src_files[i]->ops->get_root(src_files[i]);
 
@@ -141,10 +144,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 					dgettext("storiqone-job-create-archive", "Adding file '%s' to archive"),
 					file.filename);
 
-				if (round == 1)
-					soj_create_archive_meta_worker_add_file(file.filename, root);
+				soj_create_archive_meta_worker_add_file(file.filename, root);
 
-				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file, root, round == 1, db_connect);
+				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file, root, db_connect);
 				if (write_status != so_format_writer_ok) {
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
@@ -156,7 +158,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 					static char buffer[16384];
 					ssize_t nb_read;
 					while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 16384), nb_read > 0) {
-						ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, round == 1, db_connect);
+						ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, db_connect);
 						if (nb_write < 0) {
 							failed = -2;
 							break;
@@ -186,11 +188,11 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Closing archive"));
-		soj_create_archive_worker_close(round == 1, db_connect);
+		soj_create_archive_worker_close(db_connect);
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
-		failed = soj_create_archive_worker_sync_archives(false, true, db_connect);
+		failed = soj_create_archive_worker_sync_archives(false, true, NULL, db_connect);
 
 		if (failed != 0)
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -207,6 +209,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				src_files[i]->ops->rewind(src_files[i]);
 		}
 	}
+
+	soj_create_archive_meta_worker_wait(true);
 
 	job->done = 0.99;
 
@@ -405,7 +409,7 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 			dgettext("storiqone-job-create-archive", "Space required (%s) for creating new archive '%s'"),
 			sarchive_size, job->name);
 
-		ssize_t reserved = soj_media_prepare(pool, archive_size, primary_archive->uuid, db_connect);
+		ssize_t reserved = soj_media_prepare(pool, archive_size, true, primary_archive->uuid, db_connect);
 		if (reserved < archive_size) {
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error: not enought space available in pool (%s)"),
@@ -440,7 +444,7 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 			dgettext("storiqone-job-create-archive", "Space required (%s) to add to archive '%s'"),
 			sarchive_size, job->name);
 
-		ssize_t reserved = soj_media_prepare(primary_pool, archive_size, NULL, db_connect);
+		ssize_t reserved = soj_media_prepare(primary_pool, archive_size, true, NULL, db_connect);
 		if (reserved < archive_size) {
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error: not enough space available in pool (%s)"),
@@ -453,4 +457,3 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 
 	return 0;
 }
-
