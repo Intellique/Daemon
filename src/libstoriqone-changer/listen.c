@@ -462,8 +462,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 			drive->ops->lock(drive, peer->job_id);
 
-			struct so_value * response = so_value_pack("{sbsuso}",
+			struct so_value * response = so_value_pack("{sbsbsuso}",
 				"error", false,
+				"append ok", true,
 				"index", drive->index,
 				"changer", so_changer_convert(changer)
 			);
