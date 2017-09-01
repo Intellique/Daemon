@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2017-09-01 12:20+0200\n"
+        "POT-Creation-Date: 2017-09-01 19:49+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -46,7 +46,7 @@ msgstr  "[%s | %s]: descargando el media \"%s\" desde el lector #%d finalizado c
 msgid   "[%s | %s]: the drive (%s#%u) doesn't support media format (%s)"
 msgstr  "[%s | %s]: el lector (%s#%u) no puede utilizar los medias de formato (%s)"
 
-#: src/libstoriqone-changer/listen.c:307 src/libstoriqone-changer/listen.c:477
+#: src/libstoriqone-changer/listen.c:307 src/libstoriqone-changer/listen.c:478
 #, c-format
 msgid   "[%s | %s]: job (id: %s) gets media '%s'"
 msgstr  "[%s | %s]: tarea (id: %s) obtiene los medias \"%s\""
