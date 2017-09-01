@@ -240,8 +240,22 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 		struct sochgr_peer * peer = NULL;
 		for (lp = mp->first; lp != NULL; lp = lp->next)
 			if (lp->waiting) {
-				peer = lp->peer;
-				break;
+				if (lp->append && !sl->media->append) {
+					lp->peer->nb_waiting_medias--;
+					lp->waiting = false;
+
+					struct so_value * response = so_value_pack("{sbsbsiso}",
+						"error", false,
+						"append ok", false,
+						"index", -1,
+						"changer", so_changer_convert(changer)
+					);
+					so_json_encode_to_fd(response, peer->fd, true);
+					so_value_free(response);
+				} else {
+					peer = lp->peer;
+					break;
+				}
 			}
 
 		if (peer == NULL) {
@@ -263,8 +277,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
 						changer->vendor, changer->model, volume_name, drive->index, failed);
 
-					struct so_value * response = so_value_pack("{sbsiso}",
+					struct so_value * response = so_value_pack("{sbsbsiso}",
 						"error", true,
+						"append ok", true,
 						"index", -1,
 						"changer", so_changer_convert(changer)
 					);
@@ -292,8 +307,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) gets media '%s'"),
 			changer->vendor, changer->model, peer->job_id, sl->media->name);
 
-		struct so_value * response = so_value_pack("{sbsuso}",
+		struct so_value * response = so_value_pack("{sbsbsuso}",
 			"error", false,
+			"append ok", true,
 			"index", drive->index,
 			"changer", so_changer_convert(changer)
 		);
@@ -310,8 +326,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				dgettext("libstoriqone-changer", "[%s | %s]: no free drive available"),
 				changer->vendor, changer->model);
 
-			struct so_value * response = so_value_pack("{sbsiso}",
+			struct so_value * response = so_value_pack("{sbsbsiso}",
 				"error", false,
+				"append ok", true,
 				"index", -1,
 				"changer", so_changer_convert(changer)
 			);
@@ -336,6 +353,22 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			struct sochgr_peer_list * lp = sochgr_media_find_peer(mp, peer);
 			if (lp == NULL || !lp->waiting)
 				continue;
+
+			if (lp->append && !media->append) {
+				lp->peer->nb_waiting_medias--;
+				lp->waiting = false;
+
+				struct so_value * response = so_value_pack("{sbsbsiso}",
+					"error", false,
+					"append ok", false,
+					"index", -1,
+					"changer", so_changer_convert(changer)
+				);
+				so_json_encode_to_fd(response, peer->fd, true);
+				so_value_free(response);
+
+				continue;
+			}
 
 			unsigned int j;
 			struct so_drive * drive = NULL;
@@ -371,8 +404,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
 						changer->vendor, changer->model, volume_name, drive->index, failed);
 
-					struct so_value * response = so_value_pack("{sbsiso}",
+					struct so_value * response = so_value_pack("{sbsbsiso}",
 						"error", true,
+						"append ok", true,
 						"index", -1,
 						"changer", so_changer_convert(changer)
 					);
@@ -404,8 +438,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 					dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"),
 					changer->vendor, changer->model, sl->volume_name, sl->index, drive->index, failed);
 
-				struct so_value * response = so_value_pack("{sbsiso}",
+				struct so_value * response = so_value_pack("{sbsbsiso}",
 					"error", true,
+					"append ok", true,
 					"index", -1,
 					"changer", so_changer_convert(changer)
 				);
@@ -450,8 +485,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 	}
 
 	if (current_peer != NULL && no_wait) {
-		struct so_value * response = so_value_pack("{sbsiso}",
+		struct so_value * response = so_value_pack("{sbsbsiso}",
 			"error", false,
+			"append ok", true,
 			"index", -1,
 			"changer", so_changer_convert(changer)
 		);
@@ -568,18 +604,20 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	const char * medium_serial_number = NULL;
 	size_t size_need = 0;
+	bool append = false;
 	const char * archive_uuid = NULL;
 	struct so_value * vpool = NULL;
 
-	int nb_parsed = so_value_unpack(request, "{s{sSszsSso}}",
+	int nb_parsed = so_value_unpack(request, "{s{sSszsbsSso}}",
 		"params",
 			"medium serial number", &medium_serial_number,
 			"size need", &size_need,
+			"append", &append,
 			"archive uuid", &archive_uuid,
 			"pool", &vpool
 	);
 
-	if (nb_parsed < 3 || vpool == NULL) {
+	if (nb_parsed < 4 || vpool == NULL) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
@@ -605,6 +643,9 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 			return;
 		}
 	}
+
+	if (sl->drive != NULL)
+		sl->drive->ops->update_status(sl->drive);
 
 	struct so_media * media = sl->media;
 	if (media == NULL) {
@@ -661,17 +702,20 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 				if (!supported_format)
 					break;
 
+				if (append && !media->append)
+					break;
+
 				if (pool->unbreakable_level == so_pool_unbreakable_level_archive) {
 					if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
 						result = size_need;
-						sochgr_media_add_writer(mp, peer, size_need);
+						sochgr_media_add_writer(mp, peer, size_need, append);
 					}
 				} else if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
 					result = size_need;
-					sochgr_media_add_writer(mp, peer, size_need);
+					sochgr_media_add_writer(mp, peer, size_need, append);
 				} else if (10 * media->free_block >= media->total_block) {
 					result = media->free_block * media->block_size - mp->size_reserved - reserved_space;
-					sochgr_media_add_writer(mp, peer, result);
+					sochgr_media_add_writer(mp, peer, result, append);
 				}
 			}
 			break;

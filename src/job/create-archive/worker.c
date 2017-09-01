@@ -763,7 +763,7 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
-		ssize_t reserved = soj_media_prepare(worker->pool, archive_size, worker->archive->uuid, db_connect);
+		ssize_t reserved = soj_media_prepare(worker->pool, archive_size, true, worker->archive->uuid, db_connect);
 		if (reserved >= archive_size) {
 			worker->state = soj_worker_status_reserved;
 			worker->archive_size = archive_size;

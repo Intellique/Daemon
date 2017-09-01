@@ -44,9 +44,9 @@ struct so_slot;
 struct so_value;
 
 struct so_changer_ops {
-	struct so_drive * (*get_media)(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error);
+	struct so_drive * (*get_media)(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error, bool * media_refused);
 	int (*release_media)(struct so_changer * changer, struct so_media * media);
-	ssize_t (*reserve_media)(struct so_changer * changer, struct so_media * media, size_t size_need, const char * archive_uuid, struct so_pool * pool);
+	ssize_t (*reserve_media)(struct so_changer * changer, struct so_media * media, size_t size_need, bool append, const char * archive_uuid, struct so_pool * pool);
 	int (*sync)(struct so_changer * changer);
 };
 
