@@ -237,7 +237,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				break;
 
 			case reserve_media:
-				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, NULL, db_connect);
+				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, true, NULL, db_connect);
 
 				if (size_available < backup_size)
 					soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,

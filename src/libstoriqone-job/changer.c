@@ -58,8 +58,8 @@ struct soj_changer {
 static struct so_changer * soj_changers = NULL;
 static unsigned int soj_nb_changers = 0;
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error);
-static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, const char * archive_uuid, struct so_pool * pool);
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error, bool * media_refused);
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, bool append, const char * archive_uuid, struct so_pool * pool);
 static int soj_changer_release_media(struct so_changer * changer, struct so_media * media);
 static int soj_changer_sync(struct so_changer * changer);
 
@@ -119,7 +119,7 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 	return NULL;
 }
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error) {
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_media * media, bool no_wait, bool * error, bool * media_refused) {
 	struct soj_changer * self = changer->data;
 	struct so_job * job = soj_job_get();
 
@@ -159,11 +159,13 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 
 	if (response != NULL) {
 		bool err = true;
+		bool append_ok = false;
 		int index = 0;
 		struct so_value * vch = NULL;
 
-		int nb_parsed = so_value_unpack(response, "{sbsosi}",
+		int nb_parsed = so_value_unpack(response, "{sbsbsosi}",
 			"error", &err,
+			"append ok", &append_ok,
 			"changer", &vch,
 			"index", &index
 		);
@@ -171,8 +173,16 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 		if (error != NULL)
 			*error = err;
 
+		if (media_refused != NULL)
+			*media_refused = !append_ok;
+
+		if (!append_ok) {
+			job->status = so_job_status_running;
+			return NULL;
+		}
+
 		if (!err) {
-			if (nb_parsed >= 3 && index >= 0 && slot->index != (unsigned int) index)
+			if (nb_parsed >= 4 && index >= 0 && slot->index != (unsigned int) index)
 				so_slot_swap(slot, changer->drives[index].slot);
 
 			so_changer_sync(changer, vch);
@@ -240,14 +250,15 @@ static int soj_changer_release_media(struct so_changer * changer, struct so_medi
 	return ok ? 0 : 1;
 }
 
-static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, const char * archive_uuid, struct so_pool * pool) {
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_media * media, size_t size_need, bool append, const char * archive_uuid, struct so_pool * pool) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{ssszssso}}",
+	struct so_value * request = so_value_pack("{sss{ssszsbssso}}",
 		"command", "reserve media",
 		"params",
 			"medium serial number", media->medium_serial_number,
 			"size need", size_need,
+			"append", append,
 			"archive uuid", archive_uuid,
 			"pool", so_pool_convert(pool)
 	);
@@ -376,4 +387,3 @@ int soj_changer_sync_all() {
 	}
 	return failed;
 }
-

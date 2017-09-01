@@ -495,7 +495,7 @@ ssize_t sodr_tape_drive_get_block_size(struct so_database_connection * db) {
 	ssize_t nb_read;
 	block_size = 1 << 16;
 	static char buffer[1048576];
-	for (i = 0; i < 4 && buffer != NULL && failed == 0; i++, block_size <<= 1) {
+	for (i = 0; i < 4 && failed == 0; i++, block_size <<= 1) {
 		sodr_tape_drive.status = so_drive_status_reading;
 
 		sodr_time_start();
@@ -1124,4 +1124,3 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 
 	return failed;
 }
-

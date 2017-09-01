@@ -96,7 +96,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				break;
 
 			case get_media:
-				dr = slot->changer->ops->get_media(slot->changer, worker->volume->media, false, &error);
+				dr = slot->changer->ops->get_media(slot->changer, worker->volume->media, false, &error, NULL);
 
 				if (error) {
 					stop = true;
@@ -124,7 +124,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				break;
 
 			case reserve_media:
-				slot->changer->ops->reserve_media(slot->changer, worker->volume->media, 0, NULL, worker->volume->media->pool);
+				slot->changer->ops->reserve_media(slot->changer, worker->volume->media, 0, false, NULL, worker->volume->media->pool);
 				state = get_media;
 				break;
 		}
@@ -193,4 +193,3 @@ struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup 
 
 	return worker;
 }
-
