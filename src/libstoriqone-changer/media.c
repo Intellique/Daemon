@@ -51,12 +51,13 @@ void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * p
 		media->last = media->last->next = pl;
 }
 
-void sochgr_media_add_writer(struct sochgr_media * media, struct sochgr_peer * peer, size_t size_need) {
+void sochgr_media_add_writer(struct sochgr_media * media, struct sochgr_peer * peer, size_t size_need, bool append) {
 	struct sochgr_peer_list * pl = malloc(sizeof(struct sochgr_peer_list));
 	bzero(pl, sizeof(struct sochgr_peer_list));
 
 	pl->peer = peer;
 	pl->size_need = size_need;
+	pl->append = append;
 	media->size_reserved += size_need;
 
 	if (media->first == NULL)

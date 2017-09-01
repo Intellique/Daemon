@@ -418,4 +418,3 @@ static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const v
 
 	return length;
 }
-
