@@ -380,18 +380,29 @@ static void soj_format_reader_filesystem_node_sync(struct soj_format_reader_file
 		file->size = node->st.st_size;
 	} else if (S_ISLNK(node->st.st_mode)) {
 		file->size = node->st.st_size;
-		file->link = malloc(file->size + 1);
-
-		ssize_t nb_write = readlink(file->filename, file->link, file->size + 1);
-		file->link[file->size] = '\0';
+		char * raw_link = malloc(file->size + 1);
+		ssize_t nb_write = readlink(node->path, raw_link, file->size + 1);
 
 		if (nb_write < 0) {
 			so_log_write(so_log_level_error,
 				dgettext("libstoriqone-job", "Failed to read link of file '%s' because %m"),
 				file->filename);
 
+			file->link = raw_link;
 			file->link[0] = '\0';
+		} else {
+			raw_link[nb_write] = '\0';
+
+			fixed = false;
+			file->link = so_string_dup_and_fix(raw_link, &fixed);
+
+			if (fixed) {
+				so_log_write(so_log_level_warning,
+					dgettext("libstoriqone-job", "Symbolic link '%s' -> '%s' contains an invalid UTF-8 sequence"),
+					file->filename, file->link);
+			}
+
+			free(raw_link);
 		}
 	}
 }
-
