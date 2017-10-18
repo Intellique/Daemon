@@ -443,7 +443,8 @@ char * so_file_gid2name(gid_t gid) {
 
 	bzero(&gr, sizeof(gr));
 
-	if (!getgrgid_r(gid, &gr, buffer, 256, &tmp_gr))
+	int failed = getgrgid_r(gid, &gr, buffer, 256, &tmp_gr);
+	if (failed == 0 && tmp_gr != NULL)
 		return strdup(buffer);
 	else {
 		char * name = NULL;
@@ -680,7 +681,8 @@ char * so_file_uid2name(uid_t uid) {
 
 	bzero(&pw, sizeof(pw));
 
-	if (!getpwuid_r(uid, &pw, buffer, 256, &tmp_pw))
+	int failed = getpwuid_r(uid, &pw, buffer, 256, &tmp_pw);
+	if (failed == 0 && tmp_pw != NULL)
 		return strdup(buffer);
 	else {
 		char * name = NULL;
@@ -691,4 +693,3 @@ char * so_file_uid2name(uid_t uid) {
 			return NULL;
 	}
 }
-

@@ -433,20 +433,17 @@ static struct so_value * so_format_tar_writer_get_digests(struct so_format_write
 	return so_value_new_linked_list();
 }
 
-static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid) {
-	char * buffer = malloc(512);
-
+static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t gid) {
+	char buffer[256];
 	struct group gr;
 	struct group * tmp_gr;
 
-	if (!getgrgid_r(uid, &gr, buffer, 512, &tmp_gr)) {
+	int failed = getgrgid_r(gid, &gr, buffer, 256, &tmp_gr);
+	if (failed == 0 && tmp_gr != NULL) {
 		strncpy(name, gr.gr_name, length);
 		name[length - 1] = '\0';
-	} else {
-		snprintf(name, length, "%d", uid);
-	}
-
-	free(buffer);
+	} else
+		snprintf(name, length, "%d", gid);
 }
 
 static int so_format_tar_writer_file_position(struct so_format_writer * fw) {
@@ -509,19 +506,16 @@ static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_
 }
 
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid) {
-	char * buffer = malloc(512);
-
+	char buffer[256];
 	struct passwd pw;
 	struct passwd * tmp_pw;
 
-	if (!getpwuid_r(uid, &pw, buffer, 512, &tmp_pw)) {
+	int failed = getpwuid_r(uid, &pw, buffer, 256, &tmp_pw);
+	if (failed == 0 && tmp_pw != NULL) {
 		strncpy(name, pw.pw_name, length);
 		name[length - 1] = '\0';
-	} else {
+	} else
 		snprintf(name, length, "%d", uid);
-	}
-
-	free(buffer);
 }
 
 static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {
