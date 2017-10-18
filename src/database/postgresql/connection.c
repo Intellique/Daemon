@@ -4966,7 +4966,7 @@ static struct so_application * so_database_postgresql_api_key_list(struct so_dat
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_api_key";
-	so_database_postgresql_prepare(self, query, "SELECT name, apikey FROM application FROM application WHERE apikey IS NOT NULL");
+	so_database_postgresql_prepare(self, query, "SELECT name, apikey FROM application WHERE apikey IS NOT NULL");
 
 	PGresult * result = PQexecPrepared(self->connect, query, 0, NULL, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);

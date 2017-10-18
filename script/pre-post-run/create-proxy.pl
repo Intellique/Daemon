@@ -13,6 +13,21 @@ use Sys::CPU q/cpu_count/;
 my $nb_cpu     = cpu_count();
 my $output_dir = '/usr/share/storiqone/cache/movies/proxy';
 
+$nb_cpu = int( $nb_cpu * 3 / 4 ) if $nb_cpu >= 4;
+
+if (open my $fd, '<', '/etc/storiq/storiqone.conf') {
+	my $data = do { local $/; <$fd> };
+
+	my $config = decode_json $data;
+
+	$nb_cpu = $config->{'proxy'}->{'nb cpu'}
+		if exists $config->{'proxy'}->{'nb cpu'};
+	$output_dir = $config->{'proxy'}->{'path'}
+		if exists $config->{'proxy'}->{'path'};
+
+	close $fd;
+}
+
 my $param = shift;
 
 my $data_in = do { local $/; <STDIN> };
@@ -39,8 +54,6 @@ unless (defined $encoder) {
     print encode_json($sent);
     exit 1;
 }
-
-$nb_cpu = int( $nb_cpu * 3 / 4 ) if $nb_cpu >= 4;
 
 my $data = decode_json $data_in;
 
