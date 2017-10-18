@@ -1,3 +1,17 @@
+storiqone (1.3.15-1+wheezy) polisher; urgency=low
+
+  * New release
+  * Improve:
+    - #366: "create-proxy" script check storiqone configuration in order to
+            find some value like "path" or "nb cpu".
+  * Bug fix:
+    - #359: wrong query sql to fetch api keys
+    - #364: crash with bad symblic link (which contains invalid UTF-8 sequence)
+    - #365: check if "getpwuid_r" and "getgrgid_r" has really found user or
+            group.
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 18 Oct 2017 16:41:10 +0200
+
 storiqone (1.3.14.1-1+wheezy) polisher; urgency=low
 
   * New release
