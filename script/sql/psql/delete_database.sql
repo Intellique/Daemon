@@ -51,7 +51,10 @@ DROP TABLE IF EXISTS Users CASCADE;
 DROP TABLE IF EXISTS Vtl CASCADE;
 
 DROP FUNCTION IF EXISTS check_metadata();
+DROP FUNCTION IF EXISTS json_object_set_key("json" json, "key_to_set" TEXT, "value_to_set" anyelement);
+DROP FUNCTION IF EXISTS log_metadata();
 
+DROP TYPE IF EXISTS archivestatus;
 DROP TYPE IF EXISTS AutoCheckMode;
 DROP TYPE IF EXISTS ChangerAction;
 DROP TYPE IF EXISTS ChangerSlotType;
