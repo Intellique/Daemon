@@ -4980,8 +4980,8 @@ static struct so_application * so_database_postgresql_api_key_list(struct so_dat
 
 		int i;
 		for (i = 0; i < nb_result; i++) {
-			so_database_postgresql_get_string_dup(result, 0, 0, &api[i].application_name);
-			so_database_postgresql_get_string(result, 0, 1, api[i].api_key, 37);
+			so_database_postgresql_get_string_dup(result, i, 0, &api[i].application_name);
+			so_database_postgresql_get_string(result, i, 1, api[i].api_key, 37);
 		}
 
 		if (nb_keys != NULL)
