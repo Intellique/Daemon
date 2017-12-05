@@ -985,7 +985,7 @@ static struct so_value * so_database_postgresql_get_medias_of_pool(struct so_dat
 }
 
 static struct so_media_format * so_database_postgresql_get_media_format(struct so_database_connection * connect, unsigned int density_code, enum so_media_format_mode mode) {
-	if (connect == NULL || density_code == 0 || mode == so_media_format_mode_unknown)
+	if (connect == NULL || mode == so_media_format_mode_unknown)
 		return NULL;
 
 	struct so_database_postgresql_connection_private * self = connect->data;
@@ -4980,8 +4980,8 @@ static struct so_application * so_database_postgresql_api_key_list(struct so_dat
 
 		int i;
 		for (i = 0; i < nb_result; i++) {
-			so_database_postgresql_get_string_dup(result, 0, 0, &api[i].application_name);
-			so_database_postgresql_get_string(result, 0, 1, api[i].api_key, 37);
+			so_database_postgresql_get_string_dup(result, i, 0, &api[i].application_name);
+			so_database_postgresql_get_string(result, i, 1, api[i].api_key, 37);
 		}
 
 		if (nb_keys != NULL)

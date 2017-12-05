@@ -51,7 +51,7 @@ enum {
 int soctl_api(int argc, char ** argv) {
 	int option_index = 0;
 	static struct option long_options[] = {
-		{ "create", 1, NULL, OPT_HELP },
+		{ "create", 1, NULL, OPT_CREATE },
 		{ "help",   0, NULL, OPT_HELP },
 		{ "list",   0, NULL, OPT_LIST },
 		{ "remove", 1, NULL, OPT_REMOVE },
@@ -195,4 +195,3 @@ int soctl_api(int argc, char ** argv) {
 		}
 	}
 }
-

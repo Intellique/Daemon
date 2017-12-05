@@ -4,7 +4,8 @@ INSERT INTO MediaFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWri
 	('LTO-5', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 1529931104256, 131072, 88, TRUE, TRUE),
 	('LTO-4', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P8Y', 764965552128, 131072, 70, FALSE, TRUE),
 	('LTO-3', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 382482776064, 131072, 68, FALSE, TRUE),
-	('LTO-2', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 191241388032, 131072, 66, FALSE, TRUE);
+	('LTO-2', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 191241388032, 131072, 66, FALSE, TRUE),
+	('LTO-CLEANING', 'data', 'linear', 75, 75, 75, 75, INTERVAL 'P6Y', 1, 0, 0, FALSE, FALSE);
 
 INSERT INTO DriveFormat(name, densityCode, mode, cleaningInterval) VALUES
 	('LTO-7', 92, 'linear', INTERVAL 'P1M'),
