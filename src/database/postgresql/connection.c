@@ -985,7 +985,7 @@ static struct so_value * so_database_postgresql_get_medias_of_pool(struct so_dat
 }
 
 static struct so_media_format * so_database_postgresql_get_media_format(struct so_database_connection * connect, unsigned int density_code, enum so_media_format_mode mode) {
-	if (connect == NULL || density_code == 0 || mode == so_media_format_mode_unknown)
+	if (connect == NULL || mode == so_media_format_mode_unknown)
 		return NULL;
 
 	struct so_database_postgresql_connection_private * self = connect->data;
