@@ -16,7 +16,7 @@ parser.add_argument("-F", "--nbFiles", dest="nbFiles", default="256-1024", help=
 parser.add_argument("-h", "--host", dest="hostname", help="Specify the host name of the machine on which the server is running")
 parser.add_argument("-p", "--port", dest="port", type=int, help="Specifies the TCP port or the local Unix-domain socket file extension on which the server is listening")
 parser.add_argument("-P", "--pool", dest="pool", type=int, help="Specifies the pool id")
-parser.add_argument("-U", "--username", dest="username", help="Connect to the database as the user username instead of the default")
+parser.add_argument("-U", "--username", dest="username", default="storiq", help="Connect to the database as the user username instead of the default")
 parser.add_argument("-W", "--password", dest="password", default=False, action='store_true', help="Force to prompt for a password before connecting to a database")
 
 args = parser.parse_args()
@@ -116,7 +116,7 @@ def generateRandomName(length):
 
 def createArchive():
     uuid = uuid4()
-    name = generateRandomName(32)
+    name = generateRandomName(64)
 
     print("Create new archive('%s', '%s')…" % (uuid, name), end="", flush=True)
 
@@ -133,8 +133,8 @@ totalSize = 0
 def createFile(volume, parent):
     global totalSize
 
-    name = generateRandomName(64)
-    mimetype = generateRandomName(4)
+    name = '/' + generateRandomName(64) + '/' + generateRandomName(64);
+    mimetype = generateRandomName(8)
     size = random.randint(0, 1073741824)
     totalSize += size
 
