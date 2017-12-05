@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-scsi v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-12-19 17:13+0100\n"
+        "POT-Creation-Date: 2017-12-05 13:10+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: storiqone-changer-scsi v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/changer/scsi_changer/device.c:153
+#: src/changer/scsi_changer/device.c:154
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minute"
 msgid_plural    "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %lld minutes"
@@ -25,121 +25,126 @@ msgstr[0]       "[ %s | %s ] : déchargement du média « %s » depuis le
 msgstr[1]       "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%d parce que le média n’est plus utilisé "
         "depuis %lld minutes"
 
-#: src/changer/scsi_changer/device.c:161
+#: src/changer/scsi_changer/device.c:162
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%d terminé avec le code = OK"
 
-#: src/changer/scsi_changer/device.c:165
+#: src/changer/scsi_changer/device.c:166
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%d terminé avec le code = %d"
 
-#: src/changer/scsi_changer/device.c:207 src/changer/scsi_changer/device.c:226
+#: src/changer/scsi_changer/device.c:230 src/changer/scsi_changer/device.c:249
 #, c-format
 msgid   "Failed while reading link of file '%s' because %m"
 msgstr  "Échec en lisant le lien symbolique du fichier « %s » parce que %m"
 
-#: src/changer/scsi_changer/device.c:259
+#: src/changer/scsi_changer/device.c:282
 #, c-format
 msgid   "Found scsi changer %s %s, serial: %s"
 msgstr  "Trouvé un échangeur scsi %s %s, numéro de série : %s"
 
-#: src/changer/scsi_changer/device.c:352
+#: src/changer/scsi_changer/device.c:375
 #, c-format
 msgid   "[%s | %s]: starting check media with drive #%u"
 msgstr  "[ %s | %s ] : démarrage de la vérification de média avec le lecteur n°%u"
 
-#: src/changer/scsi_changer/device.c:363 src/changer/scsi_changer/device.c:437 src/changer/scsi_changer/device.c:845
+#: src/changer/scsi_changer/device.c:386 src/changer/scsi_changer/device.c:462 src/changer/scsi_changer/device.c:878
 #, c-format
 msgid   "[%s | %s]: failed to get status from drive #%u %s %s"
 msgstr  "[ %s | %s ] : échec lors de la réinitialisation du lecteur n°%u %s %s"
 
-#: src/changer/scsi_changer/device.c:371 src/changer/scsi_changer/device.c:426 src/changer/scsi_changer/device.c:445
-#: src/changer/scsi_changer/device.c:513
+#: src/changer/scsi_changer/device.c:394 src/changer/scsi_changer/device.c:451 src/changer/scsi_changer/device.c:470
+#: src/changer/scsi_changer/device.c:538
 #, c-format
 msgid   "[%s | %s]: checking media with drive #%u completed"
 msgstr  "[ %s | %s ] : vérification du média avec le lecteur n°%u terminée"
 
-#: src/changer/scsi_changer/device.c:391
+#: src/changer/scsi_changer/device.c:414
 msgid   "<UNLABELED>"
 msgstr  "<SANS ÉTIQUETTE>"
 
-#: src/changer/scsi_changer/device.c:398
+#: src/changer/scsi_changer/device.c:423
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%u"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement n°%u vers le lecteur n°%u"
 
-#: src/changer/scsi_changer/device.c:407
+#: src/changer/scsi_changer/device.c:432
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%u completed with code = OK"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement n°%u vers le lecteur n°%u terminé avec le code = OK"
 
-#: src/changer/scsi_changer/device.c:411
+#: src/changer/scsi_changer/device.c:436
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%u completed with code = %d"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement n°%u vers le lecteur n°%u terminé avec le code = %d"
 
-#: src/changer/scsi_changer/device.c:418 src/changer/scsi_changer/device.c:564
+#: src/changer/scsi_changer/device.c:443 src/changer/scsi_changer/device.c:589
 #, c-format
 msgid   "[%s | %s]: failed to reset drive #%u %s %s"
 msgstr  "[ %s | %s ] : échec lors de la réinitialisation du lecteur n°%u %s %s"
 
-#: src/changer/scsi_changer/device.c:459 src/changer/scsi_changer/device.c:468
+#: src/changer/scsi_changer/device.c:484 src/changer/scsi_changer/device.c:493
 #, c-format
 msgid   "[%s | %s]: media has a new label '%s'"
 msgstr  "[ %s | %s ] : le média a une nouvelle étiquette « %s »"
 
-#: src/changer/scsi_changer/device.c:463 src/changer/scsi_changer/device.c:571
+#: src/changer/scsi_changer/device.c:488 src/changer/scsi_changer/device.c:596
 #, c-format
 msgid   "[%s | %s]: label mismatched (librairie read '%s', drive read '%s')"
 msgstr  "[ %s | %s ] : étiquettes ne concordent pas (l’échangeur a lu : « %s », le lecteur a lu : « %s »)"
 
-#: src/changer/scsi_changer/device.c:484
+#: src/changer/scsi_changer/device.c:509
 #, c-format
 msgid   "[%s | %s]: retrieve label '%s' from media into drive #%u"
 msgstr  "[ %s | %s ] : récupération de l’étiquette « %s » depuis le média dans le lecteur n°%u"
 
-#: src/changer/scsi_changer/device.c:491
+#: src/changer/scsi_changer/device.c:516
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%u vers l’emplacement n°%u"
 
-#: src/changer/scsi_changer/device.c:499
+#: src/changer/scsi_changer/device.c:524
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = OK"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%u vers l’emplacement n°%u terminé avec le code = OK"
 
-#: src/changer/scsi_changer/device.c:503
+#: src/changer/scsi_changer/device.c:528
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = %d"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%u vers l’emplacement n°%u terminé avec le code = %d"
 
-#: src/changer/scsi_changer/device.c:606
+#: src/changer/scsi_changer/device.c:631
 #, c-format
 msgid   "Found a media at slot #%u which is unlabeled or mislabeled."
 msgstr  "A trouvé un média dans le slot n°%u qui est soit sans étiquette soit mal étiqueté."
 
-#: src/changer/scsi_changer/device.c:620
+#: src/changer/scsi_changer/device.c:636
+#, c-format
+msgid   "Assume that \"%s\" is a cleaning tape, tape will be ignored"
+msgstr  "Suppose que « %s » est une bande de nettoyage, bande va être ignorée"
+
+#: src/changer/scsi_changer/device.c:653
 #, c-format
 msgid   "Found %u unknown media"
 msgid_plural    "Found %u unknown medias"
 msgstr[0]       "A trouvé %u média inconnu"
 msgstr[1]       "A trouvé %u médias inconnus"
 
-#: src/changer/scsi_changer/device.c:623
+#: src/changer/scsi_changer/device.c:656
 #, c-format
-msgid   "Found #%u enabled drive"
-msgid_plural    "Found #%u enabled drives"
-msgstr[0]       "A trouvé n°%u lecteur actif"
-msgstr[1]       "A trouvé n°%u lecteurs actifs"
+msgid   "Found %u enabled drive"
+msgid_plural    "Found %u enabled drives"
+msgstr[0]       "A trouvé %u lecteur actif"
+msgstr[1]       "A trouvé %u lecteurs actifs"
 
-#: src/changer/scsi_changer/device.c:651
+#: src/changer/scsi_changer/device.c:684
 #, c-format
 msgid   "This changer (%s %s %s) seems to be misconfigured, exiting now"
 msgstr  "Cette librairie (%s %s %s) semble être mal configurée, va quitter maintenant"
 
-#: src/changer/scsi_changer/device.c:925
+#: src/changer/scsi_changer/device.c:958
 #, c-format
 msgid   "[%s | %s]: waiting for device to be ready"
 msgstr  "[ %s | %s ] : attente que le périphérique soit prêt"
