@@ -10,8 +10,9 @@ use Mediainfo;
 use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
 
-my $nb_cpu     = cpu_count();
-my $output_dir = '/usr/share/storiqone/cache/movies/proxy';
+my $nb_cpu             = cpu_count();
+my $output_picture_dir = '/usr/share/storiqone/cache/pictures/proxy';
+my $output_movie_dir   = '/usr/share/storiqone/cache/movies/proxy';
 
 $nb_cpu = int( $nb_cpu * 3 / 4 ) if $nb_cpu >= 4;
 
@@ -22,8 +23,10 @@ if ( open my $fd, '<', '/etc/storiq/storiqone.conf' ) {
 
     $nb_cpu = $config->{'proxy'}->{'nb cpu'}
         if exists $config->{'proxy'}->{'nb cpu'};
-    $output_dir = $config->{'proxy'}->{'path'}
-        if exists $config->{'proxy'}->{'path'};
+    $output_picture_dir = $config->{'proxy'}->{'picture path'}
+        if exists $config->{'proxy'}->{'picture path'};
+    $output_movie_dir = $config->{'proxy'}->{'movie path'}
+        if exists $config->{'proxy'}->{'movie path'};
 
     close $fd;
 }
@@ -117,7 +120,8 @@ sub processImage {
     if ( $pid == 0 ) {
         nice(10);
 
-        my $filename = md5_hex( encode( 'UTF-8', $input ) ) . '.jpg';
+        my $filename = $output_picture_dir . '/'
+            . md5_hex( encode( 'UTF-8', $input ) ) . '.jpg';
         my @params = ( '-thumbnail', '320x240', $input, $filename );
 
         exec $convert, @params;
@@ -162,7 +166,7 @@ sub processVideo {
 
         my $filename =
             md5_hex( encode( 'UTF-8', $input ) ) . '.' . $format_name;
-        push @params, "$output_dir/$filename";
+        push @params, "$output_movie_dir/$filename";
 
         # print "run: " . join(" ", $ffmpeg, @params) . "\n";
         exec $ffmpeg, @params;
