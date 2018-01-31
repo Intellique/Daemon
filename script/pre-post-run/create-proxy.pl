@@ -117,11 +117,9 @@ sub processImage {
     if ( $pid == 0 ) {
         nice(10);
 
-        my $ext = '';
-        $exit = $1 if ( $input =~ /\.([^.]+)$/ );
-        my $filename = md5_hex( encode( 'UTF-8', $input ) ) . '.' . $ext;
-
+        my $filename = md5_hex( encode( 'UTF-8', $input ) ) . '.jpg';
         my @params = ( '-thumbnail', '320x240', $input, $filename );
+
         exec $convert, @params;
 
         exit 1;
