@@ -10,42 +10,65 @@ use Mediainfo;
 use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
 
-my $nb_cpu     = cpu_count();
-my $output_dir = '/usr/share/storiqone/cache/movies/proxy';
+my $nb_cpu             = cpu_count();
+my $output_picture_dir = '/usr/share/storiqone/cache/pictures/proxy';
+my $output_movie_dir   = '/usr/share/storiqone/cache/movies/proxy';
 
 $nb_cpu = int( $nb_cpu * 3 / 4 ) if $nb_cpu >= 4;
 
-if (open my $fd, '<', '/etc/storiq/storiqone.conf') {
-	my $data = do { local $/; <$fd> };
+if ( open my $fd, '<', '/etc/storiq/storiqone.conf' ) {
+    my $data = do { local $/; <$fd> };
 
-	my $config = decode_json $data;
+    my $config = decode_json $data;
 
-	$nb_cpu = $config->{'proxy'}->{'nb cpu'}
-		if exists $config->{'proxy'}->{'nb cpu'};
-	$output_dir = $config->{'proxy'}->{'path'}
-		if exists $config->{'proxy'}->{'path'};
+    $nb_cpu = $config->{'proxy'}->{'nb cpu'}
+        if exists $config->{'proxy'}->{'nb cpu'};
+    $output_picture_dir = $config->{'proxy'}->{'picture path'}
+        if exists $config->{'proxy'}->{'picture path'};
+    $output_movie_dir = $config->{'proxy'}->{'movie path'}
+        if exists $config->{'proxy'}->{'movie path'};
 
-	close $fd;
+    close $fd;
 }
 
 my $param = shift;
 
 my $data_in = do { local $/; <STDIN> };
 
-my $encoder = undef;
+my $convert = undef;
+my $ffmpeg  = undef;
 foreach my $dir ( split ':', $ENV{PATH} ) {
-    foreach my $enc ( 'ffmpeg', 'avconv' ) {
-        my $command = "$dir/$enc";
+    unless ( defined $convert ) {
+        my $command = "$dir/convert";
         if ( -f $command and -x $command ) {
-            $encoder = $command;
-            last;
+            $convert = $command;
         }
     }
 
-    last if defined $encoder;
+    unless ( defined $ffmpeg ) {
+        foreach my $enc ( 'ffmpeg', 'avconv' ) {
+            my $command = "$dir/$enc";
+            if ( -f $command and -x $command ) {
+                $ffmpeg = $command;
+                last;
+            }
+        }
+    }
+
+    last if defined($convert) and defined($ffmpeg);
 }
 
-unless (defined $encoder) {
+unless ( defined $convert ) {
+    my $sent = {
+        'finished' => JSON::PP::true,
+        'data'     => {},
+        'message'  => "Encoder not found ('convert')",
+    };
+    print encode_json($sent);
+    exit 1;
+}
+
+unless ( defined $ffmpeg ) {
     my $sent = {
         'finished' => JSON::PP::true,
         'data'     => {},
@@ -87,7 +110,34 @@ my %codec = (
     },
 );
 
-sub process {
+sub processImage {
+    my ($input) = @_;
+
+    my $pid = fork();
+
+    return unless defined $pid;
+
+    if ( $pid == 0 ) {
+        nice(10);
+
+        my $filename = $output_picture_dir . '/'
+            . md5_hex( encode( 'UTF-8', $input ) ) . '.jpg';
+        my @params = ( '-thumbnail', '320x240', $input, $filename );
+
+        exec $convert, @params;
+
+        exit 1;
+    }
+
+    $nb_processes++;
+
+    if ( $nb_processes >= $nb_cpu ) {
+        wait();
+        $nb_processes--;
+    }
+}
+
+sub processVideo {
     my ( $input, $format_name ) = @_;
 
     my $pid = fork();
@@ -99,25 +149,27 @@ sub process {
 
         my $format = $codec{$format_name};
 
-        my @params = ( '-v', 'quiet', '-i', encode_utf8($input), '-t', '0:0:30' );
+        my @params =
+            ( '-v', 'quiet', '-i', encode_utf8($input), '-t', '0:0:30' );
 
         push @params, '-vcodec', $format->{video}->{codec};
-        push @params, '-b:v', $format->{video}->{bitrate};
-        push @params, '-s',   'cif';
+        push @params, '-b:v',    $format->{video}->{bitrate};
+        push @params, '-s',      'cif';
         push @params, @{ $format->{video}->{extra} }
             if scalar( @{ $format->{video}->{extra} } ) > 0;
 
         push @params, '-acodec', $format->{audio}->{codec};
-        push @params, '-b:a', $format->{audio}->{bitrate};
-        push @params, '-ac',  '2', '-ar', '44100';
+        push @params, '-b:a',    $format->{audio}->{bitrate};
+        push @params, '-ac',     '2', '-ar', '44100';
         push @params, @{ $format->{audio}->{extra} }
             if scalar( @{ $format->{audio}->{extra} } ) > 0;
 
-        my $filename = md5_hex(encode('UTF-8', $input)) . '.' . $format_name;
-        push @params, "$output_dir/$filename";
+        my $filename =
+            md5_hex( encode( 'UTF-8', $input ) ) . '.' . $format_name;
+        push @params, "$output_movie_dir/$filename";
 
-        # print "run: " . join(" ", $encoder, @params) . "\n";
-        exec $encoder, @params;
+        # print "run: " . join(" ", $ffmpeg, @params) . "\n";
+        exec $ffmpeg, @params;
 
         exit 1;
     }
@@ -131,10 +183,10 @@ sub process {
 }
 
 my $archive;
-if (defined $data->{archive}->{main}) {
+if ( defined $data->{archive}->{main} ) {
     $archive = $data->{archive}->{main};
 }
-elsif (defined $data->{archive}->{source}) {
+elsif ( defined $data->{archive}->{source} ) {
     $archive = $data->{archive}->{source};
 }
 else {
@@ -172,12 +224,16 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
         next unless -e $file->{path};
         next if $file->{type} eq 'directory';
 
-        my $foo_info = new Mediainfo("filename" => $file->{path});
+        if ( $file->{"mime type"} =~ m#^image/#i ) {
+            processImage( $file->{path} );
+        }
+        else {
+            my $info = new Mediainfo( "filename" => $file->{path} );
+            next unless defined $info->{video_format};
 
-        next unless defined $foo_info->{video_format};
-
-        process( $file->{path}, 'mp4' );
-        process( $file->{path}, 'ogv' );
+            processVideo( $file->{path}, 'mp4' );
+            processVideo( $file->{path}, 'ogv' );
+        }
 
         my $sent = {
             'finished'    => JSON::PP::false,
@@ -195,9 +251,9 @@ while ( $nb_processes > 0 ) {
 }
 
 my $sent = {
-    'finished'    => JSON::PP::true,
-    'data'        => {},
-    'message'     => ''
+    'finished' => JSON::PP::true,
+    'data'     => {},
+    'message'  => ''
 };
 print encode_json($sent);
 
