@@ -67,6 +67,7 @@
 #include "scsi.h"
 
 static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_create_cleaning_tape(struct so_slot * slot, struct so_database_connection * db_connection);
 static ssize_t sochgr_scsi_changer_get_reserved_space(struct so_media_format * format);
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_init_worker(void * arg);
@@ -176,6 +177,28 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 	}
 
 	last_call = now;
+
+	return 0;
+}
+
+static int sochgr_scsi_changer_create_cleaning_tape(struct so_slot * slot, struct so_database_connection * db_connection) {
+	struct so_media_format * mf = db_connection->ops->get_media_format(db_connection, 0, so_media_format_mode_linear);
+	if (mf == NULL)
+		return -1;
+
+	struct so_media * media = slot->media = malloc(sizeof(struct so_media));
+	bzero(media, sizeof(struct so_media));
+
+	media->label = strdup(slot->volume_name);
+	media->name = strdup(slot->volume_name);
+	media->status = so_media_status_new;
+	media->first_used = time(NULL);
+	media->use_before = media->first_used + mf->life_span;
+
+	media->load_count = 0;
+	media->type = so_media_type_cleaning;
+
+	media->media_format = mf;
 
 	return 0;
 }
@@ -397,6 +420,8 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		char * volume_name = NULL;
 		if (sl->volume_name == NULL || sl->volume_name[0] == '\0')
 			volume_name = strdup(dgettext("storiqone-changer-scsi", "<UNLABELED>"));
+		else if (strncmp(sl->volume_name, "CLN", 3) == 0)
+			continue;
 		else {
 			volume_name = strdup(sl->volume_name);
 			is_correctly_labeled = true;
@@ -614,6 +639,14 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 				dgettext("storiqone-changer-scsi", "Found a media at slot #%u which is unlabeled or mislabeled."),
 				i);
 			need_init++;
+		} else if (strncmp(sl->volume_name, "CLN", 3) == 0) {
+			so_log_write(so_log_level_warning,
+				dgettext("storiqone-changer-scsi", "Assume that \"%s\" is a cleaning tape, tape will be ignored"),
+				sl->volume_name);
+
+			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name, NULL);
+			if (sl->media == NULL)
+				sochgr_scsi_changer_create_cleaning_tape(sl, db_connection);
 		} else {
 			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name, NULL);
 			if (sl->media == NULL)
@@ -626,7 +659,7 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 			dngettext("storiqone-changer-scsi", "Found %u unknown media", "Found %u unknown medias", need_init),
 			need_init);
 		so_log_write(so_log_level_notice,
-			dngettext("storiqone-changer-scsi", "Found #%u enabled drive", "Found #%u enabled drives", nb_drive_enabled),
+			dngettext("storiqone-changer-scsi", "Found %u enabled drive", "Found %u enabled drives", nb_drive_enabled),
 			nb_drive_enabled);
 	}
 
