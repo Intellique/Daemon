@@ -81,7 +81,7 @@ Description: Storiq one posgresql connector (db-plugin)
 Package: storiqone-scripts
 Section: utils
 Architecture: all
-Depends: ${perl:Depends}, ${misc:Depends}, libsys-cpu-perl, libmediainfo-perl, mediainfo
+Depends: ${perl:Depends}, ${misc:Depends}, libsys-cpu-perl, libmediainfo-perl, imagemagick, mediainfo
 Description: Storiq one scripts
  .
  Contains scripts that the daemon will run
