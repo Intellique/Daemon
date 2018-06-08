@@ -67,4 +67,3 @@ my $sent = {
     'message'  => ''
 };
 print encode_json($sent);
-
