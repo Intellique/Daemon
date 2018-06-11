@@ -138,7 +138,7 @@ void soj_copyarchive_util_init(struct so_archive * archive) {
 			struct so_archive_file * file = ptr_file->file;
 
 			if (!so_value_hashtable_has_key2(files, file->path))
-				so_value_hashtable_put2(files, file->path, so_value_new_custom(file, NULL), true);
+				so_value_hashtable_put2(files, file->hash, so_value_new_custom(file, NULL), true);
 		}
 	}
 }
@@ -167,4 +167,3 @@ int soj_copyarchive_util_write_meta(struct soj_copyarchive_private * self) {
 
 	return nb_write <= 0;
 }
-

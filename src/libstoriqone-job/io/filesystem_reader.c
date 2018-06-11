@@ -63,7 +63,6 @@
 struct soj_format_reader_filesystem_private {
 	char * path;
 	int last_errno;
-	u_int64_t nb_file_to_backup;
 
 	struct soj_format_reader_filesystem_node {
 		int fd;
@@ -120,7 +119,6 @@ struct so_format_reader * soj_io_filesystem_reader(const char * path, struct so_
 	bzero(self, sizeof(struct soj_format_reader_filesystem_private));
 	self->path = strdup(path);
 	self->last_errno = 0;
-	self->nb_file_to_backup = 0;
 
 	char * new_path = strdup(path);
 	so_string_delete_double_char(new_path, '/');
@@ -212,6 +210,9 @@ static struct so_value * soj_format_reader_filesystem_get_digests(struct so_form
 
 static enum so_format_reader_header_status soj_format_reader_filesystem_get_header(struct so_format_reader * fr, struct so_format_file * file) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
+
+	if (self->root->nb_file_to_backup == 0)
+		return so_format_reader_header_not_found;
 
 	if (!self->fetch) {
 		self->fetch = true;
@@ -339,6 +340,11 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 					node->first_child = node->last_child = child;
 				else
 					node->last_child = node->last_child->next_sibling = child;
+
+				do {
+					child->nb_file_to_backup++;
+					child = child->parent;
+				} while (child != NULL);
 			}
 
 			free(files[i]);

@@ -24,10 +24,13 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // dgettext, gettext
 #include <libintl.h>
 // free, malloc
 #include <stdlib.h>
+// asprintf
+#include <stdio.h>
 // strdup
 #include <string.h>
 // bzero
@@ -297,6 +300,7 @@ struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
 	copy->path = strdup(file->path);
 	if (file->restored_to != NULL)
 		copy->restored_to = strdup(file->restored_to);
+	copy->hash = strdup(file->hash);
 
 	copy->perm = file->perm;
 	copy->type = file->type;
@@ -340,6 +344,8 @@ struct so_archive_file * so_archive_file_import(struct so_format_file * file) {
 
 	new_file->size = file->size;
 
+	so_archive_file_update_hash(new_file);
+
 	return new_file;
 }
 
@@ -353,13 +359,14 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 	else
 		checksums = so_value_share(file->digests);
 
-	return so_value_pack("{szsIs{sssssssusssusssusssIsIsbsIsoszsOssss}}",
+	return so_value_pack("{szsIs{sssssssssusssusssusssIsIsbsIsoszsOssss}}",
 		"position", ptr_file->position,
 		"archived time", (long long) ptr_file->archived_time,
 		"file",
 			"path", file->path,
 			"alternate path", file->alternate_path,
 			"restored to", file->restored_to,
+			"hash", file->hash,
 
 			"permission", file->perm,
 			"type", so_archive_file_type_to_string(file->type, false),
@@ -388,6 +395,7 @@ static void so_archive_file_free(struct so_archive_files * files) {
 	free(file->path);
 	free(file->alternate_path);
 	free(file->restored_to);
+	free(file->hash);
 	free(file->owner);
 	free(file->group);
 	so_value_free(file->metadata);
@@ -423,13 +431,14 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 	struct so_archive_file * file = files->file;
 
-	so_value_unpack(new_file, "{szsis{sssssssusSsusssusssisisbsisOszsOssss}}",
+	so_value_unpack(new_file, "{szsis{sssssssssusSsusssusssisisbsisOszsOssss}}",
 		"position", &files->position,
 		"archived time", &archived_time,
 		"file",
 			"path", &file->path,
 			"alternate path", &file->alternate_path,
 			"restored to", &file->restored_to,
+			"hash", &file->hash,
 
 			"permission", &permission,
 			"type", &file_type,
@@ -461,6 +470,10 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 	file->create_time = create_time;
 	file->modify_time = modify_time;
 	file->check_time = check_time;
+}
+
+void so_archive_file_update_hash(struct so_archive_file * file) {
+	asprintf(&file->hash, "%s_%ld_%zd", file->path, file->modify_time, file->size);
 }
 
 

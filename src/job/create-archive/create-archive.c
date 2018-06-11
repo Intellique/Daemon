@@ -119,6 +119,13 @@ static void soj_create_archive_init() {
 }
 
 static int soj_create_archive_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (archive_size == 0) {
+		job->done = 1;
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "No new files need to be archived."));
+		return 0;
+	}
+
 	if (primary_archive != NULL)
 		soj_create_archive_worker_init_archive(job, primary_archive, archives_mirrors);
 	else

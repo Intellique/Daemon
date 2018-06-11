@@ -427,6 +427,8 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 	new_file->mime_type = strdup(file->mime_type);
 	new_file->selected_path = strdup(file->selected_path);
 
+	so_archive_file_update_hash(new_file);
+
 	if (file->digests != NULL) {
 		new_file->digests = so_value_new_hashtable2();
 

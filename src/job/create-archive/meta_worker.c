@@ -170,6 +170,8 @@ static void soj_create_archive_meta_worker_do2(const char * filename, struct so_
 	file->size = st.st_size;
 	file->selected_path = strdup(selected_file);
 
+	so_archive_file_update_hash(file);
+
 	const char * mime_type = magic_file(magicFile, filename);
 	if (mime_type == NULL) {
 		file->mime_type = strdup("");

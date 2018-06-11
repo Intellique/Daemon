@@ -274,4 +274,3 @@ static int soj_restorearchive_warm_up(struct so_job * job, struct so_database_co
 
 	return 0;
 }
-
