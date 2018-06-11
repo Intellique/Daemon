@@ -122,7 +122,10 @@ struct so_format_reader * soj_io_filesystem_reader(const char * path, struct so_
 	self->last_errno = 0;
 	self->nb_file_to_backup = 0;
 
-	self->current = self->root = soj_format_reader_filesystem_node_new(strdup(path), archive, db_connection);
+	char * new_path = strdup(path);
+	so_string_delete_double_char(new_path, '/');
+
+	self->current = self->root = soj_format_reader_filesystem_node_new(new_path, archive, db_connection);
 	self->fetch = false;
 
 	struct so_format_reader * reader = malloc(sizeof(struct so_format_reader));
@@ -261,7 +264,7 @@ static ssize_t soj_format_reader_filesystem_position(struct so_format_reader * f
 static ssize_t soj_format_reader_filesystem_read(struct so_format_reader * fr, void * buffer, ssize_t length) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 
-	if (self->current == NULL || self->current->fd < 0)
+	if (self->current == NULL)
 		return -1;
 
 	if (self->current->fd < 0) {
