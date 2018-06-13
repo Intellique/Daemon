@@ -2433,4 +2433,3 @@ bool so_value_iterator_has_next(struct so_value_iterator * iter) {
 			return false;
 	}
 }
-

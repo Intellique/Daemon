@@ -119,6 +119,13 @@ static void soj_create_archive_init() {
 }
 
 static int soj_create_archive_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (archive_size == 0) {
+		job->done = 1;
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "No new files need to be archived."));
+		return 0;
+	}
+
 	if (primary_archive != NULL)
 		soj_create_archive_worker_init_archive(job, primary_archive, archives_mirrors);
 	else
@@ -335,6 +342,9 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 		return 1;
 	}
 
+	primary_archive = db_connect->ops->get_archive_by_job(db_connect, job);
+	primary_pool = db_connect->ops->get_pool(db_connect, NULL, job);
+
 	nb_src_files = so_value_list_get_length(selected_path);
 	src_files = calloc(nb_src_files, sizeof(struct so_format_reader));
 	struct so_value_iterator * iter = so_value_list_get_iterator(selected_path);
@@ -351,7 +361,7 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 			return 1;
 		}
 
-		src_files[i] = soj_io_filesystem_reader(path);
+		src_files[i] = soj_io_filesystem_reader(path, primary_archive, db_connect);
 		ssize_t sub_total = soj_format_compute_tar_size(src_files[i]);
 		archive_size += sub_total;
 		src_files[i]->ops->rewind(src_files[i]);
@@ -361,9 +371,6 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 	char sarchive_size[12];
 	so_file_convert_size_to_string(archive_size, sarchive_size, 12);
 
-
-	primary_archive = db_connect->ops->get_archive_by_job(db_connect, job);
-	primary_pool = db_connect->ops->get_pool(db_connect, NULL, job);
 
 	if (primary_archive == NULL && primary_pool == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,

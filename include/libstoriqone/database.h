@@ -475,6 +475,7 @@ struct so_database_connection {
 		 * \return 0 on success
 		 */
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+		bool (*check_archive_file_up_to_date)(struct so_database_connection * connect, struct so_archive * archive, const char * archive_filename);
 		/**
 		 * \brief update integrity of volume
 		 *

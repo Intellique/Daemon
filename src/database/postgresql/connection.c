@@ -38,8 +38,14 @@
 #include <string.h>
 // bzero
 #include <strings.h>
+// lstat
+#include <sys/stat.h>
+// lstat
+#include <sys/types.h>
 // uname
 #include <sys/utsname.h>
+// lstat
+#include <unistd.h>
 
 #include <libstoriqone/application.h>
 #include <libstoriqone/archive.h>
@@ -125,6 +131,7 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_path);
 
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+static bool so_database_postgresql_check_archive_file_up_to_date(struct so_database_connection * connect, struct so_archive * archive, const char * archive_filename);
 static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume);
 static int so_database_postgresql_create_check_archive_job(struct so_database_connection * connect, struct so_job * current_job, struct so_archive * archive, bool quick_mode);
 static int so_database_postgresql_find_first_volume_of_archive_file(struct so_database_connection * connect, struct so_archive * archive, const char * archive_file);
@@ -218,6 +225,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_plugin_script   = so_database_postgresql_sync_plugin_script,
 
 	.check_archive_file                    = so_database_postgresql_check_archive_file,
+	.check_archive_file_up_to_date         = so_database_postgresql_check_archive_file_up_to_date,
 	.check_archive_volume                  = so_database_postgresql_check_archive_volume,
 	.create_check_archive_job              = so_database_postgresql_create_check_archive_job,
 	.find_first_volume_of_archive_file     = so_database_postgresql_find_first_volume_of_archive_file,
@@ -3063,6 +3071,46 @@ static int so_database_postgresql_check_archive_file(struct so_database_connecti
 	return status != PGRES_COMMAND_OK;
 }
 
+static bool so_database_postgresql_check_archive_file_up_to_date(struct so_database_connection * connect, struct so_archive * archive, const char * archive_filename) {
+	if (connect == NULL || archive == NULL || archive_filename == NULL)
+		return false;
+
+	struct stat fileinfo;
+	if (lstat(archive_filename, &fileinfo) != 0)
+		return false;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+
+	const char * archive_id = NULL;
+	struct so_value * db = so_value_hashtable_get(archive->db_data, key, false, false);
+	so_value_unpack(db, "{sS}", "id", &archive_id);
+
+	const char * query = "check_archive_file_up_to_date";
+	so_database_postgresql_prepare(self, query, "SELECT * FROM (SELECT af.id, EXTRACT(EPOCH FROM af.mtime) AS mtime, af.size FROM archivefile af INNER JOIN (SELECT archivefile FROM archivefiletoarchivevolume WHERE archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1)) af2av ON af.id = af2av.archivefile AND af.name = $2) AS sub ORDER BY sub.mtime DESC LIMIT 1");
+
+	const char * param[] = { archive_id, archive_filename };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	bool up_to_date = false;
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (PQntuples(result) == 1) {
+		long mtime = 0;
+		ssize_t size = 0;
+
+		so_database_postgresql_get_long(result, 0, 1, &mtime);
+		so_database_postgresql_get_ssize(result, 0, 2, &size);
+
+		up_to_date = size == fileinfo.st_size || mtime >= fileinfo.st_mtim.tv_sec;
+	}
+
+	PQclear(result);
+
+	return status != PGRES_FATAL_ERROR && up_to_date;
+}
+
 static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume) {
 	if (connect == NULL || volume == NULL)
 		return -1;
@@ -3351,12 +3399,14 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 					file->digests = so_value_new_hashtable2();
 					file->metadata = so_value_new_hashtable2();
 
+					so_archive_file_update_hash(file);
+
 					file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 					struct so_value * db = so_value_new_hashtable2();
 					so_value_hashtable_put(file->db_data, key, false, db, true);
 					so_value_hashtable_put2(db, "id", so_value_new_string(file_id), true);
 
-					so_value_hashtable_put2(files, file->path, so_value_new_string(file_id), true);
+					so_value_hashtable_put2(files, file->hash, so_value_new_string(file_id), true);
 
 					const char * query4 = "select_checksum_from_archivefile";
 					so_database_postgresql_prepare(self, query4, "SELECT c.name, cr.result FROM archivefiletochecksumresult af2cr INNER JOIN checksumresult cr ON af2cr.archivefile = $1 AND af2cr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id");
@@ -4347,11 +4397,11 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 			struct so_archive_file * file = ptr_file->file;
 
 			char * file_id = NULL;
-			so_value_unpack(files, "{ss}", file->path, &file_id);
+			so_value_unpack(files, "{ss}", file->hash, &file_id);
 
 			if (file_id == NULL) {
 				so_database_postgresql_sync_archive_file(connect, archive_id, file, &file_id);
-				so_value_hashtable_put2(files, file->path, so_value_new_string(file_id), true);
+				so_value_hashtable_put2(files, file->hash, so_value_new_string(file_id), true);
 			}
 
 			char block_number[24], archive_time[32] = "";
