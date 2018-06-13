@@ -320,7 +320,10 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 	lstat(node->path, &node->st);
 	node->nb_file_to_backup = 0;
 
-	if (S_ISDIR(node->st.st_mode)) {
+	if (S_ISREG(node->st.st_mode)) {
+		if (archive == NULL || db_connection->ops->check_archive_file_up_to_date(db_connection, archive, path))
+			node->nb_file_to_backup++;
+	} else if (S_ISDIR(node->st.st_mode)) {
 		struct dirent ** files = NULL;
 		int i, nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
 

@@ -245,6 +245,8 @@ struct so_archive_volume {
 	 */
 	unsigned int nb_files;
 
+	bool skip_volume;
+
 	/**
 	 * \brief private data used by database
 	 */
@@ -272,6 +274,7 @@ struct so_archive_file {
 	 * \warning can be NULL
 	 */
 	char * restored_to;
+	bool skip_restore;
 	char * hash;
 
 	/**

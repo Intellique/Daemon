@@ -91,30 +91,56 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 	struct soj_restorearchive_data_worker * workers = NULL, * last_worker = NULL;
 	size_t total_size = 0;
 	unsigned int i;
+
+	struct so_value * last_files = so_value_new_hashtable2();
+	for (i = 0; i < archive->nb_volumes; i++) {
+		unsigned int j;
+		struct so_archive_volume * vol = archive->volumes + i;
+		for (j = 0; j < vol->nb_files; j++) {
+			struct so_archive_files * ptr_file = vol->files + j;
+			struct so_archive_file * file = ptr_file->file;
+
+			file->skip_restore = !soj_restorearchive_path_filter(file->path);
+			if (file->skip_restore)
+				continue;
+
+			if (so_value_hashtable_has_key2(last_files, file->path)) {
+				struct so_value * vfile = so_value_hashtable_get2(last_files, file->path, false, false);
+				struct so_archive_file * previous_file = so_value_custom_get(vfile);
+
+				if (previous_file->size != file->size || previous_file->modify_time < file->modify_time) {
+					previous_file->skip_restore = true;
+					so_value_hashtable_put2(last_files, file->path, so_value_new_custom(file, NULL), true);
+					total_size += file->size - previous_file->size;
+				}
+			} else {
+				so_value_hashtable_put2(last_files, file->path, so_value_new_custom(file, NULL), true);
+				total_size += file->size;
+			}
+		}
+	}
+	so_value_free(last_files);
+	last_files = NULL;
+
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
 		bool found = false;
 
-		if (has_selected_path) {
-			unsigned int j;
-			for (j = 0; j < vol->nb_files; j++) {
-				struct so_archive_files * ptr_file = vol->files + j;
+		unsigned int j;
+		for (j = 0; j < vol->nb_files; j++) {
+			struct so_archive_files * ptr_file = vol->files + j;
+			struct so_archive_file * file = ptr_file->file;
 
-				if (soj_restorearchive_path_filter(ptr_file->file->path)) {
-					found = true;
-					total_size += ptr_file->file->size;
-				}
-			}
+			if (!file->skip_restore)
+				found = true;
+		}
 
-			if (!found)
-				continue;
-
-			found = false;
-		} else
-			total_size += vol->size;
+		vol->skip_volume = !found;
+		if (!found)
+			continue;
 
 		struct soj_restorearchive_data_worker * ptr;
-		for (ptr = workers; !found && ptr != NULL; ptr = ptr->next)
+		for (ptr = workers, found = false; !found && ptr != NULL; ptr = ptr->next)
 			if (strcmp(ptr->media->medium_serial_number, vol->media->medium_serial_number) == 0) {
 				soj_restorearchive_data_worker_add_files(ptr, vol);
 				found = true;
