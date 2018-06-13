@@ -3399,12 +3399,14 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 					file->digests = so_value_new_hashtable2();
 					file->metadata = so_value_new_hashtable2();
 
+					so_archive_file_update_hash(file);
+
 					file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 					struct so_value * db = so_value_new_hashtable2();
 					so_value_hashtable_put(file->db_data, key, false, db, true);
 					so_value_hashtable_put2(db, "id", so_value_new_string(file_id), true);
 
-					so_value_hashtable_put2(files, file->path, so_value_new_string(file_id), true);
+					so_value_hashtable_put2(files, file->hash, so_value_new_string(file_id), true);
 
 					const char * query4 = "select_checksum_from_archivefile";
 					so_database_postgresql_prepare(self, query4, "SELECT c.name, cr.result FROM archivefiletochecksumresult af2cr INNER JOIN checksumresult cr ON af2cr.archivefile = $1 AND af2cr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id");
@@ -4395,11 +4397,11 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 			struct so_archive_file * file = ptr_file->file;
 
 			char * file_id = NULL;
-			so_value_unpack(files, "{ss}", file->path, &file_id);
+			so_value_unpack(files, "{ss}", file->hash, &file_id);
 
 			if (file_id == NULL) {
 				so_database_postgresql_sync_archive_file(connect, archive_id, file, &file_id);
-				so_value_hashtable_put2(files, file->path, so_value_new_string(file_id), true);
+				so_value_hashtable_put2(files, file->hash, so_value_new_string(file_id), true);
 			}
 
 			char block_number[24], archive_time[32] = "";

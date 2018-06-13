@@ -133,4 +133,3 @@ void soj_restorearchive_path_init(const char * root, struct so_value * selected_
 
 	path_selected = selected_path;
 }
-
