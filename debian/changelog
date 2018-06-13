@@ -1,3 +1,12 @@
+storiqone (1.3.18-1+stretch) polisher; urgency=low
+
+  * New release
+  * Improve:
+    - Incremental archiving
+    - Restore latest version of file
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 13 Jun 2018 16:49:02 +0200
+
 storiqone (1.3.16-1+stretch) polisher; urgency=low
 
   * New release
