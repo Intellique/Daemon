@@ -97,6 +97,8 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		return 1;
 	}
 
+	self->copy_archive->status = so_archive_status_data_complete;
+
 	struct so_archive_volume * vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
 	self->copy_archive->size += vol->size = self->writer->ops->position(self->writer);
 	vol->end_time = time(NULL);

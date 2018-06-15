@@ -130,7 +130,16 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.copy_archive->creator = strdup(job->user);
 	data.copy_archive->owner = strdup(job->user);
 
+	soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+		dgettext("storiqone-job-copy-archive", "Synchronizing archive with database"));
 	int failed = soj_copyarchive_util_sync_archive(job, data.copy_archive, db_connect);
+	if (failed != 0) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Error while synchronizing archive with database"));
+		return failed;
+	} else
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-copy-archive", "Archive synchronized with database"));
 
 	bool error = false;
 	data.dest_drive = soj_media_find_and_load_next(data.pool, true, &error, db_connect);
@@ -147,6 +156,17 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 
 	if (failed == 0) {
 		job->done = 0.99;
+
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-copy-archive", "Synchronizing archive with database"));
+		failed = soj_copyarchive_util_sync_archive(job, data.copy_archive, db_connect);
+		if (failed != 0) {
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Error while synchronizing archive with database"));
+			return failed;
+		} else
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-job-copy-archive", "Archive synchronized with database"));
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Writing metadata of copy archive '%s'"),
@@ -167,6 +187,8 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 				data.src_archive->name);
 
 		if (failed == 0) {
+			data.copy_archive->status = so_archive_status_complete;
+
 			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Synchronizing archive '%s' into database"),
 				data.src_archive->name);
