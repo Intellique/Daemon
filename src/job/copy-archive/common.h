@@ -42,6 +42,7 @@ struct soj_copyarchive_private {
 	struct so_format_writer * writer;
 
 	struct soj_copyarchive_files {
+		char * hash;
 		char * path;
 		ssize_t position;
 		time_t archived_time;
