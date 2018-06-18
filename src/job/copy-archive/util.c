@@ -24,8 +24,11 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // dgettext
 #include <libintl.h>
+// asprintf
+#include <stdio.h>
 // free, calloc
 #include <stdlib.h>
 // strlen
@@ -50,6 +53,8 @@ static struct so_value * files = NULL;
 
 void soj_copyarchive_util_add_file(struct soj_copyarchive_private * self, struct so_format_file * file, ssize_t block_size) {
 	struct soj_copyarchive_files * ptr_file = malloc(sizeof(struct soj_copyarchive_files));
+
+	asprintf(&ptr_file->hash, "%s_%ld_%zd", file->filename, file->mtime, file->size);
 	ptr_file->path = strdup(file->filename);
 	ptr_file->position = self->writer->ops->position(self->writer) / block_size;
 	ptr_file->archived_time = time(NULL);
@@ -92,6 +97,8 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		return 1;
 	}
 
+	self->copy_archive->status = so_archive_status_data_complete;
+
 	struct so_archive_volume * vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
 	self->copy_archive->size += vol->size = self->writer->ops->position(self->writer);
 	vol->end_time = time(NULL);
@@ -107,7 +114,7 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		ptr_copy_file->position = ptr_file->position;
 		ptr_copy_file->archived_time = ptr_file->archived_time;
 
-		struct so_value * vfile = so_value_hashtable_get2(files, ptr_file->path, false, false);
+		struct so_value * vfile = so_value_hashtable_get2(files, ptr_file->hash, false, false);
 		struct so_archive_file * file = so_value_custom_get(vfile);
 
 		ptr_copy_file->file = so_archive_file_copy(file);
@@ -116,6 +123,7 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		struct soj_copyarchive_files * old = ptr_file;
 		ptr_file = ptr_file->next;
 
+		free(old->hash);
 		free(old->path);
 		free(old);
 	}
