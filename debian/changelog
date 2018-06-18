@@ -1,3 +1,9 @@
+storiqone (1.3.18.1-1+jessie) polisher; urgency=low
+
+  * New bug fix release
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Mon, 18 Jun 2018 15:48:10 +0200
+
 storiqone (1.3.18-1+jessie) polisher; urgency=low
 
   * New release
