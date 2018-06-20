@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-09-28 16:44+0200\n"
+        "POT-Creation-Date: 2017-06-02 10:24+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -26,12 +26,12 @@ msgstr  "[%s %s #%u]: reapertura de los medios \"%s\" lectura de la posición #%
 msgid   "[%s %s #%u]: counting archives from media '%s'"
 msgstr  "[%s %s #%u]: contaje de los archivos del media \"%s\""
 
-#: src/libstoriqone-drive/io/import_media.c:113
+#: src/libstoriqone-drive/io/import_media.c:109
 #, c-format
 msgid   "[%s %s #%u]: attach media '%s' to pool '%s'"
 msgstr  "[%s %s #%u]: relaciona el media \"%s\" al pool \"%s\""
 
-#: src/libstoriqone-drive/io/import_media.c:148
+#: src/libstoriqone-drive/io/import_media.c:144
 #, c-format
 msgid   "[%s %s #%u]: Parsing archive from media '%s' at position #%u"
 msgstr  "[%s %s #%u]: Analisis del archivo desde el media \"%s\" a la posición #%u"
