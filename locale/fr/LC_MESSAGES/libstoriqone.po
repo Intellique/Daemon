@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-31 19:28+0200\n"
+        "POT-Creation-Date: 2018-06-20 18:45+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -344,37 +344,37 @@ msgstr  "so_file_cp : échec lors de la création du tube nommé « %s » par
 msgid   "so_file_cp: failed to create device '%s' because %m"
 msgstr  "so_file_cp : échec lors de la création du périphérique « %s » parce que %m"
 
-#: src/libstoriqone/file.c:474 src/libstoriqone/file.c:492 src/libstoriqone/file.c:504
+#: src/libstoriqone/file.c:476 src/libstoriqone/file.c:494 src/libstoriqone/file.c:506
 #, c-format
 msgid   "so_file_mkdir: error while creating directory '%s' because %m"
 msgstr  "so_file_mkdir : erreur lors de la création du répertoire « %s » parce que %m"
 
-#: src/libstoriqone/file.c:518 src/libstoriqone/file.c:530
+#: src/libstoriqone/file.c:520 src/libstoriqone/file.c:532
 #, c-format
 msgid   "so_file_mv: can't get information of '%s' because %m"
 msgstr  "so_file_mv : n’a pas réussi à obtenir les informations de « %s » parce que %m"
 
-#: src/libstoriqone/file.c:540
+#: src/libstoriqone/file.c:542
 #, c-format
 msgid   "so_file_mv: failed to rename '%s' to '%s' because %m"
 msgstr  "so_file_mv : échec lors du renommage du fichier « %s » en « %s » parce que %m"
 
-#: src/libstoriqone/file.c:553
+#: src/libstoriqone/file.c:555
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
 msgstr  "so_file_read_all_from : échec lors de l’ouverture du fichier « %s » parce que %m"
 
-#: src/libstoriqone/file.c:570
+#: src/libstoriqone/file.c:572
 #, c-format
 msgid   "so_file_read_all_from: error while reading from file '%s' because %m"
 msgstr  "so_file_read_all_from: erreur en lisant depuis le fichier « %s » parce que %m"
 
-#: src/libstoriqone/file.c:583
+#: src/libstoriqone/file.c:585
 #, c-format
 msgid   "so_file_read_all_from: failed while reading from '%s' because %m"
 msgstr  "so_file_read_all_from : échec en lisant depuis « %s » parce que %m"
 
-#: src/libstoriqone/file.c:634
+#: src/libstoriqone/file.c:636
 #, c-format
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm : échec lors de obtention des informations de « %s » parce que %m"
