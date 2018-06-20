@@ -1,3 +1,14 @@
+storiqone (1.2.23.3-2+jessie) polisher; urgency=low
+
+  * New bug fix release
+  * New
+    - #97: basic support for cleaning tape
+  * Bug fix:
+    - #365: fix tricks with "getpwuid_r" and "getgrgid_r" functions
+    - #364: fix broken symlinks with invalid UTF-8 sequence
+
+ -- Guillaume Clercin <gclercin@intellique.com>  Wed, 20 Jun 2018 19:29:44 +0200
+
 storiqone (1.2.23.2-2+jessie) polisher; urgency=low
 
   * New bug fix release

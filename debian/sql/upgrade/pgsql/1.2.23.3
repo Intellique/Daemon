@@ -1,0 +1,11 @@
+-- Upgrade from v1.2.20 to v1.2.23.3
+-- add cleaning tape format
+
+BEGIN;
+
+INSERT INTO MediaFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWriteCount, maxOpCount, lifespan, capacity, blockSize, densityCode, supportPartition, supportMAM)
+	SELECT 'LTO-CLEANING', 'data', 'linear', 75, 75, 75, 75, INTERVAL 'P6Y', 1, 0, 0, FALSE, FALSE
+	WHERE 'LTO-CLEANING' NOT IN (SELECT name FROM MediaFormat);
+
+COMMIT;
+
