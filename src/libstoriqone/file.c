@@ -445,7 +445,7 @@ char * so_file_gid2name(gid_t gid) {
 
 	int failed = getgrgid_r(gid, &gr, buffer, 256, &tmp_gr);
 	if (failed == 0 && tmp_gr != NULL)
-		return strdup(buffer);
+		return strdup(gr.gr_name);
 	else {
 		char * name = NULL;
 		int size = asprintf(&name, "%d", gid);
@@ -683,7 +683,7 @@ char * so_file_uid2name(uid_t uid) {
 
 	int failed = getpwuid_r(uid, &pw, buffer, 256, &tmp_pw);
 	if (failed == 0 && tmp_pw != NULL)
-		return strdup(buffer);
+		return strdup(pw.pw_name);
 	else {
 		char * name = NULL;
 		int size = asprintf(&name, "%d", uid);
