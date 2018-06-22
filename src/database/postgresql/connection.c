@@ -4393,32 +4393,32 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 
 	unsigned int i;
 	for (i = 0; i < volume->nb_files; i++) {
-			struct so_archive_files * ptr_file = volume->files + i;
-			struct so_archive_file * file = ptr_file->file;
+		struct so_archive_files * ptr_file = volume->files + i;
+		struct so_archive_file * file = ptr_file->file;
 
-			char * file_id = NULL;
-			so_value_unpack(files, "{ss}", file->hash, &file_id);
+		char * file_id = NULL;
+		so_value_unpack(files, "{ss}", file->hash, &file_id);
 
-			if (file_id == NULL) {
-				so_database_postgresql_sync_archive_file(connect, archive_id, file, &file_id);
-				so_value_hashtable_put2(files, file->hash, so_value_new_string(file_id), true);
-			}
-
-			char block_number[24], archive_time[32] = "";
-			snprintf(block_number, 24, "%zd", ptr_file->position);
-
-			so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
-
-			const char * paramA[] = { volume_id, file_id, block_number, archive_time, file->alternate_path };
-			PGresult * resultA = PQexecPrepared(self->connect, queryA, 5, paramA, NULL, NULL, 0);
-			ExecStatusType statusA = PQresultStatus(resultA);
-
-			if (statusA == PGRES_FATAL_ERROR)
-				so_database_postgresql_get_error(resultA, queryA);
-
-			PQclear(resultA);
-			free(file_id);
+		if (file_id == NULL) {
+			so_database_postgresql_sync_archive_file(connect, archive_id, file, &file_id);
+			so_value_hashtable_put2(files, file->hash, so_value_new_string(file_id), true);
 		}
+
+		char block_number[24], archive_time[32] = "";
+		snprintf(block_number, 24, "%zd", ptr_file->position);
+
+		so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
+
+		const char * paramA[] = { volume_id, file_id, block_number, archive_time, file->alternate_path };
+		PGresult * resultA = PQexecPrepared(self->connect, queryA, 5, paramA, NULL, NULL, 0);
+		ExecStatusType statusA = PQresultStatus(resultA);
+
+		if (statusA == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(resultA, queryA);
+
+		PQclear(resultA);
+		free(file_id);
+	}
 
 	free(volume_id);
 
