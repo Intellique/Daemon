@@ -445,15 +445,16 @@ int so_file_cp(const char * src, const char * dst) {
 
 char * so_file_gid2name(gid_t gid) {
 	char buffer[256];
+	bzero(buffer, 256);
 
 	struct group gr;
-	struct group * tmp_gr = NULL;
-
 	bzero(&gr, sizeof(gr));
+
+	struct group * tmp_gr = NULL;
 
 	int failed = getgrgid_r(gid, &gr, buffer, 256, &tmp_gr);
 	if (failed == 0 && tmp_gr != NULL)
-		return strdup(buffer);
+		return strdup(gr.gr_name);
 	else {
 		char * name = NULL;
 		int size = asprintf(&name, "%d", gid);
@@ -790,15 +791,16 @@ int so_file_rm(const char * path) {
 
 char * so_file_uid2name(uid_t uid) {
 	char buffer[256];
+	bzero(buffer, 256);
 
 	struct passwd pw;
-	struct passwd * tmp_pw = NULL;
-
 	bzero(&pw, sizeof(pw));
+
+	struct passwd * tmp_pw = NULL;
 
 	int failed = getpwuid_r(uid, &pw, buffer, 256, &tmp_pw);
 	if (failed == 0 && tmp_pw != NULL)
-		return strdup(buffer);
+		return strdup(pw.pw_name);
 	else {
 		char * name = NULL;
 		int size = asprintf(&name, "%d", uid);

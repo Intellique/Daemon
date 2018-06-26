@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-06-15 20:31+0200\n"
+        "POT-Creation-Date: 2018-06-22 12:49+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -53,7 +53,7 @@ msgstr  "Escritura con exito de los metadatos de la copia de archivo \"%s\""
 msgid   "Synchronizing archive '%s' into database"
 msgstr  "Sicronozando el archivo \"%s\" en la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:208 src/job/copy-archive/util.c:158
+#: src/job/copy-archive/copy-archive.c:208 src/job/copy-archive/util.c:166
 msgid   "Failed to start database transaction"
 msgstr  "Fallo de arranque de una nueva transacción de la base de datos"
 
@@ -143,7 +143,7 @@ msgstr  "Error al escribir el encabezamiento del fichero \"%s\" en el fichero te
 msgid   "Error while writing file data '%s' to temporary file"
 msgstr  "Error al escribir los datos del fichero \"%s\" en el fichero temporal"
 
-#: src/job/copy-archive/indirect_copy.c:183 src/job/copy-archive/util.c:96
+#: src/job/copy-archive/indirect_copy.c:183 src/job/copy-archive/util.c:104
 msgid   "Failed to reopen temporary file"
 msgstr  "Fallo a la reabertura del fichero temporal"
 

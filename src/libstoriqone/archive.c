@@ -473,7 +473,10 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 }
 
 void so_archive_file_update_hash(struct so_archive_file * file) {
-	asprintf(&file->hash, "%s_%ld_%zd", file->path, file->modify_time, file->size);
+	if (file->type == so_archive_file_type_regular_file)
+		asprintf(&file->hash, "%s_%ld_%zd", file->path, file->modify_time, file->size);
+	else
+		asprintf(&file->hash, "%s_%ld", file->path, file->modify_time);
 }
 
 

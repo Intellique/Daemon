@@ -33,6 +33,10 @@
 #include <stdlib.h>
 // strlen
 #include <string.h>
+// S_*
+#include <sys/stat.h>
+// S_*
+#include <sys/types.h>
 // time
 #include <time.h>
 
@@ -54,7 +58,11 @@ static struct so_value * files = NULL;
 void soj_copyarchive_util_add_file(struct soj_copyarchive_private * self, struct so_format_file * file, ssize_t block_size) {
 	struct soj_copyarchive_files * ptr_file = malloc(sizeof(struct soj_copyarchive_files));
 
-	asprintf(&ptr_file->hash, "%s_%ld_%zd", file->filename, file->mtime, file->size);
+	if (S_ISREG(file->mode))
+		asprintf(&ptr_file->hash, "%s_%ld_%zd", file->filename, file->mtime, file->size);
+	else
+		asprintf(&ptr_file->hash, "%s_%ld", file->filename, file->mtime);
+
 	ptr_file->path = strdup(file->filename);
 	ptr_file->position = self->writer->ops->position(self->writer) / block_size;
 	ptr_file->archived_time = time(NULL);
