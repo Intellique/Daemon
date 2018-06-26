@@ -185,6 +185,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 						failed = soj_create_archive_worker_end_of_file();
 						// if (failed != 0)
 					}
+
+					src_files[i]->ops->skip_file(src_files[i]);
 				}
 
 				so_format_file_free(&file);
