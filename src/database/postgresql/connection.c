@@ -3363,7 +3363,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 			status3 = PQresultStatus(result3);
 			nb_result3 = PQntuples(result3);
 
-			if (status == PGRES_FATAL_ERROR)
+			if (status3 == PGRES_FATAL_ERROR)
 				so_database_postgresql_get_error(result3, query3);
 			else if (status3 == PGRES_TUPLES_OK && nb_result3 > 0) {
 				vol->nb_files = nb_result3;

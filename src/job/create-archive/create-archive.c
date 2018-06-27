@@ -363,7 +363,7 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 			return 1;
 		}
 
-		src_files[i] = soj_io_filesystem_reader(path, primary_archive, db_connect);
+		src_files[i] = soj_io_filesystem_reader(path, primary_archive);
 		ssize_t sub_total = soj_format_compute_tar_size(src_files[i]);
 		archive_size += sub_total;
 		src_files[i]->ops->rewind(src_files[i]);

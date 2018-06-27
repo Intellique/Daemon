@@ -1478,6 +1478,8 @@ static void so_value_hashtable_rehash(struct so_value_hashtable * hashtable) {
 	}
 
 	free(old_nodes);
+
+	hashtable->allow_rehash = true;
 }
 
 static void so_value_hashtable_release_node(struct so_value_hashtable_node * node) {
