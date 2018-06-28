@@ -377,6 +377,15 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 			free(files[i]);
 		}
 		free(files);
+
+		if (node->first_child == NULL && archive != NULL) {
+			char * hash = NULL;
+			int length = asprintf(&hash, "%s_%ld", node->path, node->st.st_mtim.tv_sec);
+			if (length > 0 && !so_value_hashtable_has_key2(hash_files, hash))
+				node->nb_file_to_backup++;
+			free(hash);
+		} else
+			node->nb_file_to_backup++;
 	}
 
 	return node;
