@@ -3305,6 +3305,8 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 	status = PQresultStatus(result);
 	int nb_result = PQntuples(result);
 
+	time_t last_update = time(NULL);
+
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
@@ -3371,6 +3373,15 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 
 				unsigned int j;
 				for (j = 0; j < vol->nb_files; j++) {
+					time_t current = time(NULL);
+					if (last_update + 60 < current) {
+						last_update = current;
+						so_log_write(so_log_level_debug,
+							 dgettext("libstoriqone-database-postgresql", "Retreiving archive from database in progress, %u / %u volume(s), %u / %u file(s)"),
+							i + 1, archive->nb_volumes, j + 1, vol->nb_files
+						);
+					}
+
 					struct so_archive_files * ptr_file = vol->files + j;
 					struct so_archive_file * file = ptr_file->file = malloc(sizeof(struct so_archive_file));
 					bzero(ptr_file->file, sizeof(struct so_archive_file));
