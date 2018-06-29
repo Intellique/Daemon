@@ -174,4 +174,3 @@ static int soj_checkarchive_warm_up(struct so_job * job, struct so_database_conn
 
 	return 0;
 }
-

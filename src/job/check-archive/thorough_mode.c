@@ -24,8 +24,13 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // dgettext
 #include <libintl.h>
+// asprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
 // S_*
 #include <sys/stat.h>
 // time
@@ -55,6 +60,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 	job->done = 0.01;
 
 	unsigned i;
+	unsigned long nb_chck_files = 0, nb_total_chck_files = 0;
 	bool ok = true;
 	ssize_t total_read = 0;
 	struct so_stream_writer * chcksum_writer = NULL;
@@ -86,8 +92,12 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, false, NULL, NULL, db_connect);
 		if (drive == NULL) {
-			// TODO: print error
-			break;
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-archive", "Failed to access or load media '%s'"),
+				vol->media->label);
+
+			job->status = so_job_status_error;
+			return 1;
 		}
 
 		if (job->stopped_by_user) {
@@ -124,8 +134,10 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 				if (file_in.position == 0) {
 					struct so_value * checksums = so_value_hashtable_keys(file->digests);
-					if (so_value_list_get_length(checksums) > 0)
+					if (so_value_list_get_length(checksums) > 0) {
 						chcksum_writer = so_io_checksum_writer_new(NULL, checksums, true);
+						nb_total_chck_files++;
+					}
 					so_value_free(checksums);
 				}
 
@@ -178,11 +190,12 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 					chcksum_writer->ops->free(chcksum_writer);
 					chcksum_writer = NULL;
 
-					if (file->check_ok)
+					if (file->check_ok) {
 						soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important,
 							dgettext("storiqone-job-check-archive", "Data integrity of file '%s' is correct"),
 							file->path);
-					else
+						nb_chck_files++;
+					} else
 						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-check-archive", "Data integrity of file '%s' is not correct"),
 							file->path);
@@ -204,6 +217,25 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 				break;
 
 			j++;
+		}
+
+		switch (status) {
+			case so_format_reader_header_bad_header:
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					dgettext("storiqone-job-check-archive", "Error while reading header, bad header"));
+
+				ok = false;
+				break;
+
+			case so_format_reader_header_io_error:
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					dgettext("storiqone-job-check-archive", "Error while reading header, IO error"));
+
+				ok = false;
+				break;
+
+			default:
+				break;
 		}
 
 		if (ok)
@@ -235,7 +267,17 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		so_value_free(checksums);
 	}
 
+	char * message = NULL;
+	int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "After checking, there are %s out of %s"),
+		dngettext("storiqone-job-check-archive", "%lu correct file", "%lu correct files", nb_chck_files),
+		dngettext("storiqone-job-check-archive", "%lu file", "%lu files", nb_total_chck_files));
+
+	if (size > 0) {
+		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_chck_files, nb_total_chck_files);
+		free(message);
+	}
+
 	job->done = 1;
 
-	return ok ? 0 : 1;
+	return ok && nb_chck_files == nb_total_chck_files ? 0 : 1;
 }
