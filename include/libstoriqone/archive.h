@@ -144,6 +144,8 @@ struct so_archive {
 	 */
 	bool deleted;
 
+	struct so_pool * pool;
+
 	/**
 	 * \brief private data used by database
 	 */

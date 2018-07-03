@@ -121,7 +121,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		so_value_list_push(volumes, so_archive_volume_convert(vol), true);
 	}
 
-	return so_value_pack("{ssssszsosssssOsbsssb}",
+	return so_value_pack("{ssssszsosssssOsbsssbso}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
@@ -136,7 +136,9 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 
 		"can append", archive->can_append,
 		"status", so_archive_status_to_string(archive->status, false),
-		"deleted", archive->deleted
+		"deleted", archive->deleted,
+
+		"pool", so_pool_convert(archive->pool)
 	);
 }
 
@@ -155,6 +157,8 @@ void so_archive_free(struct so_archive * archive) {
 	free(archive->owner);
 
 	so_value_free(archive->metadata);
+
+	so_pool_free(archive->pool);
 
 	so_value_free(archive->db_data);
 	free(archive);
@@ -224,8 +228,9 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 	struct so_value * volumes = NULL;
 	archive->metadata = NULL;
 	const char * archive_status = NULL;
+	struct so_value * pool = NULL;
 
-	so_value_unpack(new_archive, "{sossszsosssssOsbsSsb}",
+	so_value_unpack(new_archive, "{sossszsosssssOsbsSsbso}",
 		"uuid", &uuid,
 		"name", &archive->name,
 
@@ -240,7 +245,8 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 
 		"can append", &archive->can_append,
 		"status", &archive_status,
-		"deleted", &archive->deleted
+		"deleted", &archive->deleted,
+		"pool", &pool
 	);
 
 	if (uuid->type == so_value_string) {
@@ -289,6 +295,17 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 		}
 
 		archive->nb_volumes = nb_volumes;
+	}
+
+	if (archive->pool != NULL && pool->type == so_value_hashtable)
+		so_pool_sync(archive->pool, pool);
+	else if (archive->pool == NULL && pool->type == so_value_hashtable) {
+		archive->pool = malloc(sizeof(struct so_pool));
+		bzero(archive->pool, sizeof(struct so_pool));
+		so_pool_sync(archive->pool, pool);
+	} else {
+		so_pool_free(archive->pool);
+		archive->pool = NULL;
 	}
 }
 
