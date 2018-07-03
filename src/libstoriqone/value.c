@@ -673,7 +673,7 @@ bool so_value_equals(struct so_value * a, struct so_value * b) {
 }
 
 void so_value_free(struct so_value * value) {
-	if (value == NULL || value == &null_value || value->shared == 0)
+	if (value == NULL || value == &null_value || value->shared == 0 || value->data == NULL)
 		return;
 
 	if (value->shared > 1 && !so_value_count_ref(value)) {

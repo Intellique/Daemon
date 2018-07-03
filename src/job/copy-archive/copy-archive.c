@@ -114,14 +114,6 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 		return 2;
 	}
 
-
-	uuid_t uuid;
-	uuid_generate(uuid);
-	uuid_unparse_lower(uuid, data.copy_archive->uuid);
-
-	data.copy_archive->creator = strdup(job->user);
-	data.copy_archive->owner = strdup(job->user);
-
 	soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 		dgettext("storiqone-job-copy-archive", "Synchronizing archive with database"));
 	int failed = soj_copyarchive_util_sync_archive(job, data.copy_archive, db_connect);
@@ -323,6 +315,13 @@ static int soj_copyarchive_warm_up(struct so_job * job, struct so_database_conne
 	data.copy_archive->name = strdup(data.src_archive->name);
 	if (data.src_archive->metadata != NULL)
 		data.copy_archive->metadata = so_value_share(data.src_archive->metadata);
+
+	uuid_t uuid;
+	uuid_generate(uuid);
+	uuid_unparse_lower(uuid, data.copy_archive->uuid);
+
+	data.copy_archive->creator = strdup(job->user);
+	data.copy_archive->owner = strdup(job->user);
 
 	data.copy_archive->pool = db_connect->ops->get_pool(db_connect, NULL, job);
 	if (data.copy_archive->pool == NULL) {
