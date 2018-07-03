@@ -83,11 +83,11 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	self->writer->ops->free(self->writer);
 	self->writer = NULL;
 
-	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
+	self->dest_drive = soj_media_find_and_load_next(self->copy_archive->pool, false, NULL, db_connect);
 	if (self->dest_drive == NULL)
 		return 3;
 
-	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
+	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->copy_archive->pool);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
 	vol->job = job;

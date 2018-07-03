@@ -58,10 +58,9 @@ static struct soj_copyarchive_private data = {
 	.src_archive = NULL,
 	.src_drive   = NULL,
 
-	.copy_archive   = NULL,
-	.pool           = NULL,
-	.dest_drive     = NULL,
-	.writer         = NULL,
+	.copy_archive = NULL,
+	.dest_drive   = NULL,
+	.writer       = NULL,
 
 	.first_files = NULL,
 	.last_files  = NULL,
@@ -94,8 +93,6 @@ static void soj_copyarchive_exit(struct so_job * job __attribute__((unused)), st
 
 	if (data.copy_archive != NULL)
 		so_archive_free(data.copy_archive);
-	if (data.pool != NULL)
-		so_pool_free(data.pool);
 }
 
 static void soj_copyarchive_init() {
@@ -118,11 +115,6 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	}
 
 
-	data.copy_archive = so_archive_new();
-	data.copy_archive->name = strdup(data.src_archive->name);
-	if (data.src_archive->metadata != NULL)
-		data.copy_archive->metadata = so_value_share(data.src_archive->metadata);
-
 	uuid_t uuid;
 	uuid_generate(uuid);
 	uuid_unparse_lower(uuid, data.copy_archive->uuid);
@@ -142,7 +134,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 			dgettext("storiqone-job-copy-archive", "Archive synchronized with database"));
 
 	bool error = false;
-	data.dest_drive = soj_media_find_and_load_next(data.pool, true, &error, db_connect);
+	data.dest_drive = soj_media_find_and_load_next(data.copy_archive->pool, true, &error, db_connect);
 
 	if (error) {
 		job->status = so_job_status_error;
@@ -209,7 +201,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 			} else {
 				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive, data.src_archive);
 				if (failed == 0)
-					failed = db_connect->ops->link_archives(db_connect, job, data.src_archive, data.copy_archive, data.pool);
+					failed = db_connect->ops->link_archives(db_connect, job, data.src_archive, data.copy_archive, data.copy_archive->pool);
 
 				db_connect->ops->add_report(db_connect, job, data.copy_archive, NULL, json);
 
@@ -235,14 +227,14 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 		}
 
 		if (failed == 0) {
-			bool check_archive = data.pool->auto_check == so_pool_autocheck_quick_mode || data.pool->auto_check == so_pool_autocheck_thorough_mode;
+			bool check_archive = data.copy_archive->pool->auto_check == so_pool_autocheck_quick_mode || data.copy_archive->pool->auto_check == so_pool_autocheck_thorough_mode;
 			so_value_unpack(job->option, "{sb}", "check_archive", &check_archive);
 
 			if (check_archive) {
 				char * mode = NULL;
 				so_value_unpack(job->option, "{ss}", "check_archive_mode", &mode);
 
-				bool quick_mode = data.pool->auto_check == so_pool_autocheck_quick_mode;
+				bool quick_mode = data.copy_archive->pool->auto_check == so_pool_autocheck_quick_mode;
 				if (mode != NULL) {
 					quick_mode = strcmp(mode, "quick_mode") == 0;
 					free(mode);
@@ -257,7 +249,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 }
 
 static void soj_copyarchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, data.pool) < 1)
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, data.copy_archive->pool) < 1)
 		return;
 
 	struct so_value * json = so_value_pack("{sosos{so}so}",
@@ -265,16 +257,16 @@ static void soj_copyarchive_script_on_error(struct so_job * job, struct so_datab
 		"host", so_host_get_info2(),
 		"archive",
 			"source", so_archive_convert(data.src_archive),
-		"pool", so_pool_convert(data.pool)
+		"pool", so_pool_convert(data.copy_archive->pool)
 	);
 
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, data.pool, json);
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, data.copy_archive->pool, json);
 	so_value_free(json);
 	so_value_free(returned);
 }
 
 static void soj_copyarchive_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, data.pool) < 1)
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, data.copy_archive->pool) < 1)
 		return;
 
 	struct so_value * json = so_value_pack("{sosos{soso}so}",
@@ -283,16 +275,16 @@ static void soj_copyarchive_script_post_run(struct so_job * job, struct so_datab
 		"archive",
 			"source", so_archive_convert(data.src_archive),
 			"copy", so_archive_convert(data.copy_archive),
-		"pool", so_pool_convert(data.pool)
+		"pool", so_pool_convert(data.copy_archive->pool)
 	);
 
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, data.pool, json);
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, data.copy_archive->pool, json);
 	so_value_free(json);
 	so_value_free(returned);
 }
 
 static bool soj_copyarchive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, data.pool) < 1)
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, data.copy_archive->pool) < 1)
 		return true;
 
 	struct so_value * json = so_value_pack("{sosos{so}so}",
@@ -300,10 +292,10 @@ static bool soj_copyarchive_script_pre_run(struct so_job * job, struct so_databa
 		"host", so_host_get_info2(),
 		"archive",
 			"source", so_archive_convert(data.src_archive),
-		"pool", so_pool_convert(data.pool)
+		"pool", so_pool_convert(data.copy_archive->pool)
 	);
 
-	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, data.pool, json);
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, data.copy_archive->pool, json);
 	so_value_free(json);
 
 	bool should_run = false;
@@ -327,31 +319,36 @@ static int soj_copyarchive_warm_up(struct so_job * job, struct so_database_conne
 		return 1;
 	}
 
-	data.pool = db_connect->ops->get_pool(db_connect, NULL, job);
-	if (data.pool == NULL) {
+	data.copy_archive = so_archive_new();
+	data.copy_archive->name = strdup(data.src_archive->name);
+	if (data.src_archive->metadata != NULL)
+		data.copy_archive->metadata = so_value_share(data.src_archive->metadata);
+
+	data.copy_archive->pool = db_connect->ops->get_pool(db_connect, NULL, job);
+	if (data.copy_archive->pool == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Pool not found"));
 		return 1;
 	}
-	if (data.pool->deleted) {
+	if (data.copy_archive->pool->deleted) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Trying to copy an archive '%s' to a deleted pool '%s'"),
-			data.src_archive->name, data.pool->name);
+			data.src_archive->name, data.copy_archive->pool->name);
 		return 1;
 	}
 
-	if (!soj_changer_has_apt_drive(data.pool->media_format, true)) {
+	if (!soj_changer_has_apt_drive(data.copy_archive->pool->media_format, true)) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Failed to find a suitable drive to copy archive '%s'"),
 			data.src_archive->name);
 		return 1;
 	}
 
-	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, true, NULL, db_connect);
+	ssize_t reserved = soj_media_prepare(data.copy_archive->pool, data.src_archive->size, true, NULL, db_connect);
 	if (reserved < data.src_archive->size) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Error: not enought space available in pool '%s'"),
-			data.pool->name);
+			data.copy_archive->pool->name);
 		return 1;
 	}
 

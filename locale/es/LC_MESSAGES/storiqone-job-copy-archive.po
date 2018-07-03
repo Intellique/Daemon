@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-06-22 12:49+0200\n"
+        "POT-Creation-Date: 2018-07-03 10:49+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,81 +16,81 @@ msgstr  "Project-Id-Version: storiqone-job-copy-archive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/job/copy-archive/copy-archive.c:115 src/job/copy-archive/direct_copy.c:81 src/job/copy-archive/indirect_copy.c:97
+#: src/job/copy-archive/copy-archive.c:112 src/job/copy-archive/direct_copy.c:81 src/job/copy-archive/indirect_copy.c:97
 #, c-format
 msgid   "Failed to load media '%s'"
 msgstr  "Fallo al cargar el media \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:134 src/job/copy-archive/copy-archive.c:161
+#: src/job/copy-archive/copy-archive.c:126 src/job/copy-archive/copy-archive.c:153
 msgid   "Synchronizing archive with database"
 msgstr  ""
 
-#: src/job/copy-archive/copy-archive.c:138 src/job/copy-archive/copy-archive.c:165
+#: src/job/copy-archive/copy-archive.c:130 src/job/copy-archive/copy-archive.c:157
 msgid   "Error while synchronizing archive with database"
 msgstr  ""
 
-#: src/job/copy-archive/copy-archive.c:142 src/job/copy-archive/copy-archive.c:169
+#: src/job/copy-archive/copy-archive.c:134 src/job/copy-archive/copy-archive.c:161
 msgid   "Archive synchronized with database"
 msgstr  ""
 
-#: src/job/copy-archive/copy-archive.c:172
+#: src/job/copy-archive/copy-archive.c:164
 #, c-format
 msgid   "Writing metadata of copy archive '%s'"
 msgstr  "Escritura de los metadatos de la copia de archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:182
+#: src/job/copy-archive/copy-archive.c:174
 #, c-format
 msgid   "Error while writing metadata of copy archive '%s'"
 msgstr  "Error al escribir los metadatos de la copia de archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:186
+#: src/job/copy-archive/copy-archive.c:178
 #, c-format
 msgid   "Wrote sucessfully metadata of copy archive '%s'"
 msgstr  "Escritura con exito de los metadatos de la copia de archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:193
+#: src/job/copy-archive/copy-archive.c:185
 #, c-format
 msgid   "Synchronizing archive '%s' into database"
 msgstr  "Sicronozando el archivo \"%s\" en la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:208 src/job/copy-archive/util.c:166
+#: src/job/copy-archive/copy-archive.c:200 src/job/copy-archive/util.c:166
 msgid   "Failed to start database transaction"
 msgstr  "Fallo de arranque de una nueva transacción de la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:224
+#: src/job/copy-archive/copy-archive.c:216
 #, c-format
 msgid   "Failed to synchronize archive '%s' into database"
 msgstr  "Fallo de la sincronización del archivo \"%s\" con la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:228
+#: src/job/copy-archive/copy-archive.c:220
 #, c-format
 msgid   "Archive '%s' synchronized into database"
 msgstr  "Archivo \"%s\"está sincronizado con la base de datos"
 
-#: src/job/copy-archive/copy-archive.c:320
+#: src/job/copy-archive/copy-archive.c:312
 msgid   "Archive not found"
 msgstr  "Archivo no encontrado"
 
-#: src/job/copy-archive/copy-archive.c:325
+#: src/job/copy-archive/copy-archive.c:317
 #, c-format
 msgid   "Trying to copy a deleted archive '%s'"
 msgstr  "Intentando copiar un archivo suprimido \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:333
+#: src/job/copy-archive/copy-archive.c:330
 msgid   "Pool not found"
 msgstr  "Pool no encontrado"
 
-#: src/job/copy-archive/copy-archive.c:338
+#: src/job/copy-archive/copy-archive.c:335
 #, c-format
 msgid   "Trying to copy an archive '%s' to a deleted pool '%s'"
 msgstr  "Intentando copiar un archivo \"%s\" hacia un pool \"%s\" suprimido"
 
-#: src/job/copy-archive/copy-archive.c:345
+#: src/job/copy-archive/copy-archive.c:342
 #, c-format
 msgid   "Failed to find a suitable drive to copy archive '%s'"
 msgstr  "Fallo en la busqueda de un lector apropiado para copiar el archivo \"%s\""
 
-#: src/job/copy-archive/copy-archive.c:353
+#: src/job/copy-archive/copy-archive.c:350
 #, c-format
 msgid   "Error: not enought space available in pool '%s'"
 msgstr  "Error: no hay suficiente espacio disponible en el pool \"%s\""

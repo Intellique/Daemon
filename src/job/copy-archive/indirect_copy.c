@@ -187,9 +187,9 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	tmp_frmt_writer->ops->free(tmp_frmt_writer);
 	tmp_file_writer = NULL;
 
-	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
+	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->copy_archive->pool);
 
-	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
+	self->dest_drive = soj_media_find_and_load_next(self->copy_archive->pool, false, NULL, db_connect);
 	if (self->dest_drive == NULL) {
 		tmp_frmt_reader->ops->free(tmp_frmt_reader);
 		job->status = so_job_status_error;
@@ -215,7 +215,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file), rdr_status == so_format_reader_header_ok && ok) {
 		available_size = self->writer->ops->get_available_size(self->writer);
-		if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
+		if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->copy_archive->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
 			failed = soj_copyarchive_util_change_media(job, db_connect, self);
 			if (failed != 0) {
 				ok = false;
