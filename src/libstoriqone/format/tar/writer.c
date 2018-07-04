@@ -320,6 +320,23 @@ static enum so_format_writer_status so_format_tar_writer_add_label(struct so_for
 
 static int so_format_tar_writer_close(struct so_format_writer * fw) {
 	struct so_format_tar_writer_private * format = fw->data;
+
+	ssize_t available_size = format->io->ops->get_available_size(format->io);
+	if (available_size > 512)
+		available_size = 512;
+
+	char * buffer = malloc(available_size);
+	bzero(buffer, available_size);
+
+	format->last_errno = 0;
+	ssize_t nb_write = format->io->ops->write(format->io, buffer, available_size);
+	free(buffer);
+
+	if (nb_write < 0) {
+		format->last_errno = format->io->ops->last_errno(format->io);
+		return -1;
+	}
+
 	return format->io->ops->close(format->io);
 }
 

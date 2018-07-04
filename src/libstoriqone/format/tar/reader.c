@@ -52,10 +52,12 @@ struct so_format_tar_reader_private {
 	ssize_t file_size;
 	ssize_t skip_size;
 
+	char empty[512];
+
 	bool has_checksum;
 };
 
-static int so_format_tar_reader_check_header(struct so_format_tar * header);
+static bool so_format_tar_reader_check_header(struct so_format_tar * header);
 static int so_format_tar_reader_close(struct so_format_reader * fr);
 static dev_t so_format_tar_reader_convert_dev(struct so_format_tar * header);
 static gid_t so_format_tar_reader_convert_gid(struct so_format_tar * header);
@@ -69,6 +71,7 @@ static ssize_t so_format_tar_reader_get_block_size(struct so_format_reader * fr)
 static struct so_value * so_format_tar_reader_get_digests(struct so_format_reader * fr);
 static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
 static char * so_format_tar_reader_get_root(struct so_format_reader * fr);
+static bool so_format_tar_reader_is_empty_block(struct so_format_tar_reader_private * self);
 static int so_format_tar_reader_last_errno(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_position(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length);
@@ -125,7 +128,7 @@ struct so_format_reader * so_format_tar_new_reader2(struct so_stream_reader * re
 }
 
 
-static int so_format_tar_reader_check_header(struct so_format_tar * header) {
+static bool so_format_tar_reader_check_header(struct so_format_tar * header) {
 	char checksum[8];
 	strncpy(checksum, header->checksum, 8);
 	memset(header->checksum, ' ', 8);
@@ -134,9 +137,11 @@ static int so_format_tar_reader_check_header(struct so_format_tar * header) {
 	unsigned int i, sum = 0;
 	for (i = 0; i < 512; i++)
 		sum += ptr[i];
-	snprintf(header->checksum, 7, "%06o", sum);
 
-	return strncmp(checksum, header->checksum, 8);
+	strncpy(header->checksum, checksum, 8);
+	snprintf(checksum, 7, "%06o", sum);
+
+	return strncmp(checksum, header->checksum, 8) == 0;
 }
 
 static int so_format_tar_reader_close(struct so_format_reader * fr) {
@@ -256,8 +261,8 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 
 	struct so_format_tar * raw_header = (struct so_format_tar *) self->buffer;
 
-	if (so_format_tar_reader_check_header(raw_header))
-		return so_format_reader_header_bad_header;
+	if (!so_format_tar_reader_check_header(raw_header))
+		return so_format_tar_reader_is_empty_block(self) ? so_format_reader_header_not_found : so_format_reader_header_bad_header;
 
 	so_format_file_init(file);
 
@@ -287,7 +292,7 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 				file->filename = strdup(self->buffer);
 
 				nb_read = self->io->ops->read(self->io, self->buffer, 512);
-				if (nb_read < 512 || so_format_tar_reader_check_header(raw_header)) {
+				if (nb_read < 512 || !so_format_tar_reader_check_header(raw_header)) {
 					so_format_file_free(file);
 					return so_format_reader_header_bad_header;
 				}
@@ -316,7 +321,7 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 				file->link = strdup(self->buffer);
 
 				nb_read = self->io->ops->read(self->io, self->buffer, 512);
-				if (nb_read < 512 || so_format_tar_reader_check_header(raw_header)) {
+				if (nb_read < 512 || !so_format_tar_reader_check_header(raw_header)) {
 					so_format_file_free(file);
 					return so_format_reader_header_bad_header;
 				}
@@ -410,6 +415,10 @@ static char * so_format_tar_reader_get_root(struct so_format_reader * fr __attri
 	return strdup("/");
 }
 
+static bool so_format_tar_reader_is_empty_block(struct so_format_tar_reader_private * self) {
+	return memcmp(self->buffer, self->empty, 512) == 0;
+}
+
 static int so_format_tar_reader_last_errno(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 	return self->io->ops->last_errno(self->io);
@@ -493,4 +502,3 @@ static enum so_format_reader_header_status so_format_tar_reader_skip_file(struct
 
 	return so_format_reader_header_ok;
 }
-

@@ -37,11 +37,11 @@ struct soj_copyarchive_private {
 	struct so_drive * src_drive;
 
 	struct so_archive * copy_archive;
-	struct so_pool * pool;
 	struct so_drive * dest_drive;
 	struct so_format_writer * writer;
 
 	struct soj_copyarchive_files {
+		char * hash;
 		char * path;
 		ssize_t position;
 		time_t archived_time;

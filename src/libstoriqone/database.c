@@ -152,4 +152,3 @@ void so_database_register_driver(struct so_database * driver) {
 		dgettext("libstoriqone", "so_database_register_driver: database driver '%s' is now registered"),
 		driver->name);
 }
-

@@ -144,6 +144,8 @@ struct so_archive {
 	 */
 	bool deleted;
 
+	struct so_pool * pool;
+
 	/**
 	 * \brief private data used by database
 	 */
@@ -245,6 +247,8 @@ struct so_archive_volume {
 	 */
 	unsigned int nb_files;
 
+	bool skip_volume;
+
 	/**
 	 * \brief private data used by database
 	 */
@@ -272,6 +276,8 @@ struct so_archive_file {
 	 * \warning can be NULL
 	 */
 	char * restored_to;
+	bool skip_restore;
+	char * hash;
 
 	/**
 	 * \brief permission of file
@@ -447,6 +453,7 @@ struct so_archive_file * so_archive_file_copy(struct so_archive_file * file);
  * \see so_format_file
  */
 struct so_archive_file * so_archive_file_import(struct so_format_file * file);
+void so_archive_file_update_hash(struct so_archive_file * file);
 
 /**
  * \brief Convert a unix mode to an archive file type

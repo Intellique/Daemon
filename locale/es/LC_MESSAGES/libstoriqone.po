@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2017-10-18 15:19+0200\n"
+        "POT-Creation-Date: 2018-06-21 12:27+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,52 +16,52 @@ msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone/archive.c:56
+#: src/libstoriqone/archive.c:59
 msgid   "imcomplete"
 msgstr  ""
 
-#: src/libstoriqone/archive.c:57
+#: src/libstoriqone/archive.c:60
 msgid   "data-complete"
 msgstr  ""
 
-#: src/libstoriqone/archive.c:58
+#: src/libstoriqone/archive.c:61
 msgid   "complete"
 msgstr  ""
 
-#: src/libstoriqone/archive.c:59 src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:50
+#: src/libstoriqone/archive.c:62 src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:50
 #: src/libstoriqone/media.c:85
 msgid   "error"
 msgstr  "error"
 
-#: src/libstoriqone/archive.c:71
+#: src/libstoriqone/archive.c:74
 msgid   "block device"
 msgstr  "dispositivo de bloques"
 
-#: src/libstoriqone/archive.c:72
+#: src/libstoriqone/archive.c:75
 msgid   "character device"
 msgstr  "dispositivo de caracteres"
 
-#: src/libstoriqone/archive.c:73
+#: src/libstoriqone/archive.c:76
 msgid   "directory"
 msgstr  "directorio"
 
-#: src/libstoriqone/archive.c:74
+#: src/libstoriqone/archive.c:77
 msgid   "fifo"
 msgstr  "tubería nombrada fifo"
 
-#: src/libstoriqone/archive.c:75
+#: src/libstoriqone/archive.c:78
 msgid   "regular file"
 msgstr  "fichero regular"
 
-#: src/libstoriqone/archive.c:76
+#: src/libstoriqone/archive.c:79
 msgid   "socket"
 msgstr  "conector socket"
 
-#: src/libstoriqone/archive.c:77
+#: src/libstoriqone/archive.c:80
 msgid   "symbolic link"
 msgstr  "enlace simbólico"
 
-#: src/libstoriqone/archive.c:79
+#: src/libstoriqone/archive.c:82
 msgid   "unknown file type"
 msgstr  "tipo de fichero desconocido"
 
@@ -362,37 +362,52 @@ msgstr  "so_file_cp: fallo en el momento de la creación de la tubería nombrada
 msgid   "so_file_cp: failed to create device '%s' because %m"
 msgstr  "so_file_cp: fallo en el momento de la creación del periférico \"%s\" porque %m"
 
-#: src/libstoriqone/file.c:483 src/libstoriqone/file.c:501 src/libstoriqone/file.c:513
+#: src/libstoriqone/file.c:484 src/libstoriqone/file.c:518 src/libstoriqone/file.c:555
 #, c-format
 msgid   "so_file_mkdir: error while creating directory '%s' because %m"
 msgstr  "so_file_mkdir: error en el momento de la creación del directorio \"%s\" porque %m"
 
-#: src/libstoriqone/file.c:527 src/libstoriqone/file.c:539
+#: src/libstoriqone/file.c:493 src/libstoriqone/file.c:526
+#, c-format
+msgid   "so_file_mkdir: error while get information of parent directory of '%s' because %m"
+msgstr  ""
+
+#: src/libstoriqone/file.c:500 src/libstoriqone/file.c:533 src/libstoriqone/file.c:562
+#, c-format
+msgid   "so_file_mkdir: error while setting uid(%d) and gid(%d) of '%s' because %m"
+msgstr  ""
+
+#: src/libstoriqone/file.c:539
+#, c-format
+msgid   "so_file_mkdir: error while get information of directory of '%s' because %m"
+msgstr  ""
+
+#: src/libstoriqone/file.c:576 src/libstoriqone/file.c:588
 #, c-format
 msgid   "so_file_mv: can't get information of '%s' because %m"
 msgstr  "so_file_mv: no ha podido obtener las informaciones de \"%s\" porque %m"
 
-#: src/libstoriqone/file.c:549
+#: src/libstoriqone/file.c:598
 #, c-format
 msgid   "so_file_mv: failed to rename '%s' to '%s' because %m"
 msgstr  "so_file_mv: fallo en el momento de renombrar un fichero \"%s\" en \"%s\" porque %m"
 
-#: src/libstoriqone/file.c:621
+#: src/libstoriqone/file.c:670
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
 msgstr  "so_file_read_all_from: fallo al abrir el fichero \"%s\" porque %m"
 
-#: src/libstoriqone/file.c:638
+#: src/libstoriqone/file.c:687
 #, c-format
 msgid   "so_file_read_all_from: error while reading from file '%s' because %m"
 msgstr  "so_file_read_all_from: error de lectura del fichero \"%s\" porque %m"
 
-#: src/libstoriqone/file.c:651
+#: src/libstoriqone/file.c:700
 #, c-format
 msgid   "so_file_read_all_from: failed while reading from '%s' because %m"
 msgstr  "so_file_read_all_from: fallo al leer desde \"%s\" porque %m"
 
-#: src/libstoriqone/file.c:702
+#: src/libstoriqone/file.c:751
 #, c-format
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm: fallo a la obtención de informaciones de \"%s\" porque %m"

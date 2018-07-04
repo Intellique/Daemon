@@ -443,6 +443,9 @@ CREATE TABLE Archive (
 
     canAppend BOOLEAN NOT NULL DEFAULT TRUE,
     status ArchiveStatus NOT NULL,
+
+    pool INTEGER NOT NULL REFERENCES pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+
     deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -572,6 +575,7 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     archiveVolume BIGINT NOT NULL REFERENCES ArchiveVolume(id) ON UPDATE CASCADE ON DELETE CASCADE,
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
+    index BIGINT CHECK (index >= 0) NOT NULL,
     blockNumber BIGINT CHECK (blockNumber >= 0) NOT NULL,
     archivetime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
 

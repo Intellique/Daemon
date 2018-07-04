@@ -37,9 +37,9 @@
 #include <unistd.h>
 
 #include <libstoriqone/changer.h>
+#include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
-#include <libstoriqone/database.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/process.h>
 #include <libstoriqone/value.h>
@@ -334,4 +334,3 @@ void sod_device_stop() {
 	so_value_free(stop);
 	so_value_free(devices);
 }
-

@@ -47,9 +47,12 @@
 #include <sys/stat.h>
 // lseek, lstat, open
 #include <sys/types.h>
+// time
+#include <time.h>
 // access, close, lseek, lstat, read, readlink
 #include <unistd.h>
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/log.h>
@@ -67,11 +70,9 @@ struct soj_format_reader_filesystem_private {
 		int fd;
 		struct stat st;
 		char * path;
+		u_int64_t nb_file_to_backup;
 
-		struct dirent ** files;
-		int i_file, nb_files;
-
-		struct soj_format_reader_filesystem_node * parent, * child;
+		struct soj_format_reader_filesystem_node * parent, * first_child, * last_child, * next_sibling;
 	} * root, * current;
 	bool fetch;
 };
@@ -91,9 +92,8 @@ static ssize_t soj_format_reader_filesystem_read_to_end_of_data(struct so_format
 static int soj_format_reader_filesystem_rewind(struct so_format_reader * fr);
 static enum so_format_reader_header_status soj_format_reader_filesystem_skip_file(struct so_format_reader * fr);
 
-static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_add(struct soj_format_reader_filesystem_node * node);
-static void soj_format_reader_filesystem_node_free(struct soj_format_reader_filesystem_node * root, struct soj_format_reader_filesystem_node * node);
-static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_new(char * path);
+static void soj_format_reader_filesystem_node_free(struct soj_format_reader_filesystem_node * node);
+static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_new(char * path, struct so_archive * archive, struct so_value * files);
 static void soj_format_reader_filesystem_node_sync(struct soj_format_reader_filesystem_node * node, struct so_format_file * file);
 
 static struct so_format_reader_ops soj_format_reader_filesystem_ops = {
@@ -114,22 +114,43 @@ static struct so_format_reader_ops soj_format_reader_filesystem_ops = {
 };
 
 
-struct so_format_reader * soj_io_filesystem_reader(const char * path) {
+struct so_format_reader * soj_io_filesystem_reader(const char * path, struct so_archive * archive) {
 	if (access(path, F_OK) != 0)
 		return NULL;
+
+	struct so_value * files = NULL;
+	if (archive != NULL) {
+		files = so_value_new_hashtable2();
+		unsigned int i;
+		for (i = 0; i < archive->nb_volumes; i++) {
+			unsigned int j;
+			struct so_archive_volume * vol = archive->volumes + i;
+			for (j = 0; j < vol->nb_files; j++) {
+				struct so_archive_files * ptr_file = vol->files + j;
+				struct so_archive_file * file = ptr_file->file;
+				so_value_hashtable_put2(files, file->hash, so_value_new_custom(file, NULL), true);
+			}
+		}
+	}
 
 	struct soj_format_reader_filesystem_private * self = malloc(sizeof(struct soj_format_reader_filesystem_private));
 	bzero(self, sizeof(struct soj_format_reader_filesystem_private));
 	self->path = strdup(path);
 	self->last_errno = 0;
 
-	self->current = self->root = soj_format_reader_filesystem_node_new(strdup(path));
+	char * new_path = strdup(path);
+	so_string_delete_double_char(new_path, '/');
+
+	self->current = self->root = soj_format_reader_filesystem_node_new(new_path, archive, files);
 	self->fetch = false;
 
 	struct so_format_reader * reader = malloc(sizeof(struct so_format_reader));
 	bzero(reader, sizeof(struct so_format_reader));
 	reader->ops = &soj_format_reader_filesystem_ops;
 	reader->data = self;
+
+	if (files != NULL)
+		so_value_free(files);
 
 	return reader;
 }
@@ -165,23 +186,8 @@ static void soj_format_reader_filesystem_free(struct so_format_reader * fr) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 
 	free(self->path);
-
-	struct soj_format_reader_filesystem_node * ptr = self->root;
-	while (ptr != NULL) {
-		if (ptr->fd > -1)
-			close(ptr->fd);
-		free(ptr->path);
-
-		int i;
-		for (i = ptr->i_file; i < ptr->nb_files; i++)
-			free(ptr->files[i]);
-		free(ptr->files);
-
-		struct soj_format_reader_filesystem_node * next = ptr->child;
-		free(ptr);
-		ptr = next;
-	}
-
+	if (self->root != NULL)
+		soj_format_reader_filesystem_node_free(self->root);
 	free(self);
 	free(fr);
 }
@@ -200,6 +206,9 @@ static struct so_value * soj_format_reader_filesystem_get_digests(struct so_form
 static enum so_format_reader_header_status soj_format_reader_filesystem_get_header(struct so_format_reader * fr, struct so_format_file * file) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 
+	if (self->root->nb_file_to_backup == 0)
+		return so_format_reader_header_not_found;
+
 	if (!self->fetch) {
 		self->fetch = true;
 		soj_format_reader_filesystem_node_sync(self->root, file);
@@ -207,18 +216,28 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_get_head
 	}
 
 	while (self->current != NULL) {
-		if (self->current->i_file < self->current->nb_files) {
-			self->current = soj_format_reader_filesystem_node_add(self->current);
+		if (self->current->first_child != NULL) {
+			self->current = self->current->first_child;
 			soj_format_reader_filesystem_node_sync(self->current, file);
 			return so_format_reader_header_ok;
+		} else if (self->current->next_sibling != NULL) {
+			self->current = self->current->next_sibling;
+			soj_format_reader_filesystem_node_sync(self->current, file);
+			return so_format_reader_header_ok;
+		} else {
+			do {
+				self->current = self->current->parent;
+				if (self->current == NULL)
+					return so_format_reader_header_not_found;
+				else if (self->current->next_sibling != NULL) {
+					self->current = self->current->next_sibling;
+					soj_format_reader_filesystem_node_sync(self->current, file);
+					return so_format_reader_header_ok;
+				}
+			} while (self->current != NULL);
 		}
 
-		struct soj_format_reader_filesystem_node * parent = self->current->parent;
-		soj_format_reader_filesystem_node_free(self->root, self->current);
-		self->current = parent;
-		if (parent == NULL)
-			self->root = NULL;
-
+		self->current = self->current->parent;
 	}
 
 	return so_format_reader_header_not_found;
@@ -244,6 +263,14 @@ static ssize_t soj_format_reader_filesystem_read(struct so_format_reader * fr, v
 	if (self->current == NULL)
 		return -1;
 
+	if (self->current->fd < 0) {
+		self->current->fd = open(self->current->path, O_RDONLY);
+		if (self->current->fd < 0) {
+			self->last_errno = errno;
+			return -1;
+		}
+	}
+
 	ssize_t nb_read = read(self->current->fd, buffer, length);
 	if (nb_read < 0)
 		self->last_errno = errno;
@@ -260,23 +287,7 @@ static ssize_t soj_format_reader_filesystem_read_to_end_of_data(struct so_format
 static int soj_format_reader_filesystem_rewind(struct so_format_reader * fr) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 
-	struct soj_format_reader_filesystem_node * ptr = self->root;
-	while (ptr != NULL) {
-		if (ptr->fd > -1)
-			close(ptr->fd);
-		free(ptr->path);
-
-		int i;
-		for (i = ptr->i_file; i < ptr->nb_files; i++)
-			free(ptr->files[i]);
-		free(ptr->files);
-
-		struct soj_format_reader_filesystem_node * next = ptr->child;
-		free(ptr);
-		ptr = next;
-	}
-
-	self->current = self->root = soj_format_reader_filesystem_node_new(strdup(self->path));
+	self->current = self->root;
 	self->fetch = false;
 
 	return 0;
@@ -295,54 +306,86 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_skip_fil
 }
 
 
-static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_add(struct soj_format_reader_filesystem_node * node) {
-	char * path = NULL;
-	int size = asprintf(&path, "%s/%s", node->path, node->files[node->i_file]->d_name);
-	if (size < 0) {
-		free(path);
-		return NULL;
+static void soj_format_reader_filesystem_node_free(struct soj_format_reader_filesystem_node * node) {
+	if (node->fd > -1) {
+		close(node->fd);
+		node->fd = -1;
 	}
 
-	so_string_delete_double_char(path, '/');
+	if (node->path != NULL) {
+		free(node->path);
+		node->path = NULL;
+	}
 
-	free(node->files[node->i_file]);
-	node->i_file++;
+	if (node->first_child != NULL)
+		soj_format_reader_filesystem_node_free(node->first_child);
 
-	node->child = soj_format_reader_filesystem_node_new(path);
-	node->child->parent = node;
+	if (node->next_sibling != NULL)
+		soj_format_reader_filesystem_node_free(node->next_sibling);
 
-	return node->child;
-}
-
-static void soj_format_reader_filesystem_node_free(struct soj_format_reader_filesystem_node * root, struct soj_format_reader_filesystem_node * node) {
-	if (node->fd > -1)
-		close(node->fd);
-	free(node->path);
-
-	int i;
-	for (i = node->i_file; i < node->nb_files; i++)
-		free(node->files[i]);
-	free(node->files);
-
-	if (node != root)
-		node->parent->child = NULL;
 	free(node);
 }
 
-static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_new(char * path) {
+static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_new(char * path, struct so_archive * archive, struct so_value * hash_files) {
+	static time_t last_update = 0;
+	time_t current = time(NULL);
+	if (last_update == 0)
+		last_update = current;
+	else if (last_update + 60 < current) {
+		last_update = current;
+		so_log_write(so_log_level_debug, dgettext("libstoriqone-job", "Iterating over filesystem, current path: %s"), path);
+	}
+
 	struct soj_format_reader_filesystem_node * node = malloc(sizeof(struct soj_format_reader_filesystem_node));
 	bzero(node, sizeof(struct soj_format_reader_filesystem_node));
 
 	node->fd = -1;
 	node->path = path;
 	lstat(node->path, &node->st);
+	node->nb_file_to_backup = 0;
 
-	if (S_ISDIR(node->st.st_mode)) {
-		node->nb_files = scandir(node->path, &node->files, so_file_basic_scandir_filter, versionsort);
-		node->i_file = 0;
-	} else if (S_ISREG(node->st.st_mode)) {
-		node->fd = open(node->path, O_RDONLY);
-	// } else if (S_ISLNK(child->st.st_mode)) {
+	if (S_ISREG(node->st.st_mode)) {
+		if (archive != NULL) {
+			char * hash = NULL;
+			int length = asprintf(&hash, "%s_%ld_%zd", node->path, node->st.st_mtim.tv_sec, node->st.st_size);
+			if (length > 0 && !so_value_hashtable_has_key2(hash_files, hash))
+				node->nb_file_to_backup++;
+			free(hash);
+		} else
+			node->nb_file_to_backup++;
+	} else if (S_ISDIR(node->st.st_mode)) {
+		struct dirent ** files = NULL;
+		int i, nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+
+		for (i = 0; i < nb_files; i++) {
+			char * sub_path = NULL;
+			asprintf(&sub_path, "%s/%s", path, files[i]->d_name);
+			so_string_delete_double_char(sub_path, '/');
+
+			struct soj_format_reader_filesystem_node * child = soj_format_reader_filesystem_node_new(sub_path, archive, hash_files);
+			if (child->nb_file_to_backup > 0) {
+				child->parent = node;
+				child->parent->nb_file_to_backup += child->nb_file_to_backup;
+
+				if (node->first_child == NULL)
+					node->first_child = node->last_child = child;
+				else
+					node->last_child = node->last_child->next_sibling = child;
+			} else
+				soj_format_reader_filesystem_node_free(child);
+
+			free(files[i]);
+		}
+		free(files);
+
+		if (node->first_child == NULL && archive != NULL) {
+			char * hash = NULL;
+			int length = asprintf(&hash, "%s_%ld", node->path, node->st.st_mtim.tv_sec);
+			if (length > 0 && !so_value_hashtable_has_key2(hash_files, hash))
+				node->nb_file_to_backup++;
+			free(hash);
+		} else
+			node->nb_file_to_backup++;
 	}
 
 	return node;

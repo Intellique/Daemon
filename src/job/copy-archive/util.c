@@ -24,12 +24,19 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // dgettext
 #include <libintl.h>
+// asprintf
+#include <stdio.h>
 // free, calloc
 #include <stdlib.h>
 // strlen
 #include <string.h>
+// S_*
+#include <sys/stat.h>
+// S_*
+#include <sys/types.h>
 // time
 #include <time.h>
 
@@ -50,6 +57,12 @@ static struct so_value * files = NULL;
 
 void soj_copyarchive_util_add_file(struct soj_copyarchive_private * self, struct so_format_file * file, ssize_t block_size) {
 	struct soj_copyarchive_files * ptr_file = malloc(sizeof(struct soj_copyarchive_files));
+
+	if (S_ISREG(file->mode))
+		asprintf(&ptr_file->hash, "%s_%ld_%zd", file->filename, file->mtime, file->size);
+	else
+		asprintf(&ptr_file->hash, "%s_%ld", file->filename, file->mtime);
+
 	ptr_file->path = strdup(file->filename);
 	ptr_file->position = self->writer->ops->position(self->writer) / block_size;
 	ptr_file->archived_time = time(NULL);
@@ -70,11 +83,11 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	self->writer->ops->free(self->writer);
 	self->writer = NULL;
 
-	self->dest_drive = soj_media_find_and_load_next(self->pool, false, NULL, db_connect);
+	self->dest_drive = soj_media_find_and_load_next(self->copy_archive->pool, false, NULL, db_connect);
 	if (self->dest_drive == NULL)
 		return 3;
 
-	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
+	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->copy_archive->pool);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
 	vol->job = job;
@@ -92,6 +105,8 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		return 1;
 	}
 
+	self->copy_archive->status = so_archive_status_data_complete;
+
 	struct so_archive_volume * vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
 	self->copy_archive->size += vol->size = self->writer->ops->position(self->writer);
 	vol->end_time = time(NULL);
@@ -107,7 +122,7 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		ptr_copy_file->position = ptr_file->position;
 		ptr_copy_file->archived_time = ptr_file->archived_time;
 
-		struct so_value * vfile = so_value_hashtable_get2(files, ptr_file->path, false, false);
+		struct so_value * vfile = so_value_hashtable_get2(files, ptr_file->hash, false, false);
 		struct so_archive_file * file = so_value_custom_get(vfile);
 
 		ptr_copy_file->file = so_archive_file_copy(file);
@@ -116,6 +131,7 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		struct soj_copyarchive_files * old = ptr_file;
 		ptr_file = ptr_file->next;
 
+		free(old->hash);
 		free(old->path);
 		free(old);
 	}
@@ -138,7 +154,7 @@ void soj_copyarchive_util_init(struct so_archive * archive) {
 			struct so_archive_file * file = ptr_file->file;
 
 			if (!so_value_hashtable_has_key2(files, file->path))
-				so_value_hashtable_put2(files, file->path, so_value_new_custom(file, NULL), true);
+				so_value_hashtable_put2(files, file->hash, so_value_new_custom(file, NULL), true);
 		}
 	}
 }
@@ -167,4 +183,3 @@ int soj_copyarchive_util_write_meta(struct soj_copyarchive_private * self) {
 
 	return nb_write <= 0;
 }
-

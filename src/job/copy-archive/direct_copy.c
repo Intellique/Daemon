@@ -57,7 +57,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 
 	soj_copyarchive_util_init(self->src_archive);
 
-	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
+	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->copy_archive->pool);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
 	vol->job = job;
@@ -91,7 +91,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 
 		while (rdr_status = reader->ops->get_header(reader, &file), rdr_status == so_format_reader_header_ok) {
 			ssize_t available_size = self->writer->ops->get_available_size(self->writer);
-			if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
+			if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->copy_archive->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
 				failed = soj_copyarchive_util_change_media(job, db_connect, self);
 				if (failed != 0) {
 					ok = false;

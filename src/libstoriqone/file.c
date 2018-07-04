@@ -445,15 +445,16 @@ int so_file_cp(const char * src, const char * dst) {
 
 char * so_file_gid2name(gid_t gid) {
 	char buffer[256];
+	bzero(buffer, 256);
 
 	struct group gr;
-	struct group * tmp_gr = NULL;
-
 	bzero(&gr, sizeof(gr));
+
+	struct group * tmp_gr = NULL;
 
 	int failed = getgrgid_r(gid, &gr, buffer, 256, &tmp_gr);
 	if (failed == 0 && tmp_gr != NULL)
-		return strdup(buffer);
+		return strdup(gr.gr_name);
 	else {
 		char * name = NULL;
 		int size = asprintf(&name, "%d", gid);
@@ -476,14 +477,30 @@ int so_file_mkdir(const char * dirname, mode_t mode) {
 	int failed = 0;
 	if (ptr == NULL) {
 		free(dir);
-		failed = mkdir(dirname, mode);
 
-		if (failed != 0)
+		failed = mkdir(dirname, mode);
+		if (failed != 0) {
 			so_log_write(so_log_level_error,
 				dgettext("libstoriqone", "so_file_mkdir: error while creating directory '%s' because %m"),
 				dirname);
+			return failed;
+		}
 
-		return failed;
+		struct stat info;
+		failed = stat(".", &info);
+		if (failed != 0) {
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_mkdir: error while get information of parent directory of '%s' because %m"),
+				dirname);
+			return failed;
+		}
+
+		if ((getuid() != info.st_uid || getgid() != info.st_gid) && chown(dirname, info.st_uid, info.st_gid) != 0)
+			so_log_write(so_log_level_warning,
+				dgettext("libstoriqone", "so_file_mkdir: error while setting uid(%d) and gid(%d) of '%s' because %m"),
+				info.st_uid, info.st_gid, dirname);
+
+		return 0;
 	}
 
 	unsigned short nb = 0;
@@ -493,30 +510,62 @@ int so_file_mkdir(const char * dirname, mode_t mode) {
 		ptr = strrchr(dir, '/');
 	} while (ptr != NULL && access(dir, F_OK));
 
-	if (access(dir, F_OK))
+	struct stat info;
+	if (access(dir, F_OK) != 0) {
 		failed = mkdir(dir, mode);
+		if (failed != 0) {
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_mkdir: error while creating directory '%s' because %m"),
+				dirname);
+			return failed;
+		}
 
-	if (failed != 0)
-		so_log_write(so_log_level_error,
-			dgettext("libstoriqone", "so_file_mkdir: error while creating directory '%s' because %m"),
-			dirname);
+		failed = stat(".", &info);
+		if (failed != 0) {
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_mkdir: error while get information of parent directory of '%s' because %m"),
+				dirname);
+			return failed;
+		}
+
+		if ((getuid() != info.st_uid || getgid() != info.st_gid) && chown(dir, info.st_uid, info.st_gid) != 0)
+			so_log_write(so_log_level_warning,
+				dgettext("libstoriqone", "so_file_mkdir: error while setting uid(%d) and gid(%d) of '%s' because %m"),
+				info.st_uid, info.st_gid, dir);
+	} else {
+		failed = stat(dir, &info);
+		if (failed != 0) {
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_mkdir: error while get information of directory of '%s' because %m"),
+				dir);
+			return failed;
+		}
+	}
 
 	unsigned short i;
-	for (i = 0; i < nb && !failed; i++) {
+	uid_t uid = getuid();
+	gid_t gid = getgid();
+	for (i = 0; i < nb; i++) {
 		size_t length = strlen(dir);
 		dir[length] = '/';
 
 		failed = mkdir(dir, mode);
-
-		if (failed != 0)
+		if (failed != 0) {
 			so_log_write(so_log_level_error,
 				dgettext("libstoriqone", "so_file_mkdir: error while creating directory '%s' because %m"),
 				dirname);
+			return failed;
+		}
+
+		if ((uid != info.st_uid || gid != info.st_gid) && chown(dir, info.st_uid, info.st_gid) != 0)
+			so_log_write(so_log_level_warning,
+				dgettext("libstoriqone", "so_file_mkdir: error while setting uid(%d) and gid(%d) of '%s' because %m"),
+				info.st_uid, info.st_gid, dir);
 	}
 
 	free(dir);
 
-	return failed;
+	return 0;
 }
 
 int so_file_mv(const char * src, const char * dst) {
@@ -742,15 +791,16 @@ int so_file_rm(const char * path) {
 
 char * so_file_uid2name(uid_t uid) {
 	char buffer[256];
+	bzero(buffer, 256);
 
 	struct passwd pw;
-	struct passwd * tmp_pw = NULL;
-
 	bzero(&pw, sizeof(pw));
+
+	struct passwd * tmp_pw = NULL;
 
 	int failed = getpwuid_r(uid, &pw, buffer, 256, &tmp_pw);
 	if (failed == 0 && tmp_pw != NULL)
-		return strdup(buffer);
+		return strdup(pw.pw_name);
 	else {
 		char * name = NULL;
 		int size = asprintf(&name, "%d", uid);

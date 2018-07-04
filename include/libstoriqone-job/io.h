@@ -27,11 +27,14 @@
 #ifndef __LIBSTORIQONE_JOB_IO_H__
 #define __LIBSTORIQONE_JOB_IO_H__
 
+#include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
 
+struct so_archive;
+struct so_database_connection;
 struct so_format_file;
 
-struct so_format_reader * soj_io_filesystem_reader(const char * path);
+struct so_format_reader * soj_io_filesystem_reader(const char * path, struct so_archive * archive);
 struct so_format_writer * soj_io_filesystem_writer(const char * path);
 
 void soj_format_writer_add_file_async(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
