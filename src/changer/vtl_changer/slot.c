@@ -110,4 +110,3 @@ bool sochgr_vtl_drive_slot_create(struct so_drive * dr, struct so_slot * sl, con
 	bzero(vtl_sl, sizeof(struct sochgr_vtl_changer_slot));
 	return asprintf(&vtl_sl->path, "%s/drives/%Ld", root_directory, index) >= 0;
 }
-

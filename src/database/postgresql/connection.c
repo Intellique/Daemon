@@ -87,6 +87,7 @@ static char * so_database_postgresql_get_host(struct so_database_connection * co
 static int so_database_postgresql_get_host_by_name(struct so_database_connection * connect, struct so_host * host, const char * name);
 static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid, const char * daemon_version);
 
+static int so_database_postgresql_can_delete_vtl(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive);
 static ssize_t so_database_postgresql_get_block_size_by_pool(struct so_database_connection * connect, struct so_pool * pool);
@@ -104,6 +105,7 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 static struct so_value * so_database_postgresql_get_slot_by_drive(struct so_database_connection * connect, const char * drive_id);
 static struct so_value * so_database_postgresql_get_standalone_drives(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect, bool new_vtl);
+static int so_database_postgresql_ignore_vtl_deletion(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
 static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
@@ -187,6 +189,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_host_by_name = so_database_postgresql_get_host_by_name,
 	.update_host      = so_database_postgresql_update_host,
 
+	.can_delete_vtl          = so_database_postgresql_can_delete_vtl,
 	.delete_changer          = so_database_postgresql_delete_changer,
 	.delete_drive            = so_database_postgresql_delete_drive,
 	.get_block_size_by_pool  = so_database_postgresql_get_block_size_by_pool,
@@ -200,6 +203,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_pool_by_pool_mirror = so_database_postgresql_get_pool_by_pool_mirror,
 	.get_standalone_drives   = so_database_postgresql_get_standalone_drives,
 	.get_vtls                = so_database_postgresql_get_vtls,
+	.ignore_vtl_deletion     = so_database_postgresql_ignore_vtl_deletion,
 	.sync_changer            = so_database_postgresql_sync_changer,
 	.sync_drive              = so_database_postgresql_sync_drive,
 	.sync_media              = so_database_postgresql_sync_media,
@@ -573,6 +577,40 @@ static int so_database_postgresql_update_host(struct so_database_connection * co
 	return status != PGRES_COMMAND_OK;
 }
 
+
+static int so_database_postgresql_can_delete_vtl(struct so_database_connection * connect, struct so_changer * changer) {
+	if (connect == NULL || changer == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(changer->db_data, key, false, false);
+	so_value_free(key);
+
+	const char * changer_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &changer_id);
+
+	const char * query = "can_delete_vtl";
+	so_database_postgresql_prepare(self, query, "SELECT EXISTS(SELECT * FROM archive a INNER JOIN archivevolume av ON NOT a.deleted AND a.id = av.archive INNER JOIN media m ON av.media = m.id INNER JOIN vtl v ON v.id = $1 AND m.mediaformat = v.mediaformat)");
+
+	const char * param[] = { changer_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool can_delete = false;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else
+		so_database_postgresql_get_bool(result, 0, 0, &can_delete);
+
+	PQclear(result);
+
+	if (status != PGRES_COMMAND_OK)
+		return -1;
+	else
+		return can_delete ? 1 : 0;
+}
 
 static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer) {
 	if (connect == NULL || changer == NULL)
@@ -1323,6 +1361,34 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 	free(host_id);
 
 	return changers;
+}
+
+static int so_database_postgresql_ignore_vtl_deletion(struct so_database_connection * connect, struct so_changer * changer) {
+	if (connect == NULL || changer == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(changer->db_data, key, false, false);
+	so_value_free(key);
+
+	const char * changer_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &changer_id);
+
+	const char * query = "ignore_vtl_deletion";
+	so_database_postgresql_prepare(self, query, "UPDATE vtl SET deleted = FALSE WHERE id = $1");
+
+	const char * param[] = { changer_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method) {

@@ -187,6 +187,7 @@ struct so_database_connection {
 		 */
 		int (*update_host)(struct so_database_connection * connect, const char * uuid, const char * daemon_version);
 
+		int (*can_delete_vtl)(struct so_database_connection * connect, struct so_changer * changer);
 		/**
 		 * \brief delete changer from database
 		 *
@@ -288,6 +289,7 @@ struct so_database_connection {
 		 * \return a list of VTLs
 		 */
 		struct so_value * (*get_vtls)(struct so_database_connection * connect, bool new_vtl);
+		int (*ignore_vtl_deletion)(struct so_database_connection * connect, struct so_changer * changer);
 		/**
 		 * \brief synchronize the status of \a changer with database
 		 *

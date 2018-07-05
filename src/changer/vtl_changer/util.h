@@ -30,4 +30,3 @@
 char * sochgr_vtl_util_get_serial(const char * filename);
 
 #endif
-

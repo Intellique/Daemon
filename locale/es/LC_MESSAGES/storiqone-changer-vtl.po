@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2017-06-28 16:42+0200\n"
+        "POT-Creation-Date: 2018-07-05 18:24+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -50,6 +50,26 @@ msgstr[0]       "[ %s | %s ]: va a agregar %u lector"
 msgstr[1]       "[ %s | %s ]: va a agregar %u lectores"
 
 #: src/changer/vtl_changer/device.c:335
+#, c-format
+msgid   "[%s | %s]: checking before VTL deletion"
+msgstr  ""
+
+#: src/changer/vtl_changer/device.c:341
+#, c-format
+msgid   "[%s | %s]: error while checking for VTL deletion, deletion aborded"
+msgstr  ""
+
+#: src/changer/vtl_changer/device.c:345
+#, c-format
+msgid   "[%s | %s]: there remain undeleted archives, deletion aborded"
+msgstr  ""
+
+#: src/changer/vtl_changer/device.c:349
+#, c-format
+msgid   "[%s | %s]: there is no archives in this VTL, starting vtl deletion"
+msgstr  ""
+
+#: src/changer/vtl_changer/device.c:359
 #, c-format
 msgid   "[%s | %s]: will delete VTL"
 msgstr  "[ %s | %s ]: va a suprimir la VTL"

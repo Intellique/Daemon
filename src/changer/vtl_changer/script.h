@@ -36,4 +36,3 @@ int sochgr_vtl_script_pre_offline(struct so_changer * changer, const char * root
 int sochgr_vtl_script_pre_online(struct so_changer * changer, const char * root_directory);
 
 #endif
-

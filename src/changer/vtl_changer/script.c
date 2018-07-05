@@ -358,4 +358,3 @@ static int sochgr_vtl_script_run(struct so_changer * changer, const char * path,
 
 	return failed;
 }
-

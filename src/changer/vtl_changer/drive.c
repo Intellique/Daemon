@@ -77,4 +77,3 @@ void sochgr_vtl_drive_delete(struct so_drive * drive) {
 
 	drive->ops->free(drive);
 }
-
