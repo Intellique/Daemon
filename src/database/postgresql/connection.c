@@ -1789,7 +1789,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
-				so_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
+				so_time_convert(&drive->last_clean, "%F %T%z", last_clean, 24);
 			}
 
 			const char * param[] = {
@@ -1829,7 +1829,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
-				so_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
+				so_time_convert(&drive->last_clean, "%F %T%z", last_clean, 24);
 			}
 
 			const char * param[] = {
@@ -2046,12 +2046,12 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		char buffer_use_before[32];
 		char buffer_last_read[32] = "";
 		char buffer_last_write[32] = "";
-		so_time_convert(&media->first_used, "%F %T", buffer_first_used, 32);
-		so_time_convert(&media->use_before, "%F %T", buffer_use_before, 32);
+		so_time_convert(&media->first_used, "%F %T%z", buffer_first_used, 32);
+		so_time_convert(&media->use_before, "%F %T%z", buffer_use_before, 32);
 		if (media->last_read > 0)
-			so_time_convert(&media->last_read, "%F %T", buffer_last_read, 32);
+			so_time_convert(&media->last_read, "%F %T%z", buffer_last_read, 32);
 		if (media->last_write > 0)
-			so_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
+			so_time_convert(&media->last_write, "%F %T%z", buffer_last_write, 32);
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
 		int size = asprintf(&load, "%ld", media->load_count);
@@ -2158,9 +2158,9 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		char buffer_last_read[32] = "";
 		char buffer_last_write[32] = "";
 		if (media->last_read > 0)
-			so_time_convert(&media->last_read, "%F %T", buffer_last_read, 32);
+			so_time_convert(&media->last_read, "%F %T%z", buffer_last_read, 32);
 		if (media->last_write > 0)
-			so_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
+			so_time_convert(&media->last_write, "%F %T%z", buffer_last_write, 32);
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
 		int size = asprintf(&load, "%ld", media->load_count);
@@ -3123,7 +3123,7 @@ static int so_database_postgresql_check_archive_file(struct so_database_connecti
 	so_database_postgresql_prepare(self, query, "UPDATE archivefiletoarchivevolume SET checktime = $1, checksumok = $2 WHERE archivefile = $3 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $4)");
 
 	char checktime[32];
-	so_time_convert(&file->check_time, "%F %T", checktime, 32);
+	so_time_convert(&file->check_time, "%F %T%z", checktime, 32);
 
 	const char * param[] = { checktime, so_database_postgresql_bool_to_string(file->check_ok), file_id, archive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
@@ -3192,7 +3192,7 @@ static int so_database_postgresql_check_archive_volume(struct so_database_connec
 	so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET checktime = $1, checksumok = $2 WHERE id = $3");
 
 	char checktime[32];
-	so_time_convert(&volume->check_time, "%F %T", checktime, 32);
+	so_time_convert(&volume->check_time, "%F %T%z", checktime, 32);
 
 	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->check_ok), volume_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -4246,8 +4246,8 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 		return -2;
 	}
 
-	so_time_convert(&file->create_time, "%F %T", create_time, 32);
-	so_time_convert(&file->modify_time, "%F %T", modify_time, 32);
+	so_time_convert(&file->create_time, "%F %T%z", create_time, 32);
+	so_time_convert(&file->modify_time, "%F %T%z", modify_time, 32);
 
 	const char * param[] = { file->path, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size, selected_path_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
@@ -4409,8 +4409,8 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		snprintf(size, 16, "%zd", volume->size);
 		snprintf(media_position, 16, "%u", volume->media_position);
 
-		so_time_convert(&volume->start_time, "%F %T", starttime, 32);
-		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
+		so_time_convert(&volume->start_time, "%F %T%z", starttime, 32);
+		so_time_convert(&volume->end_time, "%F %T%z", endtime, 32);
 		so_value_unpack(db_media, "{sS}", "id", &media_id);
 		so_value_unpack(db_job, "{sS}", "jobrun id", &job_run);
 
@@ -4436,7 +4436,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 	} else {
 		char size[16], endtime[32];
 		snprintf(size, 16, "%zd", volume->size);
-		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
+		so_time_convert(&volume->end_time, "%F %T%z", endtime, 32);
 
 		const char * query = "update_archive_volume";
 		so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET size = $1, endtime = $2 WHERE id = $3");
@@ -4500,7 +4500,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		snprintf(index, 24, "%ld", i);
 		snprintf(block_number, 24, "%zd", ptr_file->position);
 
-		so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
+		so_time_convert(&ptr_file->archived_time, "%F %T%z", archive_time, 32);
 
 		const char * paramA[] = { volume_id, file_id, index, block_number, archive_time, file->alternate_path };
 		PGresult * resultA = PQexecPrepared(self->connect, queryA, 6, paramA, NULL, NULL, 0);
@@ -4843,7 +4843,7 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 	so_database_postgresql_prepare(self, query, "UPDATE backupvolume SET checktime = $1, checksumok = $2 WHERE id = $3");
 
 	char checktime[24];
-	so_time_convert(&volume->checktime, "%F %T", checktime, 24);
+	so_time_convert(&volume->checktime, "%F %T%z", checktime, 24);
 
 	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->checksum_ok), backup_volume_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);

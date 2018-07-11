@@ -75,6 +75,9 @@ static struct so_database_connection * so_database_postgresql_connect(struct so_
 		return NULL;
 	}
 
+	PGresult * result = PQexec(connect, "SET timezone TO 'localtime'");
+	PQclear(result);
+
 	connection->driver = db_config->driver;
 	connection->config = db_config;
 	return connection;
@@ -150,4 +153,3 @@ static int so_database_postgresql_ping(struct so_database_config * db_config) {
 
 	return 1;
 }
-
