@@ -378,6 +378,7 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 		new_file->file = soj_create_archive_worker_copy_file(worker, so_value_custom_get(vfile), ptr_file->alternate_path);
 		new_file->position = ptr_file->position;
 		new_file->archived_time = ptr_file->archived_time;
+		new_file->file->min_version = new_file->file->max_version = worker->archive->current_version;
 
 		if (files_metadata != NULL && so_value_hashtable_has_key2(files_metadata, new_file->file->path))
 			new_file->file->metadata = so_value_hashtable_get2(files_metadata, new_file->file->path, true, false);
@@ -560,6 +561,8 @@ static void soj_create_archive_worker_generate_report2(struct so_archive * archi
 }
 
 void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archive * primary_archive, struct so_value * archive_mirrors) {
+	primary_archive->current_version++;
+
 	struct so_pool * pool = primary_archive->volumes->media->pool;
 	primary_worker = soj_create_archive_worker_new(job, primary_archive, pool);
 
@@ -614,6 +617,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 		worker->archive->owner = strdup(job->user);
 		worker->archive->metadata = so_value_new_hashtable2();
 		worker->archive->pool = pool;
+		worker->archive->current_version = 1;
 	} else {
 		worker->archive = archive;
 		worker->archive->status = so_archive_status_incomplete;

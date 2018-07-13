@@ -146,6 +146,8 @@ struct so_archive {
 
 	struct so_pool * pool;
 
+	int current_version;
+
 	/**
 	 * \brief private data used by database
 	 */
@@ -247,6 +249,9 @@ struct so_archive_volume {
 	 */
 	unsigned int nb_files;
 
+	int min_version;
+	int max_version;
+
 	bool skip_volume;
 
 	/**
@@ -344,6 +349,9 @@ struct so_archive_file {
 	 * \brief path which led to archiving this file
 	 */
 	char * selected_path;
+
+	int min_version;
+	int max_version;
 
 	/**
 	 * \brief An hashtable which contains digests of this file.

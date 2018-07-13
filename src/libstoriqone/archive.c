@@ -101,6 +101,7 @@ struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
 	vol->sequence = archive->nb_volumes;
 	vol->start_time = time(NULL);
 	vol->archive = archive;
+	vol->min_version = vol->max_version = archive->current_version;
 
 	archive->nb_volumes++;
 
