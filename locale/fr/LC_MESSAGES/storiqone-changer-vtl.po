@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-05 18:24+0200\n"
+        "POT-Creation-Date: 2018-07-06 15:29+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -73,6 +73,11 @@ msgstr  "[ %s | %s ] : il n’y a pas d’archive dans cette VTL, démarrage 
 #, c-format
 msgid   "[%s | %s]: will delete VTL"
 msgstr  "[ %s | %s ] : va supprimer la VTL"
+
+#: src/changer/vtl_changer/device.c:429
+#, c-format
+msgid   "[%s | %s]: VTL '%s' does not exists, starting creation"
+msgstr  "[ %s | %s ] : la VTL « %s » n’existe pas, démarrage de sa création"
 
 #: src/changer/vtl_changer/script.c:142 src/changer/vtl_changer/script.c:194 src/changer/vtl_changer/script.c:246
 #: src/changer/vtl_changer/script.c:298
