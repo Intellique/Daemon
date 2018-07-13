@@ -87,6 +87,7 @@ static char * so_database_postgresql_get_host(struct so_database_connection * co
 static int so_database_postgresql_get_host_by_name(struct so_database_connection * connect, struct so_host * host, const char * name);
 static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid, const char * daemon_version);
 
+static int so_database_postgresql_can_delete_vtl(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive);
 static ssize_t so_database_postgresql_get_block_size_by_pool(struct so_database_connection * connect, struct so_pool * pool);
@@ -104,6 +105,7 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 static struct so_value * so_database_postgresql_get_slot_by_drive(struct so_database_connection * connect, const char * drive_id);
 static struct so_value * so_database_postgresql_get_standalone_drives(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect, bool new_vtl);
+static int so_database_postgresql_ignore_vtl_deletion(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
 static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
@@ -187,6 +189,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_host_by_name = so_database_postgresql_get_host_by_name,
 	.update_host      = so_database_postgresql_update_host,
 
+	.can_delete_vtl          = so_database_postgresql_can_delete_vtl,
 	.delete_changer          = so_database_postgresql_delete_changer,
 	.delete_drive            = so_database_postgresql_delete_drive,
 	.get_block_size_by_pool  = so_database_postgresql_get_block_size_by_pool,
@@ -200,6 +203,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_pool_by_pool_mirror = so_database_postgresql_get_pool_by_pool_mirror,
 	.get_standalone_drives   = so_database_postgresql_get_standalone_drives,
 	.get_vtls                = so_database_postgresql_get_vtls,
+	.ignore_vtl_deletion     = so_database_postgresql_ignore_vtl_deletion,
 	.sync_changer            = so_database_postgresql_sync_changer,
 	.sync_drive              = so_database_postgresql_sync_drive,
 	.sync_media              = so_database_postgresql_sync_media,
@@ -573,6 +577,40 @@ static int so_database_postgresql_update_host(struct so_database_connection * co
 	return status != PGRES_COMMAND_OK;
 }
 
+
+static int so_database_postgresql_can_delete_vtl(struct so_database_connection * connect, struct so_changer * changer) {
+	if (connect == NULL || changer == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(changer->db_data, key, false, false);
+	so_value_free(key);
+
+	const char * changer_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &changer_id);
+
+	const char * query = "can_delete_vtl";
+	so_database_postgresql_prepare(self, query, "SELECT EXISTS(SELECT * FROM archive a INNER JOIN archivevolume av ON NOT a.deleted AND a.id = av.archive INNER JOIN media m ON av.media = m.id INNER JOIN vtl v ON v.id = $1 AND m.mediaformat = v.mediaformat)");
+
+	const char * param[] = { changer_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool can_delete = false;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else
+		so_database_postgresql_get_bool(result, 0, 0, &can_delete);
+
+	PQclear(result);
+
+	if (status != PGRES_COMMAND_OK)
+		return -1;
+	else
+		return can_delete ? 1 : 0;
+}
 
 static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer) {
 	if (connect == NULL || changer == NULL)
@@ -1325,6 +1363,34 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 	return changers;
 }
 
+static int so_database_postgresql_ignore_vtl_deletion(struct so_database_connection * connect, struct so_changer * changer) {
+	if (connect == NULL || changer == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(changer->db_data, key, false, false);
+	so_value_free(key);
+
+	const char * changer_id = NULL;
+	so_value_unpack(db, "{sS}", "id", &changer_id);
+
+	const char * query = "ignore_vtl_deletion";
+	so_database_postgresql_prepare(self, query, "UPDATE vtl SET deleted = FALSE WHERE id = $1");
+
+	const char * param[] = { changer_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
+}
+
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method) {
 	if (connect == NULL || changer == NULL)
 		return -1;
@@ -1723,7 +1789,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
-				so_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
+				so_time_convert(&drive->last_clean, "%F %T%z", last_clean, 24);
 			}
 
 			const char * param[] = {
@@ -1763,7 +1829,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
-				so_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
+				so_time_convert(&drive->last_clean, "%F %T%z", last_clean, 24);
 			}
 
 			const char * param[] = {
@@ -1980,12 +2046,12 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		char buffer_use_before[32];
 		char buffer_last_read[32] = "";
 		char buffer_last_write[32] = "";
-		so_time_convert(&media->first_used, "%F %T", buffer_first_used, 32);
-		so_time_convert(&media->use_before, "%F %T", buffer_use_before, 32);
+		so_time_convert(&media->first_used, "%F %T%z", buffer_first_used, 32);
+		so_time_convert(&media->use_before, "%F %T%z", buffer_use_before, 32);
 		if (media->last_read > 0)
-			so_time_convert(&media->last_read, "%F %T", buffer_last_read, 32);
+			so_time_convert(&media->last_read, "%F %T%z", buffer_last_read, 32);
 		if (media->last_write > 0)
-			so_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
+			so_time_convert(&media->last_write, "%F %T%z", buffer_last_write, 32);
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
 		int size = asprintf(&load, "%ld", media->load_count);
@@ -2092,9 +2158,9 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		char buffer_last_read[32] = "";
 		char buffer_last_write[32] = "";
 		if (media->last_read > 0)
-			so_time_convert(&media->last_read, "%F %T", buffer_last_read, 32);
+			so_time_convert(&media->last_read, "%F %T%z", buffer_last_read, 32);
 		if (media->last_write > 0)
-			so_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
+			so_time_convert(&media->last_write, "%F %T%z", buffer_last_write, 32);
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
 		int size = asprintf(&load, "%ld", media->load_count);
@@ -3057,7 +3123,7 @@ static int so_database_postgresql_check_archive_file(struct so_database_connecti
 	so_database_postgresql_prepare(self, query, "UPDATE archivefiletoarchivevolume SET checktime = $1, checksumok = $2 WHERE archivefile = $3 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $4)");
 
 	char checktime[32];
-	so_time_convert(&file->check_time, "%F %T", checktime, 32);
+	so_time_convert(&file->check_time, "%F %T%z", checktime, 32);
 
 	const char * param[] = { checktime, so_database_postgresql_bool_to_string(file->check_ok), file_id, archive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
@@ -3126,7 +3192,7 @@ static int so_database_postgresql_check_archive_volume(struct so_database_connec
 	so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET checktime = $1, checksumok = $2 WHERE id = $3");
 
 	char checktime[32];
-	so_time_convert(&volume->check_time, "%F %T", checktime, 32);
+	so_time_convert(&volume->check_time, "%F %T%z", checktime, 32);
 
 	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->check_ok), volume_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -4180,8 +4246,8 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 		return -2;
 	}
 
-	so_time_convert(&file->create_time, "%F %T", create_time, 32);
-	so_time_convert(&file->modify_time, "%F %T", modify_time, 32);
+	so_time_convert(&file->create_time, "%F %T%z", create_time, 32);
+	so_time_convert(&file->modify_time, "%F %T%z", modify_time, 32);
 
 	const char * param[] = { file->path, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size, selected_path_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
@@ -4343,8 +4409,8 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		snprintf(size, 16, "%zd", volume->size);
 		snprintf(media_position, 16, "%u", volume->media_position);
 
-		so_time_convert(&volume->start_time, "%F %T", starttime, 32);
-		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
+		so_time_convert(&volume->start_time, "%F %T%z", starttime, 32);
+		so_time_convert(&volume->end_time, "%F %T%z", endtime, 32);
 		so_value_unpack(db_media, "{sS}", "id", &media_id);
 		so_value_unpack(db_job, "{sS}", "jobrun id", &job_run);
 
@@ -4370,7 +4436,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 	} else {
 		char size[16], endtime[32];
 		snprintf(size, 16, "%zd", volume->size);
-		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
+		so_time_convert(&volume->end_time, "%F %T%z", endtime, 32);
 
 		const char * query = "update_archive_volume";
 		so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET size = $1, endtime = $2 WHERE id = $3");
@@ -4434,7 +4500,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		snprintf(index, 24, "%ld", i);
 		snprintf(block_number, 24, "%zd", ptr_file->position);
 
-		so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
+		so_time_convert(&ptr_file->archived_time, "%F %T%z", archive_time, 32);
 
 		const char * paramA[] = { volume_id, file_id, index, block_number, archive_time, file->alternate_path };
 		PGresult * resultA = PQexecPrepared(self->connect, queryA, 6, paramA, NULL, NULL, 0);
@@ -4777,7 +4843,7 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 	so_database_postgresql_prepare(self, query, "UPDATE backupvolume SET checktime = $1, checksumok = $2 WHERE id = $3");
 
 	char checktime[24];
-	so_time_convert(&volume->checktime, "%F %T", checktime, 24);
+	so_time_convert(&volume->checktime, "%F %T%z", checktime, 24);
 
 	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->checksum_ok), backup_volume_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);

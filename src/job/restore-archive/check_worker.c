@@ -238,4 +238,3 @@ void soj_restorearchive_check_worker_stop() {
 		pthread_cond_wait(&check_worker_wait, &check_worker_lock);
 	pthread_mutex_unlock(&check_worker_lock);
 }
-

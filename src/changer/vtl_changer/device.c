@@ -332,6 +332,30 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 
 		if (deleted) {
 			so_log_write(so_log_level_warning,
+				dgettext("storiqone-changer-vtl", "[%s | %s]: checking before VTL deletion"),
+				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
+
+			int check_delete = db_connection->ops->can_delete_vtl(db_connection, &sochgr_vtl_changer);
+			if (check_delete == -1)
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-changer-vtl", "[%s | %s]: error while checking for VTL deletion, deletion aborded"),
+					sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
+			else if (check_delete == 0)
+				so_log_write(so_log_level_warning,
+					dgettext("storiqone-changer-vtl", "[%s | %s]: there remain undeleted archives, deletion aborded"),
+					sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
+			else
+				so_log_write(so_log_level_warning,
+					dgettext("storiqone-changer-vtl", "[%s | %s]: there is no archives in this VTL, starting vtl deletion"),
+					sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
+
+			deleted = check_delete > 0;
+			if (!deleted)
+				db_connection->ops->ignore_vtl_deletion(db_connection, &sochgr_vtl_changer);
+		}
+
+		if (deleted) {
+			so_log_write(so_log_level_warning,
 				dgettext("storiqone-changer-vtl", "[%s | %s]: will delete VTL"),
 				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
 
@@ -400,8 +424,14 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 	sochgr_vtl_changer.nb_slots = nb_drives + nb_slots;
 	sochgr_vtl_changer.slots = calloc(sochgr_vtl_changer.nb_slots, sizeof(struct so_slot));
 
-	if (so_file_mkdir(sochgr_vtl_root_dir, 0700))
-		goto init_error;
+	if (access(sochgr_vtl_root_dir, F_OK) != 0) {
+		so_log_write(so_log_level_warning,
+			dgettext("storiqone-changer-vtl", "[%s | %s]: VTL '%s' does not exists, starting creation"),
+			sochgr_vtl_changer.vendor, sochgr_vtl_changer.model, sochgr_vtl_root_dir);
+
+		if (so_file_mkdir(sochgr_vtl_root_dir, 0700))
+			goto init_error;
+	}
 
 	unsigned int i;
 	for (i = 0; i < nb_drives; i++) {
@@ -692,4 +722,3 @@ static int sochgr_vtl_changer_unload_all_drives(struct so_database_connection * 
 
 	return 0;
 }
-

@@ -87,4 +87,3 @@ struct so_media * sochgr_vtl_media_create(const char * root_directory, const cha
 
 	return media;
 }
-
