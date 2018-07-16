@@ -550,4 +550,3 @@ void so_archive_volume_free(struct so_archive_volume * volume);
 void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value * new_volume);
 
 #endif
-
