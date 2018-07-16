@@ -90,6 +90,9 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 	so_value_unpack(job->option, "{si}", "min_version", &min_version);
 	so_value_unpack(job->option, "{si}", "max_version", &max_version);
 
+	bool new_files_only = false;
+	so_value_unpack(job->option, "{sb}", "new_files_only", &new_files_only);
+
 	struct soj_checkarchive_worker * workers = NULL;
 	size_t target_size = 0;
 
@@ -98,6 +101,9 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		struct so_archive_volume * vol = archive->volumes + i;
 
 		if (min_version > vol->max_version || (max_version > 0 && max_version < vol->min_version))
+			continue;
+
+		if (new_files_only && vol->check_time)
 			continue;
 
 		target_size += vol->size;
