@@ -294,14 +294,20 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		so_value_free(checksums);
 	}
 
-	char * message = NULL;
-	int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "After checking, there are %s out of %s"),
-		dngettext("storiqone-job-check-archive", "%lu correct file", "%lu correct files", nb_chck_files),
-		dngettext("storiqone-job-check-archive", "%lu file", "%lu files", nb_total_chck_files));
+	if (total_read == 0)
+		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "Due to job options, all volumes of archive \"%s\" are skipped"),
+			archive->name);
+	else {
+		char * message = NULL;
+		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "After checking, there are %s out of %s"),
+			dngettext("storiqone-job-check-archive", "%lu correct file", "%lu correct files", nb_chck_files),
+			dngettext("storiqone-job-check-archive", "%lu file", "%lu files", nb_total_chck_files));
 
-	if (size > 0) {
-		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_chck_files, nb_total_chck_files);
-		free(message);
+		if (size > 0) {
+			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_chck_files, nb_total_chck_files);
+			free(message);
+		}
 	}
 
 	job->done = 1;

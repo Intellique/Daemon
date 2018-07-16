@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-16 17:13+0200\n"
+        "POT-Creation-Date: 2018-07-16 17:23+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -51,7 +51,7 @@ msgstr  "Échec lors de la définition du nom du fil d’exécution"
 msgid   "Starting worker #%u"
 msgstr  "Démarrage du fil d’exécution #%u"
 
-#: src/job/check-archive/quick_mode.c:171
+#: src/job/check-archive/quick_mode.c:171 src/job/check-archive/thorough_mode.c:299
 #, c-format
 msgid   "Due to job options, all volumes of archive \"%s\" are skipped"
 msgstr  "En raison des options de tâches, tous les volumes de l’archive « %s » sont ignorés"
@@ -158,19 +158,19 @@ msgstr  "L’intégrité des données du volume « %s » est correcte"
 msgid   "Data integrity of volume '%s' is not correct"
 msgstr  "L’intégrité des données du volume « %s » n’est pas correcte"
 
-#: src/job/check-archive/thorough_mode.c:298
+#: src/job/check-archive/thorough_mode.c:303
 #, c-format
 msgid   "After checking, there are %s out of %s"
 msgstr  "Après vérification, il y a %s sur %s"
 
-#: src/job/check-archive/thorough_mode.c:299
+#: src/job/check-archive/thorough_mode.c:304
 #, c-format
 msgid   "%lu correct file"
 msgid_plural    "%lu correct files"
 msgstr[0]       "%lu fichier correct"
 msgstr[1]       "%lu fichiers corrects"
 
-#: src/job/check-archive/thorough_mode.c:300
+#: src/job/check-archive/thorough_mode.c:305
 #, c-format
 msgid   "%lu file"
 msgid_plural    "%lu files"

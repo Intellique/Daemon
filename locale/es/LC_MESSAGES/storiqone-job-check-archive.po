@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-16 17:13+0200\n"
+        "POT-Creation-Date: 2018-07-16 17:23+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -51,7 +51,7 @@ msgstr  "Fallo de la definición del nombre del hilo de ejecución"
 msgid   "Starting worker #%u"
 msgstr  "Arranque del hilo de ejecución #%u"
 
-#: src/job/check-archive/quick_mode.c:171
+#: src/job/check-archive/quick_mode.c:171 src/job/check-archive/thorough_mode.c:299
 #, c-format
 msgid   "Due to job options, all volumes of archive \"%s\" are skipped"
 msgstr  ""
@@ -158,19 +158,19 @@ msgstr  "La integridad de los datos del volumen \"%s\" es correcto"
 msgid   "Data integrity of volume '%s' is not correct"
 msgstr  "La integridad de los datos del volumen \"%s\" no es correcto"
 
-#: src/job/check-archive/thorough_mode.c:298
+#: src/job/check-archive/thorough_mode.c:303
 #, c-format
 msgid   "After checking, there are %s out of %s"
 msgstr  ""
 
-#: src/job/check-archive/thorough_mode.c:299
+#: src/job/check-archive/thorough_mode.c:304
 #, c-format
 msgid   "%lu correct file"
 msgid_plural    "%lu correct files"
 msgstr[0]       ""
 msgstr[1]       ""
 
-#: src/job/check-archive/thorough_mode.c:300
+#: src/job/check-archive/thorough_mode.c:305
 #, c-format
 msgid   "%lu file"
 msgid_plural    "%lu files"
