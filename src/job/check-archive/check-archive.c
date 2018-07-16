@@ -172,5 +172,22 @@ static int soj_checkarchive_warm_up(struct so_job * job, struct so_database_conn
 		return 1;
 	}
 
+	int min_version = 0, max_version = 0;
+	if (so_value_unpack(job->option, "{si}", "min_version", &min_version) == 1 && min_version < 1) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "job option \"min_version\" should be greater or equal to 1"));
+		return 1;
+	}
+	if (so_value_unpack(job->option, "{si}", "max_version", &max_version) == 1 && max_version < 1) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "job option \"max_version\" should be greater or equal to 1"));
+		return 1;
+	}
+	if (max_version > 0 && min_version > max_version) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "job option \"max_version\" should be greater or equal to \"min_version\""));
+		return 1;
+	}
+
 	return 0;
 }

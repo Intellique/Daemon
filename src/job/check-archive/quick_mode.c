@@ -71,6 +71,9 @@ struct soj_checkarchive_worker {
 	unsigned int nb_errors;
 	unsigned int nb_warnings;
 
+	int min_version;
+	int max_version;
+
 	struct soj_checkarchive_worker * next;
 };
 
@@ -83,11 +86,21 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		archive->name);
 	job->done = 0.01;
 
-	struct soj_checkarchive_worker * workers = NULL;
+	int min_version = 0, max_version = 0;
+	so_value_unpack(job->option, "{si}", "min_version", &min_version);
+	so_value_unpack(job->option, "{si}", "max_version", &max_version);
 
-	unsigned int i;
+	struct soj_checkarchive_worker * workers = NULL;
+	size_t target_size = 0;
+
+	unsigned int i, i_worker = 1;
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
+
+		if (min_version > vol->max_version || (max_version > 0 && max_version < vol->min_version))
+			continue;
+
+		target_size += vol->size;
 
 		bool found = false;
 		struct soj_checkarchive_worker * ptr_worker = workers;
@@ -105,7 +118,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 		struct soj_checkarchive_worker * new_worker = malloc(sizeof(struct soj_checkarchive_worker));
 		bzero(new_worker, sizeof(struct soj_checkarchive_worker));
-		new_worker->i_worker = i;
+		new_worker->i_worker = i_worker++;
 		new_worker->archive = archive;
 		new_worker->media = vol->media;
 		new_worker->db_connect = db_connect->config->ops->connect(db_connect->config);
@@ -113,6 +126,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		new_worker->status = so_job_status_running;
 		new_worker->stop_request = false;
 		new_worker->nb_errors = new_worker->nb_warnings = 0;
+		new_worker->min_version = min_version;
+		new_worker->max_version = max_version;
 		new_worker->next = NULL;
 
 		if (ptr_worker != NULL)
@@ -121,7 +136,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 			workers = new_worker;
 	}
 
-	struct soj_checkarchive_worker * ptr_worker = workers;
+	struct soj_checkarchive_worker * ptr_worker;
 	for (ptr_worker = workers, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
 		char * name = NULL;
 		int size = asprintf(&name, "worker #%u", i);
@@ -163,7 +178,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		job->status = i == nb_paused_workers ? so_job_status_pause : so_job_status_running;
 
 		float done = nb_total_read;
-		done /= archive->size;
+		done /= target_size;
 		job->done = 0.01 + done * 0.98;
 	}
 
@@ -171,6 +186,10 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct so_archive_volume * volume = archive->volumes + i;
+
+		if (min_version > volume->max_version || (max_version > 0 && max_version < volume->min_version))
+			continue;
+
 		if (volume->check_time > 0)
 			db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
 	}
@@ -186,7 +205,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 			nb_warnings += ptr_worker->nb_warnings;
 
 		char * message = NULL;
-		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), i,
+		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), ptr_worker->i_worker,
 			dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", ptr_worker->nb_warnings),
 			dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors));
 
@@ -205,7 +224,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		dngettext("storiqone-job-check-archive", "%u error", "%u errors", nb_errors));
 
 	if (size > 0) {
-		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, ptr_worker->nb_warnings, ptr_worker->nb_errors);
+		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_warnings, nb_errors);
 		free(message);
 	}
 
@@ -225,6 +244,9 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		struct so_archive_volume * vol = worker->archive->volumes + i;
 
 		if (strcmp(vol->media->medium_serial_number, worker->media->medium_serial_number) != 0)
+			continue;
+
+		if (worker->min_version > vol->max_version || (worker->max_version > 0 && worker->max_version < vol->min_version))
 			continue;
 
 		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
