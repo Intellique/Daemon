@@ -2498,7 +2498,7 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 	const char * query = "insert_new_jobrecord_by_jobrun";
 	so_database_postgresql_prepare(self, query, "INSERT INTO jobrecord(jobrun, status, level, message, notif) VALUES ($1, $2, $3, $4, $5)");
 
-	const char * param[] = { jobrun_id, so_job_status_to_string(job->status, false), so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false) };
+	const char * param[] = { jobrun_id, so_database_postgresql_job_status_to_string(job->status), so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2523,7 +2523,7 @@ static int so_database_postgresql_add_job_record2(struct so_database_connection 
 	so_database_postgresql_prepare(self, query, "WITH jr AS (SELECT id FROM jobrun WHERE job = $1 AND numrun = $2 LIMIT 1) INSERT INTO jobrecord(jobrun, status, level, message, notif) SELECT id, $3, $4, $5, $6 FROM jr");
 
 	const char * param[] = {
-		job_id, str_num_run, so_job_status_to_string(job_status, false),
+		job_id, str_num_run, so_database_postgresql_job_status_to_string(job_status),
 		so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false)
 	};
 	PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
@@ -2733,7 +2733,7 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 	const char * query = "finish_job";
 	so_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, update = NOW() WHERE id = $2");
 
-	const char * param_job[] = { so_job_status_to_string(job->status, false), job_id };
+	const char * param_job[] = { so_database_postgresql_job_status_to_string(job->status), job_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param_job, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2753,7 +2753,7 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 		return -2;
 	}
 
-	const char * param_jobrun[] = { so_job_status_to_string(job->status, false), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
+	const char * param_jobrun[] = { so_database_postgresql_job_status_to_string(job->status), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
 	result = PQexecPrepared(self->connect, query, 5, param_jobrun, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
@@ -2799,7 +2799,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-		const enum so_job_status new_status = so_job_string_to_status(PQgetvalue(result, 0, 0), false);
+		const enum so_job_status new_status = so_database_postgresql_string_to_job_status(PQgetvalue(result, 0, 0));
 
 		if ((job->status == so_job_status_running || job->status == so_job_status_pause) && new_status == so_job_status_stopped) {
 			job->status = new_status;
@@ -2820,7 +2820,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 		return -2;
 	}
 
-	const char * param2[] = { so_job_status_to_string(job->status, false), repetition, job_id };
+	const char * param2[] = { so_database_postgresql_job_status_to_string(job->status), repetition, job_id };
 	result = PQexecPrepared(self->connect, query, 3, param2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
@@ -2840,7 +2840,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	char * done = so_database_postgresql_set_float(job->done);
 
-	const char * param3[] = { so_job_status_to_string(job->status, false), so_job_run_step_to_string(job->step, false), done, jobrun_id };
+	const char * param3[] = { so_database_postgresql_job_status_to_string(job->status), so_job_run_step_to_string(job->step, false), done, jobrun_id };
 	result = PQexecPrepared(self->connect, query, 4, param3, NULL, NULL, 0);
 	status = PQresultStatus(result);
 

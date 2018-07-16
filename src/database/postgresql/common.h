@@ -39,6 +39,7 @@ enum so_archive_status;
 enum so_changer_action;
 enum so_changer_status;
 enum so_drive_status;
+enum so_job_status;
 
 typedef struct pg_conn PGconn;
 typedef struct pg_result PGresult;
@@ -89,8 +90,10 @@ char * so_database_postgresql_set_float(double fl);
 const char * so_database_postgresql_archive_status_to_string(enum so_archive_status status);
 const char * so_database_postgresql_changer_action_to_string(enum so_changer_action action);
 const char * so_database_postgresql_changer_status_to_string(enum so_changer_status status);
+const char * so_database_postgresql_job_status_to_string(enum so_job_status status);
 enum so_changer_action so_database_postgresql_string_to_action(const char * action);
 enum so_archive_status so_database_postgresql_string_to_archive_status(const char * status);
+enum so_job_status so_database_postgresql_string_to_job_status(const char * status);
 enum so_changer_status so_database_postgresql_string_to_status(const char * status);
 const char * so_database_postgresql_drive_status_to_string(enum so_drive_status status);
 const char * so_database_postgresql_log_level_to_string(enum so_log_level level);
