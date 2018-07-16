@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-16 16:12+0200\n"
+        "POT-Creation-Date: 2018-07-16 17:13+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -51,56 +51,61 @@ msgstr  "Échec lors de la définition du nom du fil d’exécution"
 msgid   "Starting worker #%u"
 msgstr  "Démarrage du fil d’exécution #%u"
 
-#: src/job/check-archive/quick_mode.c:214
+#: src/job/check-archive/quick_mode.c:171
+#, c-format
+msgid   "Due to job options, all volumes of archive \"%s\" are skipped"
+msgstr  "En raison des options de tâches, tous les volumes de l’archive « %s » sont ignorés"
+
+#: src/job/check-archive/quick_mode.c:220
 #, c-format
 msgid   "Worker #%u has finished with %s and %s"
 msgstr  "Travailler n°%u a fini avec %s et %s"
 
-#: src/job/check-archive/quick_mode.c:215 src/job/check-archive/quick_mode.c:229
+#: src/job/check-archive/quick_mode.c:221 src/job/check-archive/quick_mode.c:235
 #, c-format
 msgid   "%u warning"
 msgid_plural    "%u warnings"
 msgstr[0]       "%u avertissement"
 msgstr[1]       "%u avertissements"
 
-#: src/job/check-archive/quick_mode.c:216 src/job/check-archive/quick_mode.c:230
+#: src/job/check-archive/quick_mode.c:222 src/job/check-archive/quick_mode.c:236
 #, c-format
 msgid   "%u error"
 msgid_plural    "%u errors"
 msgstr[0]       "%u erreur"
 msgstr[1]       "%u erreurs"
 
-#: src/job/check-archive/quick_mode.c:228
+#: src/job/check-archive/quick_mode.c:234
 #, c-format
 msgid   "Checking archive has finished with %s and %s"
 msgstr  "La vérification de l’archive est terminée avec %s et %s"
 
-#: src/job/check-archive/quick_mode.c:263 src/job/check-archive/thorough_mode.c:94
+#: src/job/check-archive/quick_mode.c:270 src/job/check-archive/thorough_mode.c:94
 #, c-format
 msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
 msgstr  "Pas d’empreinte pour le volume n°%u de l’archive « %s », ignore ce volume"
 
-#: src/job/check-archive/quick_mode.c:274
+#: src/job/check-archive/quick_mode.c:281
 #, c-format
 msgid   "Error while getting media '%s', skip to next volume"
 msgstr  "Erreur lors de l’obtention du média « %s », passe vers le volume suivant"
 
-#: src/job/check-archive/quick_mode.c:283
+#: src/job/check-archive/quick_mode.c:290
 #, c-format
 msgid   "Error while opening media '%s' at position %d, skip to next volume"
 msgstr  "Erreur en ouvrant le média « %s » à la position %d, pass vers le volume suivant"
 
-#: src/job/check-archive/quick_mode.c:300
+#: src/job/check-archive/quick_mode.c:307
 #, c-format
 msgid   "Worker #%u : error while reading from media '%s'"
 msgstr  "Travailler n°%u : erreur en lisant depuis le média « %s »"
 
-#: src/job/check-archive/quick_mode.c:321
+#: src/job/check-archive/quick_mode.c:328
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is correct"
 msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » est correcte"
 
-#: src/job/check-archive/quick_mode.c:325
+#: src/job/check-archive/quick_mode.c:332
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is not correct"
 msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » n’est pas correcte"

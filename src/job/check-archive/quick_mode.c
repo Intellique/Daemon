@@ -165,79 +165,86 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 			free(name);
 	}
 
-	bool running = true;
-	while (running) {
-		sleep(5);
+	unsigned int nb_errors = 0;
+	if (workers == NULL)
+		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "Due to job options, all volumes of archive \"%s\" are skipped"),
+			archive->name);
+	else {
+		bool running = true;
+		while (running) {
+			sleep(5);
 
-		ssize_t nb_total_read = 0;
-		unsigned int nb_paused_workers = 0;
+			ssize_t nb_total_read = 0;
+			unsigned int nb_paused_workers = 0;
 
-		for (ptr_worker = workers, running = false, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
-			if (ptr_worker->status == so_job_status_running)
-				running = true;
-			else if (ptr_worker->status == so_job_status_pause)
-				nb_paused_workers++;
+			for (ptr_worker = workers, running = false, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
+				if (ptr_worker->status == so_job_status_running)
+					running = true;
+				else if (ptr_worker->status == so_job_status_pause)
+					nb_paused_workers++;
 
-			nb_total_read += ptr_worker->nb_total_read;
+				nb_total_read += ptr_worker->nb_total_read;
+			}
+
+			job->status = i == nb_paused_workers ? so_job_status_pause : so_job_status_running;
+
+			float done = nb_total_read;
+			done /= target_size;
+			job->done = 0.01 + done * 0.98;
 		}
 
-		job->status = i == nb_paused_workers ? so_job_status_pause : so_job_status_running;
+		job->done = 0.99;
 
-		float done = nb_total_read;
-		done /= target_size;
-		job->done = 0.01 + done * 0.98;
-	}
+		for (i = 0; i < archive->nb_volumes; i++) {
+			struct so_archive_volume * volume = archive->volumes + i;
 
-	job->done = 0.99;
+			if (min_version > volume->max_version || (max_version > 0 && max_version < volume->min_version))
+				continue;
 
-	for (i = 0; i < archive->nb_volumes; i++) {
-		struct so_archive_volume * volume = archive->volumes + i;
+			if (volume->check_time > 0)
+				db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
+		}
 
-		if (min_version > volume->max_version || (max_version > 0 && max_version < volume->min_version))
-			continue;
+		unsigned int nb_warnings = 0;
+		ptr_worker = workers;
+		for (i = 0; ptr_worker != NULL; i++) {
+			struct soj_checkarchive_worker * next = ptr_worker->next;
 
-		if (volume->check_time > 0)
-			db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
-	}
+			if (ptr_worker->nb_errors > 0)
+				nb_errors += ptr_worker->nb_errors;
+			if (ptr_worker->nb_warnings > 0)
+				nb_warnings += ptr_worker->nb_warnings;
 
-	unsigned int nb_errors = 0, nb_warnings = 0;
-	ptr_worker = workers;
-	for (i = 0; ptr_worker != NULL; i++) {
-		struct soj_checkarchive_worker * next = ptr_worker->next;
+			char * message = NULL;
+			int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), ptr_worker->i_worker,
+			                    dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", ptr_worker->nb_warnings),
+			                    dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors));
 
-		if (ptr_worker->nb_errors > 0)
-			nb_errors += ptr_worker->nb_errors;
-		if (ptr_worker->nb_warnings > 0)
-			nb_warnings += ptr_worker->nb_warnings;
+			if (size > 0) {
+				soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, ptr_worker->nb_warnings, ptr_worker->nb_errors);
+				free(message);
+			}
+
+			free(ptr_worker);
+			ptr_worker = next;
+		}
 
 		char * message = NULL;
-		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), ptr_worker->i_worker,
-			dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", ptr_worker->nb_warnings),
-			dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors));
+		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Checking archive has finished with %s and %s"),
+			dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", nb_warnings),
+			dngettext("storiqone-job-check-archive", "%u error", "%u errors", nb_errors));
 
 		if (size > 0) {
-			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, ptr_worker->nb_warnings, ptr_worker->nb_errors);
+			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_warnings, nb_errors);
 			free(message);
 		}
 
-		free(ptr_worker);
-		ptr_worker = next;
-	}
-
-	char * message = NULL;
-	int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Checking archive has finished with %s and %s"),
-		dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", nb_warnings),
-		dngettext("storiqone-job-check-archive", "%u error", "%u errors", nb_errors));
-
-	if (size > 0) {
-		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_warnings, nb_errors);
-		free(message);
+		if (nb_errors > 0)
+			job->status = so_job_status_error;
 	}
 
 	job->done = 1;
-
-	if (nb_errors > 0)
-		job->status = so_job_status_error;
 
 	return nb_errors > 0;
 }
