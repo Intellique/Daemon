@@ -59,10 +59,10 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->copy_archive->pool);
 
-	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->job = job;
+	struct so_archive_volume * dest_vol = so_archive_add_volume(self->copy_archive);
+	dest_vol->job = job;
 
-	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
+	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, dest_vol, checksums);
 
 	unsigned int i;
 	int failed = 0;
@@ -72,22 +72,28 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
 		unsigned int j = 0;
 
-		struct so_archive_volume * vol = self->src_archive->volumes + i;
+		struct so_archive_volume * src_vol = self->src_archive->volumes + i;
 
 		if (i > 0) {
-			self->src_drive = soj_media_find_and_load(vol->media, false, 0, false, NULL, NULL, db_connect);
+			self->src_drive = soj_media_find_and_load(src_vol->media, false, 0, false, NULL, NULL, db_connect);
 			if (self->src_drive == NULL) {
 				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Failed to load media '%s'"),
-					vol->media->name);
+					src_vol->media->name);
 
 				job->status = so_job_status_error;
 
 				return 1;
 			}
+
+			if (dest_vol->max_version < src_vol->max_version)
+				dest_vol->max_version = src_vol->max_version;
+		} else {
+			dest_vol->min_version = src_vol->min_version;
+			dest_vol->max_version = src_vol->max_version;
 		}
 
-		struct so_format_reader * reader = self->src_drive->ops->open_archive_volume(self->src_drive, vol, NULL);
+		struct so_format_reader * reader = self->src_drive->ops->open_archive_volume(self->src_drive, src_vol, NULL);
 
 		while (rdr_status = reader->ops->get_header(reader, &file), rdr_status == so_format_reader_header_ok) {
 			ssize_t available_size = self->writer->ops->get_available_size(self->writer);
@@ -97,6 +103,10 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 					ok = false;
 					break;
 				}
+
+				dest_vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
+				dest_vol->min_version = src_vol->min_version;
+				dest_vol->max_version = src_vol->max_version;
 			}
 
 			if (file.position == 0) {
@@ -106,7 +116,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 					dgettext("storiqone-job-copy-archive", "Add file '%s' to archive"),
 					file.filename);
 
-				struct so_archive_files * ptr_file = vol->files + j++;
+				struct so_archive_files * ptr_file = src_vol->files + j++;
 				enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file, ptr_file->file->selected_path);
 				if (wrtr_status != so_format_writer_ok) {
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -125,6 +135,10 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 						ok = false;
 						break;
 					}
+
+					dest_vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
+					dest_vol->min_version = src_vol->min_version;
+					dest_vol->max_version = src_vol->max_version;
 
 					block_size = self->writer->ops->get_block_size(self->writer);
 					soj_copyarchive_util_add_file(self, &file, block_size);
@@ -170,6 +184,10 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 							break;
 						}
 
+						dest_vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
+						dest_vol->min_version = src_vol->min_version;
+						dest_vol->max_version = src_vol->max_version;
+
 						block_size = self->writer->ops->get_block_size(self->writer);
 						soj_copyarchive_util_add_file(self, &file, block_size);
 
@@ -199,7 +217,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 				if (nb_read < 0) {
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-copy-archive", "Error while reading from media '%s'"),
-						vol->media->name);
+						src_vol->media->name);
 
 					ok = false;
 					break;

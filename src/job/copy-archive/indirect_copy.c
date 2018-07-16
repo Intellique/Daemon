@@ -85,10 +85,15 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	last_update = time(NULL);
 	ssize_t nb_total_read = 0;
 
+	int min_version = self->src_archive->volumes[0].min_version;
+	int max_version = self->src_archive->volumes[0].max_version;
+
 	unsigned int i;
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
 		unsigned int j = 0;
 		struct so_archive_volume * vol = self->src_archive->volumes + i;
+
+		max_version = vol->max_version;
 
 		if (i > 0) {
 			self->src_drive = soj_media_find_and_load(vol->media, false, 0, false, NULL, NULL, db_connect);
@@ -197,6 +202,8 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	}
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
+	vol->min_version = min_version;
+	vol->max_version = max_version;
 
 	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
 
@@ -223,6 +230,10 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			}
 
 			block_size = self->writer->ops->get_block_size(self->writer);
+
+			struct so_archive_volume * dest_vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
+			dest_vol->min_version = min_version;
+			dest_vol->max_version = max_version;
 		}
 
 		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
@@ -248,6 +259,10 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 					ok = false;
 					break;
 				}
+
+				struct so_archive_volume * dest_vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
+				dest_vol->min_version = min_version;
+				dest_vol->max_version = max_version;
 
 				block_size = self->writer->ops->get_block_size(self->writer);
 				soj_copyarchive_util_add_file(self, &file, block_size);
@@ -295,6 +310,10 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 					block_size = self->writer->ops->get_block_size(self->writer);
 					soj_copyarchive_util_add_file(self, &file, block_size);
+
+					struct so_archive_volume * dest_vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
+					dest_vol->min_version = min_version;
+					dest_vol->max_version = max_version;
 
 					enum so_format_writer_status wrtr_status = self->writer->ops->restart_file(self->writer, &file);
 					if (wrtr_status != so_format_writer_ok) {

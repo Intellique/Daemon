@@ -335,6 +335,9 @@ struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
 
 	copy->size = file->size;
 
+	copy->min_version = file->min_version;
+	copy->max_version = file->max_version;
+
 	copy->mime_type = strdup(file->mime_type);
 	if (file->selected_path != NULL)
 		copy->selected_path = strdup(file->selected_path);
