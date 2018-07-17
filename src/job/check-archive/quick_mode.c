@@ -71,6 +71,9 @@ struct soj_checkarchive_worker {
 	unsigned int nb_errors;
 	unsigned int nb_warnings;
 
+	int min_version;
+	int max_version;
+
 	struct soj_checkarchive_worker * next;
 };
 
@@ -83,11 +86,27 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		archive->name);
 	job->done = 0.01;
 
-	struct soj_checkarchive_worker * workers = NULL;
+	int min_version = 0, max_version = 0;
+	so_value_unpack(job->option, "{si}", "min_version", &min_version);
+	so_value_unpack(job->option, "{si}", "max_version", &max_version);
 
-	unsigned int i;
+	bool new_files_only = false;
+	so_value_unpack(job->option, "{sb}", "new_files_only", &new_files_only);
+
+	struct soj_checkarchive_worker * workers = NULL;
+	size_t target_size = 0;
+
+	unsigned int i, i_worker = 1;
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
+
+		if (min_version > vol->max_version || (max_version > 0 && max_version < vol->min_version))
+			continue;
+
+		if (new_files_only && vol->check_time)
+			continue;
+
+		target_size += vol->size;
 
 		bool found = false;
 		struct soj_checkarchive_worker * ptr_worker = workers;
@@ -105,7 +124,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 		struct soj_checkarchive_worker * new_worker = malloc(sizeof(struct soj_checkarchive_worker));
 		bzero(new_worker, sizeof(struct soj_checkarchive_worker));
-		new_worker->i_worker = i;
+		new_worker->i_worker = i_worker++;
 		new_worker->archive = archive;
 		new_worker->media = vol->media;
 		new_worker->db_connect = db_connect->config->ops->connect(db_connect->config);
@@ -113,6 +132,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		new_worker->status = so_job_status_running;
 		new_worker->stop_request = false;
 		new_worker->nb_errors = new_worker->nb_warnings = 0;
+		new_worker->min_version = min_version;
+		new_worker->max_version = max_version;
 		new_worker->next = NULL;
 
 		if (ptr_worker != NULL)
@@ -121,7 +142,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 			workers = new_worker;
 	}
 
-	struct soj_checkarchive_worker * ptr_worker = workers;
+	struct soj_checkarchive_worker * ptr_worker;
 	for (ptr_worker = workers, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
 		char * name = NULL;
 		int size = asprintf(&name, "worker #%u", i);
@@ -144,75 +165,86 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 			free(name);
 	}
 
-	bool running = true;
-	while (running) {
-		sleep(5);
+	unsigned int nb_errors = 0;
+	if (workers == NULL)
+		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "Due to job options, all volumes of archive \"%s\" are skipped"),
+			archive->name);
+	else {
+		bool running = true;
+		while (running) {
+			sleep(5);
 
-		ssize_t nb_total_read = 0;
-		unsigned int nb_paused_workers = 0;
+			ssize_t nb_total_read = 0;
+			unsigned int nb_paused_workers = 0;
 
-		for (ptr_worker = workers, running = false, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
-			if (ptr_worker->status == so_job_status_running)
-				running = true;
-			else if (ptr_worker->status == so_job_status_pause)
-				nb_paused_workers++;
+			for (ptr_worker = workers, running = false, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
+				if (ptr_worker->status == so_job_status_running)
+					running = true;
+				else if (ptr_worker->status == so_job_status_pause)
+					nb_paused_workers++;
 
-			nb_total_read += ptr_worker->nb_total_read;
+				nb_total_read += ptr_worker->nb_total_read;
+			}
+
+			job->status = i == nb_paused_workers ? so_job_status_pause : so_job_status_running;
+
+			float done = nb_total_read;
+			done /= target_size;
+			job->done = 0.01 + done * 0.98;
 		}
 
-		job->status = i == nb_paused_workers ? so_job_status_pause : so_job_status_running;
+		job->done = 0.99;
 
-		float done = nb_total_read;
-		done /= archive->size;
-		job->done = 0.01 + done * 0.98;
-	}
+		for (i = 0; i < archive->nb_volumes; i++) {
+			struct so_archive_volume * volume = archive->volumes + i;
 
-	job->done = 0.99;
+			if (min_version > volume->max_version || (max_version > 0 && max_version < volume->min_version))
+				continue;
 
-	for (i = 0; i < archive->nb_volumes; i++) {
-		struct so_archive_volume * volume = archive->volumes + i;
-		if (volume->check_time > 0)
-			db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
-	}
+			if (volume->check_time > 0)
+				db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
+		}
 
-	unsigned int nb_errors = 0, nb_warnings = 0;
-	ptr_worker = workers;
-	for (i = 0; ptr_worker != NULL; i++) {
-		struct soj_checkarchive_worker * next = ptr_worker->next;
+		unsigned int nb_warnings = 0;
+		ptr_worker = workers;
+		for (i = 0; ptr_worker != NULL; i++) {
+			struct soj_checkarchive_worker * next = ptr_worker->next;
 
-		if (ptr_worker->nb_errors > 0)
-			nb_errors += ptr_worker->nb_errors;
-		if (ptr_worker->nb_warnings > 0)
-			nb_warnings += ptr_worker->nb_warnings;
+			if (ptr_worker->nb_errors > 0)
+				nb_errors += ptr_worker->nb_errors;
+			if (ptr_worker->nb_warnings > 0)
+				nb_warnings += ptr_worker->nb_warnings;
+
+			char * message = NULL;
+			int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), ptr_worker->i_worker,
+			                    dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", ptr_worker->nb_warnings),
+			                    dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors));
+
+			if (size > 0) {
+				soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, ptr_worker->nb_warnings, ptr_worker->nb_errors);
+				free(message);
+			}
+
+			free(ptr_worker);
+			ptr_worker = next;
+		}
 
 		char * message = NULL;
-		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Worker #%u has finished with %s and %s"), i,
-			dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", ptr_worker->nb_warnings),
-			dngettext("storiqone-job-check-archive", "%u error", "%u errors", ptr_worker->nb_errors));
+		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Checking archive has finished with %s and %s"),
+			dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", nb_warnings),
+			dngettext("storiqone-job-check-archive", "%u error", "%u errors", nb_errors));
 
 		if (size > 0) {
-			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, ptr_worker->nb_warnings, ptr_worker->nb_errors);
+			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_warnings, nb_errors);
 			free(message);
 		}
 
-		free(ptr_worker);
-		ptr_worker = next;
-	}
-
-	char * message = NULL;
-	int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "Checking archive has finished with %s and %s"),
-		dngettext("storiqone-job-check-archive", "%u warning", "%u warnings", nb_warnings),
-		dngettext("storiqone-job-check-archive", "%u error", "%u errors", nb_errors));
-
-	if (size > 0) {
-		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, ptr_worker->nb_warnings, ptr_worker->nb_errors);
-		free(message);
+		if (nb_errors > 0)
+			job->status = so_job_status_error;
 	}
 
 	job->done = 1;
-
-	if (nb_errors > 0)
-		job->status = so_job_status_error;
 
 	return nb_errors > 0;
 }
@@ -225,6 +257,9 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		struct so_archive_volume * vol = worker->archive->volumes + i;
 
 		if (strcmp(vol->media->medium_serial_number, worker->media->medium_serial_number) != 0)
+			continue;
+
+		if (worker->min_version > vol->max_version || (worker->max_version > 0 && worker->max_version < vol->min_version))
 			continue;
 
 		struct so_value * checksums = so_value_hashtable_keys(vol->digests);

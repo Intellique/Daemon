@@ -348,8 +348,14 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 		if (archive != NULL) {
 			char * hash = NULL;
 			int length = asprintf(&hash, "%s_%ld_%zd", node->path, node->st.st_mtim.tv_sec, node->st.st_size);
-			if (length > 0 && !so_value_hashtable_has_key2(hash_files, hash))
-				node->nb_file_to_backup++;
+			if (length > 0) {
+				if (so_value_hashtable_has_key2(hash_files, hash)) {
+					struct so_value * vfile = so_value_hashtable_get2(hash_files, hash, false, false);
+					struct so_archive_file * file = so_value_custom_get(vfile);
+					file->max_version = archive->current_version + 1;
+				} else
+					node->nb_file_to_backup++;
+			}
 			free(hash);
 		} else
 			node->nb_file_to_backup++;
@@ -378,11 +384,17 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 		}
 		free(files);
 
-		if (node->first_child == NULL && archive != NULL) {
+		if (archive != NULL) {
 			char * hash = NULL;
 			int length = asprintf(&hash, "%s_%ld", node->path, node->st.st_mtim.tv_sec);
-			if (length > 0 && !so_value_hashtable_has_key2(hash_files, hash))
-				node->nb_file_to_backup++;
+			if (length > 0) {
+				if (so_value_hashtable_has_key2(hash_files, hash)) {
+					struct so_value * vfile = so_value_hashtable_get2(hash_files, hash, false, false);
+					struct so_archive_file * file = so_value_custom_get(vfile);
+					file->max_version = archive->current_version + 1;
+				} else
+					node->nb_file_to_backup++;
+			}
 			free(hash);
 		} else
 			node->nb_file_to_backup++;

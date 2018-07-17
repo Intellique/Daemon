@@ -553,6 +553,8 @@ CREATE TABLE ArchiveVolume (
     jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL,
     purged BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
+    versions INT4RANGE NOT NULL,
+
     CONSTRAINT archiveVolume_time CHECK (starttime <= endtime)
 );
 
@@ -581,6 +583,8 @@ CREATE TABLE ArchiveFileToArchiveVolume (
 
     checktime TIMESTAMP(3) WITH TIME ZONE,
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
+
+    versions INT4RANGE NOT NULL,
 
     alternatePath TEXT,
 

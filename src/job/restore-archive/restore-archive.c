@@ -53,6 +53,7 @@ static struct so_archive * archive = NULL;
 static bool has_selected_path = false;
 static char * restore_path = NULL;
 static struct so_value * selected_path = NULL;
+static int restore_min_version = -1, restore_max_version = -1;
 
 static void soj_restorearchive_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_restorearchive_init(void) __attribute__((constructor));
@@ -100,6 +101,10 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 			struct so_archive_files * ptr_file = vol->files + j;
 			struct so_archive_file * file = ptr_file->file;
 
+			file->skip_restore = restore_min_version > file->max_version || restore_max_version < file->min_version;
+			if (file->skip_restore)
+				continue;
+
 			file->skip_restore = !soj_restorearchive_path_filter(file->path);
 			if (file->skip_restore)
 				continue;
@@ -127,7 +132,7 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 		bool found = false;
 
 		unsigned int j;
-		for (j = 0; j < vol->nb_files; j++) {
+		for (j = 0; !found && j < vol->nb_files; j++) {
 			struct so_archive_files * ptr_file = vol->files + j;
 			struct so_archive_file * file = ptr_file->file;
 
@@ -295,6 +300,80 @@ static int soj_restorearchive_warm_up(struct so_job * job, struct so_database_co
 		selected_path = so_value_new_linked_list();
 
 	has_selected_path = so_value_list_get_length(selected_path) > 0;
+
+	if (so_value_hashtable_has_key2(job->option, "restore_version") && (so_value_hashtable_has_key2(job->option, "restore_min_version") || so_value_hashtable_has_key2(job->option, "restore_max_version"))) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-restore-archive", "You cannot have \"restore_version\" option with \"restore_min_version\" or \"restore_max_version\""));
+		return 1;
+	}
+
+	if (so_value_unpack(job->option, "{si}", "restore_min_version", &restore_min_version) == 1 && restore_min_version < 1) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-restore-archive", "job option \"restore_min_version\" should be greater or equal to 1"));
+		return 1;
+	}
+
+	if (so_value_unpack(job->option, "{si}", "restore_max_version", &restore_max_version) == 1 && restore_max_version < 1) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-restore-archive", "job option \"restore_max_version\" should be greater or equal to 1"));
+		return 1;
+	}
+
+	if (restore_max_version > 0 && restore_max_version < restore_min_version) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-restore-archive", "job option \"restore_max_version\" should be greater or equal to \"restore_min_version\""));
+		return 1;
+	}
+
+	if (so_value_unpack(job->option, "{si}", "restore_version", &restore_min_version) == 1) {
+		restore_max_version = restore_min_version;
+
+		if (restore_min_version == -1 || restore_min_version == 0) {
+			unsigned int i;
+			for (i = 0; i < archive->nb_volumes; i++) {
+				struct so_archive_volume * vol = archive->volumes + i;
+				restore_min_version = vol->max_version;
+			}
+
+			soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-job-restore-archive", "Restore version set to %d"), restore_min_version);
+		} else if (restore_min_version > 0) {
+			int max_version = 0;
+			unsigned int i;
+			for (i = 0; i < archive->nb_volumes; i++) {
+				struct so_archive_volume * vol = archive->volumes + i;
+				max_version = vol->max_version;
+			}
+
+			if (restore_min_version > max_version) {
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					dgettext("storiqone-job-restore-archive", "Wrong restore version \"%d\", should be between 1 and %d"), restore_min_version, max_version);
+				return 2;
+			}
+		} else {
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-restore-archive", "Wrong restore version \"%d\", should be greater or equal than -1"), restore_min_version);
+			return 2;
+		}
+	}
+
+	if (restore_min_version == -1)
+		restore_min_version = 1;
+
+	if (restore_max_version == -1) {
+		unsigned int i;
+		for (i = 0; i < archive->nb_volumes; i++) {
+			struct so_archive_volume * vol = archive->volumes + i;
+			restore_max_version = vol->max_version;
+		}
+	}
+
+	if (restore_min_version != restore_max_version)
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-restore-archive", "Will restore from version \"%d\" to \"%d\""), restore_min_version, restore_max_version);
+	else
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-restore-archive", "Will restore version \"%d\""), restore_min_version);
 
 	soj_restorearchive_path_init(restore_path, selected_path);
 

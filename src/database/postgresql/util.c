@@ -46,6 +46,7 @@
 #include <libstoriqone/archive.h>
 #include <libstoriqone/changer.h>
 #include <libstoriqone/drive.h>
+#include <libstoriqone/job.h>
 #include <libstoriqone/string.h>
 
 #include "common.h"
@@ -119,6 +120,24 @@ static struct so_database_postgresql_drive_status2 {
 	[so_drive_status_unknown] = { 0, "unknown", so_drive_status_unknown },
 };
 static const unsigned int so_database_postgresql_drive_nb_status = sizeof(so_database_postgresql_drive_status) / sizeof(*so_database_postgresql_drive_status);
+
+static struct so_database_postgresql_job_status2 {
+	unsigned long long hash;
+	const char * name;
+	enum so_job_status status;
+} so_database_postgresql_job_statuses[] = {
+	[so_job_status_disable]   = { 0, "disable",   so_job_status_disable },
+	[so_job_status_error]     = { 0, "error",     so_job_status_error },
+	[so_job_status_finished]  = { 0, "finished",  so_job_status_finished },
+	[so_job_status_pause]     = { 0, "pause",     so_job_status_pause },
+	[so_job_status_running]   = { 0, "running",   so_job_status_running },
+	[so_job_status_scheduled] = { 0, "scheduled", so_job_status_scheduled },
+	[so_job_status_stopped]   = { 0, "stopped",   so_job_status_stopped },
+	[so_job_status_waiting]   = { 0, "waiting",   so_job_status_waiting },
+
+	[so_job_status_unknown]   = { 0, "unknown",   so_job_status_unknown },
+};
+static const unsigned int so_database_postgresql_job_status_nb_statues = sizeof(so_database_postgresql_job_statuses) / sizeof(*so_database_postgresql_job_statuses);
 
 static struct so_database_postgresql_log_level2 {
 	unsigned long long hash;
@@ -424,6 +443,10 @@ const char * so_database_postgresql_changer_status_to_string(enum so_changer_sta
 	return so_database_postgresql_changer_status[status].name;
 }
 
+const char * so_database_postgresql_job_status_to_string(enum so_job_status status) {
+	return so_database_postgresql_job_statuses[status].name;
+}
+
 enum so_changer_action so_database_postgresql_string_to_action(const char * action) {
 	if (action == NULL)
 		return so_changer_action_unknown;
@@ -450,6 +473,20 @@ enum so_archive_status so_database_postgresql_string_to_archive_status(const cha
 			return so_database_postgresql_archive_status[i].status;
 
 	return so_archive_status_error;
+}
+
+enum so_job_status so_database_postgresql_string_to_job_status(const char * status) {
+	if (status == NULL)
+		return so_job_status_unknown;
+
+	unsigned int i;
+	const unsigned long long hash = so_string_compute_hash2(status);
+
+	for (i = 0; i < so_database_postgresql_job_status_nb_statues; i++)
+		if (hash == so_database_postgresql_job_statuses[i].hash)
+			return so_database_postgresql_job_statuses[i].status;
+
+	return so_job_status_unknown;
 }
 
 enum so_changer_status so_database_postgresql_string_to_status(const char * status) {

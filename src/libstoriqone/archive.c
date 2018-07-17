@@ -101,6 +101,7 @@ struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
 	vol->sequence = archive->nb_volumes;
 	vol->start_time = time(NULL);
 	vol->archive = archive;
+	vol->min_version = vol->max_version = archive->current_version;
 
 	archive->nb_volumes++;
 
@@ -334,6 +335,9 @@ struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
 
 	copy->size = file->size;
 
+	copy->min_version = file->min_version;
+	copy->max_version = file->max_version;
+
 	copy->mime_type = strdup(file->mime_type);
 	if (file->selected_path != NULL)
 		copy->selected_path = strdup(file->selected_path);
@@ -376,7 +380,7 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 	else
 		checksums = so_value_share(file->digests);
 
-	return so_value_pack("{szsIs{sssssssssusssusssusssIsIsbsIsoszsOssss}}",
+	return so_value_pack("{szsIs{sssssssssusssusssusssIsIsbsIsoszsisisOssss}}",
 		"position", ptr_file->position,
 		"archived time", (long long) ptr_file->archived_time,
 		"file",
@@ -400,6 +404,9 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 			"checksums", checksums,
 
 			"size", file->size,
+
+			"min version", file->min_version,
+			"max version", file->max_version,
 
 			"metadata", file->metadata,
 			"mime type", file->mime_type,
@@ -432,6 +439,7 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 	long int create_time = 0;
 	long int modify_time = 0;
 	long int check_time = 0;
+	int min_version = 0, max_version = 0;
 
 	if (files->file == NULL) {
 		files->file = malloc(sizeof(struct so_archive_file));
@@ -448,7 +456,7 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 	struct so_archive_file * file = files->file;
 
-	so_value_unpack(new_file, "{szsis{sssssssssusSsusssusssisisbsisOszsOssss}}",
+	so_value_unpack(new_file, "{szsis{sssssssssusSsusssusssisisbsisOszsisisOssss}}",
 		"position", &files->position,
 		"archived time", &archived_time,
 		"file",
@@ -473,6 +481,9 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 			"size", &file->size,
 
+			"min version", &min_version,
+			"max version", &max_version,
+
 			"metadata", &file->metadata,
 			"mime type", &file->mime_type,
 			"selected path", &file->selected_path
@@ -487,6 +498,8 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 	file->create_time = create_time;
 	file->modify_time = modify_time;
 	file->check_time = check_time;
+	file->min_version = min_version;
+	file->max_version = max_version;
 }
 
 void so_archive_file_update_hash(struct so_archive_file * file) {
@@ -601,7 +614,7 @@ struct so_value * so_archive_volume_convert(struct so_archive_volume * vol) {
 	else
 		checksums = so_value_share(vol->digests);
 
-	return so_value_pack("{suszsIsIsbsIsososuso}",
+	return so_value_pack("{suszsIsIsbsIsososusisiso}",
 		"sequence", vol->sequence,
 		"size", vol->size,
 
@@ -614,6 +627,9 @@ struct so_value * so_archive_volume_convert(struct so_archive_volume * vol) {
 
 		"media", so_media_convert(vol->media),
 		"media position", vol->media_position,
+
+		"min version", vol->min_version,
+		"max version", vol->max_version,
 
 		"files", files
 	);
@@ -642,8 +658,9 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 	long int end_time = 0;
 	long int check_time = 0;
 	long int media_position = 0;
+	int min_version = 0, max_version = 0;
 
-	so_value_unpack(new_volume, "{suszsisisbsisOsosuso}",
+	so_value_unpack(new_volume, "{suszsisisbsisOsosusisiso}",
 		"sequence", &sequence,
 		"size", &volume->size,
 
@@ -657,6 +674,9 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 		"media", &media,
 		"media position", &media_position,
 
+		"min version", &min_version,
+		"max version", &max_version,
+
 		"files", &files
 	);
 
@@ -664,6 +684,8 @@ void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value *
 	volume->start_time = start_time;
 	volume->end_time = end_time;
 	volume->check_time = check_time;
+	volume->min_version = min_version;
+	volume->max_version = max_version;
 
 	if (volume->media != NULL && media->type == so_value_null) {
 		so_media_free(volume->media);

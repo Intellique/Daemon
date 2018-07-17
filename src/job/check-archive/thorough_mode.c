@@ -59,6 +59,13 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 	job->done = 0.01;
 
+	int min_version = 0, max_version = 0;
+	so_value_unpack(job->option, "{si}", "min_version", &min_version);
+	so_value_unpack(job->option, "{si}", "max_version", &max_version);
+
+	bool new_files_only = false;
+	so_value_unpack(job->option, "{sb}", "new_files_only", &new_files_only);
+
 	unsigned i;
 	unsigned long nb_chck_files = 0, nb_total_chck_files = 0;
 	bool ok = true;
@@ -66,6 +73,9 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 	struct so_stream_writer * chcksum_writer = NULL;
 	for (i = 0; ok && i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
+
+		if (min_version > vol->max_version || (max_version > 0 && max_version < vol->min_version))
+			continue;
 
 		struct so_value * checksums = so_value_hashtable_keys(vol->digests);
 		if (so_value_list_get_length(checksums) == 0) {
@@ -88,6 +98,23 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 				continue;
 			}
+		}
+
+		if (new_files_only && vol->check_time > 0) {
+			bool skip_volume = true;
+
+			struct so_archive_file * file = NULL;
+			unsigned int f;
+			for (f = 0; f < vol->nb_files; f++) {
+				file = vol->files[f].file;
+				if (file->type == so_archive_file_type_regular_file && file->check_time == 0) {
+					skip_volume = false;
+					break;
+				}
+			}
+
+			if (skip_volume)
+				continue;
 		}
 
 		struct so_drive * drive = soj_media_find_and_load(vol->media, false, 0, false, NULL, NULL, db_connect);
@@ -267,14 +294,20 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		so_value_free(checksums);
 	}
 
-	char * message = NULL;
-	int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "After checking, there are %s out of %s"),
-		dngettext("storiqone-job-check-archive", "%lu correct file", "%lu correct files", nb_chck_files),
-		dngettext("storiqone-job-check-archive", "%lu file", "%lu files", nb_total_chck_files));
+	if (total_read == 0)
+		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+			dgettext("storiqone-job-check-archive", "Due to job options, all volumes of archive \"%s\" are skipped"),
+			archive->name);
+	else {
+		char * message = NULL;
+		int size = asprintf(&message,  dgettext("storiqone-job-check-archive", "After checking, there are %s out of %s"),
+			dngettext("storiqone-job-check-archive", "%lu correct file", "%lu correct files", nb_chck_files),
+			dngettext("storiqone-job-check-archive", "%lu file", "%lu files", nb_total_chck_files));
 
-	if (size > 0) {
-		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_chck_files, nb_total_chck_files);
-		free(message);
+		if (size > 0) {
+			soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, message, nb_chck_files, nb_total_chck_files);
+			free(message);
+		}
 	}
 
 	job->done = 1;

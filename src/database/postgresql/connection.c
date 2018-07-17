@@ -2498,7 +2498,7 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 	const char * query = "insert_new_jobrecord_by_jobrun";
 	so_database_postgresql_prepare(self, query, "INSERT INTO jobrecord(jobrun, status, level, message, notif) VALUES ($1, $2, $3, $4, $5)");
 
-	const char * param[] = { jobrun_id, so_job_status_to_string(job->status, false), so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false) };
+	const char * param[] = { jobrun_id, so_database_postgresql_job_status_to_string(job->status), so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2523,7 +2523,7 @@ static int so_database_postgresql_add_job_record2(struct so_database_connection 
 	so_database_postgresql_prepare(self, query, "WITH jr AS (SELECT id FROM jobrun WHERE job = $1 AND numrun = $2 LIMIT 1) INSERT INTO jobrecord(jobrun, status, level, message, notif) SELECT id, $3, $4, $5, $6 FROM jr");
 
 	const char * param[] = {
-		job_id, str_num_run, so_job_status_to_string(job_status, false),
+		job_id, str_num_run, so_database_postgresql_job_status_to_string(job_status),
 		so_database_postgresql_log_level_to_string(level), message, so_job_report_notif_to_string(notif, false)
 	};
 	PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
@@ -2733,7 +2733,7 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 	const char * query = "finish_job";
 	so_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, update = NOW() WHERE id = $2");
 
-	const char * param_job[] = { so_job_status_to_string(job->status, false), job_id };
+	const char * param_job[] = { so_database_postgresql_job_status_to_string(job->status), job_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param_job, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2753,7 +2753,7 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 		return -2;
 	}
 
-	const char * param_jobrun[] = { so_job_status_to_string(job->status, false), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
+	const char * param_jobrun[] = { so_database_postgresql_job_status_to_string(job->status), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
 	result = PQexecPrepared(self->connect, query, 5, param_jobrun, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
@@ -2799,7 +2799,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-		const enum so_job_status new_status = so_job_string_to_status(PQgetvalue(result, 0, 0), false);
+		const enum so_job_status new_status = so_database_postgresql_string_to_job_status(PQgetvalue(result, 0, 0));
 
 		if ((job->status == so_job_status_running || job->status == so_job_status_pause) && new_status == so_job_status_stopped) {
 			job->status = new_status;
@@ -2820,7 +2820,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 		return -2;
 	}
 
-	const char * param2[] = { so_job_status_to_string(job->status, false), repetition, job_id };
+	const char * param2[] = { so_database_postgresql_job_status_to_string(job->status), repetition, job_id };
 	result = PQexecPrepared(self->connect, query, 3, param2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
@@ -2840,7 +2840,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	char * done = so_database_postgresql_set_float(job->done);
 
-	const char * param3[] = { so_job_status_to_string(job->status, false), so_job_run_step_to_string(job->step, false), done, jobrun_id };
+	const char * param3[] = { so_database_postgresql_job_status_to_string(job->status), so_job_run_step_to_string(job->step, false), done, jobrun_id };
 	result = PQexecPrepared(self->connect, query, 4, param3, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
@@ -3371,7 +3371,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 		return NULL;
 
 	query = "select_archivevolume_by_archive";
-	so_database_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.size, av.starttime, av.endtime, av.checksumok, av.checktime, m.mediumserialnumber, av.mediaposition FROM archivevolume av INNER JOIN media m ON av.media = m.id WHERE archive = $1 ORDER BY sequence");
+	so_database_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.size, av.starttime, av.endtime, av.checksumok, av.checktime, m.mediumserialnumber, av.mediaposition, LOWER(av.versions), UPPER(av.versions) - 1 FROM archivevolume av INNER JOIN media m ON av.media = m.id WHERE archive = $1 ORDER BY sequence");
 
 	const char * param2[] = { archive_id };
 	result = PQexecPrepared(self->connect, query, 1, param2, NULL, NULL, 0);
@@ -3397,6 +3397,9 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 			so_database_postgresql_get_time(result, i, 4, &vol->end_time);
 			so_database_postgresql_get_bool(result, i, 5, &vol->check_ok);
 			so_database_postgresql_get_time(result, i, 6, &vol->check_time);
+			so_database_postgresql_get_int(result, i, 9, &vol->min_version);
+			so_database_postgresql_get_int(result, i, 10, &vol->max_version);
+			archive->current_version = vol->max_version;
 
 			char * media_id = PQgetvalue(result, i, 7);
 			vol->media = so_database_postgresql_get_media(connect, media_id, NULL, NULL);
@@ -3432,7 +3435,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 			PQclear(result3);
 
 			const char * query4 = "select_files_from_archivevolume";
-			so_database_postgresql_prepare(self, query4, "SELECT af.id, afv.blocknumber, afv.archivetime, afv.checktime, afv.checksumok, af.name, af.type, af.mimetype, af.ownerid, af.owner, af.groupid, af.groups, af.perm, af.ctime, af.mtime, af.size, sf.path FROM archivefiletoarchivevolume afv INNER JOIN archivefile af ON afv.archivevolume = $1 AND afv.archivefile = af.id INNER JOIN selectedfile sf ON af.parent = sf.id ORDER BY afv.index");
+			so_database_postgresql_prepare(self, query4, "SELECT af.id, afv.blocknumber, afv.archivetime, afv.checktime, afv.checksumok, af.name, af.type, af.mimetype, af.ownerid, af.owner, af.groupid, af.groups, af.perm, af.ctime, af.mtime, af.size, sf.path, LOWER(afv.versions), UPPER(afv.versions) - 1 FROM archivefiletoarchivevolume afv INNER JOIN archivefile af ON afv.archivevolume = $1 AND afv.archivefile = af.id INNER JOIN selectedfile sf ON af.parent = sf.id ORDER BY afv.index");
 
 			result3 = PQexecPrepared(self->connect, query4, 1, param3, NULL, NULL, 0);
 			status3 = PQresultStatus(result3);
@@ -3477,6 +3480,9 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 
 					so_database_postgresql_get_time(result3, j, 3, &file->check_time);
 					so_database_postgresql_get_bool(result3, j, 4, &file->check_ok);
+
+					so_database_postgresql_get_int(result3, j, 17, &file->min_version);
+					so_database_postgresql_get_int(result3, j, 18, &file->max_version);
 
 					so_database_postgresql_get_ssize(result3, j, 15, &file->size);
 					so_database_postgresql_get_string_dup(result3, j, 16, &file->selected_path);
@@ -4193,6 +4199,8 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 }
 
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = NULL;
 
@@ -4200,129 +4208,128 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 		db = so_value_hashtable_get(file->db_data, key, false, false);
 		so_value_unpack(db, "{ss}", "id", file_id);
 		so_value_free(key);
+
 		return 0;
 	} else {
 		file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 
 		db = so_value_new_hashtable2();
 		so_value_hashtable_put(file->db_data, key, true, db, true);
-	}
 
-	struct so_database_postgresql_connection_private * self = connect->data;
+		const char * query = "insert_archive_file";
+		so_database_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, parent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
 
-	const char * query = "insert_archive_file";
-	so_database_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, parent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
+		char * perm = NULL, * ownerid = NULL, * groupid = NULL, create_time[32] = "", modify_time[32] = "", * size = NULL;
+		char * selected_path_id = so_database_postgresql_find_selected_path(connect, file->selected_path);
 
-	char * perm = NULL, * ownerid = NULL, * groupid = NULL, create_time[32] = "", modify_time[32] = "", * size = NULL;
-	char * selected_path_id = so_database_postgresql_find_selected_path(connect, file->selected_path);
-
-	int str_size = asprintf(&ownerid, "%d", file->ownerid);
-	if (str_size < 0) {
-		free(selected_path_id);
-		return -2;
-	}
-
-	str_size = asprintf(&groupid, "%d", file->groupid);
-	if (str_size < 0) {
-		free(ownerid);
-		free(selected_path_id);
-		return -2;
-	}
-
-	str_size = asprintf(&perm, "%d", file->perm);
-	if (str_size < 0) {
-		free(groupid);
-		free(ownerid);
-		free(selected_path_id);
-		return -2;
-	}
-
-	str_size = asprintf(&size, "%zd", file->size);
-	if (str_size < 0) {
-		free(perm);
-		free(groupid);
-		free(ownerid);
-		free(selected_path_id);
-		return -2;
-	}
-
-	so_time_convert(&file->create_time, "%F %T%z", create_time, 32);
-	so_time_convert(&file->modify_time, "%F %T%z", modify_time, 32);
-
-	const char * param[] = { file->path, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size, selected_path_id };
-	PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
-	ExecStatusType status = PQresultStatus(result);
-
-	if (status == PGRES_FATAL_ERROR)
-		so_database_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK) {
-		so_database_postgresql_get_string_dup(result, 0, 0, file_id);
-		so_value_hashtable_put2(db, "id", so_value_new_string(*file_id), true);
-	}
-
-	PQclear(result);
-	free(selected_path_id);
-	free(size);
-	free(groupid);
-	free(ownerid);
-	free(perm);
-
-	if (status != PGRES_TUPLES_OK)
-		return 1;
-
-	const char * queryB = "insert_archivefile_to_checksum";
-	so_database_postgresql_prepare(self, queryB, "INSERT INTO archivefiletochecksumresult VALUES ($1, $2)");
-
-	struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->digests);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * key = so_value_iterator_get_key(iter, false, false);
-		struct so_value * value = so_value_iterator_get_value(iter, false);
-
-		const char * checksum = so_value_string_get(key);
-		const char * digest = so_value_string_get(value);
-
-		char * digest_id = NULL;
-		if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
-			const char * param[] = { *file_id, digest_id };
-			PGresult * result = PQexecPrepared(self->connect, queryB, 2, param, NULL, NULL, 0);
-			ExecStatusType status = PQresultStatus(result);
-
-			if (status == PGRES_FATAL_ERROR)
-				so_database_postgresql_get_error(result, queryB);
-
-			PQclear(result);
+		int str_size = asprintf(&ownerid, "%d", file->ownerid);
+		if (str_size < 0) {
+			free(selected_path_id);
+			return -2;
 		}
 
-		free(digest_id);
-	}
-	so_value_iterator_free(iter);
+		str_size = asprintf(&groupid, "%d", file->groupid);
+		if (str_size < 0) {
+			free(ownerid);
+			free(selected_path_id);
+			return -2;
+		}
 
-	if (file->metadata != NULL) {
-		const char * query_meta = "insert_archivefile_metadata";
-		so_database_postgresql_prepare(self, query_meta, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata(id, type, key, value, login) SELECT $2, 'archivefile', $3::TEXT, to_json($4::TEXT::JSON)::JSONB, owner FROM a");
+		str_size = asprintf(&perm, "%d", file->perm);
+		if (str_size < 0) {
+			free(groupid);
+			free(ownerid);
+			free(selected_path_id);
+			return -2;
+		}
 
-		struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->metadata);
+		str_size = asprintf(&size, "%zd", file->size);
+		if (str_size < 0) {
+			free(perm);
+			free(groupid);
+			free(ownerid);
+			free(selected_path_id);
+			return -2;
+		}
+
+		so_time_convert(&file->create_time, "%F %T%z", create_time, 32);
+		so_time_convert(&file->modify_time, "%F %T%z", modify_time, 32);
+
+		const char * param[] = { file->path, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size, selected_path_id };
+		PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK) {
+			so_database_postgresql_get_string_dup(result, 0, 0, file_id);
+			so_value_hashtable_put2(db, "id", so_value_new_string(*file_id), true);
+		}
+
+		PQclear(result);
+		free(selected_path_id);
+		free(size);
+		free(groupid);
+		free(ownerid);
+		free(perm);
+
+		if (status != PGRES_TUPLES_OK)
+			return 1;
+
+		const char * queryB = "insert_archivefile_to_checksum";
+		so_database_postgresql_prepare(self, queryB, "INSERT INTO archivefiletochecksumresult VALUES ($1, $2)");
+
+		struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->digests);
 		while (so_value_iterator_has_next(iter)) {
 			struct so_value * key = so_value_iterator_get_key(iter, false, false);
 			struct so_value * value = so_value_iterator_get_value(iter, false);
 
-			const char * str_key = so_value_string_get(key);
-			char * str_value = so_json_encode_to_string(value);
+			const char * checksum = so_value_string_get(key);
+			const char * digest = so_value_string_get(value);
 
-			const char * param[] = { archive_id, *file_id, str_key, str_value };
-			PGresult * result = PQexecPrepared(self->connect, query_meta, 4, param, NULL, NULL, 0);
-			ExecStatusType status = PQresultStatus(result);
+			char * digest_id = NULL;
+			if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
+				const char * param[] = { *file_id, digest_id };
+				PGresult * result = PQexecPrepared(self->connect, queryB, 2, param, NULL, NULL, 0);
+				ExecStatusType status = PQresultStatus(result);
 
-			if (status == PGRES_FATAL_ERROR)
-				so_database_postgresql_get_error(result, query_meta);
+				if (status == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result, queryB);
 
-			PQclear(result);
-			free(str_value);
+				PQclear(result);
+			}
+
+			free(digest_id);
 		}
 		so_value_iterator_free(iter);
-	}
 
-	return status != PGRES_TUPLES_OK;
+		if (file->metadata != NULL) {
+			const char * query_meta = "insert_archivefile_metadata";
+			so_database_postgresql_prepare(self, query_meta, "WITH a AS (SELECT owner FROM archive WHERE id = $1 LIMIT 1) INSERT INTO metadata(id, type, key, value, login) SELECT $2, 'archivefile', $3::TEXT, to_json($4::TEXT::JSON)::JSONB, owner FROM a");
+
+			struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->metadata);
+			while (so_value_iterator_has_next(iter)) {
+				struct so_value * key = so_value_iterator_get_key(iter, false, false);
+				struct so_value * value = so_value_iterator_get_value(iter, false);
+
+				const char * str_key = so_value_string_get(key);
+				char * str_value = so_json_encode_to_string(value);
+
+				const char * param[] = { archive_id, *file_id, str_key, str_value };
+				PGresult * result = PQexecPrepared(self->connect, query_meta, 4, param, NULL, NULL, 0);
+				ExecStatusType status = PQresultStatus(result);
+
+				if (status == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result, query_meta);
+
+				PQclear(result);
+				free(str_value);
+			}
+			so_value_iterator_free(iter);
+		}
+
+		return status != PGRES_TUPLES_OK;
+	}
 }
 
 static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats) {
@@ -4403,11 +4410,14 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		struct so_value * db_job = so_value_hashtable_get(volume->job->db_data, key, false, false);
 
 		char sequence[16], size[16], starttime[32] = "", endtime[32] = "", media_position[16];
+		char min_version[16], max_version[16];
 		const char * media_id = NULL, * job_run = NULL;
 
 		snprintf(sequence, 16, "%u", volume->sequence);
 		snprintf(size, 16, "%zd", volume->size);
 		snprintf(media_position, 16, "%u", volume->media_position);
+		snprintf(min_version, 16, "%d", volume->min_version);
+		snprintf(max_version, 16, "%d", volume->max_version);
 
 		so_time_convert(&volume->start_time, "%F %T%z", starttime, 32);
 		so_time_convert(&volume->end_time, "%F %T%z", endtime, 32);
@@ -4419,10 +4429,10 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 			pEndTime = endtime;
 
 		const char * query = "insert_archive_volume";
-		so_database_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, jobrun) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
+		so_database_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, jobrun, versions) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, INT4RANGE($9, $10, '[]')) RETURNING id");
 
-		const char * param[] = { sequence, size, starttime, pEndTime, archive_id, media_id, media_position, job_run };
-		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+		const char * param[] = { sequence, size, starttime, pEndTime, archive_id, media_id, media_position, job_run, min_version, max_version };
+		PGresult * result = PQexecPrepared(self->connect, query, 10, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -4480,8 +4490,8 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		so_value_iterator_free(iter);
 	}
 
-	const char * queryA = "insert_archivefiletoarchivevolume";
-	so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, index, blocknumber, archivetime, alternatepath) SELECT $1::BIGINT, $2::BIGINT, $3::BIGINT, $4::BIGINT, $5::TIMESTAMPTZ, $6::TEXT WHERE NOT EXISTS (SELECT * FROM archivefiletoarchivevolume WHERE archivefile = $2 AND archivevolume = $1)");
+	const char * query = "insert_archivefiletoarchivevolume";
+	so_database_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, index, blocknumber, archivetime, versions, alternatepath) VALUES ($1, $2, $3, $4, $5, INT4RANGE($6, $7, '[]'), $8) ON CONFLICT (archivevolume, archivefile) DO UPDATE SET versions = EXCLUDED.versions");
 
 	unsigned long i;
 	for (i = 0; i < volume->nb_files; i++) {
@@ -4497,17 +4507,21 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		}
 
 		char index[24], block_number[24], archive_time[32] = "";
+		char min_version[16], max_version[16];
 		snprintf(index, 24, "%ld", i);
 		snprintf(block_number, 24, "%zd", ptr_file->position);
 
 		so_time_convert(&ptr_file->archived_time, "%F %T%z", archive_time, 32);
 
-		const char * paramA[] = { volume_id, file_id, index, block_number, archive_time, file->alternate_path };
-		PGresult * resultA = PQexecPrepared(self->connect, queryA, 6, paramA, NULL, NULL, 0);
+		snprintf(min_version, 16, "%d", file->min_version);
+		snprintf(max_version, 16, "%d", file->max_version);
+
+		const char * paramA[] = { volume_id, file_id, index, block_number, archive_time, min_version, max_version, file->alternate_path };
+		PGresult * resultA = PQexecPrepared(self->connect, query, 8, paramA, NULL, NULL, 0);
 		ExecStatusType statusA = PQresultStatus(resultA);
 
 		if (statusA == PGRES_FATAL_ERROR)
-			so_database_postgresql_get_error(resultA, queryA);
+			so_database_postgresql_get_error(resultA, query);
 
 		PQclear(resultA);
 		free(file_id);

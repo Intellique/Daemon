@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-06-13 12:43+0200\n"
+        "POT-Creation-Date: 2018-07-17 11:24+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -140,15 +140,56 @@ msgstr  "Fallo en el momento de la definición del hilo de ejecución"
 msgid   "Starting worker thread #%u"
 msgstr  "Arranque del hilo de ejecución #%u"
 
-#: src/job/restore-archive/restore-archive.c:276
+#: src/job/restore-archive/restore-archive.c:281
 msgid   "Archive not found"
 msgstr  "Archivo no encontrado"
 
-#: src/job/restore-archive/restore-archive.c:281
+#: src/job/restore-archive/restore-archive.c:286
 #, c-format
 msgid   "No restoration for deleted archive '%s'"
 msgstr  "ninguna restauración del archivo suprimido \"%s\""
 
-#: src/job/restore-archive/restore-archive.c:289
+#: src/job/restore-archive/restore-archive.c:294
 msgid   "Restore path should be absolute (starts with '/')"
 msgstr  "La ruta de restitución debe ser absoluta (comience por \"/\")"
+
+#: src/job/restore-archive/restore-archive.c:306
+msgid   "You cannot have \"restore_version\" option with \"restore_min_version\" or \"restore_max_version\""
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:312
+msgid   "job option \"restore_min_version\" should be greater or equal to 1"
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:318
+msgid   "job option \"restore_max_version\" should be greater or equal to 1"
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:324
+msgid   "job option \"restore_max_version\" should be greater or equal to \"restore_min_version\""
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:339
+#, c-format
+msgid   "Restore version set to %d"
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:350
+#, c-format
+msgid   "Wrong restore version \"%d\", should be between 1 and %d"
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:355
+#, c-format
+msgid   "Wrong restore version \"%d\", should be greater or equal than -1"
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:373
+#, c-format
+msgid   "Will restore from version \"%d\" to \"%d\""
+msgstr  ""
+
+#: src/job/restore-archive/restore-archive.c:376
+#, c-format
+msgid   "Will restore version \"%d\""
+msgstr  ""

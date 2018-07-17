@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-06-29 17:26+0200\n"
+        "POT-Creation-Date: 2018-07-16 17:23+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -25,70 +25,87 @@ msgstr  "Archive non trouvée"
 msgid   "No check for deleted archive '%s'"
 msgstr  "Pas de vérification d’archive supprimée « %s »"
 
-#: src/job/check-archive/quick_mode.c:82
+#: src/job/check-archive/check-archive.c:178
+msgid   "job option \"min_version\" should be greater or equal to 1"
+msgstr  "L’option de tâche « min_version » doit être plus grand ou égale à 1"
+
+#: src/job/check-archive/check-archive.c:183
+msgid   "job option \"max_version\" should be greater or equal to 1"
+msgstr  "L’option de tâche « max_version » doit être plus grand ou égale à 1"
+
+#: src/job/check-archive/check-archive.c:188
+msgid   "job option \"max_version\" should be greater or equal to \"min_version\""
+msgstr  "L’option de tâche « max_version » doit être plus grand ou égale à l’option « min_version »"
+
+#: src/job/check-archive/quick_mode.c:85
 #, c-format
 msgid   "Starting check archive (%s) in quick mode"
 msgstr  "Démarrage de la vérification de l’archive (%s) en mode rapide"
 
-#: src/job/check-archive/quick_mode.c:131
+#: src/job/check-archive/quick_mode.c:152
 msgid   "Failed to set worker thread name"
 msgstr  "Échec lors de la définition du nom du fil d’exécution"
 
-#: src/job/check-archive/quick_mode.c:138
+#: src/job/check-archive/quick_mode.c:159
 #, c-format
 msgid   "Starting worker #%u"
 msgstr  "Démarrage du fil d’exécution #%u"
 
-#: src/job/check-archive/quick_mode.c:189
+#: src/job/check-archive/quick_mode.c:171 src/job/check-archive/thorough_mode.c:299
+#, c-format
+msgid   "Due to job options, all volumes of archive \"%s\" are skipped"
+msgstr  "En raison des options de tâches, tous les volumes de l’archive « %s » sont ignorés"
+
+#: src/job/check-archive/quick_mode.c:220
 #, c-format
 msgid   "Worker #%u has finished with %s and %s"
 msgstr  "Travailler n°%u a fini avec %s et %s"
 
-#: src/job/check-archive/quick_mode.c:190 src/job/check-archive/quick_mode.c:204
+#: src/job/check-archive/quick_mode.c:221 src/job/check-archive/quick_mode.c:235
 #, c-format
 msgid   "%u warning"
 msgid_plural    "%u warnings"
 msgstr[0]       "%u avertissement"
 msgstr[1]       "%u avertissements"
 
-#: src/job/check-archive/quick_mode.c:191 src/job/check-archive/quick_mode.c:205
+#: src/job/check-archive/quick_mode.c:222 src/job/check-archive/quick_mode.c:236
 #, c-format
 msgid   "%u error"
 msgid_plural    "%u errors"
 msgstr[0]       "%u erreur"
 msgstr[1]       "%u erreurs"
 
-#: src/job/check-archive/quick_mode.c:203
+#: src/job/check-archive/quick_mode.c:234
 #, c-format
 msgid   "Checking archive has finished with %s and %s"
 msgstr  "La vérification de l’archive est terminée avec %s et %s"
 
-#: src/job/check-archive/quick_mode.c:235 src/job/check-archive/thorough_mode.c:84
+#: src/job/check-archive/quick_mode.c:270 src/job/check-archive/thorough_mode.c:94
 #, c-format
 msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
 msgstr  "Pas d’empreinte pour le volume n°%u de l’archive « %s », ignore ce volume"
 
-#: src/job/check-archive/quick_mode.c:246
+#: src/job/check-archive/quick_mode.c:281
 #, c-format
 msgid   "Error while getting media '%s', skip to next volume"
 msgstr  "Erreur lors de l’obtention du média « %s », passe vers le volume suivant"
 
-#: src/job/check-archive/quick_mode.c:255
+#: src/job/check-archive/quick_mode.c:290
 #, c-format
 msgid   "Error while opening media '%s' at position %d, skip to next volume"
 msgstr  "Erreur en ouvrant le média « %s » à la position %d, pass vers le volume suivant"
 
-#: src/job/check-archive/quick_mode.c:272
+#: src/job/check-archive/quick_mode.c:307
 #, c-format
 msgid   "Worker #%u : error while reading from media '%s'"
 msgstr  "Travailler n°%u : erreur en lisant depuis le média « %s »"
 
-#: src/job/check-archive/quick_mode.c:293
+#: src/job/check-archive/quick_mode.c:328
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is correct"
 msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » est correcte"
 
-#: src/job/check-archive/quick_mode.c:297
+#: src/job/check-archive/quick_mode.c:332
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is not correct"
 msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » n’est pas correcte"
@@ -98,62 +115,62 @@ msgstr  "Travailler n°%u : l’intégrité des données du volume « %s » n
 msgid   "Starting check archive (%s) in thorough mode"
 msgstr  "Démarrage de la vérification de l’archive (%s) en mode minutieux"
 
-#: src/job/check-archive/thorough_mode.c:96
+#: src/job/check-archive/thorough_mode.c:123
 #, c-format
 msgid   "Failed to access or load media '%s'"
 msgstr  "Échec lors de l’accès ou du chargement du média « %s »"
 
-#: src/job/check-archive/thorough_mode.c:118
+#: src/job/check-archive/thorough_mode.c:145
 #, c-format
 msgid   "Failed to open volume #%u of archive '%s'"
 msgstr  "Échec lors de l’ouverture du volume n°%u de l’archive « %s »"
 
-#: src/job/check-archive/thorough_mode.c:174
+#: src/job/check-archive/thorough_mode.c:201
 #, c-format
 msgid   "Error while reading from media '%s'"
 msgstr  "Erreur en lisant depuis le média « %s »"
 
-#: src/job/check-archive/thorough_mode.c:195
+#: src/job/check-archive/thorough_mode.c:222
 #, c-format
 msgid   "Data integrity of file '%s' is correct"
 msgstr  "L’intégrité des données du fichier « %s » est correcte"
 
-#: src/job/check-archive/thorough_mode.c:200
+#: src/job/check-archive/thorough_mode.c:227
 #, c-format
 msgid   "Data integrity of file '%s' is not correct"
 msgstr  "L’intégrité des données du fichier « %s » n’est pas correcte"
 
-#: src/job/check-archive/thorough_mode.c:225
+#: src/job/check-archive/thorough_mode.c:252
 msgid   "Error while reading header, bad header"
 msgstr  "Erreur en lisant l’entête, mauvais entête"
 
-#: src/job/check-archive/thorough_mode.c:232
+#: src/job/check-archive/thorough_mode.c:259
 msgid   "Error while reading header, IO error"
 msgstr  "Erreur en lisant l’entête, Erreur d’entrée sortie"
 
-#: src/job/check-archive/thorough_mode.c:257
+#: src/job/check-archive/thorough_mode.c:284
 #, c-format
 msgid   "Data integrity of volume '%s' is correct"
 msgstr  "L’intégrité des données du volume « %s » est correcte"
 
-#: src/job/check-archive/thorough_mode.c:261
+#: src/job/check-archive/thorough_mode.c:288
 #, c-format
 msgid   "Data integrity of volume '%s' is not correct"
 msgstr  "L’intégrité des données du volume « %s » n’est pas correcte"
 
-#: src/job/check-archive/thorough_mode.c:271
+#: src/job/check-archive/thorough_mode.c:303
 #, c-format
 msgid   "After checking, there are %s out of %s"
 msgstr  "Après vérification, il y a %s sur %s"
 
-#: src/job/check-archive/thorough_mode.c:272
+#: src/job/check-archive/thorough_mode.c:304
 #, c-format
 msgid   "%lu correct file"
 msgid_plural    "%lu correct files"
 msgstr[0]       "%lu fichier correct"
 msgstr[1]       "%lu fichiers corrects"
 
-#: src/job/check-archive/thorough_mode.c:273
+#: src/job/check-archive/thorough_mode.c:305
 #, c-format
 msgid   "%lu file"
 msgid_plural    "%lu files"
