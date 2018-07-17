@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-06-13 12:43+0200\n"
+        "POT-Creation-Date: 2018-07-17 11:24+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -140,15 +140,56 @@ msgstr  "Échec lors de la définition du nom du fil d’exécution"
 msgid   "Starting worker thread #%u"
 msgstr  "Démarrage du fil d’exécution n°%u"
 
-#: src/job/restore-archive/restore-archive.c:276
+#: src/job/restore-archive/restore-archive.c:281
 msgid   "Archive not found"
 msgstr  "Archive non trouvée"
 
-#: src/job/restore-archive/restore-archive.c:281
+#: src/job/restore-archive/restore-archive.c:286
 #, c-format
 msgid   "No restoration for deleted archive '%s'"
 msgstr  "Pas de restitution d’archive supprimée « %s »"
 
-#: src/job/restore-archive/restore-archive.c:289
+#: src/job/restore-archive/restore-archive.c:294
 msgid   "Restore path should be absolute (starts with '/')"
 msgstr  "Le chemin de restitution doit être absolu (commence par '/')"
+
+#: src/job/restore-archive/restore-archive.c:306
+msgid   "You cannot have \"restore_version\" option with \"restore_min_version\" or \"restore_max_version\""
+msgstr  "Vous ne pouvez pas avoir l’option « restore_version » avec « restore_min_version » ou « restore_max_version »"
+
+#: src/job/restore-archive/restore-archive.c:312
+msgid   "job option \"restore_min_version\" should be greater or equal to 1"
+msgstr  "L’option de tâche « restore_min_version » doit être plus grand ou égale à 1"
+
+#: src/job/restore-archive/restore-archive.c:318
+msgid   "job option \"restore_max_version\" should be greater or equal to 1"
+msgstr  "L’option de tâche « restore_max_version » doit être plus grand ou égale à 1"
+
+#: src/job/restore-archive/restore-archive.c:324
+msgid   "job option \"restore_max_version\" should be greater or equal to \"restore_min_version\""
+msgstr  "L’option de tâche « restore_max_version » doit être plus grand ou égale à « restore_min_version »"
+
+#: src/job/restore-archive/restore-archive.c:339
+#, c-format
+msgid   "Restore version set to %d"
+msgstr  "Version de restauration définie à %d"
+
+#: src/job/restore-archive/restore-archive.c:350
+#, c-format
+msgid   "Wrong restore version \"%d\", should be between 1 and %d"
+msgstr  "Mauvaise version de restauration « %d », doit être comprise entre 1 et %d"
+
+#: src/job/restore-archive/restore-archive.c:355
+#, c-format
+msgid   "Wrong restore version \"%d\", should be greater or equal than -1"
+msgstr  "Mauvaise version de restoration « %d », doit être plus grand ou égale à -1"
+
+#: src/job/restore-archive/restore-archive.c:373
+#, c-format
+msgid   "Will restore from version \"%d\" to \"%d\""
+msgstr  "Va restaurer depuis la version « %d » vers « %d »"
+
+#: src/job/restore-archive/restore-archive.c:376
+#, c-format
+msgid   "Will restore version \"%d\""
+msgstr  "Va restaurer la version « %d »"
