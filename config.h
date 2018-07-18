@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __STORIQONE_CONFIG_H__
@@ -31,11 +31,11 @@
 #define DAEMON_CRASH_DIR "/var/crash/storiqone"
 #define DAEMON_SOCKET_DIR "/var/run/storiqone"
 #define DAEMON_PID_FILE "/var/run/storiqone.pid"
-#define DAEMON_BIN_DIR "/usr/lib/storiqone/1.3/bin"
-#define DAEMON_JOB_DIR "/usr/lib/storiqone/1.3/job"
+#define DAEMON_BIN_DIR "/usr/lib/storiqone/1.4/bin"
+#define DAEMON_JOB_DIR "/usr/lib/storiqone/1.4/job"
 #define LOCALE_DIR "/usr/share/locale/"
-#define MODULE_PATH "/usr/lib/storiqone/1.3/lib"
-#define SCRIPT_PATH "/usr/lib/storiqone/1.3/scripts"
+#define MODULE_PATH "/usr/lib/storiqone/1.4/lib"
+#define SCRIPT_PATH "/usr/lib/storiqone/1.4/scripts"
 #define TMP_DIR "/tmp"
 
 #define ADMIN_DEFAULT_HOST "localhost"
