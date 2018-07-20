@@ -435,7 +435,7 @@ static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_conne
 		}
 	} else if (so_value_valid(job->option, "{sz}", "partition size")) {
 		ssize_t partition_size = 0;
-		so_value_unpack(job->option, "{ss}", "partition size", &partition_size);
+		so_value_unpack(job->option, "{sz}", "partition size", &partition_size);
 
 		if (soj_formatmedia_check_partition_size(job, partition_size, db_connect))
 			so_value_hashtable_put2(soj_formatmedia_option, "partition size", so_value_new_integer(partition_size), true);
