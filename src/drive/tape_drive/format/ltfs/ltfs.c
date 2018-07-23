@@ -71,7 +71,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 		unsigned long size;
 	} default_parition_sizes[] = {
 		{ 0x58, 1424000L << 20 },
-		{ 0x5A, 2450000L << 20 },
+		{ 0x5A, 2420000L << 20 },
 		{ 0x5C, 5722045L << 20 },
 	};
 	static const unsigned int nb_default_parition_size = sizeof(default_parition_sizes) / sizeof(*default_parition_sizes);
@@ -319,4 +319,3 @@ static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * 
 
 	return 0;
 }
-
