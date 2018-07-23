@@ -284,7 +284,7 @@ static int sodr_tape_drive_format_ltfs_format_media_partition(struct so_drive * 
 	struct so_media * media = drive->slot->media;
 
 	char label[81];
-	snprintf(label, 81, "VOL1%6sL             LTFS                                                   4", media->label != NULL ? media->label : "");
+	snprintf(label, 81, "VOL1%.6sL             LTFS                                                   4", media->label != NULL ? media->label : "");
 
 	ssize_t nb_write = writer->ops->write(writer, label, 80);
 	if (nb_write < 0) {
