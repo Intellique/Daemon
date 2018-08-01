@@ -852,22 +852,21 @@ BEFORE UPDATE OR DELETE ON Metadata
 FOR EACH ROW EXECUTE PROCEDURE log_metadata();
 
 CREATE MATERIALIZED VIEW milestones_files AS
-SELECT sa.id AS archive, sa.archive_name, sa.archive_size, sa.starttime AS archive_starttime, sa.endtime AS archive_endtime,
+SELECT sa.id AS archive, sa.archive_name, sa.archive_size, sa.starttime AS archive_starttime, sa.endtime AS archive_endtime, sa.archive_versions,
     af.id AS archivefile, af.name, "substring"(af.name, char_length("substring"(af.name, '(.+/)[^/]+'::text)) + 1) AS file_name,
-    af.type, af.mimetype, af.ctime AS file_ctime, af.mtime AS file_mtime, af.size AS file_size, af.owner AS file_owner,
-    af.name = sf.path AS file_isroot, ('['::text || array_to_string(saf.medias, ','::text)) || ']'::text AS medias,
-    saf.medias_length, sp.id AS pool, sp.name AS pool_name
+    af.type, af.mimetype, af.ctime AS file_ctime, af.mtime AS file_mtime, af.size AS file_size, af.owner AS file_owner, saf.versions AS file_versions,
+    af.name = sf.path AS file_isroot, saf.medias::TEXT, saf.medias_length, sp.id AS pool, sp.name AS pool_name
 FROM archivefile af
     JOIN (
-        SELECT afv.archivefile, av.archive, array_agg(('"'::text || COALESCE(m.name, m.label, m.mediumserialnumber)::text) || '"'::text) AS medias,
-                max(char_length(COALESCE(m.name, m.label, m.mediumserialnumber)::text)) AS medias_length, m.pool
+        SELECT afv.archivefile, av.archive, json_agg(COALESCE(m.name, m.label, m.mediumserialnumber)::text) AS medias,
+                max(char_length(COALESCE(m.name, m.label, m.mediumserialnumber)::text)) AS medias_length, m.pool, INT4RANGE(MIN(LOWER(afv.versions)), MAX(UPPER(afv.versions))) AS versions
         FROM archivefiletoarchivevolume afv
             JOIN archivevolume av ON afv.archivevolume = av.id
             JOIN media m ON av.media = m.id
         GROUP BY afv.archivefile, av.archive, m.pool
     ) saf ON af.id = saf.archivefile
     JOIN (
-        SELECT a.id, a.name AS archive_name, sum(av.size) AS archive_size, min(av.starttime) AS starttime, max(av.endtime) AS endtime
+        SELECT a.id, a.name AS archive_name, sum(av.size) AS archive_size, min(av.starttime) AS starttime, max(av.endtime) AS endtime, INT4RANGE(MIN(LOWER(av.versions)), MAX(UPPER(av.versions))) AS archive_versions
         FROM archive a
             JOIN archivevolume av ON a.id = av.archive
         GROUP BY a.id, a.name
