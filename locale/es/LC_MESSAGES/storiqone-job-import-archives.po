@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-import-archives v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-02-26 17:45+0100\n"
+        "POT-Creation-Date: 2018-08-01 12:09+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -40,41 +40,41 @@ msgstr  "Calculando los archivos "
 msgid   "Parsing archive #%u"
 msgstr  "Analisis del archivo #%u"
 
-#: src/job/import-archives/import-archives.c:336
+#: src/job/import-archives/import-archives.c:338
 msgid   "Critical error: no media linked to current job"
 msgstr  "Error critico: nungún media está liado a tarea actual"
 
-#: src/job/import-archives/import-archives.c:341
+#: src/job/import-archives/import-archives.c:343
 #, c-format
 msgid   "Trying to import a cleaning media '%s'"
 msgstr  "Intento de importación de un media de limpieza \"%s\""
 
-#: src/job/import-archives/import-archives.c:347
+#: src/job/import-archives/import-archives.c:349
 #, c-format
 msgid   "Trying to import a media '%s' which is a member of pool '%s'"
 msgstr  "Intento de importación de un media \"%s\" que es miembro del pool \"%s\""
 
-#: src/job/import-archives/import-archives.c:353
+#: src/job/import-archives/import-archives.c:355
 #, c-format
 msgid   "Trying to import a media '%s' with error status"
 msgstr  "Intento de importación de un media \"%s\" qui es en error "
 
-#: src/job/import-archives/import-archives.c:359
+#: src/job/import-archives/import-archives.c:361
 msgid   "Pool not found"
 msgstr  "Pool no encontrado"
 
-#: src/job/import-archives/import-archives.c:364
+#: src/job/import-archives/import-archives.c:366
 #, c-format
 msgid   "Trying to import to a deleted pool '%s'"
 msgstr  "Intento de importacón en un pool suprimido \"%s\""
 
-#: src/job/import-archives/import-archives.c:373
+#: src/job/import-archives/import-archives.c:375
 #, c-format
 msgid   "Trying to import archives from media '%s' (media format: %s) not matching pool '%s' (pool format: %s)"
 msgstr  "Intento de importación de archivos \"%s\" (media format: %s) donde el formato no corresponde al \" formato del pool "
         "\"%s\" (formato del pool: %s)"
 
-#: src/job/import-archives/import-archives.c:380
+#: src/job/import-archives/import-archives.c:382
 #, c-format
 msgid   "Failed to find a suitable drive to import media '%s'"
 msgstr  "fallo al momento de la busqueda de un lector para importar el media \"%s\""
