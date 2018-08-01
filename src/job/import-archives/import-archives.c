@@ -175,6 +175,8 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 		if (archive_metadata != NULL)
 			archive->metadata = so_value_share(archive_metadata);
 
+		archive->pool = so_pool_dup(soj_importarchives_pool);
+
 		unsigned int j;
 		for (j = 0; j < archive->nb_volumes; j++) {
 			struct so_archive_volume * vol = archive->volumes + j;
