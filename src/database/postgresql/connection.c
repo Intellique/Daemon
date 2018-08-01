@@ -4077,7 +4077,7 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 
 		db = so_value_new_hashtable2();
-		so_value_hashtable_put(archive->db_data, key, true, db, true);
+		so_value_hashtable_put(archive->db_data, key, false, db, true);
 
 		if (files == NULL) {
 			files = so_value_new_hashtable2();
