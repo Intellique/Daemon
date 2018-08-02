@@ -175,11 +175,13 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 		if (archive_metadata != NULL)
 			archive->metadata = so_value_share(archive_metadata);
 
+		archive->status = so_archive_status_complete;
 		archive->pool = so_pool_dup(soj_importarchives_pool);
 
 		unsigned int j;
 		for (j = 0; j < archive->nb_volumes; j++) {
 			struct so_archive_volume * vol = archive->volumes + j;
+			vol->min_version = vol->max_version = 1;
 			vol->job = job;
 
 			struct so_media * media = vol->media;
@@ -194,6 +196,7 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 				struct so_archive_files * ptr_file = vol->files + k;
 				struct so_archive_file * file = ptr_file->file;
 
+				file->min_version = file->max_version = 1;
 				if (file->metadata != NULL)
 					so_value_free(file->metadata);
 				file->metadata = so_value_hashtable_get2(files_metadata, file->path, true, false);
