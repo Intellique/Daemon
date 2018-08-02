@@ -1038,11 +1038,13 @@ static bool so_json_parse_read_more(struct so_json_parser * parser) {
 	if (parser->read == NULL)
 		return false;
 
-	if (parser->last_read > 0) {
-		static char tmp_buffer[4096];
-		ssize_t nb_read = parser->read(parser, tmp_buffer, parser->last_read);
+	while (parser->last_read > 0) {
+		static char tmp_buffer[1024];
+		size_t will_read = parser->last_read > 1024 ? 1024 : parser->last_read;
+		ssize_t nb_read = parser->read(parser, tmp_buffer, will_read);
 		if (nb_read < 0)
 			return false;
+		parser->last_read -= nb_read;
 	}
 
 	if (!parser->has_more_data(parser, true))
@@ -1053,18 +1055,19 @@ static bool so_json_parse_read_more(struct so_json_parser * parser) {
 
 		if (parser->last_remain > 2048 && parser->dynamic_buffer == NULL) {
 			parser->buffer_size = 8192;
-			parser->dynamic_buffer = malloc(parser->buffer_size);
+			parser->dynamic_buffer = malloc(parser->buffer_size + 1);
 
 			memcpy(parser->dynamic_buffer, parser->static_buffer + parser->position, parser->last_remain);
 
 			parser->buffer = parser->dynamic_buffer;
 		} else {
-			memmove(parser->buffer, parser->buffer + parser->position, parser->last_remain);
+			if (parser->position > 0)
+				memmove(parser->buffer, parser->buffer + parser->position, parser->last_remain);
 
 			if (parser->buffer_size - parser->last_remain < 2048) {
 				parser->buffer_size += 4096;
 
-				void * addr = realloc(parser->dynamic_buffer, parser->buffer_size);
+				void * addr = realloc(parser->dynamic_buffer, parser->buffer_size + 1);
 				if (addr == NULL)
 					return false;
 
@@ -1202,6 +1205,7 @@ struct so_value * so_json_parse_stream(struct so_stream_reader * reader) {
 		.dynamic_buffer = NULL,
 		.position = 0,
 		.used = 0,
+		.buffer_size = 4096,
 		.last_read = 0,
 		.last_remain = 0,
 
