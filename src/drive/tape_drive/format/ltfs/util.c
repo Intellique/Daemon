@@ -741,6 +741,9 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			const char * file_name = NULL;
 			so_value_unpack(elt, "{sS}", "value", &file_name);
 
+			file->name = strdup(file_name);
+			file->hash_name = so_string_compute_hash2(file->name);
+
 			if (archive == NULL) {
 				int size = asprintf(&file->file.filename, "%s/%s/%s", default_value->root_directory, path, file_name);
 				if (size < 0)
@@ -748,9 +751,6 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 				so_string_delete_double_char(file->file.filename, '/');
 			} else {
-				file->name = strdup(file_name);
-				file->hash_name = so_string_compute_hash2(file->name);
-
 				if (strcmp(path, "") == 0) {
 					char * index_file = NULL;
 					int size = asprintf(&index_file, "%s.meta", archive->name);
