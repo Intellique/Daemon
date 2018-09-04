@@ -83,14 +83,14 @@ CREATE TYPE JobStatus AS ENUM (
 );
 
 CREATE TYPE LogLevel AS ENUM (
+    'emergency',
     'alert',
     'critical',
-    'debug',
-    'emergency',
     'error',
-    'info',
+    'warning',
     'notice',
-    'warning'
+    'info',
+    'debug'
 );
 
 CREATE TYPE MediaFormatDataType AS ENUM (
