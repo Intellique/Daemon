@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -116,22 +116,24 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 		return 1;
 
 	unsigned int nb_drives = 0, nb_slots = 0;
+	long long int capacity = 0;
 	bool deleted = false;
 
-	int nb_parsed = so_value_unpack(vtl_update, "{sususb}",
+	int nb_parsed = so_value_unpack(vtl_update, "{sususIsb}",
 		"nb slots", &nb_slots,
 		"nb drives", &nb_drives,
+		"capacity", &capacity,
 		"deleted", &deleted
 	);
 	so_value_free(vtl_update);
 
-	if (nb_parsed < 3)
+	if (nb_parsed < 4)
 		return 2;
 
-	if (nb_drives > nb_slots || nb_drives < 1 || nb_slots < nb_drives)
+	if (nb_drives > nb_slots || nb_drives < 1 || nb_slots < nb_drives || capacity <= 0)
 		return 3;
 
-	if (nb_drives != sochgr_vtl_changer.nb_drives || nb_slots != sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives || deleted) {
+	if (nb_drives != sochgr_vtl_changer.nb_drives || nb_slots != sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives || sochgr_vtl_format->capacity != capacity || deleted) {
 		so_log_write(so_log_level_warning,
 			dgettext("storiqone-changer-vtl", "[%s | %s]: will update VTL"),
 			sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
@@ -328,6 +330,21 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 
 			sochgr_vtl_changer.nb_drives = nb_drives;
 			sochgr_vtl_changer.nb_slots = nb_slots + nb_drives;
+		}
+
+		if (capacity != sochgr_vtl_format->capacity) {
+			unsigned int i;
+			for (i = sochgr_vtl_changer.nb_drives; i < sochgr_vtl_changer.nb_slots; i++) {
+				struct so_media * media = sochgr_vtl_changer.slots[i].media;
+				if (media == NULL)
+					continue;
+
+				sochgr_vtl_media_update_capacity(&sochgr_vtl_changer, media, capacity);
+
+				db_connection->ops->sync_media(db_connection, media, so_database_sync_default);
+			}
+
+			db_connection->ops->sync_media_format(db_connection, sochgr_vtl_format, so_database_sync_default);
 		}
 
 		if (deleted) {

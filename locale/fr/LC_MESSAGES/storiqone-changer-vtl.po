@@ -3,115 +3,132 @@
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
-msgid   ""
-msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
-        "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-06 15:29+0200\n"
-        "PO-Revision-Date: 2014-11-12 22:16+0100\n"
-        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
-        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
-        "Language: fr\n"
-        "MIME-Version: 1.0\n"
-        "Content-Type: text/plain; charset=UTF-8\n"
-        "Content-Transfer-Encoding: 8bit\n"
-        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+msgid ""
+msgstr ""
+"Project-Id-Version: storiqone-changer-vtl v1.2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-10-22 19:24+0200\n"
+"PO-Revision-Date: 2018-10-22 19:47+0200\n"
+"Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+"Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 2.2\n"
 
-#: src/changer/vtl_changer/device.c:136
+#: src/changer/vtl_changer/device.c:138
 #, c-format
-msgid   "[%s | %s]: will update VTL"
-msgstr  "[ %s | %s ]: va mettre à jour la VTL"
+msgid "[%s | %s]: will update VTL"
+msgstr "[ %s | %s ]: va mettre à jour la VTL"
 
-#: src/changer/vtl_changer/device.c:146
+#: src/changer/vtl_changer/device.c:148
 #, c-format
-msgid   "[%s | %s]: will remove %u drive"
-msgid_plural    "[%s | %s]: will remove %u drives"
-msgstr[0]       "[ %s | %s ] : va supprimer %u lecteur"
-msgstr[1]       "[ %s | %s ] : va supprimer %u lecteurs"
+msgid "[%s | %s]: will remove %u drive"
+msgid_plural "[%s | %s]: will remove %u drives"
+msgstr[0] "[ %s | %s ] : va supprimer %u lecteur"
+msgstr[1] "[ %s | %s ] : va supprimer %u lecteurs"
 
-#: src/changer/vtl_changer/device.c:198
+#: src/changer/vtl_changer/device.c:200
 #, c-format
-msgid   "[%s | %s]: will remove %u slot"
-msgid_plural    "[%s | %s]: will remove %u slots"
-msgstr[0]       "[ %s | %s ] : va supprimer %u emplacement"
-msgstr[1]       "[ %s | %s ] : va supprimer %u emplacements"
+msgid "[%s | %s]: will remove %u slot"
+msgid_plural "[%s | %s]: will remove %u slots"
+msgstr[0] "[ %s | %s ] : va supprimer %u emplacement"
+msgstr[1] "[ %s | %s ] : va supprimer %u emplacements"
 
-#: src/changer/vtl_changer/device.c:227
+#: src/changer/vtl_changer/device.c:229
 #, c-format
-msgid   "[%s | %s]: will add %u slot"
-msgid_plural    "[%s | %s]: will add %u slots"
-msgstr[0]       "[ %s | %s ] : va ajouter %u emplacement"
-msgstr[1]       "[ %s | %s ] : va ajouter %u emplacements"
+msgid "[%s | %s]: will add %u slot"
+msgid_plural "[%s | %s]: will add %u slots"
+msgstr[0] "[ %s | %s ] : va ajouter %u emplacement"
+msgstr[1] "[ %s | %s ] : va ajouter %u emplacements"
 
-#: src/changer/vtl_changer/device.c:264
+#: src/changer/vtl_changer/device.c:266
 #, c-format
-msgid   "[%s | %s]: will add %u drive"
-msgid_plural    "[%s | %s]: will add %u drives"
-msgstr[0]       "[ %s | %s ] : va ajouter %u lecteur"
-msgstr[1]       "[ %s | %s ] : va ajouter %u lecteurs"
+msgid "[%s | %s]: will add %u drive"
+msgid_plural "[%s | %s]: will add %u drives"
+msgstr[0] "[ %s | %s ] : va ajouter %u lecteur"
+msgstr[1] "[ %s | %s ] : va ajouter %u lecteurs"
 
-#: src/changer/vtl_changer/device.c:335
+#: src/changer/vtl_changer/device.c:352
 #, c-format
-msgid   "[%s | %s]: checking before VTL deletion"
-msgstr  "[ %s | %s ] : vérification pré-suppression de VTL"
+msgid "[%s | %s]: checking before VTL deletion"
+msgstr "[ %s | %s ] : vérification pré-suppression de VTL"
 
-#: src/changer/vtl_changer/device.c:341
+#: src/changer/vtl_changer/device.c:358
 #, c-format
-msgid   "[%s | %s]: error while checking for VTL deletion, deletion aborded"
-msgstr  "[ %s | %s ] : erreur lors de la vérification pour la suppression de la VTL, suppression abandonnée"
+msgid "[%s | %s]: error while checking for VTL deletion, deletion aborded"
+msgstr "[ %s | %s ] : erreur lors de la vérification pour la suppression de la VTL, suppression abandonnée"
 
-#: src/changer/vtl_changer/device.c:345
+#: src/changer/vtl_changer/device.c:362
 #, c-format
-msgid   "[%s | %s]: there remain undeleted archives, deletion aborded"
-msgstr  "[ %s | %s ] : il reste des archives dans cette VTL, suppression abandonnée"
+msgid "[%s | %s]: there remain undeleted archives, deletion aborded"
+msgstr "[ %s | %s ] : il reste des archives dans cette VTL, suppression abandonnée"
 
-#: src/changer/vtl_changer/device.c:349
+#: src/changer/vtl_changer/device.c:366
 #, c-format
-msgid   "[%s | %s]: there is no archives in this VTL, starting vtl deletion"
-msgstr  "[ %s | %s ] : il n’y a pas d’archive dans cette VTL, démarrage de la suppression de la VTL"
+msgid "[%s | %s]: there is no archives in this VTL, starting vtl deletion"
+msgstr "[ %s | %s ] : il n’y a pas d’archive dans cette VTL, démarrage de la suppression de la VTL"
 
-#: src/changer/vtl_changer/device.c:359
+#: src/changer/vtl_changer/device.c:376
 #, c-format
-msgid   "[%s | %s]: will delete VTL"
-msgstr  "[ %s | %s ] : va supprimer la VTL"
+msgid "[%s | %s]: will delete VTL"
+msgstr "[ %s | %s ] : va supprimer la VTL"
 
-#: src/changer/vtl_changer/device.c:429
+#: src/changer/vtl_changer/device.c:446
 #, c-format
-msgid   "[%s | %s]: VTL '%s' does not exists, starting creation"
-msgstr  "[ %s | %s ] : la VTL « %s » n’existe pas, démarrage de sa création"
+msgid "[%s | %s]: VTL '%s' does not exists, starting creation"
+msgstr "[ %s | %s ] : la VTL « %s » n’existe pas, démarrage de sa création"
 
-#: src/changer/vtl_changer/script.c:142 src/changer/vtl_changer/script.c:194 src/changer/vtl_changer/script.c:246
-#: src/changer/vtl_changer/script.c:298
+#: src/changer/vtl_changer/media.c:102
 #, c-format
-msgid   "[%s | %s]: there is no scripts to be run"
-msgstr  "[ %s | %s ] : il n’y a pas de scripts à exécuter"
+msgid "[%s | %s]: growing size (from %s to %s) of media (label: %s)"
+msgstr "[ %s | %s ] : agrandissement de la taille (depuis %s vers %s) du média (étiquette : %s)"
+
+#: src/changer/vtl_changer/media.c:109
+#, c-format
+msgid "[%s | %s]: can't shrink media (label: %s) to size (%s) because media already uses %s. Change media size from %s to %s."
+msgstr "[ %s | %s ] : ne peut pas réduire la taille du média (étiquette : %s) vers (%s) parce que le média utilise déjà %s. Changement de la taille du média depuis %s vers %s."
+
+#: src/changer/vtl_changer/media.c:115
+#, c-format
+msgid "[%s | %s]: shrink size (from %s to %s) of media (label: %s)"
+msgstr "[ %s | %s ] : rétrécissement de la taille (depuis %s vers %s) du média (étiquette : %s)"
+
+#: src/changer/vtl_changer/script.c:142 src/changer/vtl_changer/script.c:194
+#: src/changer/vtl_changer/script.c:246 src/changer/vtl_changer/script.c:298
+#, c-format
+msgid "[%s | %s]: there is no scripts to be run"
+msgstr "[ %s | %s ] : il n’y a pas de scripts à exécuter"
 
 #: src/changer/vtl_changer/script.c:149 src/changer/vtl_changer/script.c:201
 #, c-format
-msgid   "[%s | %s]: starting post-script"
-msgstr  "[ %s | %s ] : démarrage des scripts de post-exécution"
+msgid "[%s | %s]: starting post-script"
+msgstr "[ %s | %s ] : démarrage des scripts de post-exécution"
 
-#: src/changer/vtl_changer/script.c:163 src/changer/vtl_changer/script.c:215 src/changer/vtl_changer/script.c:267
-#: src/changer/vtl_changer/script.c:319
+#: src/changer/vtl_changer/script.c:163 src/changer/vtl_changer/script.c:215
+#: src/changer/vtl_changer/script.c:267 src/changer/vtl_changer/script.c:319
 #, c-format
-msgid   "[%s | %s]: no more scripts to be run"
-msgstr  "[ %s | %s ] : il n’y a plus de scripts à exécuter"
+msgid "[%s | %s]: no more scripts to be run"
+msgstr "[ %s | %s ] : il n’y a plus de scripts à exécuter"
 
 #: src/changer/vtl_changer/script.c:253 src/changer/vtl_changer/script.c:305
 #, c-format
-msgid   "[%s | %s]: starting pre-script"
-msgstr  "[ %s | %s ] : démarrage des scripts de pré-exécution"
+msgid "[%s | %s]: starting pre-script"
+msgstr "[ %s | %s ] : démarrage des scripts de pré-exécution"
 
 #: src/changer/vtl_changer/script.c:331
 #, c-format
-msgid   "[%s | %s]: memory allocation failure"
-msgstr  "[ %s | %s ] : échec de l’allocation de mémoire"
+msgid "[%s | %s]: memory allocation failure"
+msgstr "[ %s | %s ] : échec de l’allocation de mémoire"
 
 #: src/changer/vtl_changer/script.c:344
 #, c-format
-msgid   "[%s | %s]: Starting #%d script '%s'"
-msgstr  "[ %s | %s ] : démarrage du script n°%d « %s »"
+msgid "[%s | %s]: Starting #%d script '%s'"
+msgstr "[ %s | %s ] : démarrage du script n°%d « %s »"
 
 #: src/changer/vtl_changer/script.c:351
 #, c-format
-msgid   "[%s | %s]: script #%d '%s' has finished with exit code: %d"
-msgstr  "[ %s | %s ] : le script n°%d « %s » a terminé avec le code de retour : %d"
+msgid "[%s | %s]: script #%d '%s' has finished with exit code: %d"
+msgstr "[ %s | %s ] : le script n°%d « %s » a terminé avec le code de retour : %d"

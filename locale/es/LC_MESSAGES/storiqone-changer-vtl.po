@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-06 15:29+0200\n"
+        "POT-Creation-Date: 2018-10-22 19:24+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,67 +16,82 @@ msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/changer/vtl_changer/device.c:136
+#: src/changer/vtl_changer/device.c:138
 #, c-format
 msgid   "[%s | %s]: will update VTL"
 msgstr  "[ %s | %s ]: va a actualizar la VTL"
 
-#: src/changer/vtl_changer/device.c:146
+#: src/changer/vtl_changer/device.c:148
 #, c-format
 msgid   "[%s | %s]: will remove %u drive"
 msgid_plural    "[%s | %s]: will remove %u drives"
 msgstr[0]       "[ %s | %s ]: va a suprimir %u lector"
 msgstr[1]       "[ %s | %s ]: va a suprimir %u lectores"
 
-#: src/changer/vtl_changer/device.c:198
+#: src/changer/vtl_changer/device.c:200
 #, c-format
 msgid   "[%s | %s]: will remove %u slot"
 msgid_plural    "[%s | %s]: will remove %u slots"
 msgstr[0]       "[ %s | %s ]: va a suprimir %u ranura"
 msgstr[1]       "[ %s | %s ]: va a suprimir %u ranuras"
 
-#: src/changer/vtl_changer/device.c:227
+#: src/changer/vtl_changer/device.c:229
 #, c-format
 msgid   "[%s | %s]: will add %u slot"
 msgid_plural    "[%s | %s]: will add %u slots"
 msgstr[0]       "[ %s | %s ]: va a agregar %u ranura"
 msgstr[1]       "[ %s | %s ]: va a agregar %u ranuras"
 
-#: src/changer/vtl_changer/device.c:264
+#: src/changer/vtl_changer/device.c:266
 #, c-format
 msgid   "[%s | %s]: will add %u drive"
 msgid_plural    "[%s | %s]: will add %u drives"
 msgstr[0]       "[ %s | %s ]: va a agregar %u lector"
 msgstr[1]       "[ %s | %s ]: va a agregar %u lectores"
 
-#: src/changer/vtl_changer/device.c:335
+#: src/changer/vtl_changer/device.c:352
 #, c-format
 msgid   "[%s | %s]: checking before VTL deletion"
 msgstr  ""
 
-#: src/changer/vtl_changer/device.c:341
+#: src/changer/vtl_changer/device.c:358
 #, c-format
 msgid   "[%s | %s]: error while checking for VTL deletion, deletion aborded"
 msgstr  ""
 
-#: src/changer/vtl_changer/device.c:345
+#: src/changer/vtl_changer/device.c:362
 #, c-format
 msgid   "[%s | %s]: there remain undeleted archives, deletion aborded"
 msgstr  ""
 
-#: src/changer/vtl_changer/device.c:349
+#: src/changer/vtl_changer/device.c:366
 #, c-format
 msgid   "[%s | %s]: there is no archives in this VTL, starting vtl deletion"
 msgstr  ""
 
-#: src/changer/vtl_changer/device.c:359
+#: src/changer/vtl_changer/device.c:376
 #, c-format
 msgid   "[%s | %s]: will delete VTL"
 msgstr  "[ %s | %s ]: va a suprimir la VTL"
 
-#: src/changer/vtl_changer/device.c:429
+#: src/changer/vtl_changer/device.c:446
 #, c-format
 msgid   "[%s | %s]: VTL '%s' does not exists, starting creation"
+msgstr  ""
+
+#: src/changer/vtl_changer/media.c:102
+#, c-format
+msgid   "[%s | %s]: growing size (from %s to %s) of media (label: %s)"
+msgstr  ""
+
+#: src/changer/vtl_changer/media.c:109
+#, c-format
+msgid   "[%s | %s]: can't shrink media (label: %s) to size (%s) because media already uses %s. Change media size from %s to %s."
+msgstr  ""
+
+#: src/changer/vtl_changer/media.c:115
+#, c-format
+msgid   "[%s | %s]: shrink size (from %s to %s) of media (label: %s)"
 msgstr  ""
 
 #: src/changer/vtl_changer/script.c:142 src/changer/vtl_changer/script.c:194 src/changer/vtl_changer/script.c:246

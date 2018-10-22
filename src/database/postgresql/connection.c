@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -109,6 +109,7 @@ static int so_database_postgresql_ignore_vtl_deletion(struct so_database_connect
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
 static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
+static int so_database_postgresql_sync_media_format(struct so_database_connection * connect, struct so_media_format * format, enum so_database_sync_method method);
 static int so_database_postgresql_sync_pool(struct so_database_connection * connect, struct so_pool * pool, enum so_database_sync_method method);
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
 static struct so_value * so_database_postgresql_update_vtl(struct so_database_connection * connect, struct so_changer * vtl);
@@ -207,6 +208,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_changer            = so_database_postgresql_sync_changer,
 	.sync_drive              = so_database_postgresql_sync_drive,
 	.sync_media              = so_database_postgresql_sync_media,
+	.sync_media_format       = so_database_postgresql_sync_media_format,
 	.update_vtl              = so_database_postgresql_update_vtl,
 
 	.add_job_record   = so_database_postgresql_add_job_record,
@@ -2272,6 +2274,69 @@ error_asprintf:
 	return failed;
 }
 
+static int so_database_postgresql_sync_media_format(struct so_database_connection * connect, struct so_media_format * format, enum so_database_sync_method method) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = NULL;
+	if (format->db_data == NULL) {
+		format->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+
+		db = so_value_new_hashtable2();
+		so_value_hashtable_put(format->db_data, key, true, db, true);
+	} else {
+		db = so_value_hashtable_get(format->db_data, key, false, false);
+		so_value_free(key);
+	}
+
+	char * mediaformat_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &mediaformat_id);
+
+	if (mediaformat_id == NULL) {
+		char density_code[8];
+		snprintf(density_code, 8, "%hhu", format->density_code);
+
+		const char * query = "select_media_format_id_by_density_code";
+		so_database_postgresql_prepare(self, query, "SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+
+		const char * param[] = { density_code, so_media_format_mode_to_string(format->mode, false) };
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			so_value_hashtable_put2(db, "id", so_value_new_string(PQgetvalue(result, 0, 0)), true);
+			so_value_unpack(db, "{ss}", "id", &mediaformat_id);
+		}
+
+		PQclear(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			return -1;
+	}
+
+	if (method == so_database_sync_id_only)
+		return 0;
+
+
+	const char * query = "select_capacity_media_format_by_id";
+	so_database_postgresql_prepare(self, query, "SELECT capacity FROM mediaformat WHERE id = $1 LIMIT 1");
+
+	const char * param[] = { mediaformat_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_ssize(result, 0, 0, &format->capacity);
+
+	PQclear(result);
+
+	return status != PGRES_TUPLES_OK;
+}
+
 static int so_database_postgresql_sync_pool(struct so_database_connection * connect, struct so_pool * pool, enum so_database_sync_method method) {
 	struct so_database_postgresql_connection_private * self = connect->data;
 
@@ -2452,7 +2517,7 @@ static struct so_value * so_database_postgresql_update_vtl(struct so_database_co
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_vtl_by_uuid";
-	so_database_postgresql_prepare(self, query, "SELECT nbslots, nbdrives, deleted FROM vtl WHERE uuid = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT v.nbslots, v.nbdrives, mf.capacity, v.deleted FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id WHERE v.uuid = $1 LIMIT 1");
 
 	const char * param[] = { vtl->serial_number };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2463,15 +2528,18 @@ static struct so_value * so_database_postgresql_update_vtl(struct so_database_co
 		so_database_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		unsigned int nb_slots = 0, nb_drives = 0;
+		long long int capacity = 0;
 		bool deleted = false;
 
 		so_database_postgresql_get_uint(result, 0, 0, &nb_slots);
 		so_database_postgresql_get_uint(result, 0, 1, &nb_drives);
-		so_database_postgresql_get_bool(result, 0, 2, &deleted);
+		so_database_postgresql_get_long_long(result, 0, 2, &capacity);
+		so_database_postgresql_get_bool(result, 0, 3, &deleted);
 
-		vtl_updated = so_value_pack("{sususb}",
+		vtl_updated = so_value_pack("{sususIsb}",
 			"nb slots", nb_slots,
 			"nb drives", nb_drives,
+			"capacity", capacity,
 			"deleted", deleted
 		);
 	}

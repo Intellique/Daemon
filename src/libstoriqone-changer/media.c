@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // malloc
@@ -113,7 +113,7 @@ void sochgr_media_release(struct so_changer * changer) {
 }
 
 void sochgr_media_remove_peer(struct sochgr_media * media, struct sochgr_peer * peer) {
-	if (media->first == NULL)
+	if (media == NULL || media->first == NULL)
 		return;
 
 	struct sochgr_peer_list * old = NULL;
@@ -141,4 +141,3 @@ void sochgr_media_remove_peer(struct sochgr_media * media, struct sochgr_peer * 
 	media->size_reserved -= old->size_need;
 	free(old);
 }
-

@@ -321,6 +321,15 @@ struct so_database_connection {
 		 */
 		int (*sync_media)(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
 		/**
+		 * \brief synchronize the status of <a>media format</a> with database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] media_format : a media format
+		 * \param[in] method : synchronize strategy
+		 * \return 0 on success
+		 */
+		int (*sync_media_format)(struct so_database_connection * connect, struct so_media_format * format, enum so_database_sync_method method);
+		/**
 		 * \brief get new status of vtl
 		 *
 		 * \param[in] connection : a database connection
