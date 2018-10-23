@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-09 18:53+0200\n"
+        "POT-Creation-Date: 2018-10-23 20:47+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -80,7 +80,7 @@ msgstr  "[%s %s %d] Error al recuperar las informaciones del fichero \"%s\" en l
 msgid   "[%s %s %d] Error while forwarding into media file '%s' at position '%d' because %m"
 msgstr  "[%s %s %d] Error de avance en el fichero del media \"%s\" en la posición \"%d\" porque %m"
 
-#: src/drive/vtl_drive/reader.c:186 src/drive/vtl_drive/reader.c:317 src/drive/vtl_drive/reader.c:344
+#: src/drive/vtl_drive/reader.c:186 src/drive/vtl_drive/reader.c:318 src/drive/vtl_drive/reader.c:345
 #, c-format
 msgid   "[%s %s %d] Error while reading file from media '%s' at position '%d' because %m"
 msgstr  "[%s %s %d] Error leyendo el fichero desde el media \"%s\" en la posición \"%d\" porque %m"

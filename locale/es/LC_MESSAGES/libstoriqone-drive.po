@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-06 19:22+0200\n"
+        "POT-Creation-Date: 2018-10-23 20:26+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -41,80 +41,80 @@ msgstr  "[%s %s #%u]: Analisis del archivo desde el media \"%s\" a la posición 
 msgid   "[%s | %s | #%u]: Throughput: %s/s"
 msgstr  "[%s | %s | #%u]: Throughput: %s/s"
 
-#: src/libstoriqone-drive/listen.c:291
+#: src/libstoriqone-drive/listen.c:293
 #, c-format
 msgid   "[%s %s #%u]: checking header of media '%s'"
 msgstr  "[%s %s #%u]: verificación del encabezamiento del media \"%s\""
 
-#: src/libstoriqone-drive/listen.c:528 src/libstoriqone-drive/listen.c:706 src/libstoriqone-drive/listen.c:918
+#: src/libstoriqone-drive/listen.c:530 src/libstoriqone-drive/listen.c:708 src/libstoriqone-drive/listen.c:920
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for writing"
 msgstr  "[%s %s #%u]: abertura del media \"%s\" en escritura"
 
-#: src/libstoriqone-drive/listen.c:535 src/libstoriqone-drive/listen.c:925
+#: src/libstoriqone-drive/listen.c:537 src/libstoriqone-drive/listen.c:927
 #, c-format
 msgid   "[%s %s #%u]: failed to open media '%s' for writing"
 msgstr  "[%s %s #%u]: fallo a la pertura del media \"%s\" en escritura"
 
-#: src/libstoriqone-drive/listen.c:593
+#: src/libstoriqone-drive/listen.c:595
 #, c-format
 msgid   "[%s %s #%u]: New connection from job (id: %s, num runs: %u)"
 msgstr  "[%s %s #%u]: Nueva conexión de la tarea (id: %s, # ejecución: %u)"
 
-#: src/libstoriqone-drive/listen.c:657
+#: src/libstoriqone-drive/listen.c:659
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for importing archives"
 msgstr  "[%s %s #%u]: apertura del media \"%s\" para importar archivos"
 
-#: src/libstoriqone-drive/listen.c:713
+#: src/libstoriqone-drive/listen.c:715
 #, c-format
 msgid   "[%s %s #%u]: failed to open media '%s' for creating new archive volume"
 msgstr  ""
 
-#: src/libstoriqone-drive/listen.c:780
+#: src/libstoriqone-drive/listen.c:782
 #, c-format
 msgid   "[%s %s #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[%s %s #%u]: Borrando los media \"%s\" (mode : %s)"
 
-#: src/libstoriqone-drive/listen.c:782
+#: src/libstoriqone-drive/listen.c:784
 msgid   "long"
 msgstr  "largo"
 
-#: src/libstoriqone-drive/listen.c:782
+#: src/libstoriqone-drive/listen.c:784
 msgid   "quick"
 msgstr  "rápido"
 
-#: src/libstoriqone-drive/listen.c:791
+#: src/libstoriqone-drive/listen.c:793
 #, c-format
 msgid   "[%s %s #%u]: media '%s' erased successfully"
 msgstr  "[%s %s #%u]: media \"%s\" barrado con éxito"
 
-#: src/libstoriqone-drive/listen.c:795
+#: src/libstoriqone-drive/listen.c:797
 #, c-format
 msgid   "[%s %s #%u]: failed to erase media '%s'"
 msgstr  "[%s %s #%u] : fallo al borrar en el media \"%s\""
 
-#: src/libstoriqone-drive/listen.c:815
+#: src/libstoriqone-drive/listen.c:817
 #, c-format
 msgid   "[%s %s #%u]: formatting media '%s'"
 msgstr  "[%s %s #%u]: formateo del media \"%s\""
 
-#: src/libstoriqone-drive/listen.c:825
+#: src/libstoriqone-drive/listen.c:827
 #, c-format
 msgid   "[%s %s #%u]: media '%s' formatted successfully"
 msgstr  "[%s %s #%u]: media \"%s\" formateo con éxito"
 
-#: src/libstoriqone-drive/listen.c:829
+#: src/libstoriqone-drive/listen.c:831
 #, c-format
 msgid   "[%s %s #%u]: failed to format media '%s'"
 msgstr  "[%s %s #%u]: fallo de formateo del media \"%s\""
 
-#: src/libstoriqone-drive/listen.c:850 src/libstoriqone-drive/listen.c:988
+#: src/libstoriqone-drive/listen.c:852 src/libstoriqone-drive/listen.c:990
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for reading at position #%d"
 msgstr  "[%s %s #%u]: apertura de el media \"%s\" lectura de la posición #%d"
 
-#: src/libstoriqone-drive/listen.c:857 src/libstoriqone-drive/listen.c:995
+#: src/libstoriqone-drive/listen.c:859 src/libstoriqone-drive/listen.c:997
 #, c-format
 msgid   "[%s %s #%u]: failed to open media '%s' for reading at position #%d"
 msgstr  "[%s %s #%u]: Fallo a la apertura del media \"%s\" lectura de la posición #%d"
