@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_JOB_CHANGER_H__
@@ -53,8 +53,8 @@ struct so_changer_ops {
 struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_database_connection * db_connection);
 struct so_slot * soj_changer_find_slot(struct so_media * media) __attribute__((warn_unused_result));
 bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing);
+unsigned int soj_changer_nb_totals_drives(void);
 void soj_changer_set_config(struct so_value * config);
 int soj_changer_sync_all(void);
 
 #endif
-
