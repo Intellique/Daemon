@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // expat
@@ -396,4 +396,3 @@ static void sodr_tape_drive_xml_start_element(void * userData, const char * name
 	}
 	state->current = obj;
 }
-

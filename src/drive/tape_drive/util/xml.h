@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __SO_TAPEDRIVE_XML_H__
@@ -39,4 +39,3 @@ struct so_value * sodr_tape_drive_xml_parse_stream(struct so_stream_reader * rea
 struct so_value * sodr_tape_drive_xml_parse_string(const char * xml);
 
 #endif
-

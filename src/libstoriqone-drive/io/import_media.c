@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext
@@ -156,4 +156,3 @@ static void sodr_io_import_media_parse_archive(struct sodr_peer * peer, struct s
 
 	so_archive_free(archive);
 }
-

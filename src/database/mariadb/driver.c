@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -81,4 +81,3 @@ static void st_database_mariadb_init() {
 	st_database_mariadb_driver.configurations = st_value_new_hashtable2();
 	st_database_register_driver(&st_database_mariadb_driver);
 }
-

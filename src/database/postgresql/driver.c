@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain
@@ -88,4 +88,3 @@ static void so_database_postgresql_init() {
 	so_database_postgresql_driver.configurations = so_value_new_hashtable2();
 	so_database_register_driver(&so_database_postgresql_driver);
 }
-

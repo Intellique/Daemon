@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dngettext
@@ -213,4 +213,3 @@ static int sochgr_standalone_changer_shut_down(struct so_database_connection * d
 static int sochgr_standalone_changer_unload(struct sochgr_peer * peer __attribute__((unused)), struct so_drive * from __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
 	return 1;
 }
-

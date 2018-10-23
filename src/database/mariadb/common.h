@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __STONE_DB_MARIADB_CONNNECTION_H__
@@ -57,4 +57,3 @@ struct st_database_connection * st_database_mariadb_connnect_init(struct st_data
 void st_database_mariadb_util_prepare_string(MYSQL_BIND * bind, const char * string);
 
 #endif
-

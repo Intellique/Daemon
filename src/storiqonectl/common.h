@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __STORIQONECTL_COMMON_H__
@@ -36,4 +36,3 @@ int soctl_status_daemon(int argc, char ** argv);
 int soctl_stop_daemon(int argc, char ** argv);
 
 #endif
-

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_CHANGER_H__
@@ -265,4 +265,3 @@ enum so_changer_status so_changer_string_to_status(const char * status, bool tra
 void so_changer_sync(struct so_changer * changer, struct so_value * new_changer);
 
 #endif
-

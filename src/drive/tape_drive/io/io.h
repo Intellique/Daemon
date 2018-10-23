@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __SO_TAPEDRIVE_IO_IO_H__
@@ -47,4 +47,3 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive 
 struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer2(struct so_drive * drive, int fd, int partition, int file_position, bool fill_last_block, struct so_database_connection * db);
 
 #endif
-

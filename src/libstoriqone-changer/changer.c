@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // NULL
@@ -39,4 +39,3 @@ struct so_changer_driver * sochgr_changer_get() {
 void sochgr_changer_register(struct so_changer_driver * chngr) {
 	current_changer = chngr;
 }
-

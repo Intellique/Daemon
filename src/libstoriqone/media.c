@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext, gettext
@@ -821,4 +821,3 @@ const char * so_pool_unbreakable_level_to_string(enum so_pool_unbreakable_level 
 	else
 		return so_pool_unbreakable_levels[level].name;
 }
-

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // free, malloc
@@ -630,4 +630,3 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_sk
 
 	return so_format_reader_header_ok;
 }
-

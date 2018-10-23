@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_STRING_H__
@@ -181,4 +181,3 @@ size_t so_string_utf8_length(const char * str);
 int so_string_valid_utf8_char(const char * string);
 
 #endif
-

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_SLOT_H__
@@ -61,4 +61,3 @@ void so_slot_sync(struct so_slot * slot, struct so_value * new_slot);
 void so_slot_swap(struct so_slot * sa, struct so_slot * sb);
 
 #endif
-

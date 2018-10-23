@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // NULL
@@ -54,4 +54,3 @@ static struct lgr_log_module * st_log_mariadb_add_module(struct st_value * param
 static void st_log_mariadb_init(void) {
 	lgr_log_register_driver(&st_log_mariadb_driver);
 }
-

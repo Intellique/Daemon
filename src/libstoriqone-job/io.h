@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_JOB_IO2_H__
@@ -41,4 +41,3 @@ struct so_stream_reader * soj_stream_new_reader2(struct so_drive * drive, int fd
 struct so_stream_writer * soj_stream_new_writer(struct so_drive * drive, struct so_value * config);
 
 #endif
-

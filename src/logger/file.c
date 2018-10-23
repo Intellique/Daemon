@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // open
@@ -212,4 +212,3 @@ static void solgr_file_module_write(struct solgr_log_module * module, struct so_
 
 	dprintf(self->fd, "[L:%s | T:%s | P:%5d | %s]: %s\n", self->buf_level, self->buf_type, pid, strtime, smessage);
 }
-

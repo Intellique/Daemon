@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_DRIVE_CHANGER_P_H__
@@ -37,4 +37,3 @@ void sodr_changer_setup(struct so_database_connection * db_connect);
 void sodr_changer_stop(void);
 
 #endif
-

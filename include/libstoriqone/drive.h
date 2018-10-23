@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_DRIVE_H__
@@ -88,4 +88,3 @@ enum so_drive_status so_drive_string_to_status(const char * status, bool transla
 void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool with_slot);
 
 #endif
-

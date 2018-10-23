@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext
@@ -153,4 +153,3 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 	struct so_drive * drive = driver->device;
 	drive->status = so_drive_status_loaded_idle;
 }
-

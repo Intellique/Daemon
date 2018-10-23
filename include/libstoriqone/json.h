@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_JSON_H__
@@ -44,4 +44,3 @@ struct so_value * so_json_parse_stream(struct so_stream_reader * reader);
 struct so_value * so_json_parse_string(const char * json);
 
 #endif
-

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // free, malloc
@@ -132,4 +132,3 @@ static ssize_t so_checksum_sha224_update(struct so_checksum * checksum, const vo
 	sha224_update(&self->sha224, length, data);
 	return length;
 }
-

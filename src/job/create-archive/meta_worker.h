@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __STORIQONE_JOB_CREATE_ARCHIVE_META_H__
@@ -38,4 +38,3 @@ void soj_create_archive_meta_worker_start(struct so_value * checksums);
 void soj_create_archive_meta_worker_wait(bool stop);
 
 #endif
-

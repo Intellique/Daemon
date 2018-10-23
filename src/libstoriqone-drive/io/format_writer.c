@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // errno
@@ -352,4 +352,3 @@ static void sodr_io_format_writer_write_metadata(struct sodr_peer * peer, struct
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }
-

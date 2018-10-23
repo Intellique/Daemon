@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __STORIQONE_JOB_CHECKBACKUP_COMMON_H__
@@ -54,4 +54,3 @@ void soj_checkbackupdb_worker_free(struct soj_checkbackupdb_worker * worker);
 struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup * backup, struct so_backup_volume * volume, size_t size, struct so_database_config * db_config, struct soj_checkbackupdb_worker * previous_worker);
 
 #endif
-

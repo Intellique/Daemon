@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __STONE_THREADPOOL_H__
@@ -60,4 +60,3 @@ int so_thread_pool_run2(const char * thread_name, so_thread_pool_f callback, voi
 void so_thread_pool_set_name(const char * name);
 
 #endif
-

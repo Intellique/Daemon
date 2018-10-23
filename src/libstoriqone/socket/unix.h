@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_SOCKET_UNIX_P_H__
@@ -35,4 +35,3 @@ bool so_socket_unix_from_template(struct so_value * socket_template, so_socket_a
 int so_socket_server_temp_unix(struct so_value * config);
 
 #endif
-

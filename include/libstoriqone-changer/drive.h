@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_CHANGER_DRIVE_H__
@@ -46,4 +46,3 @@ struct so_drive_ops {
 void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name);
 
 #endif
-

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_JOB_MEDIA_H__
@@ -44,4 +44,3 @@ ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, bool appen
 void soj_media_release_all_medias(struct so_pool * pool);
 
 #endif
-

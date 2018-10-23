@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_SCRIPT_H__
@@ -42,4 +42,3 @@ enum so_script_type so_script_string_to_type(const char * string, bool translate
 const char * so_script_type_to_string(enum so_script_type type, bool translate);
 
 #endif
-

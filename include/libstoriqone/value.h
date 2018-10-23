@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_VALUE_H__
@@ -348,4 +348,3 @@ struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, b
 bool so_value_iterator_has_next(struct so_value_iterator * iter);
 
 #endif
-

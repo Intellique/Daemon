@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain
@@ -50,4 +50,3 @@ static void sochgr_scsi_changer_driver_init() {
 	sochgr_scsi_changer_driver.device = sochgr_scsi_changer_get_device();
 	sochgr_changer_register(&sochgr_scsi_changer_driver);
 }
-

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // gettext
@@ -78,4 +78,3 @@ static void solgr_socket_message(int fd, short event, void * data __attribute__(
 unsigned int solgr_listen_nb_clients() {
 	return solgr_nb_clients;
 }
-

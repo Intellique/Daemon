@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_CHANGER_PEER_H__
@@ -47,4 +47,3 @@ void sochgr_peer_free(struct sochgr_peer * peer);
 struct sochgr_peer * sochgr_peer_new(int fd, bool defer);
 
 #endif
-

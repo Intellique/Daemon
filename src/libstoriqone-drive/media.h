@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_DRIVE_MEDIA_P_H__
@@ -33,4 +33,3 @@ bool sodr_media_check_header_v1(struct so_media * media, const char * buffer, st
 bool sodr_media_write_header_v1(struct so_media * media, struct so_pool * pool, char * buffer, size_t length);
 
 #endif
-

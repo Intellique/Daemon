@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // NULL
@@ -53,4 +53,3 @@ static struct solgr_log_module * so_log_postgresql_add_module(struct so_value * 
 static void so_log_postgresql_init(void) {
 	solgr_log_register_driver(&so_log_postgresql_driver);
 }
-

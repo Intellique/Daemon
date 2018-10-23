@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext, gettext
@@ -194,4 +194,3 @@ void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool wi
 	if (with_slot && slot != NULL)
 		so_slot_sync(drive->slot, slot);
 }
-

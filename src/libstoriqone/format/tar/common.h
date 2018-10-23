@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_FORMAT_TAR_H__
@@ -52,4 +52,3 @@ struct so_format_tar {
 struct so_format_reader * so_format_tar_new_reader2(struct so_stream_reader * reader, bool has_checksums);
 
 #endif
-

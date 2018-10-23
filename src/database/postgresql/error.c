@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // gettext
@@ -81,4 +81,3 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 	if (error_code != NULL && strcmp("55P03", error_code) == 0)
 		so_debug_log_stack(16);
 }
-

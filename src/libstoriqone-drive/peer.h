@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_DRIVE_PEER_H__
@@ -69,4 +69,3 @@ struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous);
 void sodr_peer_set(struct sodr_peer * peer);
 
 #endif
-

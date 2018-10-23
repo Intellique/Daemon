@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // bindtextdomain
@@ -50,4 +50,3 @@ static void tape_driver_init() {
 	sodr_tape_drive_driver.device = sodr_tape_drive_get_device();
 	sodr_drive_register(&sodr_tape_drive_driver);
 }
-

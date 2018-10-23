@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -528,4 +528,3 @@ enum so_media_type so_database_postgresql_media_string_to_type(const char * type
 const char * so_database_postgresql_media_type_to_string(enum so_media_type type) {
 	return so_database_postgresql_media_types[type].name;
 }
-
