@@ -366,5 +366,8 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		reader->ops->free(reader);
 	}
 
+	worker->db_connect->ops->free(worker->db_connect);
+	worker->db_connect = NULL;
+
 	worker->status = worker->stop_request ? so_job_status_stopped : so_job_status_finished;
 }
