@@ -127,7 +127,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		new_worker->i_worker = i_worker++;
 		new_worker->archive = archive;
 		new_worker->media = vol->media;
-		new_worker->db_connect = db_connect->config->ops->connect(db_connect->config);
+		new_worker->db_connect = NULL;
 		new_worker->nb_total_read = 0;
 		new_worker->status = so_job_status_running;
 		new_worker->stop_request = false;
@@ -141,6 +141,9 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		else
 			workers = new_worker;
 	}
+
+	unsigned int nb_running_tasks = 0;
+	unsigned int nb_drives = soj_changer_nb_totals_drives();
 
 	struct soj_checkarchive_worker * ptr_worker;
 	for (ptr_worker = workers, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
@@ -156,13 +159,41 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		}
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-			dgettext("storiqone-job-check-archive", "Starting worker #%u"),
-			i);
+			dgettext("storiqone-job-check-archive", "Starting worker #%u"), i);
+
+		ptr_worker->db_connect = db_connect->config->ops->connect(db_connect->config);
 
 		so_thread_pool_run(name, soj_checkarchive_quick_mode_do, ptr_worker);
 
 		if (size >= 0)
 			free(name);
+
+		nb_running_tasks++;
+		while (nb_running_tasks >= nb_drives) {
+			sleep(5);
+
+			ssize_t nb_total_read = 0;
+			unsigned int nb_paused_workers = 0;
+			nb_running_tasks = 0;
+
+			struct soj_checkarchive_worker * ptr_started_worker;
+			for (ptr_started_worker = workers; ptr_started_worker != NULL && ptr_started_worker != ptr_worker->next; ptr_started_worker = ptr_started_worker->next) {
+				if (ptr_started_worker->status == so_job_status_running)
+					nb_running_tasks++;
+				else if (ptr_started_worker->status == so_job_status_pause) {
+					nb_running_tasks++;
+					nb_paused_workers++;
+				}
+
+				nb_total_read += ptr_worker->nb_total_read;
+			}
+
+			job->status = nb_running_tasks == nb_paused_workers ? so_job_status_pause : so_job_status_running;
+
+			float done = nb_total_read;
+			done /= target_size;
+			job->done = 0.01 + done * 0.98;
+		}
 	}
 
 	unsigned int nb_errors = 0;

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_JOB_DRIVE_H__
@@ -29,6 +29,7 @@
 
 #include <libstoriqone/drive.h>
 
+struct so_archive_volume;
 struct so_drive;
 struct so_pool;
 struct so_value;
@@ -51,4 +52,3 @@ struct so_drive_ops {
 };
 
 #endif
-

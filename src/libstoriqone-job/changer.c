@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock
@@ -221,6 +221,16 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 	}
 
 	return false;
+}
+
+unsigned int soj_changer_nb_totals_drives() {
+	unsigned int i, total_drives = 0;
+	for (i = 0; i < soj_nb_changers; i++) {
+		struct so_changer * ch = soj_changers + i;
+		total_drives += ch->nb_drives;
+	}
+
+	return total_drives;
 }
 
 static int soj_changer_release_media(struct so_changer * changer, struct so_media * media) {

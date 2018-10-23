@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-job-check-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-16 17:23+0200\n"
+        "POT-Creation-Date: 2018-10-23 12:21+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -42,70 +42,70 @@ msgstr  ""
 msgid   "Starting check archive (%s) in quick mode"
 msgstr  "Arranque de la verificación del archivo (%s) en modo rápido"
 
-#: src/job/check-archive/quick_mode.c:152
+#: src/job/check-archive/quick_mode.c:155
 msgid   "Failed to set worker thread name"
 msgstr  "Fallo de la definición del nombre del hilo de ejecución"
 
-#: src/job/check-archive/quick_mode.c:159
+#: src/job/check-archive/quick_mode.c:162
 #, c-format
 msgid   "Starting worker #%u"
 msgstr  "Arranque del hilo de ejecución #%u"
 
-#: src/job/check-archive/quick_mode.c:171 src/job/check-archive/thorough_mode.c:299
+#: src/job/check-archive/quick_mode.c:202 src/job/check-archive/thorough_mode.c:299
 #, c-format
 msgid   "Due to job options, all volumes of archive \"%s\" are skipped"
 msgstr  ""
 
-#: src/job/check-archive/quick_mode.c:220
+#: src/job/check-archive/quick_mode.c:251
 #, c-format
 msgid   "Worker #%u has finished with %s and %s"
 msgstr  "El trabajador #%u ha terminado \"%s\" y \"%s\""
 
-#: src/job/check-archive/quick_mode.c:221 src/job/check-archive/quick_mode.c:235
+#: src/job/check-archive/quick_mode.c:252 src/job/check-archive/quick_mode.c:266
 #, c-format
 msgid   "%u warning"
 msgid_plural    "%u warnings"
 msgstr[0]       "%u alerta"
 msgstr[1]       "%u alertas"
 
-#: src/job/check-archive/quick_mode.c:222 src/job/check-archive/quick_mode.c:236
+#: src/job/check-archive/quick_mode.c:253 src/job/check-archive/quick_mode.c:267
 #, c-format
 msgid   "%u error"
 msgid_plural    "%u errors"
 msgstr[0]       "%u error"
 msgstr[1]       "%u errores"
 
-#: src/job/check-archive/quick_mode.c:234
+#: src/job/check-archive/quick_mode.c:265
 #, c-format
 msgid   "Checking archive has finished with %s and %s"
 msgstr  ""
 
-#: src/job/check-archive/quick_mode.c:270 src/job/check-archive/thorough_mode.c:94
+#: src/job/check-archive/quick_mode.c:301 src/job/check-archive/thorough_mode.c:94
 #, c-format
 msgid   "No checksums for volume #%u of archive '%s', ignore this volume"
 msgstr  "No hay suma de verificación para el volumen #%u del archivo \"%s\", ignore éste volumen"
 
-#: src/job/check-archive/quick_mode.c:281
+#: src/job/check-archive/quick_mode.c:312
 #, c-format
 msgid   "Error while getting media '%s', skip to next volume"
 msgstr  ""
 
-#: src/job/check-archive/quick_mode.c:290
+#: src/job/check-archive/quick_mode.c:321
 #, c-format
 msgid   "Error while opening media '%s' at position %d, skip to next volume"
 msgstr  ""
 
-#: src/job/check-archive/quick_mode.c:307
+#: src/job/check-archive/quick_mode.c:338
 #, c-format
 msgid   "Worker #%u : error while reading from media '%s'"
 msgstr  "El trabajador #%u: error al leer desde el media \"%s\""
 
-#: src/job/check-archive/quick_mode.c:328
+#: src/job/check-archive/quick_mode.c:359
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is correct"
 msgstr  "El trabajador #%u: la integridad de los datos del volumen \"%s\" es correcto"
 
-#: src/job/check-archive/quick_mode.c:332
+#: src/job/check-archive/quick_mode.c:363
 #, c-format
 msgid   "Worker #%u : data integrity of volume '%s' is not correct"
 msgstr  "El trabajador #%u: la integridad de los daros del volumen \"%s\" no es correcto"
