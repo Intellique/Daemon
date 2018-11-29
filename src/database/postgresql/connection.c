@@ -3296,7 +3296,7 @@ static int so_database_postgresql_create_check_archive_job(struct so_database_co
 
 	so_value_free(key);
 
-	struct so_value * option = so_value_pack("{sb}", "quick_mode", quick_mode);
+	struct so_value * option = so_value_pack("{sbsb}", "quick_mode", quick_mode, "new_files_only", true);
 	char * str_option = so_json_encode_to_string(option);
 
 	struct so_database_postgresql_connection_private * self = connect->data;
