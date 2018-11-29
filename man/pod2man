@@ -1,0 +1,8 @@
+#!/bin/sh
+
+pod2man -u -s 1 -r 2.3.2 storiqoned.en.pod -n storiqoned -c "STORIQONE" > storiqoned.1
+gzip raid_control.1
+
+pod2man -u -s 1 -r 2.3.2 storiqonectl.en.pod -n storiqonectl -c "STORIQONE" > storiqonectl.1
+gzip raid_control.1
+
