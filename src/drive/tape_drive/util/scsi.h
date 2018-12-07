@@ -159,6 +159,7 @@ int sodr_tape_drive_scsi_read_volume_coherency(int fd, struct sodr_tape_drive_lt
 int sodr_tape_drive_scsi_rewind(int fd);
 int sodr_tape_drive_scsi_setup(const char * path);
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);
+int sodr_tape_drive_scsi_test_unit_ready(int fd);
 int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part);
 
 #endif
