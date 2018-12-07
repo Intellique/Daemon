@@ -1301,6 +1301,35 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	return 0;
 }
 
+int sodr_tape_drive_scsi_test_unit_ready(int fd) {
+	struct {
+		unsigned char operation_code;
+		unsigned char reserved[5];
+	} __attribute__((packed)) command = {
+		.operation_code = 0x00,
+		.reserved = { 0, 0, 0, 0, 0 },
+	};
+
+	sg_io_hdr_t header;
+	struct scsi_request_sense sense;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = NULL;
+	header.timeout = 60000; // 1 min
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	ioctl(fd, SG_IO, &header);
+
+	return sense.sense_key;
+}
+
 int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part) {
 	if (!scsi_command_write_attribute.available)
 		return -1;
@@ -1364,7 +1393,18 @@ int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam
 	header.timeout = 1000 * scsi_command_read_attribute.timeout;
 	header.dxfer_direction = SG_DXFER_TO_DEV;
 
-	int status = ioctl(fd, SG_IO, &header);
+	int try, status;
+	bool ok = false;
+	for (try = 0; try < 3 && !ok; try++) {
+		status = ioctl(fd, SG_IO, &header);
+		if (status != 0) {
+			int try;
+			for (try = 0; try < 5 && sodr_tape_drive_scsi_test_unit_ready(fd) != 0; try++)
+				sleep(1);
+		} else
+			ok = true;
+	}
+
 	if (status)
 		return status;
 
