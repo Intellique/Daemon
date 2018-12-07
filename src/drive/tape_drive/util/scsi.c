@@ -1394,6 +1394,9 @@ int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam
 	header.dxfer_direction = SG_DXFER_TO_DEV;
 
 	int try, status;
+	for (try = 0; try < 5 && sodr_tape_drive_scsi_test_unit_ready(fd) != 0; try++)
+		sleep(1);
+
 	bool ok = false;
 	for (try = 0; try < 3 && !ok; try++) {
 		status = ioctl(fd, SG_IO, &header);
