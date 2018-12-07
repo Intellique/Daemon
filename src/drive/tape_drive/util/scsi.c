@@ -1397,6 +1397,8 @@ int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam
 	bool ok = false;
 	for (try = 0; try < 3 && !ok; try++) {
 		status = ioctl(fd, SG_IO, &header);
+		if (status == 0 && sense.error_code != 0)
+			status =sense.error_code;
 		if (status != 0) {
 			int try;
 			for (try = 0; try < 5 && sodr_tape_drive_scsi_test_unit_ready(fd) != 0; try++)
