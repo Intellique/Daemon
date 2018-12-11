@@ -933,6 +933,9 @@ static int sodr_tape_drive_reset_position(struct so_database_connection * db) {
 }
 
 static int sodr_tape_drive_update_status(struct so_database_connection * db) {
+	if (sodr_drive_is_locked())
+		return 0;
+
 	int fd = sodr_tape_drive_st_open();
 	if (fd < 0)
 		return -1;

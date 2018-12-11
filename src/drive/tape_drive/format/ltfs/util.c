@@ -84,7 +84,7 @@ static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * e
 static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_value * index);
 static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * index, const char * node);
 static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value, struct so_archive * archive, struct so_database_connection * db_connect);
-static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr);
+static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr, enum sodr_tape_drive_scsi_mam_attribute_format format);
 
 
 struct so_value * sodr_tape_drive_format_ltfs_convert_index(struct so_media * media, const char * previous_partition, struct sodr_tape_drive_ltfs_volume_coherency * previous_vcr, struct sodr_tape_drive_scsi_position * current_position) {
@@ -1131,7 +1131,7 @@ int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application vendor' on media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	int failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_vendor);
+	int failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_vendor, sodr_tape_drive_scsi_mam_attribute_format_ascii);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application vendor' on media '%s'"),
@@ -1149,7 +1149,7 @@ int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_name);
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_name, sodr_tape_drive_scsi_mam_attribute_format_ascii);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"),
@@ -1167,7 +1167,7 @@ int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application version' on media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_version);
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_version, sodr_tape_drive_scsi_mam_attribute_format_ascii);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application version' on media '%s'"),
@@ -1185,7 +1185,7 @@ int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'user medium text label' on media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_user_medium_text_label);
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_user_medium_text_label, sodr_tape_drive_scsi_mam_attribute_format_text);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'user medium text label' on media '%s'"),
@@ -1203,7 +1203,7 @@ int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, try to remove attribute 'application name' on media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
-	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_format_version);
+	failed = sodr_tape_drive_format_ltfs_remove_mam2(scsi_fd, sodr_tape_drive_scsi_mam_application_format_version, sodr_tape_drive_scsi_mam_attribute_format_ascii);
 	if (failed != 0)
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Update medium auxiliary memory, failed to remove attribute 'application name' on media '%s'"),
@@ -1216,10 +1216,10 @@ int sodr_tape_drive_format_ltfs_remove_mam(int scsi_fd, struct so_drive * drive,
 	return failed;
 }
 
-static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr) {
+static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr, enum sodr_tape_drive_scsi_mam_attribute_format format) {
 	struct sodr_tape_drive_scsi_mam_attribute attribute = {
 		.identifier = attr,
-		.format     = sodr_tape_drive_scsi_mam_attribute_format_ascii,
+		.format     = format,
 		.read_only  = false,
 		.length     = 0,
 	};
