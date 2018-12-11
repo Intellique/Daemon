@@ -31,12 +31,17 @@
 #include <libstoriqone/value.h>
 
 #include "drive.h"
+#include "listen.h"
 
 static struct so_drive_driver * current_drive = NULL;
 
 
 struct so_drive_driver * sodr_drive_get() {
 	return current_drive;
+}
+
+bool sodr_drive_is_locked() {
+	return sodr_listen_is_locked();
 }
 
 void sodr_drive_register(struct so_drive_driver * dr) {

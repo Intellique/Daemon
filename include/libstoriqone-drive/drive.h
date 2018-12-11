@@ -69,6 +69,7 @@ struct so_drive_ops {
 	int (*update_status)(struct so_database_connection * db);
 };
 
+bool sodr_drive_is_locked(void);
 void sodr_drive_register(struct so_drive_driver * dr);
 
 #endif

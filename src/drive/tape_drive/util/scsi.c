@@ -125,6 +125,7 @@ static int sodr_tape_drive_scsi_locate10(int fd, struct sodr_tape_drive_scsi_pos
  */
 static int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
 static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_command);
+static int sodr_tape_drive_scsi_test_unit_ready2(int fd);
 
 static struct scsi_command scsi_command_erase = {
 	.name = "ERASE",
@@ -1330,6 +1331,16 @@ int sodr_tape_drive_scsi_test_unit_ready(int fd) {
 	return sense.sense_key;
 }
 
+int sodr_tape_drive_scsi_test_unit_ready2(int fd) {
+	int try, status = 1;
+	for (try = 0; try < 5 && status != 0; try++) {
+		status = sodr_tape_drive_scsi_test_unit_ready(fd);
+		if (status != 0)
+			sleep(1);
+	}
+	return status;
+}
+
 int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part) {
 	if (!scsi_command_write_attribute.available)
 		return -1;
@@ -1393,26 +1404,21 @@ int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam
 	header.timeout = 1000 * scsi_command_read_attribute.timeout;
 	header.dxfer_direction = SG_DXFER_TO_DEV;
 
-	int try, status;
-	for (try = 0; try < 5 && sodr_tape_drive_scsi_test_unit_ready(fd) != 0; try++)
-		sleep(1);
+	if (sodr_tape_drive_scsi_test_unit_ready2(fd) != 0)
+		return 1;
 
 	bool ok = false;
-	for (try = 0; try < 3 && !ok; try++) {
+	int status, try;
+	for (try = 0; try < 5 && !ok; try++) {
 		status = ioctl(fd, SG_IO, &header);
-		if (status == 0 && sense.error_code != 0)
-			status =sense.error_code;
-		if (status != 0) {
-			int try;
-			for (try = 0; try < 5 && sodr_tape_drive_scsi_test_unit_ready(fd) != 0; try++)
-				sleep(1);
+		if (sense.error_code != 0) {
+			status = sense.error_code;
+			if (sodr_tape_drive_scsi_test_unit_ready2(fd) != 0)
+				return 1;
 		} else
 			ok = true;
 	}
 
-	if (status)
-		return status;
-
-	return 0;
+	return status;
 }
 
