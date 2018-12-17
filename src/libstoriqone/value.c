@@ -60,6 +60,7 @@ struct so_value_hashtable {
 	} ** nodes;
 	unsigned int nb_elements;
 	unsigned int size_node;
+	unsigned int limit;
 
 	bool allow_rehash;
 
@@ -436,29 +437,29 @@ static bool so_value_count_ref(struct so_value * ref) {
 	switch (ref->type) {
 		case so_value_array:
 		case so_value_linked_list: {
-				struct so_value_iterator * iter = so_value_list_get_iterator2(ref, true);
-				while (so_value_iterator_has_next(iter)) {
-					struct so_value * elt = so_value_iterator_get_value(iter, false);
-					so_value_count_ref2(ref, elt);
-				}
-				so_value_iterator_free(iter);
-
-				break;
+			struct so_value_iterator * iter = so_value_list_get_iterator2(ref, true);
+			while (so_value_iterator_has_next(iter)) {
+				struct so_value * elt = so_value_iterator_get_value(iter, false);
+				so_value_count_ref2(ref, elt);
 			}
+			so_value_iterator_free(iter);
+
+			break;
+		}
 
 		case so_value_hashtable: {
-				struct so_value_iterator * iter = so_value_hashtable_get_iterator2(ref, true);
-				while (so_value_iterator_has_next(iter)) {
-					struct so_value * key = so_value_iterator_get_key(iter, false, false);
-					so_value_count_ref2(ref, key);
+			struct so_value_iterator * iter = so_value_hashtable_get_iterator2(ref, true);
+			while (so_value_iterator_has_next(iter)) {
+				struct so_value * key = so_value_iterator_get_key(iter, false, false);
+				so_value_count_ref2(ref, key);
 
-					struct so_value * elt = so_value_iterator_get_value(iter, false);
-					so_value_count_ref2(ref, elt);
-				}
-				so_value_iterator_free(iter);
-
-				break;
+				struct so_value * elt = so_value_iterator_get_value(iter, false);
+				so_value_count_ref2(ref, elt);
 			}
+			so_value_iterator_free(iter);
+
+			break;
+		}
 
 		default:
 			break;
@@ -548,25 +549,25 @@ bool so_value_equals(struct so_value * a, struct so_value * b) {
 			switch (b->type) {
 				case so_value_array:
 				case so_value_linked_list: {
-						struct so_value_iterator * iter_a = so_value_list_get_iterator(a);
-						struct so_value_iterator * iter_b = so_value_list_get_iterator(b);
+					struct so_value_iterator * iter_a = so_value_list_get_iterator(a);
+					struct so_value_iterator * iter_b = so_value_list_get_iterator(b);
 
-						bool equals = true;
-						while (equals && so_value_iterator_has_next(iter_a) && so_value_iterator_has_next(iter_b)) {
-							struct so_value * v_a = so_value_iterator_get_value(iter_a, false);
-							struct so_value * v_b = so_value_iterator_get_value(iter_b, false);
+					bool equals = true;
+					while (equals && so_value_iterator_has_next(iter_a) && so_value_iterator_has_next(iter_b)) {
+						struct so_value * v_a = so_value_iterator_get_value(iter_a, false);
+						struct so_value * v_b = so_value_iterator_get_value(iter_b, false);
 
-							equals = so_value_equals(v_a, v_b);
-						}
-
-						if (equals)
-							equals = !so_value_iterator_has_next(iter_a) && !so_value_iterator_has_next(iter_b);
-
-						so_value_iterator_free(iter_a);
-						so_value_iterator_free(iter_b);
-
-						return equals;
+						equals = so_value_equals(v_a, v_b);
 					}
+
+					if (equals)
+						equals = !so_value_iterator_has_next(iter_a) && !so_value_iterator_has_next(iter_b);
+
+					so_value_iterator_free(iter_a);
+					so_value_iterator_free(iter_b);
+
+					return equals;
+				}
 
 				default:
 					return false;
@@ -767,6 +768,7 @@ struct so_value * so_value_new_hashtable(so_value_hashtable_compupte_hash_f comp
 	hashtable->nodes = calloc(16, sizeof(struct so_value_hashtable_node *));
 	hashtable->nb_elements = 0;
 	hashtable->size_node = 16;
+	hashtable->limit = 4;
 	hashtable->allow_rehash = true;
 	hashtable->compute_hash = compute_hash;
 	return val;
@@ -1428,7 +1430,7 @@ static void so_value_hashtable_put_inner(struct so_value_hashtable * hashtable, 
 			so_value_hashtable_release_node(node);
 			hashtable->nb_elements--;
 		} else {
-			short nb_elt = 1;
+			unsigned int nb_elt = 1;
 			while (node->next != NULL) {
 				if (node->next->hash == new_node->hash) {
 					struct so_value_hashtable_node * old = node->next;
@@ -1445,7 +1447,7 @@ static void so_value_hashtable_put_inner(struct so_value_hashtable * hashtable, 
 			}
 
 			node->next = new_node;
-			if (nb_elt > 4)
+			if (nb_elt > hashtable->limit)
 				so_value_hashtable_rehash(hashtable);
 		}
 	} else
@@ -1462,6 +1464,7 @@ static void so_value_hashtable_rehash(struct so_value_hashtable * hashtable) {
 	unsigned int old_size_nodes = hashtable->size_node;
 
 	hashtable->size_node <<= 1;
+	hashtable->limit++;
 	hashtable->nodes = calloc(hashtable->size_node, sizeof(struct so_value_hashtable_node *));
 
 	unsigned int i;
