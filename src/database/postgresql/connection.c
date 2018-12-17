@@ -608,7 +608,7 @@ static int so_database_postgresql_can_delete_vtl(struct so_database_connection *
 
 	PQclear(result);
 
-	if (status != PGRES_COMMAND_OK)
+	if (status != PGRES_TUPLES_OK)
 		return -1;
 	else
 		return can_delete ? 1 : 0;
