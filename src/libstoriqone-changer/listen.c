@@ -633,7 +633,8 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 		unsigned int i;
 		for (i = 0; i < changer->nb_drives; i++) {
 			struct so_drive * drive = changer->drives + i;
-			drive->ops->update_status(drive);
+			if (drive->enable)
+				drive->ops->update_status(drive);
 		}
 
 		sl = sochgr_socket_find_slot_by_media(medium_serial_number);
@@ -696,6 +697,10 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 				unsigned int i;
 				for (i = 0; i < changer->nb_drives && !supported_format; i++) {
 					struct so_drive * dr = changer->drives + i;
+
+					if (!dr->enable)
+						continue;
+
 					if (dr->ops->check_format(dr, media, pool, archive_uuid))
 						supported_format = true;
 				}
