@@ -784,7 +784,7 @@ static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_drives_by_changer";
-	so_database_postgresql_prepare(self, query, "SELECT id, model, vendor, firmwarerev, serialnumber, enable FROM drive WHERE changer = $1");
+	so_database_postgresql_prepare(self, query, "SELECT id, model, vendor, firmwarerev, serialnumber, d.enable FROM drive d INNER JOIN changerslot cs ON d.id = cs.drive WHERE d.changer = $1 ORDER BY cs.index");
 
 	const char * param[] = { changer_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
