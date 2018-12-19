@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-07-13 13:17+0200\n"
+        "POT-Creation-Date: 2018-12-19 15:23+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -96,17 +96,17 @@ msgstr  "[ %s | %s | n°%u ] : échec lors de l’ouverture du lecteur parce 
 msgid   "[%s | %s | #%u]: error while opening scsi device '%s' because %m"
 msgstr  "[ %s | %s | n°%u ] : Erreur en ouvrant le périphérique scsi « %s » parce que %m"
 
-#: src/drive/tape_drive/device.c:1019
+#: src/drive/tape_drive/device.c:1022
 #, c-format
 msgid   "[%s | %s | #%u]: Create new media (medium serial number: %s)"
 msgstr  "[ %s | %s | n°%u ] : Création d’un nouveau média (numéro de série du média : %s)"
 
-#: src/drive/tape_drive/device.c:1082
+#: src/drive/tape_drive/device.c:1085
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Vérification de l’entête du média « %s »"
 
-#: src/drive/tape_drive/device.c:1091
+#: src/drive/tape_drive/device.c:1094
 #, c-format
 msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
 msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l’entête de la bande « %s »"
@@ -435,23 +435,23 @@ msgstr  "[ %s | %s | n°%u ] : erreur en lisant parce que %m"
 msgid   "[%s | %s | #%u]: error while rewinding tape because %m"
 msgstr  "[ %s | %s | n°%u ] : erreur en rembobinant la bande parce que %m"
 
-#: src/drive/tape_drive/io/writer.c:202 src/drive/tape_drive/io/writer.c:314 src/drive/tape_drive/io/writer.c:489
-#: src/drive/tape_drive/io/writer.c:546
+#: src/drive/tape_drive/io/writer.c:204 src/drive/tape_drive/io/writer.c:317 src/drive/tape_drive/io/writer.c:493
+#: src/drive/tape_drive/io/writer.c:550
 #, c-format
 msgid   "[%s | %s | #%u]: Space remaing on tape '%s': %s"
 msgstr  "[ %s | %s | n°%u ] : Espace restante sur le média « %s » : %s"
 
-#: src/drive/tape_drive/io/writer.c:219 src/drive/tape_drive/io/writer.c:506 src/drive/tape_drive/io/writer.c:563
+#: src/drive/tape_drive/io/writer.c:221 src/drive/tape_drive/io/writer.c:510 src/drive/tape_drive/io/writer.c:567
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing because %s"
 msgstr  "[ %s | %s | n°%u ] : erreur en écrivant parce que %s"
 
-#: src/drive/tape_drive/io/writer.c:246
+#: src/drive/tape_drive/io/writer.c:248
 #, c-format
 msgid   "[%s | %s | #%u]: error while writing end of file because %s"
 msgstr  "[ %s | %s | n°%u ] : erreur en écrivant le marqueur de fin de fichier parce que %s"
 
-#: src/drive/tape_drive/io/writer.c:259
+#: src/drive/tape_drive/io/writer.c:261
 #, c-format
 msgid   "[%s | %s | #%u]: drive is closed"
 msgstr  "[ %s | %s | n°%u ] : le lecteur est fermé"
@@ -516,26 +516,26 @@ msgstr  "Trouvé une étiquette LTFS corrompue sur le média « %s »"
 msgid   "Error, not enough memory to read LTFS label from media '%s'"
 msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette LTFS du média « %s »"
 
-#: src/drive/tape_drive/util/scsi.c:853
+#: src/drive/tape_drive/util/scsi.c:854
 #, c-format
 msgid   "Media information of %s, Medium manufacturer: %s"
 msgstr  "Information du média %s, Fabricant du média: %s"
 
-#: src/drive/tape_drive/util/scsi.c:871
+#: src/drive/tape_drive/util/scsi.c:872
 #, c-format
 msgid   "Media information of %s, Medium date: %s"
 msgstr  "Information du média %s, date du média: %s"
 
-#: src/drive/tape_drive/util/scsi.c:1209
+#: src/drive/tape_drive/util/scsi.c:1210
 #, c-format
 msgid   "SCSI supported command: '%s', available: %s, timeout: %u seconds"
 msgstr  "Commande SCSI supportée : « %s », disponible : %s, temps morts : %u secondes"
 
-#: src/drive/tape_drive/util/scsi.c:1210
+#: src/drive/tape_drive/util/scsi.c:1211
 msgid   "no"
 msgstr  "non"
 
-#: src/drive/tape_drive/util/scsi.c:1210
+#: src/drive/tape_drive/util/scsi.c:1211
 msgid   "yes"
 msgstr  "oui"
 

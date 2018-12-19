@@ -930,8 +930,6 @@ static void soj_create_archive_worker_write_async(struct soj_create_archive_work
 
 	file->position = current_file_position;
 	worker->partial_done = worker->writer->ops->position(worker->writer);
-
-	return;
 }
 
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker) {

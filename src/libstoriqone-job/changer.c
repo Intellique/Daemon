@@ -215,7 +215,7 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 		unsigned int j;
 		for (j = 0; j < ch->nb_drives; j++) {
 			struct so_drive * dr = ch->drives + j;
-			if (dr->ops->check_support(dr, format, for_writing))
+			if (dr->enable && dr->ops->check_support(dr, format, for_writing))
 				return true;
 		}
 	}
@@ -227,7 +227,10 @@ unsigned int soj_changer_nb_totals_drives() {
 	unsigned int i, total_drives = 0;
 	for (i = 0; i < soj_nb_changers; i++) {
 		struct so_changer * ch = soj_changers + i;
-		total_drives += ch->nb_drives;
+		unsigned int j;
+		for (j = 0; j < ch->nb_drives; j++)
+			if (ch->drives[j].enable)
+				total_drives++;
 	}
 
 	return total_drives;

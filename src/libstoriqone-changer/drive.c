@@ -204,8 +204,13 @@ static int sochgr_drive_lock(struct so_drive * drive, const char * job_id) {
 }
 
 void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name) {
-	if (!drive->enable)
+	if (drives_config == NULL)
+		drives_config = so_value_new_linked_list();
+
+	if (!drive->enable) {
+		so_value_list_push(drives_config, so_value_new_null(), false);
 		return;
+	}
 
 	struct sochgr_drive * self = malloc(sizeof(struct sochgr_drive));
 	bzero(self, sizeof(struct sochgr_drive));
@@ -245,9 +250,6 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 	so_json_encode_to_fd(self->config, self->fd_in, true);
 
 	struct so_value * dr_config = so_json_parse_fd(self->fd_out, -1);
-
-	if (drives_config == NULL)
-		drives_config = so_value_new_linked_list();
 
 	if (so_value_list_get_length(drives_config) <= drive->index)
 		so_value_list_push(drives_config, dr_config, true);
