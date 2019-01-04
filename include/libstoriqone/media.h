@@ -160,6 +160,7 @@ struct so_pool {
 	bool growable;
 	enum so_pool_unbreakable_level unbreakable_level;
 	bool rewritable;
+	bool backup;
 	bool deleted;
 
 	struct so_archive_format * archive_format;

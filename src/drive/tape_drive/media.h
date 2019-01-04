@@ -47,8 +47,9 @@ struct sodr_tape_drive_ltfs_volume_coherency {
 
 struct sodr_tape_drive_media {
 	enum sodr_tape_drive_media_format {
-		sodr_tape_drive_media_storiq_one = 0x1,
-		sodr_tape_drive_media_ltfs       = 0x2,
+		sodr_tape_drive_media_storiq_one        = 0x1,
+		sodr_tape_drive_media_ltfs              = 0x2,
+		sodr_tape_drive_media_storiq_one_backup = 0x3,
 
 		sodr_tape_drive_media_unknown = 0x0,
 	} format;
