@@ -135,6 +135,11 @@ enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffe
 		return media_format_version > 0 && media_format_version < 4 ? sodr_tape_drive_media_storiq_one : sodr_tape_drive_media_unknown;
 
 
+	nb_params = sscanf(buffer, "Storiq One Backup (%64[^)])\nMedia format: version=%d\n", storiqone_version, &media_format_version);
+	if (nb_params == 2)
+		return media_format_version > 0 && media_format_version < 4 ? sodr_tape_drive_media_storiq_one_backup : sodr_tape_drive_media_unknown;
+
+
 	char vol_id[7];
 	nb_params = sscanf(buffer, "VOL1%6sL             LTFS", vol_id);
 	return nb_params == 1 ? sodr_tape_drive_media_ltfs : sodr_tape_drive_media_unknown;

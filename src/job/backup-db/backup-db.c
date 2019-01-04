@@ -336,7 +336,9 @@ static bool soj_backupdb_script_pre_run(struct so_job * job, struct so_database_
 }
 
 static int soj_backupdb_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
+	soj_backupdb_pool = db_connect->ops->get_pool(db_connect, NULL, job);
+	if (soj_backupdb_pool == NULL)
+		soj_backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
 	if (soj_backupdb_pool == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-backup-db", "Pool (Storiq one database backup) not found"));

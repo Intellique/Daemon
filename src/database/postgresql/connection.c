@@ -1140,7 +1140,7 @@ static int so_database_postgresql_get_pool_by_id(struct so_database_connection *
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_pool_by_id";
-	so_database_postgresql_prepare(self, query, "SELECT p.id, uuid, p.name, p.autocheck, p.growable, p.unbreakablelevel, p.rewritable, p.deleted, p.archiveformat, mf.densitycode, mf.mode FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE p.id = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT p.id, uuid, p.name, p.autocheck, p.growable, p.unbreakablelevel, p.rewritable, p.deleted, p.archiveformat, mf.densitycode, mf.mode, p.backuppool FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE p.id = $1 LIMIT 1");
 
 	const char * param[] = { id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1162,6 +1162,7 @@ static int so_database_postgresql_get_pool_by_id(struct so_database_connection *
 		pool->unbreakable_level = so_pool_string_to_unbreakable_level(PQgetvalue(result, 0, 5), false);
 		so_database_postgresql_get_bool(result, 0, 6, &pool->rewritable);
 		so_database_postgresql_get_bool(result, 0, 7, &pool->deleted);
+		so_database_postgresql_get_bool(result, 0, 11, &pool->backup);
 
 		pool->archive_format = so_database_postgresql_get_archive_format_by_id(connect, PQgetvalue(result, 0, 8));
 

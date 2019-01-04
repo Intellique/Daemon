@@ -244,6 +244,10 @@ static bool sodr_tape_drive_check_header2(bool restore_data, struct so_database_
 					media->archive_format = db->ops->get_archive_format_by_name(db, "LTFS");
 					break;
 
+				case sodr_tape_drive_media_storiq_one_backup:
+					media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One (Backup)");
+					break;
+
 				default:
 					media->archive_format = NULL;
 					break;
@@ -451,7 +455,7 @@ static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_value *
 		return -1;
 
 	int failed = -1;
-	if (strcmp(pool->archive_format->name, "Storiq One (TAR)") == 0)
+	if (strcmp(pool->archive_format->name, "Storiq One (TAR)") == 0 || strcmp(pool->archive_format->name, "Storiq One (Backup)") == 0)
 		failed = sodr_tape_drive_format_storiqone_format_media(&sodr_tape_drive, fd, pool, option, db);
 	else if (strcmp(pool->archive_format->name, "LTFS") == 0) {
 		int scsi_fd = sodr_tape_drive_scsi_open();
@@ -580,7 +584,8 @@ static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, s
 
 	struct sodr_tape_drive_media * mp = media->private_data;
 	switch (mp->format) {
-		case sodr_tape_drive_media_storiq_one: {
+		case sodr_tape_drive_media_storiq_one:
+		case sodr_tape_drive_media_storiq_one_backup: {
 			struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(file_position, db);
 			if (reader == NULL)
 				return NULL;
@@ -614,7 +619,8 @@ static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * ch
 
 	struct sodr_tape_drive_media * mp = media->private_data;
 	switch (mp->format) {
-		case sodr_tape_drive_media_storiq_one: {
+		case sodr_tape_drive_media_storiq_one:
+		case sodr_tape_drive_media_storiq_one_backup: {
 			struct so_stream_writer * writer = sodr_tape_drive_get_raw_writer(db);
 			if (writer == NULL)
 				return NULL;
