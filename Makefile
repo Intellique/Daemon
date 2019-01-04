@@ -50,7 +50,7 @@ endif
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O2 -ggdb3 -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Wformat -Wformat-security -Werror=format-security -fstack-protector-strong -fstack-protector --param ssp-buffer-size=4 $(addprefix -I,${INCLUDE_DIR})
+CFLAGS		:= -std=gnu11 -pipe -O2 -ggdb3 -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Wformat -Wformat-security -Werror=format-security -fstack-protector-strong -fstack-protector --param ssp-buffer-size=4 $(addprefix -I,${INCLUDE_DIR})
 LDFLAGS		:= -Wl,-z,relro,-z,now
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
@@ -102,7 +102,7 @@ $$($(1)_LIB): ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE} $${$(1)_DEPEND_LIB} $${$(1)_O
 
 $${$(1)_BUILD_DIR}/%.o: $${$(1)_SRC_DIR}/%.c | $${$(1)_OBJ_DIRS} $${$(1)_DEP_DIRS}
 	@echo " CC         $$@"
-	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$(firstword $$<)
+	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -MD -MF $$($(1)_DEPEND_DIR)/$$*.d -MT $$@ -o $$@ $$(firstword $$<)
 
 ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}: $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES} | ${CHCKSUM_DIR}
 	@echo " CHCKSUM    $$@"
