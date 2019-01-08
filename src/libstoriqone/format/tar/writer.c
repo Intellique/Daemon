@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -61,6 +61,7 @@ struct so_format_tar_writer_private {
 
 	off_t position;
 	ssize_t size;
+	char buffer[512];
 
 	int last_errno;
 
@@ -325,16 +326,16 @@ static int so_format_tar_writer_close(struct so_format_writer * fw) {
 	if (available_size > 512)
 		available_size = 512;
 
-	char * buffer = malloc(available_size);
-	bzero(buffer, available_size);
+	if (available_size > 0) {
+		bzero(format->buffer, available_size);
 
-	format->last_errno = 0;
-	ssize_t nb_write = format->io->ops->write(format->io, buffer, available_size);
-	free(buffer);
+		format->last_errno = 0;
+		ssize_t nb_write = format->io->ops->write(format->io, format->buffer, available_size);
 
-	if (nb_write < 0) {
-		format->last_errno = format->io->ops->last_errno(format->io);
-		return -1;
+		if (nb_write < 0) {
+			format->last_errno = format->io->ops->last_errno(format->io);
+			return -1;
+		}
 	}
 
 	return format->io->ops->close(format->io);
@@ -417,11 +418,13 @@ static ssize_t so_format_tar_writer_end_of_file(struct so_format_writer * fw) {
 	unsigned short mod = self->position % 512;
 	if (mod > 0) {
 		size_t length = 512 - mod;
-		char * buffer = malloc(length);
-		bzero(buffer, length);
+		bzero(self->buffer, length);
 
-		ssize_t nb_write = self->io->ops->write(self->io, buffer, length);
-		free(buffer);
+		ssize_t nb_write = self->io->ops->write(self->io, self->buffer, length);
+		if (nb_write < 0) {
+			self->last_errno = self->io->ops->last_errno(self->io);
+			return -1;
+		}
 
 		return nb_write;
 	}

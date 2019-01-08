@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext
@@ -366,7 +366,11 @@ bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, cha
 	// M | Pool: name="Foo", uuid="07117f1a-2b13-11e1-8bcb-80ee73001df6"
 	// M | Block size: 32768
 	// M | Checksum: sha1="ff3ac5ae13653067030b56c5f1899eefd4ff2584"
-	size_t nb_write = snprintf(buffer, length, "Storiq One (" STORIQONE_VERSION ")\nMedia format: version=3\nHost: name=\"%s\", uuid=\"%s\"\n", host->hostname, host->uuid);
+	size_t nb_write;
+	if (pool->backup)
+		nb_write = snprintf(buffer, length, "Storiq One Backup (" STORIQONE_VERSION ")\nMedia format: version=3\nHost: name=\"%s\", uuid=\"%s\"\n", host->hostname, host->uuid);
+	else
+		nb_write = snprintf(buffer, length, "Storiq One (" STORIQONE_VERSION ")\nMedia format: version=3\nHost: name=\"%s\", uuid=\"%s\"\n", host->hostname, host->uuid);
 	size_t position = nb_write;
 
 	/**

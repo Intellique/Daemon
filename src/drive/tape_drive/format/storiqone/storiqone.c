@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext
@@ -268,7 +268,7 @@ int sodr_tape_drive_format_storiqone_format_media(struct so_drive * drive, int f
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
 	if (failed == 0)
-		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
+		media->archive_format = so_archive_format_dup(pool->archive_format);
 
 	free(header);
 

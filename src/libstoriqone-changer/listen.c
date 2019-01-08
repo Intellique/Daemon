@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext
@@ -625,11 +625,11 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 		return;
 	}
 
+	struct so_changer_driver * driver = sochgr_changer_get();
+	struct so_changer * changer = driver->device;
+
 	struct so_slot * sl = sochgr_socket_find_slot_by_media(medium_serial_number);
 	if (sl == NULL) {
-		struct so_changer_driver * driver = sochgr_changer_get();
-		struct so_changer * changer = driver->device;
-
 		unsigned int i;
 		for (i = 0; i < changer->nb_drives; i++) {
 			struct so_drive * drive = changer->drives + i;
@@ -665,9 +665,6 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	} else
 		pool = sl->media->pool;
 
-	struct so_changer_driver * driver = sochgr_changer_get();
-	struct so_changer * changer = driver->device;
-
 	ssize_t result = -1L;
 	struct sochgr_media * mp = media->private_data;
 	ssize_t reserved_space = changer->ops->get_reserved_space(media->media_format);
@@ -690,18 +687,12 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 				result = 0;
 				sochgr_media_add_reader(mp, peer);
 			} else {
-				struct so_changer_driver * driver = sochgr_changer_get();
-				struct so_changer * changer = driver->device;
 				bool supported_format = false;
 
 				unsigned int i;
 				for (i = 0; i < changer->nb_drives && !supported_format; i++) {
 					struct so_drive * dr = changer->drives + i;
-
-					if (!dr->enable)
-						continue;
-
-					if (dr->ops->check_format(dr, media, pool, archive_uuid))
+					if (dr->enable && dr->ops->check_format(dr, media, pool, archive_uuid))
 						supported_format = true;
 				}
 

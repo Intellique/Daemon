@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-10-23 20:47+0200\n"
+        "POT-Creation-Date: 2018-10-24 16:54+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Katty Ramirez <kramirez@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -65,7 +65,7 @@ msgstr  "[ %s %s %d ]: Fallo a la abertura del fichero del media \"%s\" en la 
 msgid   "[%s %s %d]: Failed to find media with UUID '%s' from database"
 msgstr  "[%s %s %d]: Fallo al buscar el media con l'UUID \"%s\" desde la base de datos"
 
-#: src/drive/vtl_drive/reader.c:92 src/drive/vtl_drive/writer.c:175
+#: src/drive/vtl_drive/reader.c:92 src/drive/vtl_drive/writer.c:176
 #, c-format
 msgid   "[%s %s %d] Error while closing media '%s' at position '%d' because %s"
 msgstr  "[%s %s %d] Error al cerra el media \"%s\" en la posición \"%d\" porque %s"
@@ -85,22 +85,22 @@ msgstr  "[%s %s %d] Error de avance en el fichero del media \"%s\" en la posici�
 msgid   "[%s %s %d] Error while reading file from media '%s' at position '%d' because %m"
 msgstr  "[%s %s %d] Error leyendo el fichero desde el media \"%s\" en la posición \"%d\" porque %m"
 
-#: src/drive/vtl_drive/writer.c:114 src/drive/vtl_drive/writer.c:399
+#: src/drive/vtl_drive/writer.c:115 src/drive/vtl_drive/writer.c:402
 #, c-format
 msgid   "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d] Error al escribir en el fichero desde el media \"%s\" en la posición \"%d\" porque %m"
 
-#: src/drive/vtl_drive/writer.c:156 src/drive/vtl_drive/writer.c:316 src/drive/vtl_drive/writer.c:374
+#: src/drive/vtl_drive/writer.c:157 src/drive/vtl_drive/writer.c:319 src/drive/vtl_drive/writer.c:377
 #, c-format
 msgid   "[%s %s %d] Error while writing to media file '%s' at position '%d' because %m"
 msgstr  "[%s %s %d] Error al ecribir el fichero del media \"%s\" en la posición \"%d\" porque %m"
 
-#: src/drive/vtl_drive/writer.c:195 src/drive/vtl_drive/writer.c:256
+#: src/drive/vtl_drive/writer.c:196 src/drive/vtl_drive/writer.c:258
 #, c-format
 msgid   "[%s %s %d] Error while opening file '%s' because %m"
 msgstr  "[ %s %s %d] Error al abrir el fichero \"%s\" porque %m"
 
-#: src/drive/vtl_drive/writer.c:332
+#: src/drive/vtl_drive/writer.c:335
 #, c-format
 msgid   "[%s %s %d] Error while repositioning at beginning of file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d] Error al posicionarse al comienzo del fichero desde el media \"%s\" en la posición \"%d\" porque %m"

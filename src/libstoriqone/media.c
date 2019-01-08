@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2018, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // dgettext, gettext
@@ -495,7 +495,7 @@ struct so_value * so_pool_convert(struct so_pool * pool) {
 	if (pool == NULL)
 		return so_value_new_null();
 
-	return so_value_pack("{sssssssbsssbsbsoso}",
+	return so_value_pack("{sssssssbsssbsbsbsoso}",
 		"uuid", pool->uuid,
 		"name", pool->name,
 
@@ -503,6 +503,7 @@ struct so_value * so_pool_convert(struct so_pool * pool) {
 		"growable", pool->growable,
 		"unbreakable level", so_pool_unbreakable_level_to_string(pool->unbreakable_level, false),
 		"rewritable", pool->rewritable,
+		"backup", pool->backup,
 		"deleted", pool->deleted,
 
 		"archive format", so_archive_format_convert(pool->archive_format),
@@ -521,6 +522,7 @@ struct so_pool * so_pool_dup(struct so_pool * pool) {
 	new_pool->growable = pool->growable;
 	new_pool->unbreakable_level = pool->unbreakable_level;
 	new_pool->rewritable = pool->rewritable;
+	new_pool->backup = pool->backup;
 	new_pool->deleted = pool->deleted;
 
 	new_pool->archive_format = so_archive_format_dup(pool->archive_format);
@@ -541,13 +543,15 @@ void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) {
 	struct so_value * archive_format = NULL;
 	struct so_value * media_format = NULL;
 
-	so_value_unpack(new_pool, "{sSsssSsbsSsbsoso}",
+	so_value_unpack(new_pool, "{sSsssSsbsSsbsbsbsoso}",
 		"uuid", &uuid,
 		"name", &pool->name,
 
 		"auto check", &auto_check,
 		"growable", &pool->growable,
 		"unbreakable level", &unbreakable_level,
+		"rewritable", &pool->rewritable,
+		"backup", &pool->backup,
 		"deleted", &pool->deleted,
 
 		"archive format", &archive_format,
