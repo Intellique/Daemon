@@ -3001,7 +3001,7 @@ static int so_database_postgresql_get_nb_scripts(struct so_database_connection *
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_nb_scripts_with_sequence_and_pool";
-	so_database_postgresql_prepare(self, query, "SELECT COUNT(*) FROM scripts WHERE scripttype = $3::scripttype AND jobtype IN (SELECT id FROM jobtype WHERE name = $1) AND pool IN (SELECT id FROM pool WHERE uuid = $2::UUID)");
+	so_database_postgresql_prepare(self, query, "SELECT COUNT(*) FROM scripts ss INNER JOIN script s ON ss.script = s.id AND s.type = $3::scripttype WHERE jobtype = (SELECT id FROM jobtype WHERE name = $1 LIMIT 1) AND pool = (SELECT id FROM pool WHERE uuid = $2::UUID LIMIT 1)");
 
 	const char * param[] = { job_type, pool->uuid, so_script_type_to_string(type, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -3026,7 +3026,7 @@ static char * so_database_postgresql_get_script(struct so_database_connection * 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_script_with_sequence_and_pool";
-	so_database_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss INNER JOIN script s ON ss.script = s.id INNER JOIN pool p ON ss.pool = p.id AND p.uuid = $4::UUID WHERE scripttype = $3::scripttype AND ss.jobtype IN (SELECT id FROM jobtype WHERE name = $1) ORDER BY sequence LIMIT 1 OFFSET $2");
+	so_database_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss INNER JOIN script s ON ss.script = s.id AND s.type = $3::scripttype WHERE ss.pool = (SELECT id FROM pool WHERE uuid = $4::UUID LIMIT 1) AND ss.jobtype IN (SELECT id FROM jobtype WHERE name = $1) ORDER BY sequence LIMIT 1 OFFSET $2");
 
 	char * seq = NULL;
 	int size = asprintf(&seq, "%u", sequence);

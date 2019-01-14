@@ -3,9 +3,20 @@
 use strict;
 use warnings;
 
+use JSON::PP;
+
+if ( $ARGV[0] eq 'config' ) {
+    my $sent = {
+        'name'        => 'create proxies',
+        'description' => 'Create a proxy for audio, video and images files',
+        'type'        => 'post job'
+    };
+    print encode_json($sent);
+    exit;
+}
+
 use Digest::MD5 q/md5_hex/;
 use Encode;
-use JSON::PP;
 use Mediainfo;
 use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
@@ -24,13 +35,13 @@ if ( open my $fd, '<', '/etc/storiq/storiqone.conf' ) {
     $config = decode_json $data;
 
     $nb_cpu = $config->{'proxy'}{'nb cpu'}
-      if exists $config->{'proxy'}{'nb cpu'};
+        if exists $config->{'proxy'}{'nb cpu'};
     $output_picture_dir = $config->{'proxy'}{'picture'}{'path'}
-      if exists $config->{'proxy'}{'picture'}{'path'};
+        if exists $config->{'proxy'}{'picture'}{'path'};
     $output_movie_dir = $config->{'proxy'}{'movie'}{'path'}
-      if exists $config->{'proxy'}{'movie'}{'path'};
+        if exists $config->{'proxy'}{'movie'}{'path'};
     $output_sound_dir = $config->{'proxy'}{'sound'}{'path'}
-      if exists $config->{'proxy'}{'sound'}{'path'};
+        if exists $config->{'proxy'}{'sound'}{'path'};
 
     close $fd;
 }
@@ -116,7 +127,7 @@ my %codec = (
 
 sub processAudio {
     return
-      if ( defined $config->{'proxy'}{'sound'}{'enabled'}
+        if ( defined $config->{'proxy'}{'sound'}{'enabled'}
         and not $config->{'proxy'}{'sound'}{'enabled'} );
     my ($input) = @_;
 
@@ -138,7 +149,7 @@ sub processAudio {
         push @params, '-acodec', $format->{codec};
         push @params, '-b:a',    $format->{bitrate};
         push @params, @{ $format->{extra} }
-          if scalar( @{ $format->{extra} } ) > 0;
+            if scalar( @{ $format->{extra} } ) > 0;
 
         my $filename = md5_hex( encode( 'UTF-8', $input, '-vn' ) ) . '.m4a';
         push @params, "$output_sound_dir/$filename";
@@ -159,7 +170,7 @@ sub processAudio {
 
 sub processImage {
     return
-      if ( defined $config->{'proxy'}{'picture'}{'enabled'}
+        if ( defined $config->{'proxy'}{'picture'}{'enabled'}
         and not $config->{'proxy'}{'picture'}{'enabled'} );
     my ($input) = @_;
 
@@ -171,11 +182,11 @@ sub processImage {
         nice(10);
 
         my $image_size =
-          defined $config->{'proxy'}{'picture'}{'image size'}
-          ? $config->{'proxy'}{'picture'}{'image size'}
-          : '320x240';
+            defined $config->{'proxy'}{'picture'}{'image size'}
+            ? $config->{'proxy'}{'picture'}{'image size'}
+            : '320x240';
         my $filename = $output_picture_dir . '/'
-          . md5_hex( encode( 'UTF-8', $input ) ) . '.jpg';
+            . md5_hex( encode( 'UTF-8', $input ) ) . '.jpg';
         my @params = ( '-thumbnail', $image_size, $input, $filename );
 
         exec $convert, @params;
@@ -193,7 +204,7 @@ sub processImage {
 
 sub processVideo {
     return
-      if ( defined $config->{'proxy'}{'movie'}{'enabled'}
+        if ( defined $config->{'proxy'}{'movie'}{'enabled'}
         and not $config->{'proxy'}{'movie'}{'enabled'} );
     my ( $input, $format_name ) = @_;
 
@@ -205,9 +216,9 @@ sub processVideo {
         nice(10);
 
         my $video_size =
-          defined $config->{'proxy'}{'movie'}{'video size'}
-          ? $config->{'proxy'}{'movie'}{'video size'}
-          : 'cif';
+            defined $config->{'proxy'}{'movie'}{'video size'}
+            ? $config->{'proxy'}{'movie'}{'video size'}
+            : 'cif';
         my $format = $codec{$format_name};
 
         my @params = ( '-v', 'quiet', '-i', encode_utf8($input) );
@@ -220,16 +231,16 @@ sub processVideo {
         push @params, '-b:v',    $format->{video}->{bitrate};
         push @params, '-s',      $video_size;
         push @params, @{ $format->{video}->{extra} }
-          if scalar( @{ $format->{video}->{extra} } ) > 0;
+            if scalar( @{ $format->{video}->{extra} } ) > 0;
 
         push @params, '-acodec', $format->{audio}->{codec};
         push @params, '-b:a',    $format->{audio}->{bitrate};
         push @params, '-ac',     '2', '-ar', '44100';
         push @params, @{ $format->{audio}->{extra} }
-          if scalar( @{ $format->{audio}->{extra} } ) > 0;
+            if scalar( @{ $format->{audio}->{extra} } ) > 0;
 
         my $filename =
-          md5_hex( encode( 'UTF-8', $input ) ) . '.' . $format_name;
+            md5_hex( encode( 'UTF-8', $input ) ) . '.' . $format_name;
         push @params, "$output_movie_dir/$filename";
 
         # print "run: " . join(" ", $ffmpeg, @params) . "\n";
@@ -249,9 +260,11 @@ sub processVideo {
 my $archive;
 if ( defined $data->{archive}->{main} ) {
     $archive = $data->{archive}->{main};
-} elsif ( defined $data->{archive}->{source} ) {
+}
+elsif ( defined $data->{archive}->{source} ) {
     $archive = $data->{archive}->{source};
-} else {
+}
+else {
     my $sent = {
         'finished' => JSON::PP::true,
         'data'     => {},
@@ -288,13 +301,15 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
 
         if ( $file->{"mime type"} =~ m#^image/#i ) {
             processImage( $file->{path} );
-        } else {
+        }
+        else {
             my $info = new Mediainfo( "filename" => $file->{path} );
 
             if ( defined $info->{video_format} ) {
                 processVideo( $file->{path}, 'mp4' );
                 processVideo( $file->{path}, 'ogv' );
-            } elsif ( defined $info->{audio_format} ) {
+            }
+            elsif ( defined $info->{audio_format} ) {
                 processAudio( $file->{path} );
             }
         }

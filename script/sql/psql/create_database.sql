@@ -733,7 +733,10 @@ CREATE TABLE Reports (
 
 CREATE TABLE Script (
     id SERIAL PRIMARY KEY,
-    path TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    path TEXT NOT NULL UNIQUE,
+    type ScriptType NOT NULL
 );
 
 CREATE TABLE Scripts (
@@ -742,10 +745,9 @@ CREATE TABLE Scripts (
     sequence INTEGER NOT NULL CHECK (sequence >= 0),
     jobType INTEGER NOT NULL REFERENCES JobType(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     script INTEGER REFERENCES Script(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    scriptType ScriptType NOT NULL,
     pool INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
-    UNIQUE (sequence, jobType, script, scriptType, pool)
+    UNIQUE (sequence, jobType, script, pool)
 );
 
 CREATE TABLE Vtl (
