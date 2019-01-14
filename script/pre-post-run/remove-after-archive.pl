@@ -3,9 +3,21 @@
 use strict;
 use warnings;
 
+use JSON::PP;
+
+if ( $ARGV[0] eq 'config' ) {
+    my $sent = {
+        'name' => 'Nextcloud sync post archive',
+        'description' =>
+            'Remove files from Nextcloud after creating an archive',
+        'type' => 'post job'
+    };
+    print encode_json($sent);
+    exit;
+}
+
 use File::Basename 'dirname';
 use File::Path 'remove_tree';
-use JSON::PP;
 
 my $param = shift;
 
