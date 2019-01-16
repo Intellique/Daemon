@@ -39,6 +39,8 @@
 #include <scsi/sg.h>
 // bool
 #include <stdbool.h>
+// snprintf
+#include <stdio.h>
 // free
 #include <stdlib.h>
 // memcpy, memset, strdup
@@ -124,8 +126,11 @@ static int sodr_tape_drive_scsi_locate10(int fd, struct sodr_tape_drive_scsi_pos
  * \remark Require LTO-4 drive at least
  */
 static int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
+static void sodr_tape_drive_scsi_print_command(const char * command_name, const unsigned char * command, unsigned int command_length);
+static void sodr_tape_drive_scsi_print_data(const char * command_name, const unsigned char * data, unsigned int data_length);
+static void sodr_tape_drive_scsi_print_sense(const char * command_name, struct scsi_request_sense * sense);
 static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_command);
-static int sodr_tape_drive_scsi_test_unit_ready2(int fd);
+static int sodr_tape_drive_scsi_test_unit_ready2(int fd, struct scsi_request_sense * sense);
 
 static struct scsi_command scsi_command_erase = {
 	.name = "ERASE",
@@ -451,6 +456,78 @@ int sodr_tape_drive_scsi_erase_media(int fd, bool quick_mode) {
 	return ioctl(fd, SG_IO, &header);
 }
 
+bool sodr_tape_drive_scsi_has_attribute(int fd, enum sodr_tape_drive_scsi_mam_attributes attribute, unsigned char part) {
+	if (!scsi_command_read_attribute.available)
+		return -1;
+
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned int allocation_length;
+		bool cache:1;
+		unsigned char reserved2:7;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C, // READ ATTRIBUTE (16)
+		.service_action = scsi_read_attribute_service_action_attribute_list,
+		.volume_number = 0,
+		.partition_number = part,
+		.first_attribute_id = htobe16(attribute),
+		.allocation_length = htobe32(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	unsigned char buffer[1024];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 60000; // 1 minute
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return false;
+
+	if (sense.error_code != 0) {
+		sodr_tape_drive_scsi_print_command("Read Attribute", header.cmdp, 16);
+		sodr_tape_drive_scsi_print_sense("Read Attribute", &sense);
+		return false;
+	}
+
+	bool found = false;
+	unsigned short data_available = be16toh(*(unsigned short *) buffer);
+	unsigned char * ptr;
+
+	for (ptr = buffer + 2; !found && ptr < buffer + data_available; ptr += 2) {
+		unsigned short attr = be16toh(*(unsigned short *) ptr);
+		found = attr == attribute;
+	}
+
+	return found;
+}
+
 int sodr_tape_drive_scsi_locate(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format) {
 	if (!format->support_partition && position->partition > 0)
 		return -1;
@@ -548,6 +625,32 @@ static int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_pos
 	int status = ioctl(fd, SG_IO, &header);
 
 	return status != 0 || sense.sense_key;
+}
+
+static void sodr_tape_drive_scsi_print_command(const char * command_name, const unsigned char * command, unsigned int command_length) {
+	char buffer[49];
+	unsigned int i;
+	for (i = 0; i < command_length; i++)
+		snprintf(buffer + 3 * i, 49 - 3 * i, " %02hhx", command[i]);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "Scsi command: %s:%s"), command_name, buffer);
+}
+
+static void sodr_tape_drive_scsi_print_data(const char * command_name, const unsigned char * data, unsigned int data_length) {
+	char buffer[769];
+	unsigned int i;
+	for (i = 0; i < data_length && i < 128; i++)
+		snprintf(buffer + 3 * i, 769 - 3 * i, " %02hhx", data[i]);
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "Scsi data: %s:%s"), command_name, buffer);
+}
+
+static void sodr_tape_drive_scsi_print_sense(const char * command_name, struct scsi_request_sense * sense) {
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "%s, error code = %hhu, sense code = 0x%hhx, ASC = 0x%hhx, ASCQ = 0x%hhx"),
+		command_name, sense->error_code, sense->sense_key, sense->additional_sense_code, sense->additional_sense_code_qualifier);
 }
 
 int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path) {
@@ -1302,7 +1405,32 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	return 0;
 }
 
-int sodr_tape_drive_scsi_test_unit_ready(int fd) {
+int sodr_tape_drive_scsi_test_unit_ready(int fd, bool wait) {
+	struct scsi_request_sense sense;
+	do {
+		int failed = sodr_tape_drive_scsi_test_unit_ready2(fd, &sense);
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "Test Unit Ready, error code = %hhu, sense code = %hhu, ASC = %hhu, ASCQ = %hhu"),
+			sense.error_code, sense.sense_key, sense.additional_sense_code, sense.additional_sense_code_qualifier);
+
+		if (failed != 0) {
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "Test Unit Ready, command failed (%d)"),
+				failed);
+			return failed;
+		}
+
+		if (sense.error_code != 0) {
+			if (wait)
+				sleep(1);
+			else
+				break;
+		}
+	} while (sense.error_code != 0);
+	return sense.error_code;
+}
+
+int sodr_tape_drive_scsi_test_unit_ready2(int fd, struct scsi_request_sense * sense) {
 	struct {
 		unsigned char operation_code;
 		unsigned char reserved[5];
@@ -1312,9 +1440,8 @@ int sodr_tape_drive_scsi_test_unit_ready(int fd) {
 	};
 
 	sg_io_hdr_t header;
-	struct scsi_request_sense sense;
 	memset(&header, 0, sizeof(header));
-	memset(&sense, 0, sizeof(sense));
+	memset(sense, 0, sizeof(struct scsi_request_sense));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
@@ -1326,46 +1453,46 @@ int sodr_tape_drive_scsi_test_unit_ready(int fd) {
 	header.timeout = 60000; // 1 min
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	ioctl(fd, SG_IO, &header);
-
-	return sense.sense_key;
+	return ioctl(fd, SG_IO, &header);
 }
 
-int sodr_tape_drive_scsi_test_unit_ready2(int fd) {
-	int try, status = 1;
-	for (try = 0; try < 5 && status != 0; try++) {
-		status = sodr_tape_drive_scsi_test_unit_ready(fd);
-		if (status != 0)
-			sleep(1);
-	}
-	return status;
-}
-
-int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part) {
+int sodr_tape_drive_scsi_write_attribute(int fd, const struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part) {
 	if (!scsi_command_write_attribute.available)
 		return -1;
 
-	unsigned int attribute_length = 5 + attribute->length;
-
-	attribute->identifier = htobe16(attribute->identifier);
-	attribute->length = htobe16(attribute->length);
+	const unsigned int attribute_length = 5 + attribute->length;
+	struct {
+		unsigned int data_available;
+		unsigned short attribute_identifier;
+		enum sodr_tape_drive_scsi_mam_attribute_format format:2;
+		unsigned char reserved:5;
+		bool read_only:1;
+		unsigned short attribute_length;
+		union {
+			unsigned char int8;
+			unsigned short be16;
+			unsigned int be32;
+			unsigned long long be64;
+			char text[160];
+		} value;
+	} __attribute__((packed)) data = {
+		.data_available = htobe32(attribute_length),
+		.attribute_identifier = htobe16(attribute->identifier),
+		.format = attribute->format,
+		.read_only = false,
+		.attribute_length = htobe16(attribute->length),
+		.value.text = ""
+	};
 
 	if (attribute->format == sodr_tape_drive_scsi_mam_attribute_format_binary) {
 		if (attribute->length == 2)
-			attribute->value.be16 = htobe16(attribute->value.be16);
+			data.value.be16 = htobe16(attribute->value.be16);
 		else if (attribute->length == 4)
-			attribute->value.be32 = htobe32(attribute->value.be32);
+			data.value.be32 = htobe32(attribute->value.be32);
 		else if (attribute->length == 8)
-			attribute->value.be64 = htobe64(attribute->value.be64);
-	}
-
-	struct {
-		unsigned int data_available;
-		struct sodr_tape_drive_scsi_mam_attribute attr;
-	} __attribute__((packed)) data = {
-		.data_available = htobe32(attribute_length),
-		.attr = *attribute
-	};
+			data.value.be64 = htobe64(attribute->value.be64);
+	} else
+		memcpy(data.value.text, attribute->value.text, attribute->length);
 
 	struct {
 		unsigned char operation_code;
@@ -1381,7 +1508,7 @@ int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam
 		unsigned char control;
 	} __attribute__((packed)) command = {
 		.operation_code = 0x8D, // WRITE ATTRIBUTE (16)
-		.write_through_cache = false,
+		.write_through_cache = true,
 		.volume_number = 0,
 		.partition_number = part,
 		.parameter_list_length = htobe32(4 + attribute_length),
@@ -1404,19 +1531,15 @@ int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam
 	header.timeout = 1000 * scsi_command_read_attribute.timeout;
 	header.dxfer_direction = SG_DXFER_TO_DEV;
 
-	if (sodr_tape_drive_scsi_test_unit_ready2(fd) != 0)
-		return 1;
+	int status = ioctl(fd, SG_IO, &header);
+	if (status != 0)
+		return status;
 
-	bool ok = false;
-	int status, try;
-	for (try = 0; try < 5 && !ok; try++) {
-		status = ioctl(fd, SG_IO, &header);
-		if (sense.error_code != 0) {
-			status = sense.error_code;
-			if (sodr_tape_drive_scsi_test_unit_ready2(fd) != 0)
-				return 1;
-		} else
-			ok = true;
+	if (sense.error_code != 0) {
+		sodr_tape_drive_scsi_print_command("Write Attribute", header.cmdp, 16);
+		sodr_tape_drive_scsi_print_data("Write Attribute", (unsigned char *) &data, sizeof(data));
+		sodr_tape_drive_scsi_print_sense("Write Attribute", &sense);
+		return -1;
 	}
 
 	return status;

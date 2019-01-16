@@ -168,19 +168,25 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	uuid_unparse_lower(raw_uuid, uuid);
 
 	struct so_stream_writer * writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, 0, false, db);
-	if (writer == NULL)
+	if (writer == NULL) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return 1;
+	}
 
 	/**
 	 * Write volume label on second partition
 	 */
 	failed = sodr_tape_drive_format_ltfs_format_media_partition(drive, writer, fd, block_size, "b", format_time, uuid);
-	if (failed != 0)
+	if (failed != 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return failed;
+	}
 
 	failed = writer->ops->create_new_file(writer);
-	if (failed != 0)
+	if (failed != 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return failed;
+	}
 
 	struct sodr_tape_drive_scsi_position position;
 	failed = sodr_tape_drive_scsi_read_position(scsi_fd, &position);
@@ -194,16 +200,22 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 
 	so_value_free(empty_fs);
 
-	if (failed != 0)
+	if (failed != 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return failed;
+	}
 
 	failed = sodr_tape_drive_st_set_position(drive, fd, 0, 0, true, db);
-	if (failed != 0)
+	if (failed != 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return failed;
+	}
 
 	failed = writer->ops->create_new_file(writer);
-	if (failed != 0)
+	if (failed != 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return failed;
+	}
 
 	/**
 	 * Write volume label on first partition
@@ -214,8 +226,10 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	failed = sodr_tape_drive_scsi_read_position(scsi_fd, &position);
 	empty_fs = sodr_tape_drive_format_ltfs_create_empty_fs(format_time, uuid, "a", position.block_position, "b", previous_position);
 	nb_write = sodr_tape_drive_xml_encode_stream(writer, empty_fs);
-	if (nb_write < 0)
+	if (nb_write < 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return failed;
+	}
 
 	sodr_tape_drive_writer_close2(writer, false);
 	writer->ops->free(writer);
@@ -223,20 +237,22 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
 
-	if (failed == 0)
-		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
-
 	/**
 	 * Update Medium auxiliary memory
 	 */
 	failed = sodr_tape_drive_format_ltfs_update_mam(scsi_fd, drive, db);
-	if (failed != 0)
+	if (failed != 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
 		return failed;
+	}
 
 	unsigned int vcr = 0;
 	failed = sodr_tape_drive_scsi_read_volume_change_reference(scsi_fd, &vcr);
-	if (failed != 0)
+	if (failed != 0) {
+		ioctl(fd, MTIOCTOP, &mk1partition);
+		sodr_tape_drive_format_ltfs_remove_mam(fd, drive, db);
 		return failed;
+	}
 
 	struct sodr_tape_drive_media * mp = sodr_tape_drive_media_new(sodr_tape_drive_media_ltfs);
 	struct sodr_tape_drive_format_ltfs * ltfs = &mp->data.ltfs;
@@ -251,6 +267,8 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	failed = sodr_tape_drive_format_ltfs_update_volume_coherency_info(scsi_fd, drive, uuid, 0, &ltfs->index, db);
 	if (failed != 0) {
 		sodr_tape_drive_media_free(mp);
+		ioctl(fd, MTIOCTOP, &mk1partition);
+		sodr_tape_drive_format_ltfs_remove_mam(fd, drive, db);
 		return failed;
 	}
 
@@ -260,8 +278,11 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	failed = sodr_tape_drive_format_ltfs_update_volume_coherency_info(scsi_fd, drive, uuid, 1, &ltfs->data, db);
 	if (failed != 0) {
 		sodr_tape_drive_media_free(mp);
+		ioctl(fd, MTIOCTOP, &mk1partition);
+		sodr_tape_drive_format_ltfs_remove_mam(fd, drive, db);
 		return failed;
-	}
+	} else
+		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
 
 	ltfs->up_to_date = true;
 
