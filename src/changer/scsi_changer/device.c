@@ -591,11 +591,10 @@ static int sochgr_scsi_changer_load_inner(struct sochgr_peer * peer, struct so_s
 	}
 
 	if (reset_drive) {
-		failed = to->ops->reset(to);
-		if (failed != 0)
-			sochgr_log_add_record(peer, so_job_status_waiting, db_connection, so_log_level_critical, so_job_record_notif_important,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to reset drive #%u %s %s"),
-				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, to->index, to->vendor, to->model);
+		if (to->ops->reset(to) != 0) {
+			sleep(1);
+			to->ops->update_status(to);
+		}
 
 		struct so_slot * sl_dr = to->slot;
 		struct so_media * m_dr = sl_dr->media;
