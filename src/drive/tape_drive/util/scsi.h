@@ -33,6 +33,7 @@
 #include <sys/types.h>
 
 struct so_drive;
+struct so_media;
 struct so_media_format;
 struct sodr_tape_drive_ltfs_volume_coherency;
 
@@ -149,6 +150,7 @@ int sodr_tape_drive_scsi_format_medium(const char * path, size_t partition_size,
  * \brief Set position on tape
  * \remark Require LTO-4 drive at least
  */
+bool sodr_tape_drive_scsi_has_attribute(int fd, enum sodr_tape_drive_scsi_mam_attributes, unsigned char part);
 int sodr_tape_drive_scsi_locate(int fd, struct sodr_tape_drive_scsi_position * position, struct so_media_format * format);
 int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path);
 int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_position * position);
@@ -159,8 +161,8 @@ int sodr_tape_drive_scsi_read_volume_coherency(int fd, struct sodr_tape_drive_lt
 int sodr_tape_drive_scsi_rewind(int fd);
 int sodr_tape_drive_scsi_setup(const char * path);
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);
-int sodr_tape_drive_scsi_test_unit_ready(int fd);
-int sodr_tape_drive_scsi_write_attribute(int fd, struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part);
+int sodr_tape_drive_scsi_test_unit_ready(int fd, bool wait);
+int sodr_tape_drive_scsi_write_attribute(int fd, const struct sodr_tape_drive_scsi_mam_attribute * attribute, unsigned char part);
 
 #endif
 
