@@ -877,19 +877,7 @@ static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_conn
 	return 0;
 }
 
-static int sochgr_scsi_changer_unload(struct sochgr_peer * peer, struct so_drive * from, struct so_database_connection * db_connection) {
-	int failed = from->ops->update_status(from);
-	if (failed != 0) {
-		sochgr_log_add_record(peer, so_job_status_waiting, db_connection, so_log_level_critical, so_job_record_notif_important,
-			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%u %s %s"),
-			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, from->index, from->vendor, from->model);
-
-		pthread_mutex_lock(&sochgr_scsi_changer_lock);
-		sochgr_scsi_changer_nb_worker--;
-		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
-		return 1;
-	}
-
+static int sochgr_scsi_changer_unload(struct sochgr_peer * peer __attribute__((unused)), struct so_drive * from, struct so_database_connection * db_connection) {
 	struct sochgr_scsi_changer_slot * sfrom = from->slot->data;
 	struct so_slot * to = sfrom->src_slot;
 
@@ -919,7 +907,7 @@ static int sochgr_scsi_changer_unload(struct sochgr_peer * peer, struct so_drive
 	if (db_connection != NULL)
 		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
-	failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from->slot, to);
+	int failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from->slot, to);
 
 	if (failed != 0) {
 		sochgr_scsi_changer_wait();
