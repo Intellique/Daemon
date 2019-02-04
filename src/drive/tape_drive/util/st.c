@@ -251,6 +251,40 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			so_log_write(so_log_level_info,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end completed with status = OK"),
 				drive->vendor, drive->model, drive->index);
+
+		if (file_number < -1) {
+			if (media != NULL)
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Backwarding of one file on media '%s'"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name);
+			else
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Backwarding of one file"),
+					drive->vendor, drive->model, drive->index);
+
+			static struct mtop bsf1 = { MTBSFM, 2 };
+			sodr_time_start();
+			failed = ioctl(fd, MTIOCTOP, &bsf1);
+			sodr_time_stop(drive);
+
+			if (failed != 0) {
+				if (media != NULL)
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Backwarding of one file on media '%s' encountered an error '%m'"),
+						drive->vendor, drive->model, drive->index, drive->slot->media->name);
+				else
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Backwarding of one file encountered an error '%m'"),
+						drive->vendor, drive->model, drive->index);
+			} else if (media != NULL)
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Backwarding of one file on media '%s' completed with status = OK"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name);
+			else
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Backwarding of one file completed with status = OK"),
+					drive->vendor, drive->model, drive->index);
+		}
 	} else if (status.mt_fileno < file_number) {
 		if (media != NULL)
 			so_log_write(so_log_level_info,
