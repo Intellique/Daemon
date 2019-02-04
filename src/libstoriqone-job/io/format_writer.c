@@ -59,7 +59,7 @@ struct soj_format_writer_private {
 
 static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 static enum so_format_writer_status soj_format_writer_add_label(struct so_format_writer * fw, const char * label);
-static int soj_format_writer_close(struct so_format_writer * fw);
+static int soj_format_writer_close(struct so_format_writer * fw, bool change_volume);
 static ssize_t soj_format_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw);
 static void soj_format_writer_free(struct so_format_writer * fw);
@@ -224,10 +224,14 @@ static enum so_format_writer_status soj_format_writer_add_label(struct so_format
 	return status;
 }
 
-static int soj_format_writer_close(struct so_format_writer * fw) {
+static int soj_format_writer_close(struct so_format_writer * fw, bool change_volume) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "close");
+	struct so_value * request = so_value_pack("{sss{sb}}",
+		"command", "close",
+		"params",
+			"change volume", change_volume
+	);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -303,7 +307,7 @@ static void soj_format_writer_free(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
 
 	if (self->data_fd > -1)
-		soj_format_writer_close(fw);
+		soj_format_writer_close(fw, false);
 
 	struct so_value * request = so_value_pack("{ss}", "command", "free");
 	so_json_encode_to_fd(request, self->command_fd, true);

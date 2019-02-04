@@ -76,7 +76,7 @@ struct so_format_tar_writer_private {
 
 static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 static enum so_format_writer_status so_format_tar_writer_add_label(struct so_format_writer * fw, const char * label);
-static int so_format_tar_writer_close(struct so_format_writer * fw);
+static int so_format_tar_writer_close(struct so_format_writer * fw, bool change_volume);
 static void so_format_tar_writer_compute_checksum(const void * header, char * checksum);
 static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, const struct so_format_file * file);
 static void so_format_tar_writer_compute_size(char * csize, long long size);
@@ -319,7 +319,7 @@ static enum so_format_writer_status so_format_tar_writer_add_label(struct so_for
 	return so_format_tar_writer_write_header(format, header, 512);
 }
 
-static int so_format_tar_writer_close(struct so_format_writer * fw) {
+static int so_format_tar_writer_close(struct so_format_writer * fw, bool change_volume __attribute__((unused))) {
 	struct so_format_tar_writer_private * format = fw->data;
 
 	ssize_t available_size = format->io->ops->get_available_size(format->io);

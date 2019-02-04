@@ -360,7 +360,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		}
 	}
 
-	soj_copyarchive_util_close_media(job, db_connect, self);
+	soj_copyarchive_util_close_media(job, db_connect, self, false);
 
 	tmp_frmt_reader->ops->free(tmp_frmt_reader);
 

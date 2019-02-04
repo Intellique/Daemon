@@ -76,7 +76,7 @@ void soj_copyarchive_util_add_file(struct soj_copyarchive_private * self, struct
 }
 
 int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self) {
-	int failed = soj_copyarchive_util_close_media(job, db_connect, self);
+	int failed = soj_copyarchive_util_close_media(job, db_connect, self, true);
 	if (failed != 0)
 		return failed;
 
@@ -97,8 +97,8 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	return 0;
 }
 
-int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self) {
-	int failed = self->writer->ops->close(self->writer);
+int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self, bool change_volume) {
+	int failed = self->writer->ops->close(self->writer, change_volume);
 	if (failed != 0) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Failed to reopen temporary file"));

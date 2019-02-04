@@ -140,8 +140,11 @@ static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_v
 	so_value_free(response);
 }
 
-static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	int failed = peer->format_writer->ops->close(peer->format_writer);
+static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value * request) {
+	bool change_volume = false;
+	so_value_unpack(request, "{s{sb}}", "params", "change volume", &change_volume);
+
+	int failed = peer->format_writer->ops->close(peer->format_writer, change_volume);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);

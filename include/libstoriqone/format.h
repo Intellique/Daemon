@@ -95,7 +95,7 @@ struct so_format_writer {
 	struct so_format_writer_ops {
 		enum so_format_writer_status (*add_file)(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 		enum so_format_writer_status (*add_label)(struct so_format_writer * fw, const char * label);
-		int (*close)(struct so_format_writer * fw);
+		int (*close)(struct so_format_writer * fw, bool change_volume);
 		ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const struct so_format_file * file);
 		ssize_t (*end_of_file)(struct so_format_writer * fw);
 		void (*free)(struct so_format_writer * fw);
