@@ -236,7 +236,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 		reader->ops->free(reader);
 	}
 
-	soj_copyarchive_util_close_media(job, db_connect, self);
+	soj_copyarchive_util_close_media(job, db_connect, self, false);
 
 	job->done = 0.99;
 

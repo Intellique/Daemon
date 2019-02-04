@@ -77,7 +77,7 @@ struct sodr_tape_drive_format_ltfs_writer_private {
 
 static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_label(struct so_format_writer * fw, const char * label);
-static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw);
+static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw, bool changer_volume);
 static ssize_t sodr_tape_drive_format_ltfs_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t sodr_tape_drive_format_ltfs_writer_end_of_file(struct so_format_writer * fw);
 static void sodr_tape_drive_format_ltfs_writer_free(struct so_format_writer * fw);
@@ -254,7 +254,7 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_label
 	return so_format_writer_ok;
 }
 
-static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw __attribute__((unused))) {
+static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw, bool changer_volume) {
 	return 0;
 }
 

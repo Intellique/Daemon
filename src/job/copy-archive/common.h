@@ -27,6 +27,8 @@
 #ifndef __STORIQONE_JOB_COPY_ARCHIVE_H__
 #define __STORIQONE_JOB_COPY_ARCHIVE_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
 // time_t
@@ -57,7 +59,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
 void soj_copyarchive_util_add_file(struct soj_copyarchive_private * self, struct so_format_file * file, ssize_t block_size);
 int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
-int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
+int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self, bool change_volume);
 void soj_copyarchive_util_init(struct so_archive * archive);
 int soj_copyarchive_util_sync_archive(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect);
 int soj_copyarchive_util_write_meta(struct soj_copyarchive_private * self);

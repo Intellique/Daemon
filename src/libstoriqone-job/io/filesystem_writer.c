@@ -62,7 +62,7 @@ struct soj_format_writer_filesystem_private {
 
 static enum so_format_writer_status soj_format_writer_filesystem_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_file);
 static enum so_format_writer_status soj_format_writer_filesystem_add_label(struct so_format_writer * fw, const char * label);
-static int soj_format_writer_filesystem_close(struct so_format_writer * fw);
+static int soj_format_writer_filesystem_close(struct so_format_writer * fw, bool change_volume);
 static ssize_t soj_format_writer_filesystem_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t soj_format_writer_filesystem_end_of_file(struct so_format_writer * fw);
 static int soj_format_writer_filesystem_file_position(struct so_format_writer * fw);
@@ -141,7 +141,7 @@ static enum so_format_writer_status soj_format_writer_filesystem_add_label(struc
 	return so_format_writer_unsupported;
 }
 
-static int soj_format_writer_filesystem_close(struct so_format_writer * fw) {
+static int soj_format_writer_filesystem_close(struct so_format_writer * fw, bool change_volume __attribute__((unused))) {
 	struct soj_format_writer_filesystem_private * self = fw->data;
 
 	if (self->fd > -1 && close(self->fd) != 0)
@@ -180,7 +180,7 @@ static void soj_format_writer_filesystem_free(struct so_format_writer * fw) {
 	struct soj_format_writer_filesystem_private * self = fw->data;
 
 	if (self->fd > -1)
-		soj_format_writer_filesystem_close(fw);
+		soj_format_writer_filesystem_close(fw, false);
 
 	free(self->base_dir);
 	free(self);
