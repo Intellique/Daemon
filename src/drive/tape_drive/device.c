@@ -1108,14 +1108,12 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 					if (mp->format == sodr_tape_drive_media_ltfs) {
 						if (!mp->data.ltfs.up_to_date) {
 							int scsi_fd = sodr_tape_drive_scsi_open();
-							if (fd >= 0)
-								failed = sodr_tape_drive_scsi_read_volume_coherency(scsi_fd, &mp->data.ltfs.index, 0);
-							if (scsi_fd >= 0 && failed == 0)
-								failed = sodr_tape_drive_scsi_read_volume_coherency(scsi_fd, &mp->data.ltfs.data, 1);
+							if (sodr_tape_drive_scsi_read_volume_coherency(scsi_fd, &mp->data.ltfs.index, 0) == 0 && sodr_tape_drive_scsi_read_volume_coherency(scsi_fd, &mp->data.ltfs.index, 1) == 0)
+								mp->data.ltfs.up_to_date = true;
+							else
+								mp->data.ltfs.up_to_date = false;
 
-							mp->data.ltfs.up_to_date = failed == 0;
-
-							if (failed == 0) {
+							if (scsi_fd != 0) {
 								int fd = sodr_tape_drive_st_open();
 								if (fd >= 0) {
 									failed = sodr_tape_drive_media_parse_ltfs_index(&sodr_tape_drive, fd, scsi_fd, db);

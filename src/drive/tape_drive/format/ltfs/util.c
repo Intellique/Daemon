@@ -83,7 +83,7 @@ static struct so_value * sodr_tape_drive_format_ltfs_convert_index_inner(struct 
 static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * extents);
 static unsigned int sodr_tape_drive_format_ltfs_count_files_inner(struct so_value * index);
 static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * index, const char * node);
-static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value, struct so_archive * archive, struct so_database_connection * db_connect);
+static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value, struct so_database_connection * db_connect);
 static int sodr_tape_drive_format_ltfs_remove_mam2(int scsi_fd, enum sodr_tape_drive_scsi_mam_attributes attr, enum sodr_tape_drive_scsi_mam_attribute_format format);
 
 
@@ -652,7 +652,7 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 	return archive;
 }
 
-void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, struct so_value * index, struct so_archive * archive, struct so_database_connection * db_connect) {
+void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, struct so_value * index, struct so_database_connection * db_connect) {
 	// find root directory
 	struct so_value * root = sodr_tape_drive_format_ltfs_find(index, "directory");
 	if (root == NULL)
@@ -701,7 +701,7 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	struct so_value_iterator * iter = so_value_list_get_iterator(files);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * file = so_value_iterator_get_value(iter, false);
-		sodr_tape_drive_format_ltfs_parse_index_inner(self, &self->root, file, "", &default_value, archive, db_connect);
+		sodr_tape_drive_format_ltfs_parse_index_inner(self, &self->root, file, "", &default_value, db_connect);
 	}
 	so_value_iterator_free(iter);
 
@@ -709,7 +709,7 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	free(default_value.group);
 }
 
-static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value, struct so_archive * archive, struct so_database_connection * db_connect) {
+static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct sodr_tape_drive_format_ltfs_file * directory, struct so_value * index, const char * path, struct sodr_tape_drive_format_ltfs_default_value * default_value, struct so_database_connection * db_connect) {
 	struct so_value * children = NULL;
 	if (so_value_unpack(index, "{so}", "children", &children) < 1)
 		return;
@@ -744,52 +744,11 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			file->name = strdup(file_name);
 			file->hash_name = so_string_compute_hash2(file->name);
 
-			if (archive == NULL) {
-				int size = asprintf(&file->file.filename, "%s/%s/%s", default_value->root_directory, path, file_name);
-				if (size < 0)
-					continue;
+			int size = asprintf(&file->file.filename, "%s/%s/%s", default_value->root_directory, path, file_name);
+			if (size < 0)
+				continue;
 
-				so_string_delete_double_char(file->file.filename, '/');
-			} else {
-				if (strcmp(path, "") == 0) {
-					char * index_file = NULL;
-					int size = asprintf(&index_file, "%s.meta", archive->name);
-					if (size > 0 && strcmp(file_name, index_file) == 0)
-						file->ignored = true;
-
-					free(index_file);
-				}
-
-				char * tmp_path;
-				int size = asprintf(&tmp_path, "%s/%s", path, file_name);
-				if (size < 0)
-					continue;
-
-				char * original_path = db_connect->ops->get_original_path_from_alternate_path(db_connect, archive, tmp_path);
-				if (original_path != NULL)
-					file->file.filename = original_path;
-				else {
-					size = asprintf(&file->file.filename, "%s%s", default_value->root_directory, tmp_path);
-					if (size < 0) {
-						free(tmp_path);
-						continue;
-					}
-
-					file->ignored = true;
-				}
-
-				char * selected_path = db_connect->ops->get_selected_path_from_alternate_path(db_connect, archive, tmp_path);
-				if (selected_path != NULL) {
-					file->hash_selected_path = so_string_compute_hash2(selected_path);
-					free(selected_path);
-				} else
-					file->ignored = true;
-
-				if (!file->ignored)
-					file->volume_number = db_connect->ops->find_first_volume_of_archive_file(db_connect, archive, original_path);
-
-				free(tmp_path);
-			}
+			so_string_delete_double_char(file->file.filename, '/');
 		} else if (strcmp(elt_name, "creationtime") == 0) {
 			const char * ctime = NULL;
 			so_value_unpack(elt, "{sS}", "value", &ctime);
@@ -898,7 +857,7 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 
 			if (size > 0) {
 				struct so_value * child = so_value_iterator_get_value(iter, false);
-				sodr_tape_drive_format_ltfs_parse_index_inner(self, file, child, sub_path, default_value, archive, db_connect);
+				sodr_tape_drive_format_ltfs_parse_index_inner(self, file, child, sub_path, default_value, db_connect);
 
 				free(sub_path);
 			}
