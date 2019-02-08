@@ -1029,7 +1029,7 @@ int sodr_tape_drive_scsi_read_volume_change_reference(int fd, unsigned int * vol
 		.service_action = scsi_read_attribute_service_action_attributes_values,
 		.volume_number = 0,
 		.partition_number = 0,
-		.first_attribute_id = 0,
+		.first_attribute_id = htobe16(sodr_tape_drive_scsi_mam_volume_change_reference),
 		.allocation_length = htobe16(1024),
 		.control = 0,
 	};
@@ -1484,7 +1484,7 @@ int sodr_tape_drive_scsi_write_attribute(int fd, const struct sodr_tape_drive_sc
 		.value.text = ""
 	};
 
-	if (attribute->format == sodr_tape_drive_scsi_mam_attribute_format_binary) {
+	if (attribute->format == sodr_tape_drive_scsi_mam_attribute_format_binary && attribute->length <= 8) {
 		if (attribute->length == 2)
 			data.value.be16 = htobe16(attribute->value.be16);
 		else if (attribute->length == 4)

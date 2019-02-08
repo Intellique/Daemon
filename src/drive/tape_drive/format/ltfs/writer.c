@@ -260,8 +260,12 @@ static int sodr_tape_drive_format_ltfs_writer_close(struct so_format_writer * fw
 
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
 
+	int failed = self->writer->ops->close(self->writer);
+	if (failed != 0)
+		return failed;
+
 	unsigned int volume_change_reference = 0;
-	int failed = sodr_tape_drive_scsi_read_volume_change_reference(self->scsi_fd, &volume_change_reference);
+	failed = sodr_tape_drive_scsi_read_volume_change_reference(self->scsi_fd, &volume_change_reference);
 	if (failed != 0)
 		return failed;
 
@@ -530,13 +534,12 @@ static ssize_t sodr_tape_drive_format_ltfs_writer_write_metadata(struct so_forma
 		return failed;
 	}
 
-	struct sodr_tape_drive_ltfs_volume_coherency previous_vcr = self->ltfs_info->data;
-
 	self->ltfs_info->data.volume_change_reference = volume_change_reference;
 	self->ltfs_info->data.generation_number++;
 	self->ltfs_info->data.block_position_of_last_index = position.block_position;
 
 	// write index
+	struct sodr_tape_drive_ltfs_volume_coherency previous_vcr = self->ltfs_info->data;
 	struct so_value * index = sodr_tape_drive_format_ltfs_convert_index(self->media, "b", &previous_vcr, &position);
 
 	failed = self->writer->ops->create_new_file(self->writer);
