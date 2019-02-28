@@ -1120,6 +1120,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 									close(fd);
 								}
 							}
+
 							close(scsi_fd);
 						}
 					}
