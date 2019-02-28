@@ -154,7 +154,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		static time_t last_update = 0;
 		last_update = time(NULL);
 
-		while (status = reader->ops->get_header(reader, &file_in), status == so_format_reader_header_ok) {
+		while (status = reader->ops->get_header(reader, &file_in), j < vol->nb_files && status == so_format_reader_header_ok) {
 			if (S_ISREG(file_in.mode)) {
 				struct so_archive_files * ptr_file = vol->files + j;
 				struct so_archive_file * file = ptr_file->file;
