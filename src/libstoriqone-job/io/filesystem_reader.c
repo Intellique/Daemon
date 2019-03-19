@@ -83,7 +83,7 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_forward(
 static void soj_format_reader_filesystem_free(struct so_format_reader * fr);
 static ssize_t soj_format_reader_filesystem_get_block_size(struct so_format_reader * fr);
 static struct so_value * soj_format_reader_filesystem_get_digests(struct so_format_reader * fr);
-static enum so_format_reader_header_status soj_format_reader_filesystem_get_header(struct so_format_reader * fr, struct so_format_file * file);
+static enum so_format_reader_header_status soj_format_reader_filesystem_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path);
 static char * soj_format_reader_filesystem_get_root(struct so_format_reader * fr);
 static int soj_format_reader_filesystem_last_errno(struct so_format_reader * fr);
 static ssize_t soj_format_reader_filesystem_position(struct so_format_reader * fr);
@@ -203,7 +203,7 @@ static struct so_value * soj_format_reader_filesystem_get_digests(struct so_form
 	return so_value_new_linked_list();
 }
 
-static enum so_format_reader_header_status soj_format_reader_filesystem_get_header(struct so_format_reader * fr, struct so_format_file * file) {
+static enum so_format_reader_header_status soj_format_reader_filesystem_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path __attribute__((unused)), const char * selected_path __attribute__((unused))) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 
 	if (self->root->nb_file_to_backup == 0)

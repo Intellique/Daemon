@@ -414,7 +414,7 @@ unsigned int sodr_media_storiqone_count_files(struct so_drive * drive, const boo
 
 	struct so_format_file file;
 	so_format_file_init(&file);
-	enum so_format_reader_header_status status = tar->ops->get_header(tar, &file);
+	enum so_format_reader_header_status status = tar->ops->get_header(tar, &file, NULL, NULL);
 
 	if (status == so_format_reader_header_ok)
 		so_format_file_free(&file);
@@ -459,7 +459,7 @@ unsigned int sodr_media_storiqone_count_files(struct so_drive * drive, const boo
 		}
 
 		so_format_file_init(&file);
-		status = tar->ops->get_header(tar, &file);
+		status = tar->ops->get_header(tar, &file, NULL, NULL);
 
 		if (status == so_format_reader_header_ok) {
 			so_format_file_free(&file);
@@ -487,7 +487,7 @@ struct so_archive * sodr_media_storiqone_parse_archive(struct so_drive * drive, 
 
 	struct so_format_file file;
 	so_format_file_init(&file);
-	enum so_format_reader_header_status status = tar->ops->get_header(tar, &file);
+	enum so_format_reader_header_status status = tar->ops->get_header(tar, &file, NULL, NULL);
 
 	if (status == so_format_reader_header_ok)
 		so_format_file_free(&file);
@@ -545,7 +545,7 @@ struct so_archive * sodr_media_storiqone_parse_archive(struct so_drive * drive, 
 		}
 
 		so_format_file_init(&file);
-		status = tar->ops->get_header(tar, &file);
+		status = tar->ops->get_header(tar, &file, NULL, NULL);
 
 		if (status == so_format_reader_header_ok) {
 			so_format_file_free(&file);

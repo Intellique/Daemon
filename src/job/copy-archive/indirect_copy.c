@@ -112,7 +112,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 		struct so_format_reader * reader = self->src_drive->ops->open_archive_volume(self->src_drive, vol, NULL);
 
-		while (rdr_status = reader->ops->get_header(reader, &file), rdr_status == so_format_reader_header_ok) {
+		while (rdr_status = reader->ops->get_header(reader, &file, NULL, NULL), rdr_status == so_format_reader_header_ok) {
 			if (file.position == 0) {
 				struct so_archive_files * ptr_file = vol->files + j++;
 				enum so_format_writer_status wrtr_status = tmp_frmt_writer->ops->add_file(tmp_frmt_writer, &file, ptr_file->file->selected_path);
@@ -220,7 +220,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	vol = self->src_archive->volumes;
 	struct so_archive_files * ptr_file = vol->files;
 
-	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file), rdr_status == so_format_reader_header_ok && ok) {
+	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file, ptr_file->file->path, ptr_file->file->selected_path), rdr_status == so_format_reader_header_ok && ok) {
 		available_size = self->writer->ops->get_available_size(self->writer);
 		if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->copy_archive->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
 			failed = soj_copyarchive_util_change_media(job, db_connect, self);

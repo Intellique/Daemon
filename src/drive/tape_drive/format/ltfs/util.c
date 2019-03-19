@@ -557,7 +557,7 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 	magic_load(magicFile, NULL);
 
 	so_format_file_init(&file);
-	while (status = reader->ops->get_header(reader, &file), !*disconnected && status == so_format_reader_header_ok) {
+	while (status = reader->ops->get_header(reader, &file, NULL, NULL), !*disconnected && status == so_format_reader_header_ok) {
 		struct sodr_files * new_file = malloc(sizeof(struct sodr_files));
 		bzero(new_file, sizeof(struct sodr_files));
 

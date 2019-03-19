@@ -146,7 +146,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 			struct so_format_file file;
 			enum so_format_reader_header_status status;
-			while (status = src_files[i]->ops->get_header(src_files[i], &file), status == so_format_reader_header_ok) {
+			while (status = src_files[i]->ops->get_header(src_files[i], &file, NULL, NULL), status == so_format_reader_header_ok) {
 				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 					dgettext("storiqone-job-create-archive", "Adding file '%s' to archive"),
 					file.filename);
