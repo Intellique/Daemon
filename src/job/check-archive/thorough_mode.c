@@ -154,11 +154,15 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		static time_t last_update = 0;
 		last_update = time(NULL);
 
-		while (status = reader->ops->get_header(reader, &file_in), j < vol->nb_files && status == so_format_reader_header_ok) {
-			if (S_ISREG(file_in.mode)) {
-				struct so_archive_files * ptr_file = vol->files + j;
-				struct so_archive_file * file = ptr_file->file;
+		for (j = 0; ok && j < vol->nb_files; j++) {
+			struct so_archive_files * ptr_file = vol->files + j;
+			struct so_archive_file * file = ptr_file->file;
 
+			status = reader->ops->get_header(reader, &file_in, file->path, file->selected_path);
+			if (status != so_format_reader_header_ok)
+				break;
+
+			if (S_ISREG(file_in.mode)) {
 				if (file_in.position == 0) {
 					struct so_value * checksums = so_value_hashtable_keys(file->digests);
 					if (so_value_list_get_length(checksums) > 0) {
@@ -239,11 +243,6 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 			}
 
 			so_format_file_free(&file_in);
-
-			if (!ok)
-				break;
-
-			j++;
 		}
 
 		switch (status) {

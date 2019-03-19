@@ -79,7 +79,7 @@ struct so_format_reader {
 		void (*free)(struct so_format_reader * fr);
 		ssize_t (*get_block_size)(struct so_format_reader * fr);
 		struct so_value * (*get_digests)(struct so_format_reader * fr);
-		enum so_format_reader_header_status (*get_header)(struct so_format_reader * fr, struct so_format_file * file);
+		enum so_format_reader_header_status (*get_header)(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path);
 		char * (*get_root)(struct so_format_reader * fr);
 		int (*last_errno)(struct so_format_reader * fr);
 		ssize_t (*position)(struct so_format_reader * fr);

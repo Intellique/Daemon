@@ -131,7 +131,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 			struct so_format_file header;
 			do {
-				status = reader->ops->get_header(reader, &header);
+				status = reader->ops->get_header(reader, &header, file->path, file->selected_path);
 
 				if (status != so_format_reader_header_ok) {
 					ssize_t current_position = reader->ops->position(reader) / vol->media->block_size;
@@ -173,7 +173,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 						break;
 					}
 
-					status = reader->ops->get_header(reader, &header);
+					status = reader->ops->get_header(reader, &header, file->path, file->selected_path);
 					if (status != so_format_reader_header_ok) {
 						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-restore-archive", "Error while reading header from media '%s'"),

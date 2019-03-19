@@ -142,12 +142,18 @@ static void sodr_io_format_reader_forward(struct sodr_peer * peer, struct so_val
 	so_value_free(response);
 }
 
-static void sodr_io_format_reader_get_header(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+static void sodr_io_format_reader_get_header(struct sodr_peer * peer, struct so_value * request) {
 	struct so_format_file file;
 	so_format_file_init(&file);
 
+	const char * expected_path = NULL, * selected_path = NULL;
+	so_value_unpack(request, "{s{ss}}",
+		"params",
+			"expected_path", &expected_path,
+			"selected_path", &selected_path);
+
 	ssize_t current_position = peer->format_reader->ops->position(peer->format_reader);
-	enum so_format_reader_header_status status = peer->format_reader->ops->get_header(peer->format_reader, &file);
+	enum so_format_reader_header_status status = peer->format_reader->ops->get_header(peer->format_reader, &file, expected_path, selected_path);
 	ssize_t new_position = peer->format_reader->ops->position(peer->format_reader);
 	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 

@@ -24,6 +24,8 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dirname
+#include <libgen.h>
 // free, malloc
 #include <stdlib.h>
 // memcpy, strdup
@@ -38,6 +40,7 @@
 #include <libstoriqone/format.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-drive/time.h>
 
@@ -79,7 +82,7 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 static void sodr_tape_drive_format_ltfs_reader_free(struct so_format_reader * fr);
 static ssize_t sodr_tape_drive_format_ltfs_reader_get_block_size(struct so_format_reader * fr);
 static struct so_value * sodr_tape_drive_format_ltfs_reader_get_digests(struct so_format_reader * fr);
-static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
+static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path);
 static char * sodr_tape_drive_format_ltfs_reader_get_root(struct so_format_reader * fr);
 static int sodr_tape_drive_format_ltfs_reader_last_errno(struct so_format_reader * fr);
 static ssize_t sodr_tape_drive_format_ltfs_reader_position(struct so_format_reader * fr);
@@ -349,17 +352,60 @@ static struct so_value * sodr_tape_drive_format_ltfs_reader_get_digests(struct s
 	return so_value_new_linked_list();
 }
 
-static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
+static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path) {
 	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
 
-	self->file_info = self->next_file;
+	if (expected_path != NULL) {
+		char * selected_path_dup = strdup(selected_path);
+		dirname(selected_path_dup);
+		ssize_t selected_path_length = strlen(selected_path_dup);
+		free(selected_path_dup);
 
-	if (self->file_info == &self->ltfs_info->root || self->file_info == NULL)
-		return so_format_reader_header_not_found;
+		char * path_dup = strdup(expected_path);
+		const char * ptr_path = path_dup + selected_path_length;
+		while (*ptr_path == '/')
+			ptr_path++;
 
-	so_format_file_copy(file, &self->file_info->file);
+		const char * ptr_path_begin = ptr_path;
 
-	sodr_tape_drive_format_ltfs_reader_find_next_file(self);
+		struct sodr_tape_drive_format_ltfs_file * ptr = self->ltfs_info->root.first_child;
+		while (ptr != NULL) {
+			char * ptr_path_end = strchr(ptr_path_begin, '/');
+			if (ptr_path_end != NULL)
+				*ptr_path_end = '\0';
+			const unsigned long long hash_name = so_string_compute_hash2(ptr_path_begin);
+			if (ptr_path_end != NULL)
+				*ptr_path_end = '/';
+
+			if (ptr->hash_name == hash_name) {
+				if (ptr_path_end == NULL) {
+					so_format_file_copy(file, &ptr->file);
+					self->file_info = ptr;
+					break;
+				} else {
+					ptr = ptr->first_child;
+					ptr_path_begin = ptr_path_end;
+
+					while (*ptr_path_begin == '/')
+						ptr_path_begin++;
+				}
+			} else
+				ptr = ptr->next_sibling;
+		}
+
+		free(path_dup);
+
+		if (ptr == NULL)
+			return so_format_reader_header_not_found;
+	} else {
+		self->file_info = self->next_file;
+
+		if (self->file_info == &self->ltfs_info->root || self->file_info == NULL)
+			return so_format_reader_header_not_found;
+
+		so_format_file_copy(file, &self->file_info->file);
+		sodr_tape_drive_format_ltfs_reader_find_next_file(self);
+	}
 
 	self->buffer_used = self->buffer_size = 0;
 	self->file_position = 0;
@@ -575,30 +621,8 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 	return nb_total_read;
 }
 
-static ssize_t sodr_tape_drive_format_ltfs_reader_read_to_end_of_data(struct so_format_reader * fr) {
-	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
-
-	ssize_t nb_total_read = 0;
-	while (self->file_info->parent != NULL) {
-		while (self->file_info->first_child != NULL)
-			self->file_info = self->file_info->first_child;
-
-		nb_total_read += self->file_info->file.size - self->file_position;
-
-		self->file_position = 0;
-		self->buffer_used = self->buffer_size;
-
-		if (self->file_info->next_sibling != NULL) {
-			self->file_info = self->file_info->next_sibling;
-			free(self->file_info->previous_sibling);
-		} else
-			do {
-				self->file_info = self->file_info->parent;
-				free(self->file_info->last_child);
-			} while (self->file_info->parent != NULL && self->file_info->next_sibling == NULL);
-	}
-
-	return nb_total_read;
+static ssize_t sodr_tape_drive_format_ltfs_reader_read_to_end_of_data(struct so_format_reader * fr __attribute__((unused))) {
+	return 0;
 }
 
 static int sodr_tape_drive_format_ltfs_reader_rewind(struct so_format_reader * fr) {

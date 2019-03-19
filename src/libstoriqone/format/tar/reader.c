@@ -69,7 +69,7 @@ static enum so_format_reader_header_status so_format_tar_reader_forward(struct s
 static void so_format_tar_reader_free(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_get_block_size(struct so_format_reader * fr);
 static struct so_value * so_format_tar_reader_get_digests(struct so_format_reader * fr);
-static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
+static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path);
 static char * so_format_tar_reader_get_root(struct so_format_reader * fr);
 static bool so_format_tar_reader_is_empty_block(struct so_format_tar_reader_private * self);
 static int so_format_tar_reader_last_errno(struct so_format_reader * fr);
@@ -247,7 +247,7 @@ static struct so_value * so_format_tar_reader_get_digests(struct so_format_reade
 		return so_value_new_linked_list();
 }
 
-static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
+static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path __attribute__((unused))) {
 	struct so_format_tar_reader_private * self = fr->data;
 
 	if (self->io->ops->end_of_file(self->io))
@@ -397,6 +397,9 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 
 		break;
 	}
+
+	if (expected_path != NULL && strcmp(expected_path, file->filename) != 0)
+		return so_format_reader_header_not_found;
 
 	self->skip_size = self->file_size = file->size;
 

@@ -64,7 +64,7 @@ static enum so_format_reader_header_status soj_format_reader_forward(struct so_f
 static void soj_format_reader_free(struct so_format_reader * fr);
 static ssize_t soj_format_reader_get_block_size(struct so_format_reader * fr);
 static struct so_value * soj_format_reader_get_digests(struct so_format_reader * fr);
-static enum so_format_reader_header_status soj_format_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
+static enum so_format_reader_header_status soj_format_reader_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path);
 static char * soj_format_reader_get_root(struct so_format_reader * fr);
 static int soj_format_reader_last_errno(struct so_format_reader * fr);
 static ssize_t soj_format_reader_position(struct so_format_reader * fr);
@@ -213,10 +213,15 @@ static struct so_value * soj_format_reader_get_digests(struct so_format_reader *
 	return so_value_share(self->digest);
 }
 
-static enum so_format_reader_header_status soj_format_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
+static enum so_format_reader_header_status soj_format_reader_get_header(struct so_format_reader * fr, struct so_format_file * file, const char * expected_path, const char * selected_path) {
 	struct soj_format_reader_private * self = fr->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "get header");
+	struct so_value * request = so_value_pack("{sss{ssss}}",
+		"command", "get header",
+		"params",
+			"expected_path", expected_path,
+			"selected_path", selected_path
+	);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 

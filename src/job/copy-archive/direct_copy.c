@@ -95,7 +95,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 
 		struct so_format_reader * reader = self->src_drive->ops->open_archive_volume(self->src_drive, src_vol, NULL);
 
-		while (rdr_status = reader->ops->get_header(reader, &file), rdr_status == so_format_reader_header_ok) {
+		while (rdr_status = reader->ops->get_header(reader, &file, NULL, NULL), rdr_status == so_format_reader_header_ok) {
 			ssize_t available_size = self->writer->ops->get_available_size(self->writer);
 			if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->copy_archive->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
 				failed = soj_copyarchive_util_change_media(job, db_connect, self);

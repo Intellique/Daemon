@@ -161,19 +161,18 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 	free(selected_path_dup);
 
 	char * path_dup = strdup(file->filename);
-	const char * ptr_path = path_dup + selected_path_length;
-	while (*ptr_path == '/')
-		ptr_path++;
+	char * ptr_path_begin = path_dup + selected_path_length;
+	while (*ptr_path_begin == '/')
+		ptr_path_begin++;
 
 	const unsigned long long hash_selected_path = so_string_compute_hash2(selected_path);
 
 	struct sodr_tape_drive_format_ltfs_file * ptr_node = &self->ltfs_info->root;
 	for (;;) {
-		char * ptr_path2 = strchr(ptr_path, '/');
-		if (ptr_path2 != NULL)
-			*ptr_path2 = '\0';
-
-		const unsigned long long hash_name = so_string_compute_hash2(ptr_path);
+		char * ptr_path_end = strchr(ptr_path_begin, '/');
+		if (ptr_path_end != NULL)
+			*ptr_path_end = '\0';
+		const unsigned long long hash_name = so_string_compute_hash2(ptr_path_begin);
 
 		struct sodr_tape_drive_format_ltfs_file * child_node;
 		unsigned int next_index = 0;
@@ -190,13 +189,29 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 			bzero(child_node, sizeof(struct sodr_tape_drive_format_ltfs_file));
 
 			if (next_index > 0) {
-				asprintf(&child_node->name, "%s_%u", ptr_path, next_index - 1);
+				asprintf(&child_node->name, "%s_%u", ptr_path_begin, next_index - 1);
 				self->alternate_path = child_node->name;
 			} else
-				child_node->name = strdup(ptr_path);
+				child_node->name = strdup(ptr_path_begin);
 
 			child_node->hash_name = hash_name;
 			child_node->hash_selected_path = hash_selected_path;
+
+			child_node->file.filename = strdup(path_dup);
+			child_node->file.dev = 0;
+			child_node->file.rdev = 0;
+			child_node->file.mode = S_IFDIR | (file->mode & 07777);
+			child_node->file.uid = file->uid;
+			if (file->user != NULL)
+				child_node->file.user = strdup(file->user);
+			child_node->file.gid = file->gid;
+			if (file->group != NULL)
+				child_node->file.group = strdup(file->group);
+			child_node->file.ctime = file->ctime;
+			child_node->file.mtime = file->mtime;
+			child_node->file.is_label = false;
+
+			child_node->file_uid = ++self->ltfs_info->highest_file_uid;
 
 			child_node->volume_number = self->volume_number;
 
@@ -214,14 +229,12 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 		ptr_node = child_node;
 
 		bool finished = false;
-		if (ptr_path2 != NULL) {
-			*ptr_path2 = '/';
-
-			ptr_path = ptr_path2 + 1;
+		if (ptr_path_end != NULL) {
+			*ptr_path_end = '/';
+			ptr_path_begin = ptr_path_end;
+			while(*ptr_path_begin == '/')
+				ptr_path_begin++;
 		} else
-			finished = true;
-
-		if (*ptr_path == '\0')
 			finished = true;
 
 		if (finished) {

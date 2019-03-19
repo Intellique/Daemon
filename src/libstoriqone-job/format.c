@@ -35,7 +35,7 @@ ssize_t soj_format_compute_tar_size(struct so_format_reader * reader) {
 	ssize_t sum = 0;
 	enum so_format_reader_header_status status;
 	struct so_format_file file;
-	while (status = reader->ops->get_header(reader, &file), status == so_format_reader_header_ok) {
+	while (status = reader->ops->get_header(reader, &file, NULL, NULL), status == so_format_reader_header_ok) {
 		sum += 512;
 		ssize_t path_length = strlen(file.filename);
 		if (S_ISLNK(file.mode)) {
