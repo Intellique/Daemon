@@ -157,11 +157,11 @@ static void soj_restorearchive_check_worker_check(struct so_job * job, struct so
 	if (ptr->file->check_ok)
 		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
 			dgettext("storiqone-job-restore-archive", "data integrity of file '%s' is correct"),
-			ptr->file->path);
+			ptr->file->restored_to);
 	else
 		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 			dgettext("storiqone-job-restore-archive", "data integrity of file '%s' is not correct"),
-			ptr->file->path);
+			ptr->file->restored_to);
 }
 
 static void soj_restorearchive_check_worker_do(void * arg __attribute__((unused))) {
