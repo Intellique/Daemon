@@ -3,7 +3,7 @@ SHELL=/bin/bash
 
 # commands
 # static code analysis tool: cppcheck, sparse (cgcc), splint
-CC			:= $(shell which ccache) ${TARGET}gcc
+CC			:= $(shell which ccache) ${TARGET}clang
 CSCOPE		:= cscope
 CTAGS		:= ctags
 DOXYGEN		:= doxygen
