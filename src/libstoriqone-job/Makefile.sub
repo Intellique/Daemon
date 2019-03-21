@@ -4,7 +4,7 @@ LIBSTORIQONEJOB_CFLAG			:= -fPIC -pthread
 LIBSTORIQONEJOB_LIB				:= lib/libstoriqone-job.so
 LIBSTORIQONEJOB_LD				:= -shared -pthread -ldl -lstoriqone -Llib
 LIBSTORIQONEJOB_SONAME			:= libstoriqone-job.so.1
-LIBSTORIQONEJOB_LIB_VERSION		:= 1.3
+LIBSTORIQONEJOB_LIB_VERSION		:= 1.4
 
 LIBSTORIQONEJOB_DEPEND_LIB		:= lib/libstoriqone.so
 
