@@ -238,12 +238,10 @@ static enum so_format_writer_status sodr_tape_drive_format_ltfs_writer_add_file(
 			finished = true;
 
 		if (finished) {
-			so_format_file_copy(&child_node->file, file);
-
-			self->ltfs_info->highest_file_uid++;
-			child_node->file_uid = self->ltfs_info->highest_file_uid;
-
 			if (S_ISREG(file->mode)) {
+				child_node->file.mode = S_IFREG | (file->mode & 07777);
+				child_node->file.size = file->size;
+
 				child_node->extents = malloc(sizeof(struct sodr_tape_drive_format_ltfs_extent));
 				bzero(child_node->extents, sizeof(struct sodr_tape_drive_format_ltfs_extent));
 				child_node->nb_extents = 1;
