@@ -86,7 +86,7 @@ struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_da
 		unsigned int j;
 		for (j = 0; j < ch->nb_slots; j++) {
 			struct so_slot * sl = ch->slots + j;
-			if (sl->media == NULL)
+			if (sl->media == NULL || sl->media->type == so_media_type_cleaning)
 				continue;
 
 			if (!strcmp(sl->media->medium_serial_number, media->medium_serial_number))
@@ -127,7 +127,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 	unsigned int i;
 	for (i = 0; i < changer->nb_slots; i++) {
 		struct so_slot * sl = changer->slots + i;
-		if (sl->media == NULL)
+			if (sl->media == NULL || sl->media->type == so_media_type_cleaning)
 			continue;
 
 		if (!strcmp(sl->media->medium_serial_number, media->medium_serial_number)) {
