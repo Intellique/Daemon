@@ -148,51 +148,6 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				break;
 			}
 
-			so_string_delete_double_char(header.filename, '/');
-			so_string_rtrim(header.filename, '/');
-
-			so_string_delete_double_char(file->path, '/');
-			so_string_rtrim(file->path, '/');
-
-			const char * ptr_file_filename = file->path;
-			if (header.filename[0] != '/')
-				ptr_file_filename++;
-
-			if (j > 0 || strncmp(header.filename, ptr_file_filename, strlen(header.filename)) != 0)
-				while (strcmp(header.filename, ptr_file_filename) != 0) {
-					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-						dgettext("storiqone-job-restore-archive", "Skipping file '%s'"),
-						header.filename);
-
-					status = reader->ops->skip_file(reader);
-					if (status != so_format_reader_header_ok) {
-						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-							dgettext("storiqone-job-restore-archive", "Error while seeking to file '%s'"),
-							header.filename);
-						worker->nb_errors++;
-						break;
-					}
-
-					status = reader->ops->get_header(reader, &header, file->path, file->selected_path);
-					if (status != so_format_reader_header_ok) {
-						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-							dgettext("storiqone-job-restore-archive", "Error while reading header from media '%s'"),
-							vol->media->name);
-						worker->nb_errors++;
-						break;
-					}
-
-					so_string_delete_double_char(header.filename, '/');
-					so_string_rtrim(header.filename, '/');
-
-					ptr_file_filename = file->path;
-					if (header.filename[0] != '/')
-						ptr_file_filename++;
-				}
-
-			if (status != so_format_reader_header_ok)
-				break;
-
 			const char * restore_to = soj_restorearchive_path_get(header.filename, file->selected_path, file->type == so_archive_file_type_regular_file);
 			if (restore_to != NULL)
 				file->restored_to = so_string_dup_and_fix(restore_to, NULL);
