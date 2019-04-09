@@ -254,7 +254,10 @@ struct so_media * so_media_dup(struct so_media * media) {
 	strncpy(new_media->uuid, media->uuid, 37);
 	if (media->label != NULL)
 		new_media->label = strdup(media->label);
-	new_media->medium_serial_number = strdup(media->medium_serial_number);
+
+	if (media->medium_serial_number != NULL)
+		new_media->medium_serial_number = strdup(media->medium_serial_number);
+
 	if (media->name != NULL)
 		new_media->name = strdup(media->name);
 
