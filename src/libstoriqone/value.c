@@ -1606,7 +1606,7 @@ struct so_value * so_value_list_get(struct so_value * list, unsigned int index, 
 			ret = array->values[index];
 	} else {
 		struct so_value_linked_list * linked_list = so_value_get(list);
-		if (linked_list->nb_vals >= index) {
+		if (linked_list->nb_vals > index) {
 			if (index == 0)
 				ret = linked_list->first->value;
 			else if (linked_list->nb_vals == index)
