@@ -108,7 +108,7 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 		unsigned int j;
 		for (j = 0; j < ch->nb_slots; j++) {
 			struct so_slot * sl = ch->slots + j;
-			if (sl->media == NULL)
+			if (sl->media == NULL || sl->media->type == so_media_type_cleaning)
 				continue;
 
 			if (!strcmp(sl->media->medium_serial_number, media->medium_serial_number))
