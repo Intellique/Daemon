@@ -206,7 +206,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 						vol->media->name);
 				}
 
-				if (chcksum_writer != NULL && file_in.position == file_in.size) {
+				if (chcksum_writer != NULL && file_in.position >= file_in.size) {
 					chcksum_writer->ops->close(chcksum_writer);
 
 					struct so_value * digests = so_io_checksum_writer_get_checksums(chcksum_writer);
