@@ -117,7 +117,10 @@ static struct so_slot * sochgr_socket_find_slot_by_media(const char * medium_ser
 	for (i = 0; i < changer->nb_slots; i++) {
 		struct so_slot * sl = changer->slots + i;
 
-		if (sl->enable && sl->full && strcmp(medium_serial_number, sl->media->medium_serial_number) == 0)
+		if (!sl->enable || sl->media == NULL || !sl->full || sl->media->type == so_media_type_cleaning)
+			continue;
+
+		if (strcmp(medium_serial_number, sl->media->medium_serial_number) == 0)
 			return sl;
 	}
 
