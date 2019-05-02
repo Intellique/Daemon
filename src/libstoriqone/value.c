@@ -86,10 +86,10 @@ struct so_value_iterator_array {
 };
 
 struct so_value_iterator_hashtable {
-	struct {
-		struct so_value_hashtable_node * node;
-		unsigned int i_elements;
-	} next, previous;
+	unsigned int current_index;
+	struct so_value_hashtable_node * current_node;
+	unsigned int previous_index;
+	struct so_value_hashtable_node * previous_node;
 };
 
 struct so_value_iterator_linked_list {
@@ -1333,12 +1333,16 @@ static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_val
 	iter->value = hash;
 	iter->weak_ref = weak_ref;
 
-	iter_hash->next.node = iter_hash->previous.node = NULL;
+	iter_hash->current_node = iter_hash->previous_node = NULL;
+	iter_hash->current_index = iter_hash->previous_index = 0;
 
-	for (iter_hash->next.i_elements = 0; iter_hash->next.i_elements < value_hash->size_node && iter_hash->next.node == NULL; iter_hash->next.i_elements++)
-		iter_hash->next.node = value_hash->nodes[iter_hash->next.i_elements];
-
-	iter_hash->previous.i_elements = iter_hash->next.i_elements - 1;
+	if (value_hash->nb_elements > 0)
+		for (iter_hash->current_index = 0; iter_hash->current_index < value_hash->size_node; iter_hash->current_index++) {
+			if (value_hash->nodes[iter_hash->current_index] != NULL) {
+				iter_hash->current_node = value_hash->nodes[iter_hash->current_index];
+				break;
+			}
+		}
 
 	return iter;
 }
@@ -2238,31 +2242,35 @@ bool so_value_iterator_detach_previous(struct so_value_iterator * iter) {
 		case so_value_hashtable: {
 				struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
 
-				if (iter_hash->previous.node == NULL)
+				if (iter_hash->previous_node == NULL)
 					return false;
 
 				struct so_value_hashtable * hash = so_value_get(iter->value);
-				struct so_value_hashtable_node * node = hash->nodes[iter_hash->previous.i_elements];
-				if (node->hash == iter_hash->previous.node->hash) {
-					hash->nodes[iter_hash->previous.i_elements] = node->next;
+				struct so_value_hashtable_node * node = hash->nodes[iter_hash->previous_index];
+				if (node->hash == iter_hash->previous_node->hash) {
+					hash->nodes[iter_hash->previous_index] = node->next;
 
 					so_value_free(node->key);
 					free(node);
 					hash->nb_elements--;
 
+					iter_hash->previous_node = NULL;
+
 					return true;
 				}
 
-				while (node->next != NULL && node->next->hash != iter_hash->previous.node->hash)
+				while (node->next != NULL && node->next->hash != iter_hash->previous_node->hash)
 					node = node->next;
 
-				if (node->next->hash == iter_hash->previous.node->hash) {
+				if (node->next->hash == iter_hash->previous_node->hash) {
 					struct so_value_hashtable_node * tmp = node->next;
 					node->next = tmp->next;
 
 					so_value_free(tmp->key);
 					free(tmp);
 					hash->nb_elements--;
+
+					iter_hash->previous_node = NULL;
 
 					return true;
 				}
@@ -2319,7 +2327,7 @@ struct so_value * so_value_iterator_get_key(struct so_value_iterator * iter, boo
 		return &null_value;
 
 	struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
-	struct so_value_hashtable_node * node = iter_hash->next.node;
+	struct so_value_hashtable_node * node = iter_hash->current_node;
 	struct so_value * key = node->key;
 
 	if (shared)
@@ -2328,16 +2336,15 @@ struct so_value * so_value_iterator_get_key(struct so_value_iterator * iter, boo
 	if (move_to_next) {
 		struct so_value_hashtable * hash = so_value_get(iter->value);
 
-		iter_hash->previous.node = node;
+		iter_hash->previous_node = node;
+		iter_hash->current_node = node->next;
 
-		iter_hash->next.node = node->next;
+		if (iter_hash->current_node == NULL) {
+			while (iter_hash->current_index < hash->size_node && iter_hash->current_node == NULL)
+				iter_hash->current_node = hash->nodes[iter_hash->current_index++];
 
-		if (iter_hash->next.node == NULL) {
-			while (iter_hash->next.i_elements < hash->size_node && iter_hash->next.node == NULL)
-				iter_hash->next.node = hash->nodes[iter_hash->next.i_elements++];
-
-			if (iter_hash->next.i_elements < hash->size_node)
-				iter_hash->previous.i_elements = iter_hash->next.i_elements - 1;
+			if (iter_hash->current_index < hash->size_node)
+				iter_hash->previous_index = iter_hash->current_index - 1;
 		}
 	}
 
@@ -2365,24 +2372,25 @@ struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, b
 		case so_value_hashtable: {
 				struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
 
-				if (iter_hash->next.node == NULL)
+				if (iter_hash->current_node == NULL)
 					break;
 
 				struct so_value_hashtable * hash = so_value_get(iter->value);
-				struct so_value_hashtable_node * node = iter_hash->next.node;
+				struct so_value_hashtable_node * node = iter_hash->current_node;
 				ret = node->value;
 
-				iter_hash->previous.node = node;
+				iter_hash->previous_node = node;
+				iter_hash->previous_index = iter_hash->current_index;
 
-				iter_hash->next.node = node->next;
-				if (iter_hash->next.node != NULL)
+				iter_hash->current_node = node->next;
+				if (iter_hash->current_node != NULL)
 					break;
 
-				for (; iter_hash->next.i_elements < hash->size_node && iter_hash->next.node == NULL; iter_hash->next.i_elements++)
-					iter_hash->next.node = hash->nodes[iter_hash->next.i_elements];
-
-				if (iter_hash->next.i_elements < hash->size_node)
-					iter_hash->previous.i_elements = iter_hash->next.i_elements - 1;
+				for (iter_hash->current_index++; iter_hash->current_index < hash->size_node; iter_hash->current_index++) {
+					iter_hash->current_node = hash->nodes[iter_hash->current_index];
+					if (iter_hash->current_node != NULL)
+						break;
+				}
 			}
 			break;
 
@@ -2426,7 +2434,7 @@ bool so_value_iterator_has_next(struct so_value_iterator * iter) {
 
 		case so_value_hashtable: {
 				struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
-				return iter_hash->next.node != NULL;
+				return iter_hash->current_node != NULL;
 			}
 
 		case so_value_linked_list: {
