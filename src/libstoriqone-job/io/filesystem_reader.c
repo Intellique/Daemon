@@ -120,6 +120,9 @@ struct so_format_reader * soj_io_filesystem_reader(const char * path, struct so_
 
 	struct so_value * files = NULL;
 	if (archive != NULL) {
+		time_t last_update = time(NULL);
+		time_t current = last_update;
+
 		files = so_value_new_hashtable2();
 		unsigned int i;
 		for (i = 0; i < archive->nb_volumes; i++) {
@@ -129,6 +132,12 @@ struct so_format_reader * soj_io_filesystem_reader(const char * path, struct so_
 				struct so_archive_files * ptr_file = vol->files + j;
 				struct so_archive_file * file = ptr_file->file;
 				so_value_hashtable_put2(files, file->hash, so_value_new_custom(file, NULL), true);
+
+				current = last_update;
+				if (last_update + 60 < current) {
+					last_update = current;
+					so_log_write(so_log_level_debug, dgettext("libstoriqone-job", "Indexing archive (volume #%u/%u, file #%u/%u)"), i, archive->nb_volumes, j, vol->nb_files);
+				}
 			}
 		}
 	}
@@ -352,7 +361,10 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 				if (so_value_hashtable_has_key2(hash_files, hash)) {
 					struct so_value * vfile = so_value_hashtable_get2(hash_files, hash, false, false);
 					struct so_archive_file * file = so_value_custom_get(vfile);
-					file->max_version = archive->current_version + 1;
+					if (file->check_time > 0 && !file->check_ok)
+						node->nb_file_to_backup++;
+					else
+						file->max_version = archive->current_version + 1;
 				} else
 					node->nb_file_to_backup++;
 			}
