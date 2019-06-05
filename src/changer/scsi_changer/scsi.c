@@ -570,24 +570,7 @@ void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char
 	so_file_close_fd_on_exec(fd, true);
 
 	struct scsi_request_sense sense;
-	struct {
-		unsigned char mode_data_length;
-		unsigned char reserved0[3];
-
-		unsigned char page_code:6;
-		bool reserved1:1;
-		bool page_saved:1;
-		unsigned char parameter_length;
-		unsigned short medium_transport_element_address;
-		unsigned short number_of_medium_transport_elements;
-		unsigned short first_storage_element_address;
-		unsigned short number_of_storage_elements;
-		unsigned short first_import_export_element_address;
-		unsigned short number_of_import_export_elements;
-		unsigned short first_data_transfer_element_address;
-		unsigned short number_of_data_transfer_elements;
-		unsigned char reserved2[2];
-	} __attribute__((packed)) result;
+	unsigned char buffer[60];
 	struct {
 		unsigned char operation_code;
 		unsigned char reserved0:3;
@@ -620,22 +603,22 @@ void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char
 		.code_page = page_code_element_address_assignement_page,
 		.page_control = page_control_current_value,
 		.reserved2 = 0,
-		.allocation_length = sizeof(result),
+		.allocation_length = sizeof(buffer),
 		.reserved3 = 0,
 	};
 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
-	memset(&result, 0, sizeof(result));
+	memset(&buffer, 0, sizeof(buffer));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(result);
+	header.dxfer_len = sizeof(buffer);
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = (unsigned char *) &result;
+	header.dxferp = buffer;
 	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -643,23 +626,39 @@ void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char
 	if (failed)
 		return;
 
-	result.medium_transport_element_address = be16toh(result.medium_transport_element_address);
-	result.number_of_medium_transport_elements = be16toh(result.number_of_medium_transport_elements);
-	result.first_storage_element_address = be16toh(result.first_storage_element_address);
-	result.number_of_storage_elements = be16toh(result.number_of_storage_elements);
-	result.first_import_export_element_address = be16toh(result.first_import_export_element_address);
-	result.number_of_import_export_elements = be16toh(result.number_of_import_export_elements);
-	result.first_data_transfer_element_address = be16toh(result.first_data_transfer_element_address);
-	result.number_of_data_transfer_elements = be16toh(result.number_of_data_transfer_elements);
+	struct {
+		unsigned char page_code:6;
+		bool reserved1:1;
+		bool page_saved:1;
+		unsigned char parameter_length;
+		unsigned short medium_transport_element_address;
+		unsigned short number_of_medium_transport_elements;
+		unsigned short first_storage_element_address;
+		unsigned short number_of_storage_elements;
+		unsigned short first_import_export_element_address;
+		unsigned short number_of_import_export_elements;
+		unsigned short first_data_transfer_element_address;
+		unsigned short number_of_data_transfer_elements;
+		unsigned char reserved2[2];
+	} __attribute__((packed)) * result = memmem(buffer, sizeof(buffer), "\x9d\x12", 2);
+
+	result->medium_transport_element_address = be16toh(result->medium_transport_element_address);
+	result->number_of_medium_transport_elements = be16toh(result->number_of_medium_transport_elements);
+	result->first_storage_element_address = be16toh(result->first_storage_element_address);
+	result->number_of_storage_elements = be16toh(result->number_of_storage_elements);
+	result->first_import_export_element_address = be16toh(result->first_import_export_element_address);
+	result->number_of_import_export_elements = be16toh(result->number_of_import_export_elements);
+	result->first_data_transfer_element_address = be16toh(result->first_data_transfer_element_address);
+	result->number_of_data_transfer_elements = be16toh(result->number_of_data_transfer_elements);
 
 	if (transport_address != NULL)
-		*transport_address = result.medium_transport_element_address;
+		*transport_address = result->medium_transport_element_address;
 
-	changer->nb_drives = result.number_of_data_transfer_elements;
+	changer->nb_drives = result->number_of_data_transfer_elements;
 	changer->drives = calloc(sizeof(struct so_drive), changer->nb_drives);
 
-	changer->nb_slots = result.number_of_storage_elements;
-	unsigned short nb_io_slots = result.number_of_import_export_elements;
+	changer->nb_slots = result->number_of_storage_elements;
+	unsigned short nb_io_slots = result->number_of_import_export_elements;
 	if (nb_io_slots > 0)
 		changer->nb_slots += nb_io_slots;
 	changer->nb_slots += changer->nb_drives;
@@ -684,10 +683,10 @@ void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char
 		sp->src_slot = NULL;
 	}
 
-	sochgr_scsi_changer_scsi_update_status2(fd, changer, device, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer, available_drives);
-	sochgr_scsi_changer_scsi_update_status2(fd, changer, device, changer->slots + result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element, NULL);
-	if (result.number_of_import_export_elements > 0)
-		sochgr_scsi_changer_scsi_update_status2(fd, changer, device, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, NULL);
+	sochgr_scsi_changer_scsi_update_status2(fd, changer, device, changer->slots, result->first_data_transfer_element_address, result->number_of_data_transfer_elements, scsi_loader_element_type_data_transfer, available_drives);
+	sochgr_scsi_changer_scsi_update_status2(fd, changer, device, changer->slots + result->number_of_data_transfer_elements, result->first_storage_element_address, result->number_of_storage_elements, scsi_loader_element_type_storage_element, NULL);
+	if (result->number_of_import_export_elements > 0)
+		sochgr_scsi_changer_scsi_update_status2(fd, changer, device, changer->slots + (result->number_of_data_transfer_elements + result->number_of_storage_elements), result->first_import_export_element_address, result->number_of_import_export_elements, scsi_loader_element_type_import_export_element, NULL);
 
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct so_drive * drive = changer->drives + i;
