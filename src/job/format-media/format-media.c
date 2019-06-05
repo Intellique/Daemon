@@ -310,10 +310,12 @@ static int soj_formatmedia_warm_up(struct so_job * job, struct so_database_conne
 			soj_formatmedia_media->name, soj_formatmedia_media->pool->name);
 		return 1;
 	}
-	if (soj_formatmedia_media->status == so_media_status_error)
-		soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+	if (soj_formatmedia_media->status == so_media_status_error) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Trying to format a media '%s' with error status"),
 			soj_formatmedia_media->name);
+		return 1;
+	}
 
 	soj_formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
 	if (soj_formatmedia_pool == NULL) {
