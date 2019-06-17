@@ -147,7 +147,7 @@ static void sodr_io_format_reader_get_header(struct sodr_peer * peer, struct so_
 	so_format_file_init(&file);
 
 	const char * expected_path = NULL, * selected_path = NULL;
-	so_value_unpack(request, "{s{ss}}",
+	so_value_unpack(request, "{s{ssss}}",
 		"params",
 			"expected_path", &expected_path,
 			"selected_path", &selected_path);
