@@ -126,14 +126,15 @@ static struct so_database_postgresql_job_status2 {
 	const char * name;
 	enum so_job_status status;
 } so_database_postgresql_job_statuses[] = {
-	[so_job_status_disable]   = { 0, "disable",   so_job_status_disable },
-	[so_job_status_error]     = { 0, "error",     so_job_status_error },
-	[so_job_status_finished]  = { 0, "finished",  so_job_status_finished },
-	[so_job_status_pause]     = { 0, "pause",     so_job_status_pause },
-	[so_job_status_running]   = { 0, "running",   so_job_status_running },
-	[so_job_status_scheduled] = { 0, "scheduled", so_job_status_scheduled },
-	[so_job_status_stopped]   = { 0, "stopped",   so_job_status_stopped },
-	[so_job_status_waiting]   = { 0, "waiting",   so_job_status_waiting },
+	[so_job_status_disable]                = { 0, "disable",                so_job_status_disable },
+	[so_job_status_error]                  = { 0, "error",                  so_job_status_error },
+	[so_job_status_finished]               = { 0, "finished",               so_job_status_finished },
+	[so_job_status_finished_with_warnings] = { 0, "finished with warnings", so_job_status_finished },
+	[so_job_status_pause]                  = { 0, "pause",                  so_job_status_pause },
+	[so_job_status_running]                = { 0, "running",                so_job_status_running },
+	[so_job_status_scheduled]              = { 0, "scheduled",              so_job_status_scheduled },
+	[so_job_status_stopped]                = { 0, "stopped",                so_job_status_stopped },
+	[so_job_status_waiting]                = { 0, "waiting",                so_job_status_waiting },
 
 	[so_job_status_unknown]   = { 0, "unknown",   so_job_status_unknown },
 };

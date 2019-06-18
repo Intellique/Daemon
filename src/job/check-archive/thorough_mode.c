@@ -148,7 +148,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 			return 1;
 		}
 
-		enum so_format_reader_header_status status;
+		enum so_format_reader_header_status status = so_format_reader_header_io_error;
 		struct so_format_file file_in;
 		unsigned int j = 0;
 		static time_t last_update = 0;
@@ -310,6 +310,13 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 	}
 
 	job->done = 1;
+
+	if (!ok)
+		job->status = so_job_status_error;
+	else if (nb_chck_files != nb_total_chck_files)
+		job->status = so_job_status_finished_with_warnings;
+	else
+		job->status = so_job_status_finished;
 
 	return ok && nb_chck_files == nb_total_chck_files ? 0 : 1;
 }

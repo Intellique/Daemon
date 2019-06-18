@@ -39,11 +39,12 @@ enum so_job_status {
 	so_job_status_disable = 0x1,
 	so_job_status_error = 0x2,
 	so_job_status_finished = 0x3,
-	so_job_status_pause = 0x4,
-	so_job_status_running = 0x5,
-	so_job_status_scheduled = 0x6,
-	so_job_status_stopped = 0x7,
-	so_job_status_waiting = 0x8,
+	so_job_status_finished_with_warnings = 0x4,
+	so_job_status_pause = 0x5,
+	so_job_status_running = 0x6,
+	so_job_status_scheduled = 0x7,
+	so_job_status_stopped = 0x8,
+	so_job_status_waiting = 0x9,
 
 	so_job_status_unknown = 0x0,
 };
