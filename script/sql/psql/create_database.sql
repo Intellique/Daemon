@@ -74,6 +74,7 @@ CREATE TYPE JobStatus AS ENUM (
     'disable',
     'error',
     'finished',
+    'finished with warnigs',
     'pause',
     'running',
     'scheduled',
@@ -201,31 +202,6 @@ CREATE TABLE ArchiveMirror (
     poolMirror INTEGER REFERENCES PoolMirror(id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE TABLE Pool (
-    id SERIAL PRIMARY KEY,
-
-    uuid UUID NOT NULL UNIQUE,
-    name VARCHAR(64) NOT NULL,
-
-    archiveFormat INTEGER NOT NULL REFERENCES ArchiveFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-
-    autocheck AutoCheckMode NOT NULL DEFAULT 'none',
-    lockcheck BOOLEAN NOT NULL DEFAULT FALSE,
-
-    growable BOOLEAN NOT NULL DEFAULT FALSE,
-    unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
-    rewritable BOOLEAN NOT NULL DEFAULT TRUE,
-
-    metadata JSON NOT NULL DEFAULT '{}',
-    backupPool BOOLEAN NOT NULL DEFAULT FALSE,
-
-    poolOriginal INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    poolMirror INTEGER REFERENCES PoolMirror(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-
-    deleted BOOLEAN NOT NULL DEFAULT FALSE
-);
-
 CREATE TABLE PoolGroup (
     id SERIAL PRIMARY KEY,
 
@@ -233,16 +209,8 @@ CREATE TABLE PoolGroup (
     name VARCHAR(64) NOT NULL
 );
 
-CREATE TABLE PoolToPoolGroup (
-    pool INTEGER NOT NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    poolgroup INTEGER NOT NULL REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT
-);
-
-CREATE INDEX ON PoolToPoolGroup(pool);
-CREATE INDEX ON PoolToPoolGroup(poolgroup);
-
 CREATE TABLE PoolTemplate (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
 
     name VARCHAR(64) NOT NULL UNIQUE,
 
@@ -256,6 +224,30 @@ CREATE TABLE PoolTemplate (
     metadata JSON NOT NULL DEFAULT '{}',
     createProxy BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+CREATE TABLE Pool (
+    uuid UUID NOT NULL UNIQUE,
+
+    archiveFormat INTEGER NOT NULL REFERENCES ArchiveFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    backupPool BOOLEAN NOT NULL DEFAULT FALSE,
+
+    poolOriginal BIGINT,
+    poolMirror INTEGER REFERENCES PoolMirror(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE (id),
+    FOREIGN KEY (poolOriginal) REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) INHERITS (PoolTemplate);
+
+CREATE TABLE PoolToPoolGroup (
+    pool INTEGER NOT NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    poolgroup INTEGER NOT NULL REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+CREATE INDEX ON PoolToPoolGroup(pool);
+CREATE INDEX ON PoolToPoolGroup(poolgroup);
 
 CREATE TABLE Media (
     id SERIAL PRIMARY KEY,
@@ -415,6 +407,7 @@ CREATE TABLE Users (
 
     poolgroup INTEGER REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
+	key TEXT,
     disabled BOOLEAN NOT NULL DEFAULT FALSE
 );
 CREATE UNIQUE INDEX ON users (LOWER(login));
@@ -887,7 +880,7 @@ COMMENT ON TABLE Checksum IS 'Contains only checksum available';
 
 COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning in days';
 
-COMMENT ON TYPE JobStatus IS E'disable => disabled,\nerror => error while running,\nfinished => task finished,\npause => waiting for user action,\nrunning => running,\nscheduled => not yet started or completed,\nstopped => stopped by user,\nwaiting => waiting for a resource';
+COMMENT ON TYPE JobStatus IS E'disable => disabled,\nerror => error while running,\nfinished => task finished,\nfinished with warnings => task finished but warnigs has been issued,\npause => waiting for user action,\nrunning => running,\nscheduled => not yet started or completed,\nstopped => stopped by user,\nwaiting => waiting for a resource';
 
 COMMENT ON COLUMN Media.label IS 'Contains an UUID';
 COMMENT ON COLUMN Media.append IS 'Can add file into this media';
