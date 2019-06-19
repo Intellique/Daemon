@@ -74,7 +74,7 @@ CREATE TYPE JobStatus AS ENUM (
     'disable',
     'error',
     'finished',
-    'finished with warnigs',
+    'finished with warnings',
     'pause',
     'running',
     'scheduled',
