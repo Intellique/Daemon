@@ -133,7 +133,7 @@ void sod_plugin_sync_scripts(struct so_database_connection * connection) {
 			const char * script_name = NULL, * script_desciption = NULL, * script_type = NULL;
 			if (returned == NULL)
 				so_log_write2(so_log_level_warning, so_log_type_daemon, gettext("Script (%s) returned an invalid json"), filename);
-			else if (so_value_unpack(returned, "{sSsSsS}", "name", script_name, "description", script_desciption, "type", script_type) == 3)
+			else if (so_value_unpack(returned, "{sSsSsS}", "name", &script_name, "description", &script_desciption, "type", &script_type) == 3)
 				connection->ops->sync_plugin_script(connection, script_name, script_desciption, filename, script_type);
 			else
 				so_log_write2(so_log_level_warning, so_log_type_daemon, gettext("Script (%s) returned an incompleted json"), filename);
