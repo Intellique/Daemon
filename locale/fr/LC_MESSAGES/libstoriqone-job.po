@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-10-24 19:10+0200\n"
+        "POT-Creation-Date: 2019-06-04 12:32+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,22 +16,27 @@ msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-job/io/filesystem_reader.c:352
+#: src/libstoriqone-job/io/filesystem_reader.c:139
+#, c-format
+msgid   "Indexing archive (volume #%u/%u, file #%u/%u)"
+msgstr  ""
+
+#: src/libstoriqone-job/io/filesystem_reader.c:345
 #, c-format
 msgid   "Iterating over filesystem, current path: %s"
 msgstr  "Itération sur le système de fichier, chemin actuel : %s"
 
-#: src/libstoriqone-job/io/filesystem_reader.c:430
+#: src/libstoriqone-job/io/filesystem_reader.c:426
 #, c-format
 msgid   "Filename '%s' contains an invalid UTF-8 sequence"
 msgstr  "Le fichier « %s » contient une séquence UTF-8 invalide"
 
-#: src/libstoriqone-job/io/filesystem_reader.c:459
+#: src/libstoriqone-job/io/filesystem_reader.c:455
 #, c-format
 msgid   "Failed to read link of file '%s' because %m"
 msgstr  "Échec lors de la lecture du lien symbolique du fichier « %s » parce que %m"
 
-#: src/libstoriqone-job/io/filesystem_reader.c:472
+#: src/libstoriqone-job/io/filesystem_reader.c:468
 #, c-format
 msgid   "Symbolic link '%s' -> '%s' contains an invalid UTF-8 sequence"
 msgstr  "Le lien symbolique « %s » → « %s » contient une séquence UTF-8 invalide"

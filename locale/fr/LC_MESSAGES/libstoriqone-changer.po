@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-12-19 13:44+0100\n"
+        "POT-Creation-Date: 2019-04-09 18:27+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,57 +16,57 @@ msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-changer/drive.c:286
+#: src/libstoriqone-changer/drive.c:285
 #, c-format
 msgid   "Drive (pid: %d) has exited"
 msgstr  "Le lecteur (pid : %d) à quitté"
 
-#: src/libstoriqone-changer/drive.c:318
+#: src/libstoriqone-changer/drive.c:317
 #, c-format
 msgid   "Restart drive (pid: %d)"
 msgstr  "Rédemarrage du lecteur (pid : %d)"
 
-#: src/libstoriqone-changer/listen.c:271 src/libstoriqone-changer/listen.c:398
+#: src/libstoriqone-changer/listen.c:274 src/libstoriqone-changer/listen.c:401
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur #%d"
 
-#: src/libstoriqone-changer/listen.c:277 src/libstoriqone-changer/listen.c:404
+#: src/libstoriqone-changer/listen.c:280 src/libstoriqone-changer/listen.c:407
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur #%d terminé avec le code = %d"
 
-#: src/libstoriqone-changer/listen.c:292 src/libstoriqone-changer/listen.c:424
+#: src/libstoriqone-changer/listen.c:295 src/libstoriqone-changer/listen.c:427
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur #%d terminé avec le code = OK"
 
-#: src/libstoriqone-changer/listen.c:296
+#: src/libstoriqone-changer/listen.c:299
 #, c-format
 msgid   "[%s | %s]: the drive (%s#%u) doesn't support media format (%s)"
 msgstr  "[ %s | %s ] : le lecteur (%s#%u) ne peut utiliser les médias au format (%s)"
 
-#: src/libstoriqone-changer/listen.c:307 src/libstoriqone-changer/listen.c:478
+#: src/libstoriqone-changer/listen.c:310 src/libstoriqone-changer/listen.c:481
 #, c-format
 msgid   "[%s | %s]: job (id: %s) gets media '%s'"
 msgstr  "[ %s | %s ] : la tâche (id : %s) reçoit le média « %s »"
 
-#: src/libstoriqone-changer/listen.c:326
+#: src/libstoriqone-changer/listen.c:329
 #, c-format
 msgid   "[%s | %s]: no free drive available"
 msgstr  "[ %s | %s ] : pas de lecteur libre de disponible"
 
-#: src/libstoriqone-changer/listen.c:432
+#: src/libstoriqone-changer/listen.c:435
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d"
 
-#: src/libstoriqone-changer/listen.c:438
+#: src/libstoriqone-changer/listen.c:441
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = %d"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d terminé avec le code = %d"
 
-#: src/libstoriqone-changer/listen.c:458
+#: src/libstoriqone-changer/listen.c:461
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d completed with code = OK"
 msgstr  "[ %s | %s ] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d terminé avec le code = OK"

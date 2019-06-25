@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-backupdb v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-06-06 19:30+0200\n"
+        "POT-Creation-Date: 2019-01-04 20:19+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -52,14 +52,14 @@ msgstr  "Aucun média trouvé, abandon de la sauvegarde de la base de données"
 msgid   "Not enough space available to complete backup"
 msgstr  "Pas assez d’espace disponible pour accomplir la sauvegarde"
 
-#: src/job/backup-db/backup-db.c:342
+#: src/job/backup-db/backup-db.c:344
 msgid   "Pool (Storiq one database backup) not found"
 msgstr  "Pool (Storiq one database backup) non trouvé"
 
-#: src/job/backup-db/backup-db.c:347
+#: src/job/backup-db/backup-db.c:349
 msgid   "Trying to back up database to a deleted pool"
 msgstr  "Tentative de sauvegarde dans un pool supprimé"
 
-#: src/job/backup-db/backup-db.c:356
+#: src/job/backup-db/backup-db.c:358
 msgid   "Trying to back up database to a pool which is not growable and without any media"
 msgstr  "Tentative de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de média"
