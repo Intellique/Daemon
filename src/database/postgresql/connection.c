@@ -131,7 +131,7 @@ static char * so_database_postgresql_get_script(struct so_database_connection * 
 static bool so_database_postgresql_find_plugin_checksum(struct so_database_connection * connect, const char * checksum);
 static int so_database_postgresql_sync_plugin_checksum(struct so_database_connection * connect, struct so_checksum_driver * driver);
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
-static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_path);
+static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_name, const char * script_description, const char * script_path, const char * script_type);
 
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static bool so_database_postgresql_check_archive_file_up_to_date(struct so_database_connection * connect, struct so_archive * archive, const char * archive_filename);
@@ -3136,7 +3136,7 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 	return status == PGRES_FATAL_ERROR;
 }
 
-static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_path) {
+static int so_database_postgresql_sync_plugin_script(struct so_database_connection * connect, const char * script_name, const char * script_description, const char * script_path, const char * script_type) {
 	if (connect == NULL || script_path == NULL)
 		return -1;
 
@@ -3144,7 +3144,7 @@ static int so_database_postgresql_sync_plugin_script(struct so_database_connecti
 	const char * query = "select_script_by_path";
 	so_database_postgresql_prepare(self, query, "SELECT id FROM script WHERE path = $1 LIMIT 1");
 
-	const char * param[] = { script_path };
+	const char * param[] = { script_path, script_name, script_description, script_type };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -3160,9 +3160,9 @@ static int so_database_postgresql_sync_plugin_script(struct so_database_connecti
 		return 0;
 
 	query = "insert_script";
-	so_database_postgresql_prepare(self, query, "INSERT INTO script(path) VALUES ($1)");
+	so_database_postgresql_prepare(self, query, "INSERT INTO script(name, description, path, type) VALUES ($2, $3, $1, $4)");
 
-	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)

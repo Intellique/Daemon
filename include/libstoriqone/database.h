@@ -475,7 +475,7 @@ struct so_database_connection {
 		 * \param[in] script_path : path of script
 		 * \return 0 on success
 		 */
-		int (*sync_plugin_script)(struct so_database_connection * connect, const char * script_path);
+		int (*sync_plugin_script)(struct so_database_connection * connect, const char * script_name, const char * script_description, const char * script_path, const char * script_type);
 
 		/**
 		 * \brief update integrity of file

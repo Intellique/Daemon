@@ -31,17 +31,24 @@
 #include <fnmatch.h>
 // glob, globfree
 #include <glob.h>
+// gettext
+#include <libintl.h>
 // asprintf, sscanf
 #include <stdio.h>
 // free
 #include <stdlib.h>
 // strrchr
 #include <string.h>
+// close
+#include <unistd.h>
 
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
+#include <libstoriqone/json.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/process.h>
+#include <libstoriqone/value.h>
 
 #include "plugin.h"
 
@@ -112,7 +119,28 @@ void sod_plugin_sync_scripts(struct so_database_connection * connection) {
 		int size = asprintf(&filename, SCRIPT_PATH "/%s", files[i]->d_name);
 
 		if (size > 0) {
-			connection->ops->sync_plugin_script(connection, filename);
+			const char * params[] = { "config" };
+			struct so_process process;
+			so_process_new(&process, filename, params, 1);
+
+			int fd_read = so_process_pipe_from(&process, so_process_stdout);
+
+			so_process_start(&process, 1);
+			so_process_wait(&process, 1, true);
+
+			struct so_value * returned = so_json_parse_fd(fd_read, 10000);
+
+			const char * script_name = NULL, * script_desciption = NULL, * script_type = NULL;
+			if (returned == NULL)
+				so_log_write2(so_log_level_warning, so_log_type_daemon, gettext("Script (%s) returned an invalid json"), filename);
+			else if (so_value_unpack(returned, "{sSsS}", "name", script_name, "description", script_desciption, "type", script_type) == 3)
+				connection->ops->sync_plugin_script(connection, script_name, script_desciption, filename, script_type);
+			else
+				so_log_write2(so_log_level_warning, so_log_type_daemon, gettext("Script (%s) returned an incompleted json"), filename);
+
+			if (returned != NULL)
+				so_value_free(returned);
+			close(fd_read);
 			free(filename);
 		}
 
