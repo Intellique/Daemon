@@ -318,5 +318,5 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 	else
 		job->status = so_job_status_finished;
 
-	return ok && nb_chck_files == nb_total_chck_files ? 0 : 1;
+	return 0;
 }
