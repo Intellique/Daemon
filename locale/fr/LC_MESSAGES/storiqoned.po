@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqoned v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2016-08-30 16:37+0200\n"
+        "POT-Creation-Date: 2019-06-25 12:19+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -89,3 +89,13 @@ msgstr  "    --pid-file=FICHIER, -p : Écrit le pid du démon dans FICHIER au li
 #, c-format
 msgid   "    --version,       -V : prints StoriqOne version number and exits\n"
 msgstr  "    --version,          -V : Affiche la version de StoriqOne puis quitte\n"
+
+#: src/storiqoned/plugin.c:135
+#, c-format
+msgid   "Script (%s) returned an invalid json"
+msgstr  ""
+
+#: src/storiqoned/plugin.c:139
+#, c-format
+msgid   "Script (%s) returned an incompleted json"
+msgstr  ""

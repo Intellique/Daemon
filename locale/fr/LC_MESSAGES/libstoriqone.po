@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2018-06-21 12:27+0200\n"
+        "POT-Creation-Date: 2019-06-24 15:22+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -113,7 +113,7 @@ msgstr  "hors ligne"
 msgid   "unloading"
 msgstr  "déchargement"
 
-#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:58
+#: src/libstoriqone/changer.c:74 src/libstoriqone/drive.c:60 src/libstoriqone/job.c:59
 msgid   "unknown status"
 msgstr  "statut inconnu"
 
@@ -426,62 +426,66 @@ msgid   "finished"
 msgstr  "terminée"
 
 #: src/libstoriqone/job.c:52
+msgid   "finished with warnings"
+msgstr  ""
+
+#: src/libstoriqone/job.c:53
 msgid   "paused"
 msgstr  "en pause"
 
-#: src/libstoriqone/job.c:53
+#: src/libstoriqone/job.c:54
 msgid   "running"
 msgstr  "en exécution"
 
-#: src/libstoriqone/job.c:54
+#: src/libstoriqone/job.c:55
 msgid   "scheduled"
 msgstr  "programmée"
 
-#: src/libstoriqone/job.c:55
+#: src/libstoriqone/job.c:56
 msgid   "stopped"
 msgstr  "arêtée"
 
-#: src/libstoriqone/job.c:56
+#: src/libstoriqone/job.c:57
 msgid   "waiting"
 msgstr  "en attente"
 
-#: src/libstoriqone/job.c:70
+#: src/libstoriqone/job.c:71
 msgid   "normal"
 msgstr  "normal"
 
-#: src/libstoriqone/job.c:71
+#: src/libstoriqone/job.c:72
 msgid   "important"
 msgstr  "important"
 
-#: src/libstoriqone/job.c:72
+#: src/libstoriqone/job.c:73
 msgid   "read"
 msgstr  "lu"
 
-#: src/libstoriqone/job.c:74
+#: src/libstoriqone/job.c:75
 msgid   "unknown notification"
 msgstr  "notification inconnue"
 
-#: src/libstoriqone/job.c:86
+#: src/libstoriqone/job.c:87
 msgid   "job"
 msgstr  "tâche"
 
-#: src/libstoriqone/job.c:87 src/libstoriqone/script.c:45
+#: src/libstoriqone/job.c:88 src/libstoriqone/script.c:45
 msgid   "on error"
 msgstr  "en cas d’erreur"
 
-#: src/libstoriqone/job.c:88 src/libstoriqone/script.c:46
+#: src/libstoriqone/job.c:89 src/libstoriqone/script.c:46
 msgid   "post job"
 msgstr  "post tâche"
 
-#: src/libstoriqone/job.c:89 src/libstoriqone/script.c:47
+#: src/libstoriqone/job.c:90 src/libstoriqone/script.c:47
 msgid   "pre job"
 msgstr  "pré tâche"
 
-#: src/libstoriqone/job.c:90
+#: src/libstoriqone/job.c:91
 msgid   "warm up"
 msgstr  "préchauffage"
 
-#: src/libstoriqone/job.c:92 src/libstoriqone/media.c:56 src/libstoriqone/media.c:72 src/libstoriqone/media.c:93
+#: src/libstoriqone/job.c:93 src/libstoriqone/media.c:56 src/libstoriqone/media.c:72 src/libstoriqone/media.c:93
 #: src/libstoriqone/media.c:109 src/libstoriqone/media.c:125 src/libstoriqone/media.c:141 src/libstoriqone/script.c:49
 msgid   "unknown"
 msgstr  "inconnu"
