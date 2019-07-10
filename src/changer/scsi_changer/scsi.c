@@ -642,6 +642,9 @@ void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char
 		unsigned char reserved2[2];
 	} __attribute__((packed)) * result = memmem(buffer, sizeof(buffer), "\x9d\x12", 2);
 
+	if (result == NULL)
+		result = memmem(buffer, sizeof(buffer), "\x1d\x12", 2);
+
 	result->medium_transport_element_address = be16toh(result->medium_transport_element_address);
 	result->number_of_medium_transport_elements = be16toh(result->number_of_medium_transport_elements);
 	result->first_storage_element_address = be16toh(result->first_storage_element_address);
@@ -1068,6 +1071,9 @@ void sochgr_scsi_changer_scsi_update_status(struct so_changer * changer, const c
 		unsigned short number_of_data_transfer_elements;
 		unsigned char reserved2[2];
 	} __attribute__((packed)) * result = memmem(buffer, sizeof(buffer), "\x9d\x12", 2);
+
+	if (result == NULL)
+		result = memmem(buffer, sizeof(buffer), "\x1d\x12", 2);
 
 	if (result == NULL)
 		return;

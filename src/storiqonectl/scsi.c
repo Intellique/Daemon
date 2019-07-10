@@ -413,6 +413,9 @@ int soctl_scsi_loaderinfo(const char * filename, struct so_changer * changer, st
 	} __attribute__((packed)) * result = memmem(buffer, sizeof(buffer), "\x9d\x12", 2);
 
 	if (result == NULL)
+		result = memmem(buffer, sizeof(buffer), "\x1d\x12", 2);
+
+	if (result == NULL)
 		return 5;
 
 	result->medium_transport_element_address = be16toh(result->medium_transport_element_address);
