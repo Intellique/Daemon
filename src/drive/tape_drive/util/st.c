@@ -374,6 +374,23 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 	return failed;
 }
 
+int sodr_tape_drive_st_unload(struct so_drive * drive, int fd, struct so_database_connection * db) {
+	drive->status = so_drive_status_unloading;
+	if (db != NULL)
+		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+
+	static struct mtop rewind = { MTUNLOAD, 1 };
+	sodr_time_start();
+	int failed = ioctl(fd, MTIOCTOP, &rewind);
+	sodr_time_stop(drive);
+
+	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_empty_idle;
+	if (db != NULL)
+		db->ops->sync_drive(db, drive, true, so_database_sync_default);
+
+	return failed;
+}
+
 int sodr_tape_drive_st_write_end_of_file(struct so_drive * drive, int fd) {
 	static struct mtop eof = { MTWEOF, 1 };
 

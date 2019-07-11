@@ -907,8 +907,11 @@ static int sochgr_scsi_changer_unload(struct sochgr_peer * peer __attribute__((u
 	if (db_connection != NULL)
 		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
-	int failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from->slot, to);
+	int failed = from->ops->eject(from);
+	if (failed != 0)
+		return failed;
 
+	failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from->slot, to);
 	if (failed != 0) {
 		sochgr_scsi_changer_wait();
 

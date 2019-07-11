@@ -47,6 +47,7 @@ static void sodr_changer_process(int fd, short event, void * data);
 
 static void sodr_changer_process_check_format(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_check_support(struct so_value * request, struct so_database_connection * db);
+static void sodr_changer_process_eject(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_is_free(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_load_media(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_lock(struct so_value * request, struct so_database_connection * db);
@@ -62,6 +63,7 @@ static struct sodr_socket_command {
 } commands[] = {
 	{ 0, "check format",  sodr_changer_process_check_format },
 	{ 0, "check support", sodr_changer_process_check_support },
+	{ 0, "eject",         sodr_changer_process_eject },
 	{ 0, "is free",       sodr_changer_process_is_free },
 	{ 0, "load media",    sodr_changer_process_load_media },
 	{ 0, "lock",          sodr_changer_process_lock },
@@ -171,6 +173,17 @@ static void sodr_changer_process_check_support(struct so_value * request, struct
 	so_media_format_free(format);
 
 	struct so_value * returned = so_value_pack("{sb}", "status", ok);
+	so_json_encode_to_fd(returned, 1, true);
+	so_value_free(returned);
+}
+
+static void sodr_changer_process_eject(struct so_value * request __attribute__((unused)), struct so_database_connection * db) {
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	int failed = drive->ops->eject(db);
+
+	struct so_value * returned = so_value_pack("{si}", "returned", failed);
 	so_json_encode_to_fd(returned, 1, true);
 	so_value_free(returned);
 }
