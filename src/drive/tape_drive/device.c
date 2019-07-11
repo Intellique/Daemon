@@ -81,6 +81,7 @@ static bool sodr_tape_drive_check_support(struct so_media_format * format, bool 
 static unsigned int sodr_tape_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
 static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
+static int sodr_tape_drive_eject(struct so_database_connection * db);
 static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db);
 static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_value * option, struct so_database_connection * db);
 static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_position, struct so_database_connection * db);
@@ -106,6 +107,7 @@ static struct so_drive_ops sodr_tape_drive_ops = {
 	.check_support         = sodr_tape_drive_check_support,
 	.count_archives        = sodr_tape_drive_count_archives,
 	.create_archive_volume = sodr_tape_drive_create_archive_volume,
+	.eject                 = sodr_tape_drive_eject,
 	.erase_media           = sodr_tape_drive_erase_media,
 	.format_media          = sodr_tape_drive_format_media,
 	.get_raw_reader        = sodr_tape_drive_get_raw_reader,
@@ -322,6 +324,17 @@ static struct so_format_writer * sodr_tape_drive_create_archive_volume(struct so
 	volume->media_position = writer->ops->file_position(writer);
 
 	return writer;
+}
+
+static int sodr_tape_drive_eject(struct so_database_connection * db) {
+	int fd = sodr_tape_drive_st_open();
+	if (fd < 0)
+		return -1;
+
+	int status = sodr_tape_drive_st_unload(&sodr_tape_drive, fd, db);
+	close(fd);
+
+	return status;
 }
 
 static void sodr_tape_drive_create_media(struct so_database_connection * db) {

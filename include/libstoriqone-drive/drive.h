@@ -56,6 +56,7 @@ struct so_drive_ops {
 	bool (*check_support)(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
 	unsigned int (*count_archives)(const bool * const disconnected, struct so_database_connection * db);
 	struct so_format_writer * (*create_archive_volume)(struct so_archive_volume * volume, struct so_value * checksums, struct so_database_connection * db);
+	int (*eject)(struct so_database_connection * db);
 	int (*erase_media)(bool quick_mode, struct so_database_connection * db);
 	int (*format_media)(struct so_pool * pool, struct so_value * option, struct so_database_connection * db);
 	struct so_stream_reader * (*get_raw_reader)(int file_position, struct so_database_connection * db);

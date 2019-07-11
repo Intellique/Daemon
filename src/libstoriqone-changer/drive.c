@@ -47,6 +47,7 @@
 
 static bool sochgr_drive_check_format(struct so_drive * drive, struct so_media * media, struct so_pool * pool, const char * archive_uuid);
 static bool sochgr_drive_check_support(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+static int sochgr_drive_eject(struct so_drive * drive);
 static void sochgr_drive_free(struct so_drive * drive);
 static bool sochgr_drive_is_free(struct so_drive * drive);
 static int sochgr_drive_load_media(struct so_drive * drive, struct so_media * media);
@@ -59,6 +60,7 @@ static int sochgr_drive_update_status(struct so_drive * drive);
 static struct so_drive_ops drive_ops = {
 	.check_format  = sochgr_drive_check_format,
 	.check_support = sochgr_drive_check_support,
+	.eject         = sochgr_drive_eject,
 	.free          = sochgr_drive_free,
 	.is_free       = sochgr_drive_is_free,
 	.load_media    = sochgr_drive_load_media,
@@ -119,6 +121,23 @@ static bool sochgr_drive_check_support(struct so_drive * drive, struct so_media_
 	}
 
 	return ok;
+}
+
+static int sochgr_drive_eject(struct so_drive * drive) {
+	struct sochgr_drive * self = drive->data;
+
+	struct so_value * command = so_value_pack("{ss}", "command", "eject");
+	so_json_encode_to_fd(command, self->fd_in, true);
+	so_value_free(command);
+
+	int status = -1;
+	struct so_value * returned = so_json_parse_fd(self->fd_out, -1);
+	if (returned != NULL) {
+		so_value_unpack(returned, "{si}", "returned", &status);
+		so_value_free(returned);
+	}
+
+	return status;
 }
 
 static void sochgr_drive_free(struct so_drive * drive) {
