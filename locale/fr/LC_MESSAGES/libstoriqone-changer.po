@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2019-05-02 16:56+0200\n"
+        "POT-Creation-Date: 2019-07-11 12:36+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,12 +16,12 @@ msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-changer/drive.c:285
+#: src/libstoriqone-changer/drive.c:304
 #, c-format
 msgid   "Drive (pid: %d) has exited"
 msgstr  "Le lecteur (pid : %d) à quitté"
 
-#: src/libstoriqone-changer/drive.c:317
+#: src/libstoriqone-changer/drive.c:336
 #, c-format
 msgid   "Restart drive (pid: %d)"
 msgstr  "Rédemarrage du lecteur (pid : %d)"
