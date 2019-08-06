@@ -88,14 +88,14 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	int min_version = self->src_archive->volumes[0].min_version;
 	int max_version = self->src_archive->volumes[0].max_version;
 
-	unsigned int i;
-	for (i = 0; i < self->src_archive->nb_volumes; i++) {
+	unsigned int files;
+	for (files = 0; files < self->src_archive->nb_volumes; files++) {
 		unsigned int j = 0;
-		struct so_archive_volume * vol = self->src_archive->volumes + i;
+		struct so_archive_volume * vol = self->src_archive->volumes + files;
 
 		max_version = vol->max_version;
 
-		if (i > 0) {
+		if (files > 0) {
 			self->src_drive = soj_media_find_and_load(vol->media, false, 0, false, NULL, NULL, db_connect);
 			if (self->src_drive == NULL) {
 				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -201,24 +201,25 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		return 1;
 	}
 
-	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->min_version = min_version;
-	vol->max_version = max_version;
+	struct so_archive_volume * dest_vol = so_archive_add_volume(self->copy_archive);
+	dest_vol->min_version = min_version;
+	dest_vol->max_version = max_version;
 
-	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, vol, checksums);
+	self->writer = self->dest_drive->ops->create_archive_volume(self->dest_drive, dest_vol, checksums);
 
 	struct so_media * media = self->dest_drive->slot->media;
-	vol->job = job;
+	dest_vol->job = job;
 
-	vol->media_position = self->writer->ops->file_position(self->writer);
+	dest_vol->media_position = self->writer->ops->file_position(self->writer);
 
 	bool ok = true;
 	int failed = 0;
 	ssize_t block_size = self->writer->ops->get_block_size(self->writer);
 
-	i = 0;
-	vol = self->src_archive->volumes;
-	struct so_archive_files * ptr_file = vol->files;
+	files = 0;
+	unsigned int volumes = 0;
+	struct so_archive_volume * src_vol = self->src_archive->volumes;
+	struct so_archive_files * ptr_file = src_vol->files;
 
 	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file, ptr_file->file->path, ptr_file->file->selected_path), rdr_status == so_format_reader_header_ok && ok) {
 		available_size = self->writer->ops->get_available_size(self->writer);
@@ -231,9 +232,9 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 			block_size = self->writer->ops->get_block_size(self->writer);
 
-			struct so_archive_volume * dest_vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
-			dest_vol->min_version = min_version;
-			dest_vol->max_version = max_version;
+			struct so_archive_volume * vol = self->copy_archive->volumes + (self->copy_archive->nb_volumes - 1);
+			vol->min_version = min_version;
+			vol->max_version = max_version;
 		}
 
 		soj_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
@@ -350,13 +351,17 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 		so_format_file_free(&file);
 
-		i++;
-		if (i < vol->nb_files)
+		files++;
+		if (files < src_vol->nb_files)
 			ptr_file++;
 		else {
-			vol++;
-			ptr_file = vol->files;
-			i = 0;
+			src_vol++;
+			volumes++;
+			ptr_file = src_vol->files;
+			files = 0;
+
+			if (volumes >= self->src_archive->nb_volumes)
+				break;
 		}
 	}
 
