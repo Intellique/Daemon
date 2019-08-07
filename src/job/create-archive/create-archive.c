@@ -238,6 +238,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 	job->done = 1;
 
+	if (soj_create_archive_worker_finished_with_errors())
+		job->status = so_job_status_error;
+
 	return failed;
 }
 
