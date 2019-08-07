@@ -523,6 +523,20 @@ bool soj_create_archive_worker_finished() {
 	return true;
 }
 
+bool soj_create_archive_worker_finished_with_errors() {
+	if (primary_worker->state != soj_worker_status_finished)
+		return true;
+
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+		if (worker->state != soj_worker_status_finished)
+			return true;
+	}
+
+	return false;
+}
+
 void soj_create_archive_worker_generate_report(struct so_value * selected_path, struct so_database_connection * db_connect) {
 	soj_create_archive_worker_generate_report2(primary_worker->archive, selected_path, db_connect);
 
@@ -666,6 +680,9 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		vol->job = soj_job_get();
 
 		primary_worker->writer = primary_worker->drive->ops->create_archive_volume(primary_worker->drive, vol, primary_worker->checksums);
+	}
+
+	if (primary_worker->drive != NULL && primary_worker->writer != NULL) {
 
 		primary_worker->media = primary_worker->drive->slot->media;
 		primary_worker->state = soj_worker_status_ready;
@@ -727,8 +744,10 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 
 		worker->drive = soj_media_find_and_load_next(worker->archive->pool, false, NULL, db_connect);
 
-		if (worker->drive != NULL) {
+		if (worker->drive != NULL)
 			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
+
+		if (worker->drive != NULL && worker->writer != NULL) {
 			worker->media = worker->drive->slot->media;
 			worker->state = soj_worker_status_ready;
 
