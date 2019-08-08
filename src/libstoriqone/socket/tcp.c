@@ -277,7 +277,7 @@ bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_ca
 	if (fd < 0)
 		return false;
 
-	failed = listen(fd, 16);
+	listen(fd, 16);
 
 	struct so_tcp_socket_server * self = malloc(sizeof(struct so_tcp_socket_server));
 	self->fd = fd;
@@ -363,7 +363,7 @@ bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_c
 	if (fd < 0)
 		return false;
 
-	failed = listen(fd, 16);
+	listen(fd, 16);
 
 	struct so_tcp_socket_server * self = malloc(sizeof(struct so_tcp_socket_server));
 	self->fd = fd;
@@ -722,7 +722,7 @@ int so_socket_server_temp_tcp(struct so_value * config) {
 	if (fd < 0)
 		return -1;
 
-	failed = listen(fd, 16);
+	listen(fd, 16);
 
 	return fd;
 }
@@ -818,7 +818,7 @@ int so_socket_server_temp_tcp6(struct so_value * config) {
 	if (fd < 0)
 		return -1;
 
-	failed = listen(fd, 16);
+	listen(fd, 16);
 
 	return fd;
 }

@@ -198,6 +198,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, int fd, int 
 		reader = sodr_tape_drive_reader_get_raw_reader2(drive, fd, scsi_fd, &position);
 
 	if (reader == NULL) {
+		free(buffer);
+
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "Failed to read LTFS index from media '%s'"),
 			media->name);

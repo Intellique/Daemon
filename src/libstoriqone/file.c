@@ -708,24 +708,18 @@ char * so_file_rename(const char * filename) {
 	char * path = strdup(filename);
 
 	if (access(path, F_OK) == 0) {
-		char * extension = strrchr(path, '.');
-
-		char * old_path = path;
-		path = NULL;
+		char * extension = strrchr(path, '.'), * modified = NULL;
 
 		if (extension != NULL)
 			*extension = '\0';
 
 		unsigned int next = 0;
 		do {
-			free(path);
-			path = NULL;
-
 			int size;
 			if (extension != NULL)
-				size = asprintf(&path, "%s_%u.%s", old_path, next, extension + 1);
+				size = asprintf(&modified, "%s_%u.%s", path, next, extension + 1);
 			else
-				size = asprintf(&path, "%s_%u", old_path, next);
+				size = asprintf(&modified, "%s_%u", path, next);
 
 			if (size < 0) {
 				free(path);
@@ -735,10 +729,11 @@ char * so_file_rename(const char * filename) {
 			next++;
 		} while (access(path, F_OK) == 0);
 
-		free(old_path);
-	}
+		free(path);
 
-	return path;
+		return modified;
+	} else
+		return path;
 }
 
 int so_file_rm(const char * path) {

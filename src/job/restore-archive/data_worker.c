@@ -151,6 +151,13 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			const char * restore_to = soj_restorearchive_path_get(header.filename, file->selected_path, file->type == so_archive_file_type_regular_file);
 			if (restore_to != NULL)
 				file->restored_to = so_string_dup_and_fix(restore_to, NULL);
+			else {
+				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					dgettext("storiqone-job-restore-archive", "Error while getting restore path for \"%s\""),
+					header.filename);
+				worker->nb_errors++;
+				goto stop_worker;
+			}
 
 			char * ptr_fixed = strrchr(file->restored_to, '/');
 			char * ptr_bad = strrchr(restore_to, '/');

@@ -74,7 +74,7 @@ void so_process_free(struct so_process * process, unsigned int nb_process) {
 
 	unsigned int i;
 	for (i = 0; i < nb_process; i++) {
-		free(process->command);
+		free(process[i].command);
 
 		unsigned int j;
 		for (j = 0; j <= process[i].nb_parameters; j++)
