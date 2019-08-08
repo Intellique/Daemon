@@ -188,15 +188,16 @@ static int sodr_vtl_drive_writer_create_new_file(struct so_stream_writer * sw) {
 	char * filename = sodr_vtl_drive_get_next_filename();
 
 	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0640);
-	free(filename);
 
 	if (fd < 0) {
 		so_log_write(so_log_level_error,
 			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while opening file '%s' because %m"),
 			drive->vendor, drive->model, drive->index, filename);
+		free(filename);
 
 		return -1;
-	}
+	} else
+		free(filename);
 
 	struct sodr_vtl_drive_io * self = sw->data;
 	self->fd = fd;

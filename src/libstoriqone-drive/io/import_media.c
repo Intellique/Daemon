@@ -113,8 +113,10 @@ static void sodr_io_import_media_finish_import_media(struct sodr_peer * peer, st
 		dgettext("libstoriqone-drive", "[%s %s #%u]: attach media '%s' to pool '%s'"),
 		drive->vendor, drive->model, drive->index, media_name, pool->name);
 
-	media->status = so_media_status_in_use;
-	media->pool = pool;
+	if (media != NULL) {
+		media->status = so_media_status_in_use;
+		media->pool = pool;
+	}
 
 	int failed = peer->db_connection->ops->sync_media(peer->db_connection, media, so_database_sync_default);
 

@@ -145,7 +145,7 @@ struct so_io_stream_checksum_backend * so_io_stream_checksum_backend_new(struct 
 	unsigned int nb_checksums = so_value_list_get_length(checksums);
 
 	struct so_io_stream_checksum_backend_private * self = malloc(sizeof(struct so_io_stream_checksum_backend_private));
-	self->checksums = calloc(nb_checksums, sizeof(struct st_checksum *));
+	self->checksums = (struct so_checksum **) calloc(nb_checksums, sizeof(struct so_checksum *));
 	self->digests = so_value_new_hashtable2();
 	self->nb_checksums = nb_checksums;
 	self->computed = false;

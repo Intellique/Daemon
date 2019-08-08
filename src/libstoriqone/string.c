@@ -203,7 +203,6 @@ char * so_string_dup_and_fix(const char * str, bool * fixed) {
 			unsigned char character = *ptr;
 			so_string_convert_unicode_to_utf8(0xE000 + character, dup_str + copied, length - copied, false);
 
-			size = 1;
 			ptr++;
 			copied += so_string_unicode_length(0xE000 + character);
 

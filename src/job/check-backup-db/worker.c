@@ -170,7 +170,7 @@ void soj_checkbackupdb_worker_free(struct soj_checkbackupdb_worker * worker) {
 	while (worker != NULL) {
 		struct soj_checkbackupdb_worker * ptr = worker;
 		worker = ptr->next;
-		free(worker);
+		free(ptr);
 	}
 }
 

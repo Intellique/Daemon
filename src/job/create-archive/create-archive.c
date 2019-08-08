@@ -351,7 +351,7 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 	primary_pool = db_connect->ops->get_pool(db_connect, NULL, job);
 
 	nb_src_files = so_value_list_get_length(selected_path);
-	src_files = calloc(nb_src_files, sizeof(struct so_format_reader));
+	src_files = calloc(nb_src_files, sizeof(struct so_format_reader *));
 	struct so_value_iterator * iter = so_value_list_get_iterator(selected_path);
 	unsigned int i;
 	for (i = 0; so_value_iterator_has_next(iter); i++) {

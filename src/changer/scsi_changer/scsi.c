@@ -845,10 +845,8 @@ static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct
 		ptr = strrchr(link, '/');
 		size = asprintf(&scsi_device, "/dev%s", ptr);
 
-		if (size < 0) {
-			free(path);
+		if (size < 0)
 			continue;
-		}
 
 		int fd = open(scsi_device, O_RDWR);
 		free(scsi_device);

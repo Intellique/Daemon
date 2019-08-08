@@ -284,12 +284,12 @@ int so_socket_server_temp_unix(struct so_value * config) {
 		strncpy(addr.sun_path, new_path, sizeof(addr.sun_path));
 
 		so_value_hashtable_put2(config, "path", so_value_new_string(new_path), true);
-		free(new_path);
 
 		int failed = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
 		if (failed != 0) {
 			close(fd);
 			unlink(new_path);
+			free(new_path);
 
 			if (errno == EADDRINUSE)
 				continue;
@@ -298,7 +298,8 @@ int so_socket_server_temp_unix(struct so_value * config) {
 				fd = -1;
 				break;
 			}
-		}
+		} else
+			free(new_path);
 
 		listen(fd, 16);
 	}
