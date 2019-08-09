@@ -17,8 +17,6 @@ while (<$fd_config>) {
 }
 close $fd_config;
 
-printf "password: %s\n", $password;
-
 
 open my $fd_config_in, '<', $st1_config_file;
 open my $fd_config_out, '>', "$st1_config_file.new";
