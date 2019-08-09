@@ -715,6 +715,8 @@ char * so_file_rename(const char * filename) {
 
 		unsigned int next = 0;
 		do {
+			free(modified);
+
 			int size;
 			if (extension != NULL)
 				size = asprintf(&modified, "%s_%u.%s", path, next, extension + 1);
@@ -727,7 +729,7 @@ char * so_file_rename(const char * filename) {
 			}
 
 			next++;
-		} while (access(path, F_OK) == 0);
+		} while (access(modified, F_OK) == 0);
 
 		free(path);
 
