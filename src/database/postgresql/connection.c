@@ -676,7 +676,7 @@ static ssize_t so_database_postgresql_get_block_size_by_pool(struct so_database_
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	const char * query = "select_medias_of_pools";
+	const char * query = "select_block_size_from_pool";
 	so_database_postgresql_prepare(self, query, "SELECT COALESCE(MAX(blocksize), 0) FROM media WHERE pool IN (SELECT id FROM pool WHERE uuid = $1 LIMIT 1);");
 
 	const char * param[] = { pool->uuid };
