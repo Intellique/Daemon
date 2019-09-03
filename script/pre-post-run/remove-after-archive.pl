@@ -59,6 +59,8 @@ my $command = '/var/www/nextcloud/occ';
 my $next_cloud_data_dir = '/var/www/nextcloud/data';
 
 unless ($<) {
+    my @new_gid = getgrnam 'www-data';
+    $( = $) = $new_gid[2];
     my $new_uid = getpwnam 'www-data';
     $< = $> = $new_uid;
 }
