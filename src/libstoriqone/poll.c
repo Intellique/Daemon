@@ -105,7 +105,9 @@ int so_poll(int timeout) {
 		short event = so_polls[i].revents;
 		so_polls[i].revents = 0;
 
-		if (event != 0) {
+		if (event == POLLNVAL) {
+			so_poll_unregister(fd, so_polls[i].events);
+		} else if (event != 0) {
 			so_poll_infos[i].callback(fd, event, so_poll_infos[i].data);
 
 			if (so_poll_restart) {
