@@ -305,6 +305,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 		peer->nb_waiting_medias--;
 		lp->waiting = false;
+		if (mp->future_pool != NULL)
+			so_pool_free(mp->future_pool);
+		mp->future_pool = NULL;
 
 		sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 			dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) gets media '%s'"),
@@ -476,6 +479,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 			peer->nb_waiting_medias--;
 			lp->waiting = false;
+			if (mp->future_pool != NULL)
+				so_pool_free(mp->future_pool);
+			mp->future_pool = NULL;
 
 			sochgr_log_add_record(peer, so_job_status_waiting, sochgr_db, so_log_level_notice, so_job_record_notif_normal,
 				dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) gets media '%s'"),
@@ -666,7 +672,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 		bzero(pool, sizeof(struct so_pool));
 		so_pool_sync(pool, vpool);
 	} else
-		pool = sl->media->pool;
+		pool = so_pool_dup(sl->media->pool);
 
 	ssize_t result = -1L;
 	struct sochgr_media * mp = media->private_data;
