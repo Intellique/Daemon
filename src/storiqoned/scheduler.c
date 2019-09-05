@@ -66,6 +66,7 @@ struct so_job_private {
 static struct so_value * jobs = NULL;
 
 static void sod_job_process(int fd, short event, void * data);
+static void sod_job_release(void * data);
 
 
 static void sod_job_process(int fd, short event, void * data) {
@@ -93,24 +94,28 @@ static void sod_job_process(int fd, short event, void * data) {
 		so_value_free(request);
 	}
 
-	if (event & POLLHUP) {
+	if (event & POLLHUP)
 		so_poll_unregister(fd, POLLHUP | POLLIN);
+}
 
-		if (!self->finished) {
-			job->status = so_job_status_error;
-			self->db_connection->ops->sync_job(self->db_connection, job);
-		}
+static void sod_job_release(void * data) {
+	struct so_job * job = data;
+	struct so_job_private * self = job->data;
 
-		so_value_hashtable_remove2(jobs, self->key);
-
-		close(self->fd_in);
-		close(self->fd_out);
-		self->fd_in = self->fd_out = -1;
-		so_process_wait(&self->process, 1, true);
-		so_process_free(&self->process, 1);
-		free(self->key);
-		free(self);
+	if (!self->finished) {
+		job->status = so_job_status_error;
+		self->db_connection->ops->sync_job(self->db_connection, job);
 	}
+
+	so_value_hashtable_remove2(jobs, self->key);
+
+	close(self->fd_in);
+	close(self->fd_out);
+	self->fd_in = self->fd_out = -1;
+	so_process_wait(&self->process, 1, true);
+	so_process_free(&self->process, 1);
+	free(self->key);
+	free(self);
 }
 
 void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, struct so_database_connection * db_connection) {
@@ -210,7 +215,7 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			self->fd_in = so_process_pipe_to(&self->process);
 			self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
 
-			so_poll_register(self->fd_out, POLLHUP | POLLIN, sod_job_process, job, NULL);
+			so_poll_register(self->fd_out, POLLHUP | POLLIN, sod_job_process, job, sod_job_release);
 
 			// start job
 			so_process_start(&self->process, 1);
