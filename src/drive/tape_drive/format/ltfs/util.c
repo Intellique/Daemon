@@ -1018,7 +1018,7 @@ int sodr_tape_drive_format_ltfs_update_mam(int scsi_fd, struct so_drive * drive,
 		.value.text = "        "
 	};
 
-	static const char * version = STORIQONE_VERSION + 1;
+	static const char * version = &STORIQONE_VERSION[1];
 	int version_length = strcspn(version, "-~");
 
 	if (version_length > 8)
