@@ -24,10 +24,14 @@
 *  Copyright (C) 2013-2016, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// errno
+#include <errno.h>
 // dgettext
 #include <libintl.h>
 // NULL
 #include <stddef.h>
+// strerror
+#include <string.h>
 // struct mtget
 #include <sys/mtio.h>
 
@@ -157,6 +161,7 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		struct mtop change_partition = { MTSETPART, partition };
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCTOP, &change_partition);
+		const int last_errno = errno;
 		sodr_time_stop(drive);
 
 		drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
@@ -166,12 +171,12 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		if (failed != 0) {
 			if (media != NULL)
 				sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u on media '%s' because %m"),
-					drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name);
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u on media '%s' because %s"),
+					drive->vendor, drive->model, drive->index, status.mt_resid, partition, media->name, strerror(last_errno));
 			else
 				sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u because %m"),
-					drive->vendor, drive->model, drive->index, status.mt_resid, partition);
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to change partition from %lu to %u because %s"),
+					drive->vendor, drive->model, drive->index, status.mt_resid, partition, strerror(last_errno));
 
 			return failed;
 		} else if (media != NULL)
@@ -203,8 +208,17 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 				drive->vendor, drive->model, drive->index);
 
 		failed = sodr_tape_drive_st_rewind(drive, fd, db);
-		if (failed != 0)
+		if (failed != 0) {
+			if (media != NULL)
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while rewinding media '%s'"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name);
+			else
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: error while rewinding media"),
+					drive->vendor, drive->model, drive->index);
 			return failed;
+		}
 
 		failed = sodr_tape_drive_st_get_status(drive, fd, &status, db);
 		if (failed != 0)
@@ -228,6 +242,7 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		static struct mtop eod = { MTEOM, 1 };
 		sodr_time_start();
 		failed = ioctl(fd, MTIOCTOP, &eod);
+		const int last_errno = errno;
 		sodr_time_stop(drive);
 
 		drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
@@ -237,12 +252,12 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 		if (failed != 0) {
 			if (media != NULL)
 				so_log_write(so_log_level_error,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%m'"),
-					drive->vendor, drive->model, drive->index, drive->slot->media->name);
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' encountered an error '%s'"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name, strerror(last_errno));
 			else
 				so_log_write(so_log_level_error,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end encountered an error '%m'"),
-					drive->vendor, drive->model, drive->index);
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end encountered an error '%s'"),
+					drive->vendor, drive->model, drive->index, strerror(last_errno));
 		} else if (media != NULL)
 			so_log_write(so_log_level_info,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' completed with status = OK"),
@@ -345,6 +360,7 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			struct mtop bsfm = { MTBSFM, status.mt_fileno - file_number + 1 };
 			sodr_time_start();
 			failed = ioctl(fd, MTIOCTOP, &bsfm);
+			const int last_errno = errno;
 			sodr_time_stop(drive);
 
 			drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
@@ -354,12 +370,12 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 			if (failed != 0) {
 				if (media != NULL)
 					so_log_write(so_log_level_error,
-						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d encountered an error '%m'"),
-						drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number);
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d encountered an error '%s'"),
+						drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, file_number, strerror(last_errno));
 				else
 					so_log_write(so_log_level_error,
-						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d encountered an error '%m'"),
-						drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
+						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d encountered an error '%s'"),
+						drive->vendor, drive->model, drive->index, status.mt_fileno, file_number, strerror(last_errno));
 			} else if (media != NULL)
 				so_log_write(so_log_level_info,
 					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' from #%u to position #%d completed with status = OK"),
@@ -396,12 +412,13 @@ int sodr_tape_drive_st_write_end_of_file(struct so_drive * drive, int fd) {
 
 	sodr_time_start();
 	int failed = ioctl(fd, MTIOCTOP, &eof);
+	const int last_errno = errno;
 	sodr_time_stop(drive);
 
 	if (failed != 0) {
 		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while closing file because '%m'"),
-			drive->vendor, drive->model, drive->index);
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while closing file because '%s'"),
+			drive->vendor, drive->model, drive->index, strerror(last_errno));
 	}
 
 	return failed;
