@@ -4168,13 +4168,16 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 		const char * param[] = { archive->uuid, archive->name, archive->creator, so_database_postgresql_archive_status_to_string(archive->status), pool_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
+		int nb_result = PQntuples(result);
 
 		if (status == PGRES_FATAL_ERROR)
 			so_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK) {
+		else if (status == PGRES_TUPLES_OK && nb_result == 1) {
 			so_database_postgresql_get_string_dup(result, 0, 0, &archive_id);
 			so_value_hashtable_put2(db, "id", so_value_new_string(archive_id), true);
-		}
+		} else
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone-database-postgresql", "Error, no new archive insert into database"));
 
 		PQclear(result);
 	} else {
