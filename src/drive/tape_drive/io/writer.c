@@ -369,7 +369,7 @@ static ssize_t sodr_tape_drive_writer_get_available_size(struct so_stream_writer
 	if (media == NULL)
 		return 0;
 
-	const size_t marge = media->media_format->capacity / 500;
+	const size_t marge = media->media_format->capacity / 100;
 	if (media->free_block * media->block_size >= marge)
 		return media->free_block * media->block_size - marge;
 	else
