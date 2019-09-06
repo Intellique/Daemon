@@ -683,7 +683,6 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 	}
 
 	if (primary_worker->drive != NULL && primary_worker->writer != NULL) {
-
 		primary_worker->media = primary_worker->drive->slot->media;
 		primary_worker->state = soj_worker_status_ready;
 
@@ -711,12 +710,15 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		if (error)
 			worker->state = soj_worker_status_give_up;
 		else if (worker->drive != NULL) {
-			worker->state = soj_worker_status_ready;
-
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
 			vol->job = soj_job_get();
 
 			worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
+		}
+
+		if (!error && worker->drive != NULL && worker->writer != NULL) {
+			worker->media = worker->drive->slot->media;
+			worker->state = soj_worker_status_ready;
 
 			struct so_value_iterator * iter = so_value_list_get_iterator(worker->checksums);
 			while (so_value_iterator_has_next(iter)) {
@@ -725,7 +727,8 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 					so_value_hashtable_put(checksums, val, false, val, false);
 			}
 			so_value_iterator_free(iter);
-		}
+		} else
+			worker->state = soj_worker_status_give_up;
 	}
 
 	struct so_value * unique_checksums = so_value_hashtable_keys(checksums);
