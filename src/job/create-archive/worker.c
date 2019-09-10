@@ -294,14 +294,17 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 
 }
 
-int soj_create_archive_worker_close(struct so_database_connection * db_connect) {
+int soj_create_archive_worker_close(struct so_job * job, struct so_database_connection * db_connect) {
 	soj_create_archive_meta_worker_wait(false);
 
 	if (primary_worker->state == soj_worker_status_ready) {
 		int failed = soj_create_archive_worker_close2(primary_worker, false, false, db_connect);
-		if (failed != 0)
+		if (failed != 0) {
 			primary_worker->state = soj_worker_status_error;
-		else
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while closing archive '%s' from pool '%s'"),
+				primary_worker->archive->name, primary_worker->archive->pool->name);
+		} else
 			primary_worker->archive->status = so_archive_status_data_complete;
 	}
 
@@ -313,9 +316,12 @@ int soj_create_archive_worker_close(struct so_database_connection * db_connect) 
 			continue;
 
 		int failed = soj_create_archive_worker_close2(worker, false, false, db_connect);
-		if (failed != 0)
+		if (failed != 0) {
 			worker->state = soj_worker_status_error;
-		else
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while closing archive '%s' from pool '%s'"),
+				worker->archive->name, worker->archive->pool->name);
+		} else
 			worker->archive->status = so_archive_status_data_complete;
 	}
 
