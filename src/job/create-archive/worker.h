@@ -40,7 +40,7 @@ struct so_value;
 
 struct so_value * soj_create_archive_worker_archives(void);
 enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file, const char * selected_path, struct so_database_connection * db_connect);
-int soj_create_archive_worker_close(struct so_database_connection * db_connect);
+int soj_create_archive_worker_close(struct so_job * job, struct so_database_connection * db_connect);
 int soj_create_archive_worker_create_check_archive(struct so_value * option, struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_end_of_file(void);
 bool soj_create_archive_worker_finished(void);
