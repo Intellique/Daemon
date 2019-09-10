@@ -674,7 +674,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 	return worker;
 }
 
-void soj_create_archive_worker_prepare_medias(struct so_database_connection * db_connect) {
+void soj_create_archive_worker_prepare_medias(struct so_job * job, struct so_database_connection * db_connect) {
 	struct so_value * checksums = so_value_new_hashtable2();
 
 	primary_worker->drive = soj_media_find_and_load_next(primary_worker->archive->pool, false, NULL, db_connect);
@@ -686,7 +686,10 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		vol->job = soj_job_get();
 
 		primary_worker->writer = primary_worker->drive->ops->create_archive_volume(primary_worker->drive, vol, primary_worker->checksums);
-	}
+	} else
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "Error while getting drive from pool '%s'"),
+			primary_worker->archive->pool->name);
 
 	if (primary_worker->drive != NULL && primary_worker->writer != NULL) {
 		primary_worker->media = primary_worker->drive->slot->media;
@@ -699,8 +702,12 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 				so_value_hashtable_put(checksums, val, false, val, false);
 		}
 		so_value_iterator_free(iter);
-	} else
+	} else {
 		primary_worker->state = soj_worker_status_give_up;
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "Error while opening media '%s' from pool '%s'"),
+			primary_worker->media->name, primary_worker->archive->pool->name);
+	}
 
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
@@ -713,13 +720,21 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		worker->drive = soj_media_find_and_load_next(worker->archive->pool, true, &error, db_connect);
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->archive->pool);
 
-		if (error)
+		if (error) {
 			worker->state = soj_worker_status_give_up;
-		else if (worker->drive != NULL) {
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while getting drive from pool '%s'"),
+				worker->archive->pool->name);
+		} else if (worker->drive != NULL) {
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
 			vol->job = soj_job_get();
 
 			worker->writer = worker->drive->ops->create_archive_volume(worker->drive, vol, worker->checksums);
+		} else {
+			soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_read,
+				dgettext("storiqone-job-create-archive", "No drive currently available for pool '%s', will retry later"),
+				worker->archive->pool->name);
+			continue;
 		}
 
 		if (!error && worker->drive != NULL && worker->writer != NULL) {
@@ -733,8 +748,12 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 					so_value_hashtable_put(checksums, val, false, val, false);
 			}
 			so_value_iterator_free(iter);
-		} else
+		} else {
 			worker->state = soj_worker_status_give_up;
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while opening media '%s' from pool '%s'"),
+				worker->media->name, worker->archive->pool->name);
+		}
 	}
 
 	struct so_value * unique_checksums = so_value_hashtable_keys(checksums);
@@ -743,20 +762,36 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 	so_value_free(unique_checksums);
 }
 
-void soj_create_archive_worker_prepare_medias2(struct so_database_connection * db_connect) {
-	unsigned int i;
+bool soj_create_archive_worker_prepare_medias2(struct so_job * job, struct so_database_connection * db_connect) {
+	unsigned int i, nb_loaded = 0;
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_find_and_load_next(worker->archive->pool, false, NULL, db_connect);
+		bool error = false;
+		worker->drive = soj_media_find_and_load_next(worker->archive->pool, nb_loaded != 0, &error, db_connect);
 
-		if (worker->drive != NULL)
+		if (error) {
+			worker->state = soj_worker_status_give_up;
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while getting drive from pool '%s'"),
+				worker->archive->pool->name);
+			continue;
+		} else if (worker->drive != NULL)
 			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
+		else {
+			if (nb_loaded > 0)
+				soj_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_read,
+					dgettext("storiqone-job-create-archive", "No drive currently available for pool '%s', will retry later"),
+					worker->archive->pool->name);
+			continue;
+		}
 
 		if (worker->drive != NULL && worker->writer != NULL) {
+			nb_loaded++;
+
 			worker->media = worker->drive->slot->media;
 			worker->state = soj_worker_status_ready;
 
@@ -764,9 +799,15 @@ void soj_create_archive_worker_prepare_medias2(struct so_database_connection * d
 			vol->media = so_media_dup(worker->media);
 			vol->media_position = worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
-		} else
+		} else {
 			worker->state = soj_worker_status_give_up;
+			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while opening media '%s' from pool '%s'"),
+				worker->media->name, worker->archive->pool->name);
+		}
 	}
+
+	return nb_loaded > 0;
 }
 
 float soj_create_archive_progress() {

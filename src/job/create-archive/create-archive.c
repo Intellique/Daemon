@@ -131,7 +131,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	else
 		soj_create_archive_worker_init_pool(job, primary_pool, pool_mirrors);
 	soj_create_archive_worker_reserve_medias(archive_size, db_connect);
-	soj_create_archive_worker_prepare_medias(db_connect);
+	soj_create_archive_worker_prepare_medias(job, db_connect);
 
 	int failed = soj_create_archive_worker_sync_archives(true, false, NULL, db_connect);
 
@@ -212,7 +212,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		stop = soj_create_archive_worker_finished();
 		if (!stop) {
-			soj_create_archive_worker_prepare_medias2(db_connect);
+			if (!soj_create_archive_worker_prepare_medias2(job, db_connect))
+				break;
 
 			for (i = 0; i < nb_src_files; i++)
 				src_files[i]->ops->rewind(src_files[i]);
