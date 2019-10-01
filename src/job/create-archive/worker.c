@@ -529,18 +529,26 @@ bool soj_create_archive_worker_finished() {
 	return true;
 }
 
-bool soj_create_archive_worker_finished_with_errors() {
-	if (primary_worker->state != soj_worker_status_finished)
-		return true;
+enum so_job_status soj_create_archive_worker_finished_with_errors() {
+	unsigned int nb_archives = 1, nb_good_archives = 0;
+
+	if (primary_worker->state == soj_worker_status_finished)
+		nb_good_archives++;
 
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
-		if (worker->state != soj_worker_status_finished)
-			return true;
+		if (worker->state == soj_worker_status_finished)
+			nb_good_archives++;
+		nb_archives++;
 	}
 
-	return false;
+	if (nb_archives == nb_good_archives)
+		return so_job_status_finished;
+	else if (nb_archives > 0)
+		return so_job_status_finished_with_warnings;
+	else
+		return so_job_status_error;
 }
 
 void soj_create_archive_worker_generate_report(struct so_value * selected_path, struct so_database_connection * db_connect) {
@@ -703,7 +711,7 @@ void soj_create_archive_worker_prepare_medias(struct so_job * job, struct so_dat
 		}
 		so_value_iterator_free(iter);
 	} else {
-		primary_worker->state = soj_worker_status_give_up;
+		primary_worker->state = soj_worker_status_error;
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-create-archive", "Error while opening media '%s' from pool '%s'"),
 			primary_worker->media->name, primary_worker->archive->pool->name);

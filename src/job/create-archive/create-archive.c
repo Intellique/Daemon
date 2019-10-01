@@ -238,9 +238,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		primary_pool = so_pool_dup(primary_archive->volumes->media->pool);
 
 	job->done = 1;
-
-	if (soj_create_archive_worker_finished_with_errors())
-		job->status = so_job_status_error;
+	job->status = soj_create_archive_worker_finished_with_errors();
 
 	return failed;
 }
