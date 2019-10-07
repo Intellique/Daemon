@@ -9,7 +9,7 @@ if ( $ARGV[0] eq 'config' ) {
     my $sent = {
         'name' => 'Nextcloud sync post archive',
         'description' =>
-            'Remove files from Nextcloud after creating an archive',
+          'Remove files from Nextcloud after creating an archive',
         'type' => 'post job'
     };
     print encode_json($sent);
@@ -22,16 +22,14 @@ use File::Path 'remove_tree';
 my $param = shift;
 
 my $data_in = do { local $/; <STDIN> };
-my $data = decode_json $data_in;
+my $data    = decode_json $data_in;
 
 my $archive;
 if ( defined $data->{archive}->{main} ) {
     $archive = $data->{archive}->{main};
-}
-elsif ( defined $data->{archive}->{source} ) {
+} elsif ( defined $data->{archive}->{source} ) {
     $archive = $data->{archive}->{source};
-}
-else {
+} else {
     my $sent = {
         'finished' => JSON::PP::true,
         'data'     => {},
@@ -66,12 +64,26 @@ unless ($<) {
 }
 
 if ( -x $command ) {
+    my $nb_total_files = scalar keys %parents;
+    my $nb_file_done   = 0;
+
     foreach my $dir ( keys %parents ) {
 
         # $sub must start with '/'
         my $subdir = substr( $dir, length($next_cloud_data_dir) );
 
-        system( $command, 'files:scan', "--path=$subdir" );
+        my $occ_output = qx($command files:scan --path="$subdir")
+          or die "Failed to execute \"$command\": $?";
+        $nb_file_done++;
+
+        my $sent = {
+            'finished'    => JSON::PP::false,
+            'data'        => {},
+            'progression' => $nb_file_done / $nb_total_files,
+            'message'     => ''
+        };
+        print encode_json($sent);
+
     }
 }
 
