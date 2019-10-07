@@ -104,7 +104,9 @@ static void sod_job_release(void * data) {
 
 	if (!self->finished) {
 		job->status = so_job_status_error;
-		self->db_connection->ops->sync_job(self->db_connection, job);
+
+		if (self->db_connection != NULL)
+			self->db_connection->ops->sync_job(self->db_connection, job);
 	}
 
 	so_value_hashtable_remove2(jobs, self->key);
