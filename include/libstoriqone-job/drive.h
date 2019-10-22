@@ -47,6 +47,7 @@ struct so_drive_ops {
 	struct so_format_writer * (*get_writer)(struct so_drive * drive, struct so_value * checksums);
 	struct so_format_reader * (*open_archive_volume)(struct so_drive * drive, struct so_archive_volume * volume, struct so_value * checksums);
 	struct so_archive * (*parse_archive)(struct so_drive * drive, int archive_position, struct so_value * checksums);
+	bool (*release_drive)(struct so_drive * drive);
 	int (*scan_media)(struct so_drive * drive);
 	int (*sync)(struct so_drive * drive);
 };

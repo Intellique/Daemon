@@ -85,6 +85,7 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_open_archive_volume(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_release_drive(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_scan_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * request, int fd);
 
@@ -110,6 +111,7 @@ static struct sodr_socket_command {
 	{ 0, "get writer",            sodr_socket_command_get_writer },
 	{ 0, "init peer",             sodr_socket_command_init_peer },
 	{ 0, "open archive volume",   sodr_socket_command_open_archive_volume },
+	{ 0, "release drive",         sodr_socket_command_release_drive },
 	{ 0, "scan media",            sodr_socket_command_scan_media },
 	{ 0, "sync",                  sodr_socket_command_sync },
 
@@ -633,6 +635,16 @@ static void sodr_socket_command_open_archive_volume(struct sodr_peer * peer, str
 
 	peer->owned = true;
 	so_thread_pool_run("format reader", sodr_worker_command_open_archive_volume, params);
+}
+
+static void sodr_socket_command_release_drive(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
+	const bool ok = sodr_current_peer == peer;
+	if (sodr_current_peer == peer)
+		sodr_current_peer = NULL;
+
+	struct so_value * response = so_value_pack("{sb}", "returned", ok);
+	so_json_encode_to_fd(response, fd, true);
+	so_value_free(response);
 }
 
 static void sodr_socket_command_scan_media(struct sodr_peer * peer, struct so_value * request, int fd) {

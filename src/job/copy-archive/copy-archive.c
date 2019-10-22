@@ -45,6 +45,7 @@
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/changer.h>
+#include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
 #include <libstoriqone-job/media.h>
 #include <libstoriqone-job/script.h>
@@ -104,14 +105,41 @@ static void soj_copyarchive_init() {
 static int soj_copyarchive_run(struct so_job * job, struct so_database_connection * db_connect) {
 	job->done = 0.01;
 
-	struct so_media * media = data.src_archive->volumes[0].media;
+	bool force_direct_copy = false;
+	so_value_unpack(job->option, "{sb}", "force direct copy", &force_direct_copy);
 
+	struct so_media * media = data.src_archive->volumes[0].media;
 	data.src_drive = soj_media_find_and_load(media, false, 0, false, NULL, NULL, db_connect);
 	if (data.src_drive == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_error,
 			so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
 			media->name);
 		return 2;
+	}
+
+	bool error = false;
+	data.dest_drive = soj_media_find_and_load_next(data.copy_archive->pool, true, &error, db_connect);
+
+	while (!error && force_direct_copy && data.dest_drive == NULL) {
+		data.src_drive->ops->release_drive(data.src_drive);
+		data.src_drive = NULL;
+
+		sleep(120 * (rand() % 10));
+
+		data.src_drive = soj_media_find_and_load(media, false, 0, false, NULL, NULL, db_connect);
+		if (data.src_drive == NULL) {
+			soj_job_add_record(job, db_connect, so_log_level_error,
+				so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
+				media->name);
+			return 2;
+		}
+
+		data.dest_drive = soj_media_find_and_load_next(data.copy_archive->pool, true, &error, db_connect);
+	}
+
+	if (error) {
+		job->status = so_job_status_error;
+		return 1;
 	}
 
 	soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
@@ -124,14 +152,6 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	} else
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-copy-archive", "Archive synchronized with database"));
-
-	bool error = false;
-	data.dest_drive = soj_media_find_and_load_next(data.copy_archive->pool, true, &error, db_connect);
-
-	if (error) {
-		job->status = so_job_status_error;
-		return 1;
-	}
 
 	if (data.dest_drive == NULL)
 		failed = soj_copyarchive_indirect_copy(job, db_connect, &data);
@@ -298,6 +318,14 @@ static bool soj_copyarchive_script_pre_run(struct so_job * job, struct so_databa
 }
 
 static int soj_copyarchive_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
+	bool force_direct_copy = false;
+	so_value_unpack(job->option, "{sb}", "force direct copy", &force_direct_copy);
+	if (force_direct_copy && soj_changer_nb_totals_drives() < 2) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Error, option \"force direct copy\" require at least two drives"));
+		return 1;
+	}
+
 	data.src_archive = db_connect->ops->get_archive_by_job(db_connect, job);
 	if (data.src_archive == NULL) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
