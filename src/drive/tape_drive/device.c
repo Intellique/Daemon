@@ -393,7 +393,11 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 	if (fd < 0)
 		return -1;
 
-	int failed = sodr_tape_drive_scsi_rewind(fd);
+	int failed = sodr_tape_drive_st_set_can_partition(&sodr_tape_drive, fd, db);
+	if (failed != 0)
+		return failed;
+
+	failed = sodr_tape_drive_scsi_rewind(fd);
 	if (failed != 0) {
 		close(fd);
 		return failed;
@@ -739,9 +743,6 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 		int failed = -1;
 		if (fd > -1) {
 			failed = ioctl(fd, MTIOCGET, &status);
-
-			sodr_tape_drive_st_set_can_partition(&sodr_tape_drive, fd, db_connect);
-
 			close(fd);
 		}
 		sodr_time_stop(&sodr_tape_drive);
