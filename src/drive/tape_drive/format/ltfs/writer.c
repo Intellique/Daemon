@@ -132,7 +132,7 @@ struct so_format_writer * sodr_tape_drive_format_ltfs_new_writer(struct so_drive
 	self->media = media;
 	self->volume_number = volume_number;
 	self->ltfs_info = &mp->data.ltfs;
-	self->writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, -1, false, NULL);
+	self->writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, scsi_fd, 1, -1, false, NULL);
 	self->total_wrote = 0;
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));

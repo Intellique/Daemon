@@ -167,7 +167,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	char uuid[37];
 	uuid_unparse_lower(raw_uuid, uuid);
 
-	struct so_stream_writer * writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, 1, 0, false, db);
+	struct so_stream_writer * writer = sodr_tape_drive_writer_get_raw_writer2(drive, fd, scsi_fd, 1, 0, false, db);
 	if (writer == NULL) {
 		ioctl(fd, MTIOCTOP, &mk1partition);
 		return 1;
