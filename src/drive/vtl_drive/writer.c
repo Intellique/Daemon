@@ -42,7 +42,7 @@
 #include <sys/types.h>
 // time
 #include <time.h>
-// lseek, write
+// fsync, lseek, write
 #include <unistd.h>
 
 #include <libstoriqone/drive.h>
@@ -163,6 +163,20 @@ static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw) {
 		self->buffer_used = 0;
 		self->media->free_block--;
 		self->media->nb_total_write++;
+	}
+
+	if (self->fd > -1) {
+		int failed = fsync(self->fd);
+
+		if (failed != 0) {
+			self->media->nb_write_errors++;
+
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-vtl", "[%s %s %d] Error while synchronizing data to media '%s' at position '%d' because %s"),
+				dr->vendor, dr->model, dr->index, self->media->name, self->file_position, strerror(self->last_errno));
+
+			return failed;
+		}
 	}
 
 	if (self->fd > -1) {
@@ -325,6 +339,17 @@ static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_w
 		self->media->free_block--;
 		self->media->nb_total_write++;
 		self->media->last_write = time(NULL);
+	}
+
+	int failed = fsync(self->fd);
+	if (failed != 0) {
+		self->media->nb_write_errors++;
+
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while synchronizing data to media '%s' at position '%d' because %s"),
+			dr->vendor, dr->model, dr->index, self->media->name, self->file_position, strerror(self->last_errno));
+
+		return NULL;
 	}
 
 	off_t new_position = lseek(self->fd, 0, SEEK_SET);
