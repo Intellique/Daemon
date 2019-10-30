@@ -71,6 +71,7 @@ struct soj_format_reader_filesystem_private {
 		struct stat st;
 		char * path;
 		u_int64_t nb_file_to_backup;
+		bool has_warnings;
 
 		struct soj_format_reader_filesystem_node * parent, * first_child, * last_child, * next_sibling;
 	} * root, * current;
@@ -257,6 +258,11 @@ static char * soj_format_reader_filesystem_get_root(struct so_format_reader * fr
 	return strdup(self->path);
 }
 
+bool soj_io_filesystem_reader_has_warnings(struct so_format_reader * fr) {
+	struct soj_format_reader_filesystem_private * self = fr->data;
+	return self->root->has_warnings;
+}
+
 static int soj_format_reader_filesystem_last_errno(struct so_format_reader * fr) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 	return self->last_errno;
@@ -350,8 +356,15 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 
 	node->fd = -1;
 	node->path = path;
-	lstat(node->path, &node->st);
 	node->nb_file_to_backup = 0;
+	node->has_warnings = false;
+
+	if (lstat(node->path, &node->st) != 0) {
+		const int last_errno = errno;
+		so_log_write(so_log_level_debug, dgettext("libstoriqone-job", "Error while getting information file \"%s\" because %s"), path, strerror(last_errno));
+		node->has_warnings = false;
+		return node;
+	}
 
 	if (S_ISREG(node->st.st_mode)) {
 		if (archive != NULL) {
@@ -369,11 +382,21 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 					node->nb_file_to_backup++;
 			}
 			free(hash);
+		} else if (access(path, R_OK) != 0) {
+			const int last_errno = errno;
+			so_log_write(so_log_level_debug, dgettext("libstoriqone-job", "Error while getting information file \"%s\" because %s"), path, strerror(last_errno));
+			node->has_warnings = true;
 		} else
 			node->nb_file_to_backup++;
 	} else if (S_ISDIR(node->st.st_mode)) {
 		struct dirent ** files = NULL;
 		int i, nb_files = scandir(path, &files, so_file_basic_scandir_filter, versionsort);
+
+		if (nb_files < 0) {
+			const int last_errno = errno;
+			so_log_write(so_log_level_debug, dgettext("libstoriqone-job", "Error while getting files from directory \"%s\" because %s"), path, strerror(last_errno));
+			node->has_warnings = true;
+		}
 
 		for (i = 0; i < nb_files; i++) {
 			char * sub_path = NULL;
@@ -381,6 +404,9 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 			so_string_delete_double_char(sub_path, '/');
 
 			struct soj_format_reader_filesystem_node * child = soj_format_reader_filesystem_node_new(sub_path, archive, hash_files);
+			if (child->has_warnings)
+				node->has_warnings = true;
+
 			if (child->nb_file_to_backup > 0) {
 				child->parent = node;
 				child->parent->nb_file_to_backup += child->nb_file_to_backup;
