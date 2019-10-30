@@ -61,6 +61,7 @@ static struct so_media * media_source = NULL;
 static struct so_value * selected_path = NULL;
 static struct so_format_reader ** src_files = NULL;
 static unsigned int nb_src_files = 0;
+static bool has_warnings = false;
 
 static struct so_archive * primary_archive = NULL;
 static struct so_value * archives_mirrors = NULL;
@@ -240,6 +241,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	job->done = 1;
 	job->status = soj_create_archive_worker_finished_with_errors();
 
+	if (job->status == so_job_status_finished && has_warnings)
+		job->status = so_job_status_finished_with_warnings;
+
 	return failed;
 }
 
@@ -369,6 +373,9 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 		ssize_t sub_total = soj_format_compute_tar_size(src_files[i]);
 		archive_size += sub_total;
 		src_files[i]->ops->rewind(src_files[i]);
+
+		if (soj_io_filesystem_reader_has_warnings(src_files[i]))
+			has_warnings = true;
 	}
 	so_value_iterator_free(iter);
 

@@ -37,6 +37,7 @@ struct so_format_file;
 struct so_format_reader * soj_io_filesystem_reader(const char * path, struct so_archive * archive);
 struct so_format_writer * soj_io_filesystem_writer(const char * path);
 
+bool soj_io_filesystem_reader_has_warnings(struct so_format_reader * fr);
 void soj_format_writer_add_file_async(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path);
 enum so_format_writer_status soj_format_writer_add_file_return(struct so_format_writer * fw);
 void soj_format_writer_write_async(struct so_format_writer * fw, const void * buffer, ssize_t length);
