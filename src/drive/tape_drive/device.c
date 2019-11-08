@@ -389,23 +389,34 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 	if (media == NULL)
 		return -1;
 
-	int fd = sodr_tape_drive_scsi_open();
-	if (fd < 0)
+	int scsi_fd = sodr_tape_drive_scsi_open();
+	if (scsi_fd < 0)
 		return -1;
 
-	int failed = sodr_tape_drive_st_set_can_partition(&sodr_tape_drive, fd, db);
-	if (failed != 0)
-		return failed;
+	int st_fd = sodr_tape_drive_st_open();
+	if (st_fd < 0) {
+		close(scsi_fd);
+		return -1;
+	}
 
-	failed = sodr_tape_drive_scsi_rewind(fd);
+	int failed = sodr_tape_drive_st_set_can_partition(&sodr_tape_drive, st_fd, db);
 	if (failed != 0) {
-		close(fd);
+		close(scsi_fd);
+		close(st_fd);
 		return failed;
 	}
 
-	failed = sodr_tape_drive_format_ltfs_remove_mam(fd, &sodr_tape_drive, db);
+	failed = sodr_tape_drive_scsi_rewind(scsi_fd);
 	if (failed != 0) {
-		close(fd);
+		close(scsi_fd);
+		close(st_fd);
+		return failed;
+	}
+
+	failed = sodr_tape_drive_format_ltfs_remove_mam(scsi_fd, &sodr_tape_drive, db);
+	if (failed != 0) {
+		close(scsi_fd);
+		close(st_fd);
 		return failed;
 	}
 
@@ -413,14 +424,15 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-	failed = sodr_tape_drive_scsi_erase_media(fd, quick_mode);
-	close(fd);
+	failed = sodr_tape_drive_scsi_erase_media(scsi_fd, quick_mode);
+	close(scsi_fd);
 
 	if (failed != 0) {
 		sodr_log_add_record(so_job_status_running, db, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"),
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+		close(st_fd);
 		return failed;
 	} else
 		sodr_log_add_record(so_job_status_running, db, so_log_level_info, so_job_record_notif_important,
@@ -428,12 +440,8 @@ static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_conne
 			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
 
-	fd = sodr_tape_drive_st_open();
-	if (fd < 0)
-		return -1;
-
-	failed = sodr_tape_drive_st_mk_1_partition(&sodr_tape_drive, fd);
-	close(fd);
+	failed = sodr_tape_drive_st_mk_1_partition(&sodr_tape_drive, st_fd);
+	close(st_fd);
 
 	if (failed == 0) {
 		media->uuid[0] = '\0';
