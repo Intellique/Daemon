@@ -148,7 +148,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 				break;
 			}
 
-			const char * restore_to = soj_restorearchive_path_get(header.filename, file->selected_path, file->type == so_archive_file_type_regular_file);
+			const char * restore_to = soj_restorearchive_path_get(file->path, file->selected_path, file->type == so_archive_file_type_regular_file);
 			if (restore_to != NULL)
 				file->restored_to = so_string_dup_and_fix(restore_to, NULL);
 			else {
