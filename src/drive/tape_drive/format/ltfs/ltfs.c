@@ -232,7 +232,6 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	}
 
 	sodr_tape_drive_writer_close2(writer, false);
-	writer->ops->free(writer);
 
 	drive->status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, drive, true, so_database_sync_default);
@@ -243,6 +242,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	failed = sodr_tape_drive_format_ltfs_update_mam(scsi_fd, drive, db);
 	if (failed != 0) {
 		ioctl(fd, MTIOCTOP, &mk1partition);
+		writer->ops->free(writer);
 		return failed;
 	}
 
@@ -251,6 +251,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	if (failed != 0) {
 		ioctl(fd, MTIOCTOP, &mk1partition);
 		sodr_tape_drive_format_ltfs_remove_mam(fd, drive, db);
+		writer->ops->free(writer);
 		return failed;
 	}
 
@@ -269,6 +270,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 		sodr_tape_drive_media_free(mp);
 		ioctl(fd, MTIOCTOP, &mk1partition);
 		sodr_tape_drive_format_ltfs_remove_mam(fd, drive, db);
+		writer->ops->free(writer);
 		return failed;
 	}
 
@@ -280,6 +282,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 		sodr_tape_drive_media_free(mp);
 		ioctl(fd, MTIOCTOP, &mk1partition);
 		sodr_tape_drive_format_ltfs_remove_mam(fd, drive, db);
+		writer->ops->free(writer);
 		return failed;
 	} else
 		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
@@ -297,6 +300,8 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	media->pool = pool;
 	media->private_data = mp;
 	media->free_private_data = sodr_tape_drive_media_free2;
+
+	writer->ops->free(writer);
 
 	return 0;
 }
