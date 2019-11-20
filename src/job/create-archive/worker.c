@@ -713,8 +713,8 @@ void soj_create_archive_worker_prepare_medias(struct so_job * job, struct so_dat
 	} else {
 		primary_worker->state = soj_worker_status_error;
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-create-archive", "Error while opening media '%s' from pool '%s'"),
-			primary_worker->media->name, primary_worker->archive->pool->name);
+			dgettext("storiqone-job-create-archive", "Error while opening media from pool '%s'"),
+			primary_worker->archive->pool->name);
 	}
 
 	unsigned int i;
