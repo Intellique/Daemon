@@ -147,8 +147,9 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 
 			dr->ops->update_status(dr);
 
-			if (!dr->is_empty) {
-				char * volume_name = strdup(dr->slot->media->name);
+			struct so_slot * slot = dr->slot;
+			if (!dr->is_empty && slot->full) {
+				char * volume_name = strdup(slot->media->name);
 
 				long long diff = (now.tv_sec - last_check.tv_sec) / 60;
 
