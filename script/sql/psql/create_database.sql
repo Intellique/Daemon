@@ -254,8 +254,7 @@ CREATE TABLE PoolTemplate (
     unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
 
-    metadata JSON NOT NULL DEFAULT '{}',
-    createProxy BOOLEAN NOT NULL DEFAULT FALSE
+    metadata JSON NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE Media (
@@ -741,7 +740,7 @@ CREATE TABLE Script (
     type ScriptType NOT NULL
 );
 
-CREATE TABLE Scripts (
+CREATE TABLE PoolToScript (
     id SERIAL PRIMARY KEY,
 
     sequence INTEGER NOT NULL CHECK (sequence >= 0),
@@ -750,6 +749,17 @@ CREATE TABLE Scripts (
     pool INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     UNIQUE (sequence, jobType, script, pool)
+);
+
+CREATE TABLE PoolTemplateToScript (
+    id SERIAL PRIMARY KEY,
+
+    sequence INTEGER NOT NULL CHECK (sequence >= 0),
+    jobType INTEGER NOT NULL REFERENCES JobType(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    script INTEGER REFERENCES Script(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    poolTemplate INTEGER REFERENCES PoolTemplate(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE (sequence, jobType, script, poolTemplate)
 );
 
 CREATE TABLE Vtl (
