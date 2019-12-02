@@ -577,7 +577,7 @@ struct so_database_connection {
 		 */
 		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy, struct so_pool * pool);
 		int (*mark_archive_as_purged)(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
-		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
+		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original, bool close_archive);
 		int (*sync_archive_format)(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
 		int (*update_link_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job);
 

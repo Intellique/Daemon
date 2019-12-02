@@ -211,7 +211,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 				soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Failed to start database transaction"));
 			} else {
-				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive, data.src_archive);
+				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive, data.src_archive, true);
 				if (failed == 0)
 					failed = db_connect->ops->link_archives(db_connect, job, data.src_archive, data.copy_archive, data.copy_archive->pool);
 
