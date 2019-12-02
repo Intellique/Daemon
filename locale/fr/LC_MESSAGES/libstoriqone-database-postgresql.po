@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2019-06-24 15:22+0200\n"
+        "POT-Creation-Date: 2019-12-02 16:52+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -61,7 +61,11 @@ msgstr  "Vérification « %s »"
 msgid   "Retreiving archive from database in progress, %u / %u volume(s), %u / %u file(s)"
 msgstr  "Récupération de l’archive depuis la base de données, %u / %u volume(s), %u / %u fichier(s)"
 
-#: src/database/postgresql/connection.c:5248
+#: src/database/postgresql/connection.c:4180
+msgid   "Error, no new archive insert into database"
+msgstr  ""
+
+#: src/database/postgresql/connection.c:5253
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"
