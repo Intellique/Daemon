@@ -152,7 +152,7 @@ static struct so_value * so_database_postgresql_get_synchronized_archive(struct 
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy, struct so_pool * pool);
 static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
-static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
+static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original, bool close_archive);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, const char * archive_id, struct so_archive_file * file, char ** file_id);
 static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files);
@@ -4120,7 +4120,7 @@ static int so_database_postgresql_mark_archive_as_purged(struct so_database_conn
 	return status != PGRES_COMMAND_OK;
 }
 
-static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original) {
+static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original, bool close_archive) {
 	if (connect == NULL || archive == NULL)
 		return -1;
 
@@ -4258,14 +4258,16 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 	free(archive_id);
 
 
-	const char * query = "refresh_materialize_view_milestones_files";
-	PGresult * result = PQexec(self->connect, "REFRESH MATERIALIZED VIEW CONCURRENTLY milestones_files");
-	ExecStatusType status = PQresultStatus(result);
+	if (close_archive) {
+		const char * query = "refresh_materialize_view_milestones_files";
+		PGresult * result = PQexec(self->connect, "REFRESH MATERIALIZED VIEW CONCURRENTLY milestones_files");
+		ExecStatusType status = PQresultStatus(result);
 
-	if (status == PGRES_FATAL_ERROR)
-		so_database_postgresql_get_error(result, query);
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
 
-	PQclear(result);
+		PQclear(result);
+	}
 
 	return failed;
 }

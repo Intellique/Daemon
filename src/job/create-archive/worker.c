@@ -874,7 +874,7 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 	}
 
 	if (primary_worker->state == soj_worker_status_ready && (archive == NULL || archive == primary_worker->archive)) {
-		failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive, NULL);
+		failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive, NULL, close_archive);
 
 		if (failed == 0 && close_archive)
 			failed = db_connect->ops->update_link_archive(db_connect, primary_worker->archive, current_job);
@@ -895,7 +895,7 @@ int soj_create_archive_worker_sync_archives(bool first_synchro, bool close_archi
 			continue;
 
 		if ((worker->state == soj_worker_status_reserved && first_synchro) || worker->state == soj_worker_status_ready) {
-			failed = db_connect->ops->sync_archive(db_connect, worker->archive, primary_worker->archive);
+			failed = db_connect->ops->sync_archive(db_connect, worker->archive, primary_worker->archive, close_archive);
 
 			if (failed == 0) {
 				if (first_synchro && !soj_create_archive_adding_file) {

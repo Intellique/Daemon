@@ -237,7 +237,7 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 			}
 		}
 
-		failed = db_connect->ops->sync_archive(db_connect, archive, NULL);
+		failed = db_connect->ops->sync_archive(db_connect, archive, NULL, true);
 
 		float done = i;
 		done /= nb_archives;
