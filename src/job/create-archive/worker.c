@@ -353,6 +353,9 @@ int soj_create_archive_worker_close(struct so_job * job, struct so_database_conn
 }
 
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool skip_last_file, bool change_volume, struct so_database_connection * db_connect) {
+	if (worker->writer == NULL)
+		return 0;
+
 	worker->writer->ops->close(worker->writer, change_volume);
 
 	worker->partial_done = 0;
