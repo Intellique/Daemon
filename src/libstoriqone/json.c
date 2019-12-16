@@ -69,7 +69,7 @@ struct so_json_parser {
 	int timeout;
 
 	bool (*has_more_data)(struct so_json_parser * parser, bool wait);
-	ssize_t (*read)(struct so_json_parser * parser, char * buffer, ssize_t length);
+	ssize_t (*read)(struct so_json_parser * parser, char * buffer, size_t length);
 	bool (*read_more)(struct so_json_parser * parser);
 
 	struct {
@@ -85,7 +85,7 @@ static ssize_t so_json_encode_to_string_inner(struct so_value * val, char * buff
 
 static struct so_value * so_json_parse(struct so_json_parser * parser);
 static bool so_json_parse_fd_has_more_data(struct so_json_parser * parser, bool wait);
-static ssize_t so_json_parse_fd_read(struct so_json_parser * parser, char * buffer, ssize_t length);
+static ssize_t so_json_parse_fd_read(struct so_json_parser * parser, char * buffer, size_t length);
 static struct so_value * so_json_parse_inner(struct so_json_parser * parser);
 static struct so_value * so_json_parse_pipe(int fd, int timeout);
 static bool so_json_parse_pipe_read(struct so_json_parser * parser);
@@ -95,7 +95,7 @@ static bool so_json_parse_skip(struct so_json_parser * parser);
 static struct so_value * so_json_parse_socket(int fd, int timeout);
 static bool so_json_parse_socket_read(struct so_json_parser * parser);
 static bool so_json_parse_stream_has_more_data(struct so_json_parser * parser, bool wait);
-static ssize_t so_json_parse_stream_read(struct so_json_parser * parser, char * buffer, ssize_t length);
+static ssize_t so_json_parse_stream_read(struct so_json_parser * parser, char * buffer, size_t length);
 static bool so_json_parse_stream_read_more(struct so_json_parser * parser);
 
 
@@ -540,8 +540,17 @@ static struct so_value * so_json_parse(struct so_json_parser * parser) {
 	uselocale(current_locale);
 
 	if (parser->read != NULL && parser->position > 0) {
-		static char tmp_buffer[4096];
-		parser->read(parser, tmp_buffer, parser->position - parser->last_remain);
+		static char tmp_buffer[16384];
+
+		size_t remain = parser->position - parser->last_remain;
+		while (remain > 0) {
+			const size_t will_read = remain > 16384 ? 16384 : remain;
+			ssize_t nb_read = parser->read(parser, tmp_buffer, will_read);
+			if (nb_read < 0)
+				break;
+			else
+				remain -= (size_t) nb_read;
+		}
 	}
 
 	return returned;
@@ -576,7 +585,7 @@ static bool so_json_parse_fd_has_more_data(struct so_json_parser * parser, bool 
 	return true;
 }
 
-static ssize_t so_json_parse_fd_read(struct so_json_parser * parser, char * buffer, ssize_t length) {
+static ssize_t so_json_parse_fd_read(struct so_json_parser * parser, char * buffer, size_t length) {
 	return read(parser->pfd.fd, buffer, length);
 }
 
@@ -1237,7 +1246,7 @@ static bool so_json_parse_stream_has_more_data(struct so_json_parser * parser, b
 	return available_in_stream > 0;
 }
 
-static ssize_t so_json_parse_stream_read(struct so_json_parser * parser, char * buffer, ssize_t length) {
+static ssize_t so_json_parse_stream_read(struct so_json_parser * parser, char * buffer, size_t length) {
 	return parser->stream.reader->ops->read(parser->stream.reader, buffer, length);
 }
 
