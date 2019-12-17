@@ -149,7 +149,7 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 				so_job_sync(job, response);
 			so_value_free(response);
 
-			if (job->status == so_job_status_running || job->status == so_job_status_waiting)
+			if (job->status == so_job_status_running)
 				nb_running_jobs++;
 		}
 	}
