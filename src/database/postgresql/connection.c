@@ -4259,12 +4259,32 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 
 
 	if (close_archive) {
-		const char * query = "refresh_materialize_view_milestones_files";
-		PGresult * result = PQexec(self->connect, "REFRESH MATERIALIZED VIEW CONCURRENTLY milestones_files");
+		const char * query = "get_materialize_view_def";
+		so_database_postgresql_prepare(self, query, "SELECT REGEXP_REPLACE(pg_catalog.pg_get_ruledef(r.oid, TRUE), '^.*DO INSTEAD  (SELECT.*);$', '\\1') FROM pg_catalog.pg_rewrite r WHERE r.ev_class = ( SELECT oid FROM pg_class WHERE relname = 'milestones_files')");
+
+		PGresult * result = PQexecPrepared(self->connect, query, 0, NULL, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
 			so_database_postgresql_get_error(result, query);
+		else {
+			pid_t pid = getpid();
+
+			char * buffer = NULL;
+			int size = asprintf(&buffer, "BEGIN; CREATE MATERIALIZED VIEW milestones_files_%d AS %s; CREATE UNIQUE INDEX ON milestones_files_%d(archive, archivefile); DROP MATERIALIZED VIEW IF EXISTS milestones_files; ALTER MATERIALIZED VIEW milestones_files_%d RENAME TO milestones_files; COMMIT", pid, PQgetvalue(result, 0, 0), pid, pid);
+
+			if (size > 0) {
+				PGresult * result_update = PQexec(self->connect, buffer);
+				ExecStatusType status_update = PQresultStatus(result_update);
+
+				if (status_update == PGRES_FATAL_ERROR)
+					so_database_postgresql_get_error(result, NULL);
+
+				PQclear(result_update);
+
+				free(buffer);
+			}
+		}
 
 		PQclear(result);
 	}
