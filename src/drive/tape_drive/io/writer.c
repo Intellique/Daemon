@@ -193,9 +193,7 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 					if (!self->end_of_tape_warning) {
 						self->end_of_tape_warning = true;
 
-						int fd = sodr_tape_drive_scsi_open();
-						sodr_tape_drive_scsi_size_available(fd, self->media);
-						close(fd);
+						sodr_tape_drive_scsi_size_available(self->scsi_fd, self->media);
 
 						char str_remaining_space[16];
 						ssize_t remaining_space = self->media->block_size * self->media->free_block;
@@ -311,9 +309,7 @@ ssize_t sodr_tape_drive_writer_flush(struct so_stream_writer * sw) {
 					if (!self->end_of_tape_warning) {
 						self->end_of_tape_warning = true;
 
-						int fd = sodr_tape_drive_scsi_open();
-						sodr_tape_drive_scsi_size_available(fd, self->media);
-						close(fd);
+						sodr_tape_drive_scsi_size_available(self->scsi_fd, self->media);
 
 						char str_remaining_space[16];
 						ssize_t remaining_space = self->media->block_size * self->media->free_block;
@@ -501,9 +497,7 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 				if (!self->end_of_tape_warning) {
 					self->end_of_tape_warning = true;
 
-					int fd = sodr_tape_drive_scsi_open();
-					sodr_tape_drive_scsi_size_available(fd, self->media);
-					close(fd);
+					sodr_tape_drive_scsi_size_available(self->scsi_fd, self->media);
 
 					char str_remaining_space[16];
 					ssize_t remaining_space = self->media->block_size * self->media->free_block;
@@ -559,9 +553,7 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 					if (!self->end_of_tape_warning) {
 						self->end_of_tape_warning = true;
 
-						int fd = sodr_tape_drive_scsi_open();
-						sodr_tape_drive_scsi_size_available(fd, self->media);
-						close(fd);
+						sodr_tape_drive_scsi_size_available(self->scsi_fd, self->media);
 
 						char str_remaining_space[16];
 						ssize_t remaining_space = self->media->block_size * self->media->free_block;

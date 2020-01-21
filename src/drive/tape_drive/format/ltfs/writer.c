@@ -395,7 +395,9 @@ static char * sodr_tape_drive_format_ltfs_writer_get_alternate_path(struct so_fo
 
 static ssize_t sodr_tape_drive_format_ltfs_writer_get_available_size(struct so_format_writer * fw) {
 	struct sodr_tape_drive_format_ltfs_writer_private * self = fw->data;
-	return self->writer->ops->get_available_size(self->writer);
+	ssize_t available_size = self->writer->ops->get_available_size(self->writer);
+	// reserve at least 128 Mo
+	return available_size > 134217728 ? available_size - 134217728 : 0;
 }
 
 static ssize_t sodr_tape_drive_format_ltfs_writer_get_block_size(struct so_format_writer * fw) {
