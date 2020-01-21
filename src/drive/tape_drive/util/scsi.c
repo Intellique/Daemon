@@ -1318,24 +1318,39 @@ static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_comman
 }
 
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
-	struct {
+	struct log_sense_header {
 		unsigned char page_code:6;
-		unsigned char reserved0:2;
-		unsigned char reserved1;
+		bool spf:1;
+		bool ds:1;
+		unsigned char subcode_page;
 		unsigned short page_length;
-		struct {
-			unsigned short parameter_code;
-			bool lp:1;
-			bool lbin:1;
-			unsigned char tmc:2;
-			bool etc:1;
-			bool tsd:1;
-			bool ds:1;
-			bool du:1;
-			unsigned char parameter_length;
-			unsigned int value;
-		} values[4];
-	} __attribute__((packed)) result;
+	} __attribute__((packed));
+
+	struct volume_statistics_log {
+		unsigned short parameter_code;
+		bool lp:1;
+		bool lbin:1;
+		unsigned char tmc:2;
+		bool etc:1;
+		bool tsd:1;
+		bool ds:1;
+		bool du:1;
+		unsigned char parameter_length;
+		union {
+			unsigned char int8;
+			unsigned short int16;
+			unsigned int int32;
+			unsigned long long int64;
+			struct {
+				unsigned char record_length;
+				unsigned char reserved;
+				unsigned short partition_number;
+				unsigned int int32;
+			} partition_log[4];
+		} value;
+	} __attribute__((packed));
+
+	char buffer[1024];
 
 	struct {
 		unsigned char operation_code;
@@ -1358,10 +1373,10 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 		.operation_code = 0x4D, // Log Sense (10)
 		.saved_paged = false,
 		.parameter_pointer_control = false,
-		.page_code = 0x31,
+		.page_code = 0x17,
 		.page_control = page_control_current_value,
 		.parameter_pointer = 0,
-		.allocation_length = htobe16(sizeof(result)),
+		.allocation_length = htobe16(sizeof(buffer)),
 		.control = 0,
 	};
 
@@ -1369,37 +1384,66 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
-	memset(&result, 0, sizeof(result));
+	memset(buffer, 0, sizeof(buffer));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(result);
+	header.dxfer_len = sizeof(buffer);
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = (unsigned char *) &result;
+	header.dxferp = (unsigned char *) buffer;
 	header.timeout = 1000 * scsi_command_log_sense.timeout;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
-	if (status || result.page_code != 0x31)
+
+	struct log_sense_header * result_header = (struct log_sense_header *) buffer;
+
+	if (status || result_header->page_code != 0x17)
 		return 1;
 
-	result.page_length = be16toh(result.page_length);
-	unsigned short i;
-	for (i = 0; i < 4; i++) {
-		result.values[i].parameter_code = be16toh(result.values[i].parameter_code);
-		result.values[i].value = be32toh(result.values[i].value);
+	unsigned long long free_block = 0, total_block = 0;
+
+	result_header->page_length = be16toh(result_header->page_length);
+	unsigned int position;
+	for (position = 4; position < result_header->page_length;) {
+		struct volume_statistics_log * vsl = (struct volume_statistics_log *) (buffer + position);
+		vsl->parameter_code = be16toh(vsl->parameter_code);
+		position += vsl->parameter_length;
+
+		switch (vsl->parameter_code) {
+			case 0x0202:
+				vsl->value.partition_log[0].partition_number = be16toh(vsl->value.partition_log[0].partition_number);
+				vsl->value.partition_log[0].int32 = be32toh(vsl->value.partition_log[0].int32);
+				total_block = vsl->value.partition_log[0].int32 << 20;
+
+				if (vsl->parameter_length < 16)
+					break;
+
+				vsl->value.partition_log[1].partition_number = be16toh(vsl->value.partition_log[1].partition_number);
+				vsl->value.partition_log[1].int32 = be32toh(vsl->value.partition_log[1].int32);
+				total_block += vsl->value.partition_log[1].int32 << 20;
+
+				break;
+
+			case 0x0204:
+				vsl->value.partition_log[0].partition_number = be16toh(vsl->value.partition_log[0].partition_number);
+				vsl->value.partition_log[0].int32 = be32toh(vsl->value.partition_log[0].int32);
+				free_block = vsl->value.partition_log[0].int32 << 20;
+
+				if (vsl->parameter_length < 16)
+					break;
+
+				vsl->value.partition_log[1].partition_number = be16toh(vsl->value.partition_log[1].partition_number);
+				vsl->value.partition_log[1].int32 = be32toh(vsl->value.partition_log[1].int32);
+				free_block = vsl->value.partition_log[1].int32 << 20;
+
+				break;
+		}
 	}
 
-	unsigned long long int free_block = result.values[0].value;
-	if (result.values[3].value > 0)
-		free_block = result.values[1].value;
-	free_block <<= 20;
 	media->free_block = free_block / media->block_size;
-
-	unsigned long long int total_block = result.values[2].value + result.values[3].value;
-	total_block <<= 20;
 	media->total_block = total_block / media->block_size;
 
 	return 0;
