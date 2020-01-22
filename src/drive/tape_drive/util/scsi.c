@@ -1408,7 +1408,7 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	for (position = 4; position < result_header->page_length;) {
 		struct volume_statistics_log * vsl = (struct volume_statistics_log *) (buffer + position);
 		vsl->parameter_code = be16toh(vsl->parameter_code);
-		position += vsl->parameter_length;
+		position += 4 + vsl->parameter_length;
 
 		switch (vsl->parameter_code) {
 			case 0x0202:
