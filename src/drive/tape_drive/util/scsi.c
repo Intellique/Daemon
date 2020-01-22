@@ -1319,10 +1319,8 @@ static int sodr_tape_drive_scsi_setup2(int fd, struct scsi_command * scsi_comman
 
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	struct log_sense_header {
-		unsigned char page_code:6;
-		bool spf:1;
-		bool ds:1;
-		unsigned char subcode_page;
+		unsigned char page_code;
+		unsigned char reserved;
 		unsigned short page_length;
 	} __attribute__((packed));
 
