@@ -24,6 +24,8 @@
 *  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dgettext
+#include <libintl.h>
 // malloc
 #include <stdlib.h>
 // bzero
@@ -32,8 +34,11 @@
 #include <libstoriqone/changer.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone-changer/log.h>
 
+#include "changer.h"
 #include "media.h"
+#include "peer.h"
 
 void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * peer) {
 	struct sochgr_peer_list * lp = sochgr_media_find_peer(media, peer);
@@ -51,7 +56,7 @@ void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * p
 		media->last = media->last->next = pl;
 }
 
-void sochgr_media_add_writer(struct sochgr_media * media, struct sochgr_peer * peer, size_t size_need, bool append) {
+void sochgr_media_add_writer(struct sochgr_media * media, const char * media_name, struct sochgr_peer * peer, size_t size_need, bool append, struct so_database_connection * db) {
 	struct sochgr_peer_list * pl = malloc(sizeof(struct sochgr_peer_list));
 	bzero(pl, sizeof(struct sochgr_peer_list));
 
@@ -64,6 +69,13 @@ void sochgr_media_add_writer(struct sochgr_media * media, struct sochgr_peer * p
 		media->first = media->last = pl;
 	else
 		media->last = media->last->next = pl;
+
+	struct so_changer_driver * driver = sochgr_changer_get();
+	struct so_changer * changer = driver->device;
+
+	sochgr_log_add_record(peer, so_job_status_waiting, db, so_log_level_notice, so_job_record_notif_normal,
+		dgettext("libstoriqone-changer", "[%s | %s]: job (id: %s) reserve media '%s' for writing"),
+		changer->vendor, changer->model, peer->job_id, media_name);
 }
 
 struct sochgr_peer_list * sochgr_media_find_peer(struct sochgr_media * media, struct sochgr_peer * peer) {

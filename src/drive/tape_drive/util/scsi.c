@@ -1427,6 +1427,20 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 
 				break;
 
+			case 0x0203:
+				vsl->value.partition_log[0].partition_number = be16toh(vsl->value.partition_log[0].partition_number);
+				vsl->value.partition_log[0].int32 = be32toh(vsl->value.partition_log[0].int32);
+				free_block = total_block - (vsl->value.partition_log[0].int32 << 20);
+
+				if (vsl->parameter_length < 16)
+					break;
+
+				vsl->value.partition_log[1].partition_number = be16toh(vsl->value.partition_log[1].partition_number);
+				vsl->value.partition_log[1].int32 = be32toh(vsl->value.partition_log[1].int32);
+				free_block = total_block - (vsl->value.partition_log[1].int32 << 20);
+
+				break;
+
 			case 0x0204:
 				vsl->value.partition_log[0].partition_number = be16toh(vsl->value.partition_log[0].partition_number);
 				vsl->value.partition_log[0].int32 = be32toh(vsl->value.partition_log[0].int32);

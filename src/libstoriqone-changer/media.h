@@ -51,7 +51,7 @@ struct sochgr_media {
 };
 
 void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * peer);
-void sochgr_media_add_writer(struct sochgr_media * media, struct sochgr_peer * peer, size_t size_need, bool append);
+void sochgr_media_add_writer(struct sochgr_media * media, const char * media_name, struct sochgr_peer * peer, size_t size_need, bool append, struct so_database_connection * db);
 struct sochgr_peer_list * sochgr_media_find_peer(struct sochgr_media * media, struct sochgr_peer * peer);
 void sochgr_media_init(struct so_changer * changer);
 void sochgr_media_remove_peer(struct sochgr_media * media, struct sochgr_peer * peer);

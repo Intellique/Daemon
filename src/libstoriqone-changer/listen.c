@@ -714,14 +714,14 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 				if (pool->unbreakable_level == so_pool_unbreakable_level_archive) {
 					if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
 						result = size_need;
-						sochgr_media_add_writer(mp, peer, size_need, append);
+						sochgr_media_add_writer(mp, so_media_get_name(media), peer, size_need, append, sochgr_db);
 					}
 				} else if (media->free_block * media->block_size - mp->size_reserved >= size_need + reserved_space) {
 					result = size_need;
-					sochgr_media_add_writer(mp, peer, size_need, append);
+					sochgr_media_add_writer(mp, so_media_get_name(media), peer, size_need, append, sochgr_db);
 				} else if (10 * media->free_block >= media->total_block) {
 					result = media->free_block * media->block_size - mp->size_reserved - reserved_space;
-					sochgr_media_add_writer(mp, peer, result, append);
+					sochgr_media_add_writer(mp, so_media_get_name(media), peer, result, append, sochgr_db);
 				}
 			}
 			break;
