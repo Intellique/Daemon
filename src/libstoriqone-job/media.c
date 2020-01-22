@@ -264,6 +264,10 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 		return drive;
 	}
 
+	soj_job_add_record(soj_job_get(), db_connect, so_log_level_error, so_job_record_notif_important,
+		dgettext("storiqone-job-create-archive", "No more media reserved from pool '%s'"),
+		pool->name);
+
 	return NULL;
 }
 
