@@ -140,7 +140,7 @@ struct so_changer * sochgr_standalone_changer_get_device() {
 }
 
 static ssize_t sochgr_standalone_changer_get_reserved_space(struct so_media_format * format) {
-	return format->capacity / 500;
+	return format->capacity / 100;
 }
 
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
