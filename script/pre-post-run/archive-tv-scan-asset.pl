@@ -17,11 +17,14 @@ if ( $ARGV[0] eq 'config' ) {
 }
 
 my $schema     = 'https';
-my $hostname   = '';
-my $path       = '';
-my $login      = '';
-my $password   = '';
+my $hostname   = '192.168.0.155:8006';
+my $path       = 'api/v2/scan/asset';
+my $login      = 'emmanuel';
+my $password   = 'intellique';
 my $mediaspace = 'StoriqOne';
+
+my $data_in = do { local $/; <STDIN> };
+my $data    = decode_json $data_in;
 
 my $archive;
 if ( defined $data->{archive}->{main} ) {
@@ -53,13 +56,13 @@ find_file: foreach my $vol ( @{ $archive->{volumes} } ) {
     for ( my $i = 0; $i < $middle; $i++ ) {
         my $ptr_file = $vol->{files}->[ $middle + $i ];
         if ( is_dpx( $ptr_file->{file} ) ) {
-            $file = $l_file;
+            $file = $ptr_file->{file};
             break find_file;
         }
 
         $ptr_file = $vol->{files}->[ $middle - $i ];
         if ( is_dpx( $ptr_file->{file} ) ) {
-            $file = $l_file;
+            $file = $ptr_file->{file};
             break find_file;
         }
     }
@@ -75,7 +78,7 @@ unless ( defined $file ) {
     exit 2;
 }
 
-$content_request = encode_json(
+my $content_request = encode_json(
     {   'createproxy' => JSON::PP::true,
         'files'       => [ $file->{path} ],
         'fullscan'    => JSON::PP::false,
@@ -93,7 +96,7 @@ my $request = HTTP::Request->new( POST => "$schema://$hostname/$path" );
 $request->content_type('application/json');
 $request->content($content_request);
 
-my $result = $ua->request($request);
+my $result = $user_agent->request($request);
 unless ( $result->is_success ) {
     my $sent = {
         'finished' => JSON::PP::true,
