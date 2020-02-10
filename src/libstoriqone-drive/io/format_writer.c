@@ -101,19 +101,23 @@ static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_va
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
+	char * alternate_path = peer->format_writer->ops->get_alternate_path(peer->format_writer);
 
 	so_format_file_free(&file);
 
 	peer->nb_total_bytes += position - current_position;
 
-	struct so_value * response = so_value_pack("{sisiszsz}",
+	struct so_value * response = so_value_pack("{sisiszszss}",
 		"returned", status,
 		"last errno", last_errno,
 		"position", position,
-		"available size", available_size
+		"available size", available_size,
+		"alternate path", alternate_path
 	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
+
+	free(alternate_path);
 }
 
 static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_value * request) {

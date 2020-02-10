@@ -163,9 +163,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				}
 
 				if (S_ISREG(file.mode)) {
-					static char buffer[16384];
+					static char buffer[65536];
 					ssize_t nb_read;
-					while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 16384), nb_read > 0) {
+					while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 65536), nb_read > 0) {
 						ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, db_connect);
 						if (nb_write < 0) {
 							failed = -2;

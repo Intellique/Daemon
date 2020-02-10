@@ -383,9 +383,10 @@ static ssize_t sodr_tape_drive_writer_get_available_size(struct so_stream_writer
 		sodr_tape_drive_scsi_size_available(self->scsi_fd, media);
 	}
 
-	const size_t marge = media->media_format->capacity / 100;
-	if (media->free_block * media->block_size >= marge)
-		return media->free_block * media->block_size - marge;
+	const ssize_t free_size = media->free_block * media->block_size;
+	const ssize_t marge = media->media_format->capacity / 100;
+	if (free_size >= marge)
+		return free_size - marge + self->block_size - self->buffer_used;
 	else
 		return self->block_size - self->buffer_used;
 }
