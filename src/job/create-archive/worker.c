@@ -289,9 +289,13 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 		}
 
 		return 0;
-	} else
-		return 1;
+	} else {
+		soj_job_add_record(current_job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "No more media on pool '%s'"),
+			worker->archive->pool->name);
 
+		return 1;
+	}
 }
 
 int soj_create_archive_worker_close(struct so_job * job, struct so_database_connection * db_connect) {

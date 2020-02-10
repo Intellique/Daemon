@@ -730,6 +730,9 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 			break;
 	}
 
+	if (mp->future_pool != pool)
+		so_pool_free(pool);
+
 	struct so_value * response = so_value_pack("{sz}", "returned", result);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
