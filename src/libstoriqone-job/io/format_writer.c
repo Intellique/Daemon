@@ -53,6 +53,7 @@ struct soj_format_writer_private {
 	int file_position;
 	ssize_t position;
 	ssize_t available_size;
+	char * last_alternate_path;
 
 	struct so_value * digest;
 };
@@ -121,6 +122,7 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct 
 	self->file_position = file_position;
 	self->position = 0;
 	self->available_size = available_size;
+	self->last_alternate_path = NULL;
 	self->digest = so_value_new_linked_list();
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));
@@ -132,33 +134,8 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct 
 
 
 static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path) {
-	struct soj_format_writer_private * self = fw->data;
-
-	struct so_value * request = so_value_pack("{sss{soss}}",
-		"command", "add file",
-		"params",
-			"file", so_format_file_convert(file),
-			"selected path", selected_path
-	);
-	so_json_encode_to_fd(request, self->command_fd, true);
-	so_value_free(request);
-
-	enum so_format_writer_status status = so_format_writer_error;
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response != NULL) {
-		so_value_unpack(response, "{si}", "returned", &status);
-
-		if (status == so_format_writer_error)
-			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-		else
-			so_value_unpack(response, "{szsz}",
-				"position", &self->position,
-				"available size", &self->available_size
-			);
-		so_value_free(response);
-	}
-
-	return status;
+	soj_format_writer_add_file_async(fw, file, selected_path);
+	return soj_format_writer_add_file_return(fw);
 }
 
 void soj_format_writer_add_file_async(struct so_format_writer * fw, const struct so_format_file * file, const char * selected_path) {
@@ -184,11 +161,16 @@ enum so_format_writer_status soj_format_writer_add_file_return(struct so_format_
 
 		if (status == so_format_writer_error)
 			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-		else
+		else {
+			if (self->last_alternate_path != NULL)
+				free(self->last_alternate_path);
+
 			so_value_unpack(response, "{szsz}",
 				"position", &self->position,
-				"available size", &self->available_size
+				"available size", &self->available_size,
+				"alternate path", &self->last_alternate_path
 			);
+		}
 		so_value_free(response);
 	}
 
@@ -324,18 +306,8 @@ static void soj_format_writer_free(struct so_format_writer * fw) {
 static char * soj_format_writer_get_alternate_path(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "get alternate path");
-	so_json_encode_to_fd(request, self->command_fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return NULL;
-
-	char * alternate_path = NULL;
-	so_value_unpack(response, "{ss}", "returned", &alternate_path);
-	so_value_free(response);
-
+	char * alternate_path = self->last_alternate_path;
+	self->last_alternate_path = NULL;
 	return alternate_path;
 }
 
@@ -421,27 +393,8 @@ static enum so_format_writer_status soj_format_writer_restart_file(struct so_for
 }
 
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {
-	struct soj_format_writer_private * self = fw->data;
-
-	struct so_value * request = so_value_pack("{sss{sz}}", "command", "write", "params", "length", length);
-	so_json_encode_to_fd(request, self->command_fd, true);
-	so_value_free(request);
-
-	send(self->data_fd, buffer, length, 0);
-
-	ssize_t nb_write = 0;
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	so_value_unpack(response, "{si}", "returned", &nb_write);
-	if (nb_write < 0)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-	else
-		so_value_unpack(response, "{szsz}",
-			"position", &self->position,
-			"available size", &self->available_size
-		);
-	so_value_free(response);
-
-	return nb_write;
+	soj_format_writer_write_async(fw, buffer, length);
+	return soj_format_writer_write_return(fw);
 }
 
 void soj_format_writer_write_async(struct so_format_writer * fw, const void * buffer, ssize_t length) {

@@ -741,7 +741,7 @@ static void sodr_worker_command_create_archive_volume(void * data) {
 		return;
 	}
 
-	params->peer->buffer_length = 16384;
+	params->peer->buffer_length = 65536;
 	params->peer->buffer = malloc(params->peer->buffer_length);
 	params->peer->has_checksums = so_value_list_get_length(params->checksums) > 0;
 
@@ -1023,7 +1023,7 @@ static void sodr_worker_command_open_archive_volume(void * data) {
 		return;
 	}
 
-	params->peer->buffer_length = 16384;
+	params->peer->buffer_length = 65536;
 	params->peer->buffer = malloc(params->peer->buffer_length);
 	params->peer->has_checksums = so_value_list_get_length(params->checksums) > 0;
 
