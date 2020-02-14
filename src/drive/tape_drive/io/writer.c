@@ -183,9 +183,9 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 
 		sodr_time_start();
 		ssize_t nb_write = write(self->st_fd, self->buffer, nb_will_write);
+		sodr_time_stop(self->drive);
 		if (nb_write < 0)
 			self->last_errno = errno;
-		sodr_time_stop(self->drive);
 
 		if (nb_write < 0) {
 			switch (self->last_errno) {
@@ -208,9 +208,9 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 
 					sodr_time_start();
 					nb_write = write(self->st_fd, self->buffer, self->block_size);
+					sodr_time_stop(self->drive);
 					if (nb_write < 0)
 						self->last_errno = errno;
-					sodr_time_stop(self->drive);
 
 					if (nb_write == self->block_size)
 						break;
@@ -251,6 +251,9 @@ int sodr_tape_drive_writer_close2(struct so_stream_writer * sw, bool close_fd) {
 			self->media->nb_write_errors++;
 			return -1;
 		}
+
+		if (sodr_tape_drive_writer_get_available_size(sw) < self->block_size)
+			self->media->append = false;
 
 		if (close_fd) {
 			sodr_time_start();

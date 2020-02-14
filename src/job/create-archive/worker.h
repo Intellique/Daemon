@@ -48,6 +48,7 @@ enum so_job_status soj_create_archive_worker_finished_with_errors(void);
 void soj_create_archive_worker_generate_report(struct so_value * selected_path, struct so_database_connection * db_connect);
 void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archive * primary_archive, struct so_value * mirrors);
 void soj_create_archive_worker_init_pool(struct so_job * job, struct so_pool * primary_pool, struct so_value * mirrors);
+void soj_create_archive_worker_marks_as_imcompleted(void);
 void soj_create_archive_worker_prepare_medias(struct so_job * job, struct so_database_connection * db_connect);
 bool soj_create_archive_worker_prepare_medias2(struct so_job * job, struct so_database_connection * db_connect);
 float soj_create_archive_progress(void);

@@ -72,6 +72,7 @@ struct soj_create_archive_worker {
 	ssize_t last_position;
 	ssize_t last_write;
 	bool is_sync_write;
+	bool is_completed;
 
 	struct soj_create_archive_files {
 		char * path;
@@ -309,7 +310,7 @@ int soj_create_archive_worker_close(struct so_job * job, struct so_database_conn
 				dgettext("storiqone-job-create-archive", "Error while closing archive '%s' from pool '%s'"),
 				primary_worker->archive->name, primary_worker->archive->pool->name);
 		} else
-			primary_worker->archive->status = so_archive_status_data_complete;
+			primary_worker->archive->status = primary_worker->is_completed ? so_archive_status_data_complete : so_archive_status_incomplete;
 	}
 
 	unsigned int i;
@@ -326,7 +327,7 @@ int soj_create_archive_worker_close(struct so_job * job, struct so_database_conn
 				dgettext("storiqone-job-create-archive", "Error while closing archive '%s' from pool '%s'"),
 				worker->archive->name, worker->archive->pool->name);
 		} else
-			worker->archive->status = so_archive_status_data_complete;
+			worker->archive->status = worker->is_completed ? so_archive_status_data_complete : so_archive_status_incomplete;
 	}
 
 	if (primary_worker->state == soj_worker_status_ready) {
@@ -636,6 +637,17 @@ void soj_create_archive_worker_init_pool(struct so_job * job, struct so_pool * p
 	}
 }
 
+void soj_create_archive_worker_marks_as_imcompleted() {
+	if (primary_worker->state == soj_worker_status_ready)
+		primary_worker->is_completed = false;
+
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+		worker->is_completed = false;
+	}
+}
+
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool) {
 	current_job = job;
 
@@ -679,6 +691,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 	worker->last_position = 0;
 	worker->last_write = 0;
 	worker->is_sync_write = false;
+	worker->is_completed = true;
 
 	worker->first_files = worker->last_files = NULL;
 	worker->nb_files = 0;

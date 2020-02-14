@@ -726,12 +726,16 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 			enum so_changer_status changer_status = so_database_postgresql_string_to_status(PQgetvalue(result, i, 7));
 			enum so_changer_action changer_action = so_database_postgresql_string_to_action(PQgetvalue(result, i, 9));
 
+			char * wwn = NULL;
+			if (!PQgetisnull(result, i, 5))
+				wwn = PQgetvalue(result, i, 5);
+
 			struct so_value * changer = so_value_pack("{sssssssssssbsosssbsssb}",
 				"model", PQgetvalue(result, i, 1),
 				"vendor", PQgetvalue(result, i, 2),
 				"firmwarerev", PQgetvalue(result, i, 3),
 				"serial number", PQgetvalue(result, i, 4),
-				"wwn", PQgetvalue(result, i, 5),
+				"wwn", wwn,
 				"barcode", barcode,
 				"drives", so_database_postgresql_get_drives_by_changer(connect, changer_id),
 				"status", so_changer_status_to_string(changer_status, false),
@@ -2156,7 +2160,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		return status == PGRES_FATAL_ERROR;
 	} else if (method != so_database_sync_id_only) {
 		const char * query = "update_media";
-		so_database_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, lastread = $4, lastwrite = $5, loadcount = $6, readcount = $7, writecount = $8, nbtotalblockread = $9, nbtotalblockwrite = $10, nbreaderror = $11, nbwriteerror = $12, nbfiles = $13, blocksize = $14, freeblock = $15, totalblock = $16, archiveformat = $17, pool = $18, type = $19, writelock = $20 WHERE id = $21");
+		so_database_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, lastread = $4, lastwrite = $5, loadcount = $6, readcount = $7, writecount = $8, nbtotalblockread = $9, nbtotalblockwrite = $10, nbreaderror = $11, nbwriteerror = $12, nbfiles = $13, blocksize = $14, freeblock = $15, totalblock = $16, archiveformat = $17, pool = $18, type = $19, writelock = $20, append = $21 WHERE id = $22");
 
 		char buffer_last_read[32] = "";
 		char buffer_last_write[32] = "";
@@ -2238,9 +2242,9 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
 			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, nbfiles,
 			blocksize, freeblock, totalblock, archiveformat_id, pool_id, so_database_postgresql_media_type_to_string(media->type),
-			so_database_postgresql_bool_to_string(media->write_lock), media_id
+			so_database_postgresql_bool_to_string(media->write_lock), so_database_postgresql_bool_to_string(media->append), media_id
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 21, param2, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 22, param2, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
