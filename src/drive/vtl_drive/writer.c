@@ -165,6 +165,9 @@ static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw) {
 		self->media->nb_total_write++;
 	}
 
+	if (self->media->free_block == 0)
+		self->media->append = false;
+
 	if (self->fd > -1) {
 		int failed = fsync(self->fd);
 

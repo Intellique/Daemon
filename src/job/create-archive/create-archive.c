@@ -135,6 +135,15 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	soj_create_archive_worker_prepare_medias(job, db_connect);
 
 	int failed = soj_create_archive_worker_sync_archives(true, false, NULL, db_connect);
+	if (failed != 0) {
+		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "Error while synchronizing archive with database"));
+
+		job->status = so_job_status_error;
+		return failed;
+	} else
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Archive synchronized with database"));
 
 	bool stop = false;
 	unsigned int i, round;
@@ -142,11 +151,14 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		soj_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Starting round #%u"), round);
 
-		for (i = 0; i < nb_src_files; i++) {
+		for (i = 0; i < nb_src_files && !stop; i++) {
 			char * root = src_files[i]->ops->get_root(src_files[i]);
 
 			struct so_format_file file;
 			enum so_format_reader_header_status status;
+
+			so_format_file_init(&file);
+
 			while (status = src_files[i]->ops->get_header(src_files[i], &file, NULL, NULL), status == so_format_reader_header_ok) {
 				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 					dgettext("storiqone-job-create-archive", "Adding file '%s' to archive"),
@@ -159,32 +171,52 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 					soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 						dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
 						file.filename);
+					soj_create_archive_worker_marks_as_imcompleted();
+					stop = true;
 					break;
 				}
 
 				if (S_ISREG(file.mode)) {
 					static char buffer[65536];
-					ssize_t nb_read;
+					ssize_t nb_read, nb_write = 0;
 					while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 65536), nb_read > 0) {
-						ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, db_connect);
+						nb_write = soj_create_archive_worker_write(&file, buffer, nb_read, db_connect);
 						if (nb_write < 0) {
-							failed = -2;
+							soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+								dgettext("storiqone-job-create-archive", "Error while writing data to file (%s) to archive"),
+								file.filename);
+
+							soj_create_archive_worker_marks_as_imcompleted();
+							stop = true;
 							break;
 						}
 
 						file.position += nb_read;
-						float done = 0.96 * soj_create_archive_progress();
-						job->done = 0.02 + done;
+						float done = 0.96f * soj_create_archive_progress();
+						job->done = 0.02f + done;
 					}
+
+					if (nb_write < 0)
+						break;
 
 					if (nb_read < 0) {
 						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-create-archive", "Error while reading from %s"),
 							file.filename);
-						failed = -1;
-					} else {
-						failed = soj_create_archive_worker_end_of_file();
-						// if (failed != 0)
+
+						soj_create_archive_worker_marks_as_imcompleted();
+						so_format_file_free(&file);
+						stop = true;
+						break;
+					} else if (soj_create_archive_worker_end_of_file() != 0) {
+						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+							dgettext("storiqone-job-create-archive", "Error while writing data of file (%s) to archive"),
+							file.filename);
+
+						soj_create_archive_worker_marks_as_imcompleted();
+						so_format_file_free(&file);
+						stop = true;
+						break;
 					}
 
 					src_files[i]->ops->skip_file(src_files[i]);
@@ -193,7 +225,16 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				so_format_file_free(&file);
 			}
 
-			free(root);
+			if (status != so_format_reader_header_ok) {
+				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+					dgettext("storiqone-job-create-archive", "Erreur while getting header of file (selected file: %s"),
+					root);
+
+				free(root);
+				soj_create_archive_worker_marks_as_imcompleted();
+				break;
+			} else
+				free(root);
 		}
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
@@ -202,9 +243,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
-		failed = soj_create_archive_worker_sync_archives(false, true, NULL, db_connect);
-
-		if (failed != 0)
+		if (soj_create_archive_worker_sync_archives(false, true, NULL, db_connect) != 0)
 			soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error while synchronizing archive with database"));
 		else
@@ -338,11 +377,6 @@ static bool soj_create_archive_script_pre_run(struct so_job * job, struct so_dat
 }
 
 static int soj_create_archive_warm_up(struct so_job * job, struct so_database_connection * db_connect) {
-	/**
-	 * reserved for future (see ltfs)
-	 * media_source = db_connect->ops->get_media(db_connect, NULL, NULL, job);
-	**/
-
 	selected_path = db_connect->ops->get_selected_files_by_job(db_connect, job);
 	if (selected_path == NULL || so_value_list_get_length(selected_path) == 0) {
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -390,7 +424,10 @@ static int soj_create_archive_warm_up(struct so_job * job, struct so_database_co
 	}
 
 	if (primary_archive != NULL && primary_pool != NULL) {
-		// TODO: job with an archive and a pool
+		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Error, a pool (%s) and an archive (%s) sould not be linked to the job (%s) at same time"),
+			primary_pool->name, primary_archive->name, job->name);
+		return 1;
 	}
 
 	if (primary_archive != NULL) {
