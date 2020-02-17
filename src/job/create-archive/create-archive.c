@@ -225,9 +225,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				so_format_file_free(&file);
 			}
 
-			if (status != so_format_reader_header_ok) {
+			if (status != so_format_reader_header_ok && status != so_format_reader_header_not_found) {
 				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-					dgettext("storiqone-job-create-archive", "Erreur while getting header of file (selected file: %s"),
+					dgettext("storiqone-job-create-archive", "Erreur while getting header of file (selected file: %s)"),
 					root);
 
 				free(root);
