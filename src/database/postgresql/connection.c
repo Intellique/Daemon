@@ -4275,7 +4275,7 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 			pid_t pid = getpid();
 
 			char * buffer = NULL;
-			int size = asprintf(&buffer, "BEGIN; CREATE MATERIALIZED VIEW milestones_files_%d AS %s; CREATE UNIQUE INDEX ON milestones_files_%d(archive, archivefile); DROP MATERIALIZED VIEW IF EXISTS milestones_files; ALTER MATERIALIZED VIEW milestones_files_%d RENAME TO milestones_files; COMMIT", pid, PQgetvalue(result, 0, 0), pid, pid);
+			int size = asprintf(&buffer, "CREATE MATERIALIZED VIEW milestones_files_%d AS %s; CREATE UNIQUE INDEX ON milestones_files_%d(archive, archivefile); DROP MATERIALIZED VIEW IF EXISTS milestones_files; ALTER MATERIALIZED VIEW milestones_files_%d RENAME TO milestones_files", pid, PQgetvalue(result, 0, 0), pid, pid);
 
 			if (size > 0) {
 				PGresult * result_update = PQexec(self->connect, buffer);

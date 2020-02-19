@@ -368,7 +368,7 @@ void so_media_format_sync(struct so_media_format * format, struct so_value * new
 	);
 
 	if (name != NULL)
-		strncpy(format->name, name, 64);
+		strncpy(format->name, name, 63);
 
 	format->density_code = density_code;
 	format->type = so_media_string_to_format_data_type(type, false);

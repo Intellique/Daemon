@@ -306,7 +306,7 @@ static enum so_format_writer_status so_format_tar_writer_add_label(struct so_for
 
 	struct so_format_tar * header = malloc(512);
 	bzero(header, 512);
-	strncpy(header->filename, label, 100);
+	memcpy(header->filename, label, 100);
 	snprintf(header->mtime, 12, "%0*o", 11, (unsigned int) time(NULL));
 	header->flag = 'V';
 
@@ -519,7 +519,7 @@ static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_
 
 	struct so_format_tar_writer_private * format = fw->data;
 	bzero(current_header, 512);
-	strncpy(current_header->filename, file->filename, 100);
+	memcpy(current_header->filename, file->filename, 100);
 	so_format_tar_writer_compute_size(current_header->size, file->size - file->position);
 	current_header->flag = 'M';
 	so_format_tar_writer_uid2name(header->uname, 32, file->uid);
