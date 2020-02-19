@@ -213,6 +213,12 @@ static enum so_format_writer_status soj_create_archive_worker_add_file_async(str
 				return so_format_writer_error;
 
 			worker->last_position = 0;
+		} else {
+			char str_available_size[12], str_file_size[12];
+			so_file_convert_size_to_string(available_size, str_available_size, 12);
+			so_file_convert_size_to_string(file_size, str_file_size, 12);
+
+			so_log_write(so_log_level_debug, "Available size: %s, File size: %s", str_available_size, str_file_size);
 		}
 	}
 
