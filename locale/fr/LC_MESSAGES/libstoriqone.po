@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2019-06-24 15:22+0200\n"
+        "POT-Creation-Date: 2020-02-14 19:16+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -407,7 +407,7 @@ msgstr  "so_file_read_all_from: erreur en lisant depuis le fichier « %s » pa
 msgid   "so_file_read_all_from: failed while reading from '%s' because %m"
 msgstr  "so_file_read_all_from : échec en lisant depuis « %s » parce que %m"
 
-#: src/libstoriqone/file.c:751
+#: src/libstoriqone/file.c:748
 #, c-format
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm : échec lors de obtention des informations de « %s » parce que %m"

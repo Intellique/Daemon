@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-database-postgresql v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2019-12-19 14:04+0100\n"
+        "POT-Creation-Date: 2020-02-17 18:16+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -43,29 +43,29 @@ msgstr  "PSQL : Annulation de la transaction parce qu’elle est en erreur"
 msgid   "PSQL: Host not found into database (%s)"
 msgstr  "PSQL : Hôte non trouvé dans la base de données (%s)"
 
-#: src/database/postgresql/connection.c:1583
+#: src/database/postgresql/connection.c:1587
 msgid   "PSQL: error while synchronizing drive with database"
 msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base de données"
 
-#: src/database/postgresql/connection.c:1605 src/database/postgresql/connection.c:1619
+#: src/database/postgresql/connection.c:1609 src/database/postgresql/connection.c:1623
 msgid   "PSQL: error while synchronizing changer slots with database"
 msgstr  "PSQL : erreur lors de la synchronisation des emplacements d’une librairie de bande avec la base de données"
 
-#: src/database/postgresql/connection.c:3284
+#: src/database/postgresql/connection.c:3288
 #, c-format
 msgid   "Checking '%s'"
 msgstr  "Vérification « %s »"
 
-#: src/database/postgresql/connection.c:3525
+#: src/database/postgresql/connection.c:3529
 #, c-format
 msgid   "Retreiving archive from database in progress, %u / %u volume(s), %u / %u file(s)"
 msgstr  "Récupération de l’archive depuis la base de données, %u / %u volume(s), %u / %u fichier(s)"
 
-#: src/database/postgresql/connection.c:4180
+#: src/database/postgresql/connection.c:4184
 msgid   "Error, no new archive insert into database"
-msgstr  ""
+msgstr  "Erreur, aucune nouvelle archive inserée dans la base de données"
 
-#: src/database/postgresql/connection.c:5273
+#: src/database/postgresql/connection.c:5277
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"

@@ -210,7 +210,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 						break;
 					} else if (soj_create_archive_worker_end_of_file() != 0) {
 						soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-							dgettext("storiqone-job-create-archive", "Error while writing data of file (%s) to archive"),
+							dgettext("storiqone-job-create-archive", "Error while writing data to file (%s) to archive"),
 							file.filename);
 
 						soj_create_archive_worker_marks_as_imcompleted();
@@ -227,7 +227,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 			if (status != so_format_reader_header_ok && status != so_format_reader_header_not_found) {
 				soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-					dgettext("storiqone-job-create-archive", "Erreur while getting header of file (selected file: %s)"),
+					dgettext("storiqone-job-create-archive", "Error while getting header of file (selected file: %s)"),
 					root);
 
 				free(root);
