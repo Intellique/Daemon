@@ -19,7 +19,7 @@ if ( $ARGV[0] eq 'config' ) {
 use Data::Dumper;
 
 my $schema     = 'https';
-my $hostname   = '192.168.0.155:8006';
+my $hostname   = '192.168.0.154:8006';
 my $path       = 'api/v2/scan/asset';
 my $login      = 'emmanuel';
 my $password   = 'intellique';
