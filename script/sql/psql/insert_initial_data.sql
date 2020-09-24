@@ -40,11 +40,12 @@ INSERT INTO Application(name) VALUES
     ('StoriqOne Logger');
 
 INSERT INTO ArchiveFormat(name, readable, writable) VALUES
-    ('Storiq One (TAR)', TRUE, TRUE);
+    ('Storiq One (TAR)', TRUE, TRUE),
+    ('Storiq One (Backup)', TRUE, TRUE);
 
 INSERT INTO Pool(uuid, name, archiveFormat, mediaFormat, backupPool) VALUES
 	('b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', 1, 1, FALSE),
-	('d9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', 1, 1, TRUE);
+	('d9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', 2, 1, TRUE);
 
 INSERT INTO PoolGroup(uuid, name) VALUES
     ('bbaaf022-2e1b-4a5e-a49f-aa1e219340f3', 'storiq');
