@@ -86,6 +86,7 @@ struct so_job {
 
 	// login
 	char * user;
+	char * email;
 	struct so_value * meta;
 	struct so_value * option;
 

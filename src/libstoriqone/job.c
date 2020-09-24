@@ -98,11 +98,12 @@ static void so_job_init(void) __attribute__((constructor));
 
 
 struct so_value * so_job_convert(struct so_job * job) {
-	return so_value_pack("{sssssssssIsIsIsIsssfsssisbsOsO}",
+	return so_value_pack("{sssssssssssIsIsIsIsssfsssisbsOsO}",
 		"id", job->id,
 		"name", job->name,
 		"type", job->type,
 		"user", job->user,
+		"email", job->email,
 
 		"next start", (long) job->next_start,
 		"interval", job->interval,
@@ -256,11 +257,12 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 	double done = 0;
 	const char * step = NULL;
 
-	so_value_unpack(new_job, "{sssssssssisIsIsIsSsfsSsisbsOsO}",
+	so_value_unpack(new_job, "{sssssssssssisIsIsIsSsfsSsisbsOsO}",
 		"id", &job->id,
 		"name", &job->name,
 		"type", &job->type,
 		"user", &job->user,
+		"email", &job->email,
 
 		"next start", &job->next_start,
 		"interval", &job->interval,
