@@ -2938,7 +2938,7 @@ static int so_database_postgresql_sync_jobs(struct so_database_connection * conn
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_scheduled_jobs";
-	so_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, u.login, metadata, options, COALESCE(MAX(jr.numrun) + 1, 1) FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job LEFT JOIN users u ON j.login = u.id WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, u.login, metadata::TEXT, options::TEXT");
+	so_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, u.login, u.email, metadata, options, COALESCE(MAX(jr.numrun) + 1, 1) FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job LEFT JOIN users u ON j.login = u.id WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, u.login, metadata::TEXT, options::TEXT");
 
 	const char * param[] = { host_id };
 
@@ -2967,15 +2967,16 @@ static int so_database_postgresql_sync_jobs(struct so_database_connection * conn
 				so_database_postgresql_get_string_dup(result, i, 1, &job->name);
 				so_database_postgresql_get_string_dup(result, i, 2, &job->type);
 				so_database_postgresql_get_string_dup(result, i, 6, &job->user);
-				job->meta = so_json_parse_string(PQgetvalue(result, i, 7));
-				job->option = so_json_parse_string(PQgetvalue(result, i, 8));
+				so_database_postgresql_get_string_dup(result, i, 7, &job->email);
+				job->meta = so_json_parse_string(PQgetvalue(result, i, 8));
+				job->option = so_json_parse_string(PQgetvalue(result, i, 9));
 			}
 
 			so_database_postgresql_get_time(result, i, 3, &job->next_start);
 			so_database_postgresql_get_long(result, i, 4, &job->interval);
 			so_database_postgresql_get_long(result, i, 5, &job->repetition);
 			job->status = so_job_status_scheduled;
-			so_database_postgresql_get_long(result, i, 9, &job->num_runs);
+			so_database_postgresql_get_long(result, i, 10, &job->num_runs);
 
 			if (!has_job) {
 				job->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
