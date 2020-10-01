@@ -298,6 +298,7 @@ int sodr_tape_drive_format_ltfs_format_media(struct so_drive * drive, int fd, in
 	media->nb_total_write++;
 	media->block_size = block_size;
 	media->pool = pool;
+	media->append = true;
 	media->private_data = mp;
 	media->free_private_data = sodr_tape_drive_media_free2;
 
