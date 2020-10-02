@@ -149,7 +149,10 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 
 			struct so_slot * slot = dr->slot;
 			if (!dr->is_empty && slot->full) {
-				char * volume_name = strdup(slot->media->name);
+				char * volume_name = NULL;
+				const char * const_volume_name = so_media_get_name(slot->media);
+				if (const_volume_name != NULL)
+					volume_name = strdup(const_volume_name);
 
 				long long diff = (now.tv_sec - last_check.tv_sec) / 60;
 
