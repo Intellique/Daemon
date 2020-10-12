@@ -2938,7 +2938,7 @@ static int so_database_postgresql_sync_jobs(struct so_database_connection * conn
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_scheduled_jobs";
-	so_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, u.login, u.email, metadata, options, COALESCE(MAX(jr.numrun) + 1, 1) FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job LEFT JOIN users u ON j.login = u.id WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, u.login, metadata::TEXT, options::TEXT");
+	so_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, u.login, u.email, metadata, options, COALESCE(MAX(jr.numrun) + 1, 1) FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job LEFT JOIN users u ON j.login = u.id WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, u.login, u.email, metadata::TEXT, options::TEXT");
 
 	const char * param[] = { host_id };
 
