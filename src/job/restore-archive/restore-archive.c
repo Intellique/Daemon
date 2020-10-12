@@ -169,16 +169,23 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 	soj_restorearchive_check_worker_start(db_connect->config);
 	soj_restorearchive_data_worker_start(workers, job, db_connect);
 
+	unsigned int nb_errors = 0, nb_warnings = 0;
 	bool finished = false;
 	while (!finished) {
 		size_t total_done = 0;
 		finished = true;
+		nb_errors = 0;
+		nb_warnings = 0;
+
 		struct soj_restorearchive_data_worker * ptr;
 		for (ptr = workers; ptr != NULL; ptr = ptr->next) {
 			total_done += ptr->total_restored;
 
 			if (ptr->status == so_job_status_running)
 				finished = false;
+
+			nb_errors += ptr->nb_errors;
+			nb_warnings += ptr->nb_warnings;
 		}
 
 		float done = total_done;
@@ -193,6 +200,12 @@ static int soj_restorearchive_run(struct so_job * job, struct so_database_connec
 
 	soj_restorearchive_check_worker_stop();
 
+	if (nb_errors > 0)
+		job->status = so_job_status_error;
+	else if (nb_warnings)
+		job->status = so_job_status_finished_with_warnings;
+	else
+		job->status = so_job_status_finished;
 
 	struct so_value * report = so_value_pack("{sisososOsO}",
 		"report version", 2,

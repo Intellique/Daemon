@@ -256,6 +256,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 	else {
 		db_connect->ops->backup_add(db_connect, soj_backupdb_backup);
 		job->done = 1;
+		job->status = so_job_status_finished;
 	}
 
 	return 0;

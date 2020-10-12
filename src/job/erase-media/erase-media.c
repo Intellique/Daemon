@@ -157,14 +157,18 @@ static int soj_erasemedia_run(struct so_job * job, struct so_database_connection
 	if (failed == 0) {
 		db_connect->ops->mark_archive_as_purged(db_connect, soj_erasemedia_media, job);
 		soj_erasemedia_make_report(job, db_connect);
+		job->status = so_job_status_finished;
 
 		soj_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-erase-media", "Erasing media '%s' completed sucessfully"),
 			soj_erasemedia_media->name);
-	} else
+	} else {
+		job->status = so_job_status_error;
+
 		soj_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-erase-media", "Failed to erase media '%s'"),
 			soj_erasemedia_media->name);
+	}
 
 	return failed != 0 ? 2 : 0;
 }
