@@ -255,6 +255,11 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 				failed = db_connect->ops->create_check_archive_job(db_connect, job, data.copy_archive, quick_mode);
 			}
 		}
+
+		if (failed == 0)
+			job->status = so_job_status_finished;
+		else
+			job->status = so_job_status_error;
 	}
 
 	return failed;

@@ -171,6 +171,7 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 		}
 
 		job->done = 1;
+		job->status = so_job_status_finished;
 	}
 	soj_checkbackupdb_worker_free(worker);
 

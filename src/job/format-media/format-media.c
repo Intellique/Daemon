@@ -182,7 +182,7 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 			dgettext("storiqone-job-format-media", "Checking media header '%s' was successful"),
 			soj_formatmedia_media->name);
 
-		job->status = so_job_status_running;
+		job->status = so_job_status_finished;
 		job->done = 1;
 		return 0;
 	} else {

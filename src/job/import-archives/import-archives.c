@@ -247,6 +247,7 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 	if (failed == 0) {
 		db_connect->ops->finish_transaction(db_connect);
+		job->status = so_job_status_finished;
 		job->done = 1;
 	} else {
 		db_connect->ops->cancel_transaction(db_connect);
