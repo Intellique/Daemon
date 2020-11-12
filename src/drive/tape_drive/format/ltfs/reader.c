@@ -77,6 +77,7 @@ struct sodr_tape_drive_format_ltfs_reader_private {
 
 static int sodr_tape_drive_format_ltfs_reader_close(struct so_format_reader * fr);
 static bool sodr_tape_drive_format_ltfs_reader_end_of_file(struct so_format_reader * fr);
+static struct sodr_tape_drive_format_ltfs_file * sodr_tape_drive_format_ltfs_reader_find_by_path(struct sodr_tape_drive_format_ltfs_reader_private * self, char * path, struct so_format_file * file);
 static void sodr_tape_drive_format_ltfs_reader_find_next_file(struct sodr_tape_drive_format_ltfs_reader_private * self);
 static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_forward(struct so_format_reader * fr, off_t offset);
 static void sodr_tape_drive_format_ltfs_reader_free(struct so_format_reader * fr);
@@ -179,6 +180,34 @@ static bool sodr_tape_drive_format_ltfs_reader_end_of_file(struct so_format_read
 	return self->file_info == &self->ltfs_info->root || self->file_info == NULL;
 }
 
+static struct sodr_tape_drive_format_ltfs_file * sodr_tape_drive_format_ltfs_reader_find_by_path(struct sodr_tape_drive_format_ltfs_reader_private * self, char * path, struct so_format_file * file) {
+	struct sodr_tape_drive_format_ltfs_file * ptr = self->ltfs_info->root.first_child;
+	while (ptr != NULL) {
+		char * ptr_path_end = strchr(path, '/');
+		if (ptr_path_end != NULL)
+			*ptr_path_end = '\0';
+		const unsigned long long hash_name = so_string_compute_hash2(path);
+		if (ptr_path_end != NULL)
+			*ptr_path_end = '/';
+
+		if (ptr->hash_name == hash_name) {
+			if (ptr_path_end == NULL) {
+				so_format_file_copy(file, &ptr->file);
+				self->file_info = ptr;
+				return ptr;
+			} else {
+				ptr = ptr->first_child;
+				path = ptr_path_end;
+
+				while (*path == '/')
+					path++;
+			}
+		} else
+			ptr = ptr->next_sibling;
+	}
+	return ptr;
+}
+
 static void sodr_tape_drive_format_ltfs_reader_find_next_file(struct sodr_tape_drive_format_ltfs_reader_private * self) {
 	if (self->next_file == &self->ltfs_info->root || self->next_file == NULL)
 		return;
@@ -240,35 +269,19 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_ge
 		free(selected_path_dup);
 
 		char * path_dup = strdup(expected_path);
-		const char * ptr_path = path_dup + selected_path_length;
+		char * ptr_path = path_dup + selected_path_length;
 		while (*ptr_path == '/')
 			ptr_path++;
 
-		const char * ptr_path_begin = ptr_path;
+		char * ptr_path_begin = ptr_path;
+		struct sodr_tape_drive_format_ltfs_file * ptr = sodr_tape_drive_format_ltfs_reader_find_by_path(self, ptr_path_begin, file);
 
-		struct sodr_tape_drive_format_ltfs_file * ptr = self->ltfs_info->root.first_child;
-		while (ptr != NULL) {
-			char * ptr_path_end = strchr(ptr_path_begin, '/');
-			if (ptr_path_end != NULL)
-				*ptr_path_end = '\0';
-			const unsigned long long hash_name = so_string_compute_hash2(ptr_path_begin);
-			if (ptr_path_end != NULL)
-				*ptr_path_end = '/';
+		if (ptr == NULL) {
+			ptr_path = path_dup + strlen(selected_path);
+			while (*ptr_path == '/')
+				ptr_path++;
 
-			if (ptr->hash_name == hash_name) {
-				if (ptr_path_end == NULL) {
-					so_format_file_copy(file, &ptr->file);
-					self->file_info = ptr;
-					break;
-				} else {
-					ptr = ptr->first_child;
-					ptr_path_begin = ptr_path_end;
-
-					while (*ptr_path_begin == '/')
-						ptr_path_begin++;
-				}
-			} else
-				ptr = ptr->next_sibling;
+			ptr = sodr_tape_drive_format_ltfs_reader_find_by_path(self, ptr_path_begin, file);
 		}
 
 		free(path_dup);
