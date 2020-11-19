@@ -1,0 +1,54 @@
+=head1 NAME
+
+storiqonectl - Storiq One daemon control utility
+
+=head2 SYNOPSIS
+
+storiqonectl [COMMAND]([PARAMETERS])
+
+=head2 DESCRIPTION
+
+storiqonectl is the program used to control the storiqone daemon.
+
+=head2 OPTIONS
+
+storiqonectl accepts the following commands :
+
+=head3 api 
+
+display configured API keys (used to connect to the storiqone-backend API). The 'api' command can take additional parameters:
+
+=head4  -c, --create <name> : create new API key
+
+=head4  -h, --help          : show this and exit
+
+=head4  -l, --list          : list API keys (default action)
+
+=head4  -r, --remove <name> : remove a key
+
+=head3 config
+
+Configure the StoriqOne database (as defined in /etc/storiq/storiqone.conf) with the existing storage hardware. To be used only when the storiqoned daemon isn't running.
+Run it again in case of changes in the hardware setup (additional tape drives, libraries, etc).
+
+=head3 start
+
+start up the storiqoned service.
+
+=head3 status
+
+returns storiqoned service status in $?.
+
+=head3 stop
+
+stops the storiqoned service.
+
+=head2 LICENSE
+
+Copyright (c) 2018 Intellique
+This software is distributed under the Affero GPL version 3, see <https://www.gnu.org/licenses/agpl-3.0.txt>
+This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+=head2 SEE ALSO
+
+storiqoned(1).

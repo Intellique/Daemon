@@ -1,0 +1,42 @@
+=head1 NAME
+
+storiqoned - Storiq One daemon
+
+=head2 SYNOPSIS
+
+storiqoned [OPTIONS]
+
+=head2 DESCRIPTION
+
+storiqoned is the daemon providing archival and restoration service in the Storiq One system.
+It normally runs in the background and should be started by the init service, or using the storiqonectl command.
+
+=head2 OPTIONS
+
+storiqoned accepts the following options :
+
+=head3 --config | -c<configuration file>	
+
+use an alternate configuration file (default is /etc/storiq/storiqone.conf)
+
+=head3 --help
+
+display available options
+
+=head3 --pid-file | -p <file>
+
+use an alternate PID file (default is "/var/run/storiqone.pid" )
+
+=head3 --version | -V
+
+display storiqoned version then quits
+
+=head2 LICENSE
+
+Copyright (c) 2018 Intellique
+This software is distributed under the Affero GPL version 3, see <https://www.gnu.org/licenses/agpl-3.0.txt>
+This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+=head2 SEE ALSO
+
+storiqonectl(1).

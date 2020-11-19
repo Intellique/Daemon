@@ -41,6 +41,9 @@ OBJ_FILES	:=
 LOCALE_PO	:=
 LOCALE_MO	:=
 
+MANPAGES_SRC	:= $(sort $(shell test -d man && find man -name '*.*.pod'))
+MANPAGES_GEN	:= $(patsubst man/%.en.pod,man/%.1,${MANPAGES_SRC})
+
 TEST_SRC_FILES	:=
 TEST_HEAD_FILES	:=
 
@@ -188,9 +191,9 @@ BIN_DIRS	:= $(sort $(dir ${BINS}))
 
 
 .DEFAULT_GOAL	:= all
-.PHONY: all check clean cscope ctags debug distclean doc realclean stat stat-extra TAGS tar test
+.PHONY: all check clean cscope ctags debug distclean doc manpages realclean stat stat-extra TAGS tar test
 
-all: cscope tags ${VERSION_FILE} ${BINS} locales
+all: cscope tags ${VERSION_FILE} ${BINS} locales manpages
 
 check:
 	@echo 'Checking source files...'
@@ -224,6 +227,13 @@ install:
 	@./script/install.sh ${DESTDIR}
 
 locales: $(sort ${LOCALE_MO})
+
+manpages: ${MANPAGES_GEN}
+	@gzip -9f ${MANPAGES_GEN}
+
+man/%.1: man/%.en.pod
+	@echo " POD2MAN $(basename $(notdir $@))"
+	@pod2man -u -s 1 -r ${VERSION} -n $(basename $(notdir $@)) -c STORIQONE $< > $@
 
 package:
 	@echo ' CLEAN'
