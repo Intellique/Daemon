@@ -219,9 +219,9 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 
 install:
 	@echo ' MKDIR       ${DESTDIR}'
-	@mkdir -p ${DESTDIR}/etc/{init.d,logrotate.d,storiq} ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/storiqone/{bin,lib,scripts}
+	@mkdir -p ${DESTDIR}
 	@echo ' CP'
-	@./script/install.sh ${DESTDIR}
+	@./script/install.py ${DESTDIR}
 
 locales: $(sort ${LOCALE_MO})
 
