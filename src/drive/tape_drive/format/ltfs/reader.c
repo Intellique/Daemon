@@ -273,15 +273,14 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_ge
 		while (*ptr_path == '/')
 			ptr_path++;
 
-		char * ptr_path_begin = ptr_path;
-		struct sodr_tape_drive_format_ltfs_file * ptr = sodr_tape_drive_format_ltfs_reader_find_by_path(self, ptr_path_begin, file);
+		struct sodr_tape_drive_format_ltfs_file * ptr = sodr_tape_drive_format_ltfs_reader_find_by_path(self, ptr_path, file);
 
 		if (ptr == NULL) {
 			ptr_path = path_dup + strlen(selected_path);
 			while (*ptr_path == '/')
 				ptr_path++;
 
-			ptr = sodr_tape_drive_format_ltfs_reader_find_by_path(self, ptr_path_begin, file);
+			ptr = sodr_tape_drive_format_ltfs_reader_find_by_path(self, ptr_path, file);
 		}
 
 		free(path_dup);
