@@ -56,6 +56,12 @@ endif
 CFLAGS		:= -std=gnu99 -pipe -O2 -ggdb3 -D_FORTIFY_SOURCE=2 -Wall -Wextra -Werror-implicit-function-declaration -Wmissing-prototypes -Wformat -Wformat-security -Werror=format-security -fstack-protector-strong -fstack-protector --param ssp-buffer-size=4 $(addprefix -I,${INCLUDE_DIR})
 LDFLAGS		:= -Wl,-z,relro,-z,now
 
+ifdef DEB_HOST_MULTIARCH
+CFLAGS	+= -DLIB_PATH=\"/usr/lib/${DEB_HOST_MULTIARCH}\"
+else
+CFLAGS	+= -DLIB_PATH=\"/usr/lib\"
+endif
+
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
 

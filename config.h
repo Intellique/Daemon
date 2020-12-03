@@ -31,10 +31,10 @@
 #define DAEMON_CRASH_DIR "/var/crash/storiqone"
 #define DAEMON_SOCKET_DIR "/var/run/storiqone"
 #define DAEMON_PID_FILE "/var/run/storiqone.pid"
-#define DAEMON_BIN_DIR "/usr/lib/storiqone/1.4/bin"
-#define DAEMON_JOB_DIR "/usr/lib/storiqone/1.4/job"
+#define DAEMON_BIN_DIR LIB_PATH "/storiqone/1.4/bin"
+#define DAEMON_JOB_DIR LIB_PATH "/storiqone/1.4/job"
 #define LOCALE_DIR "/usr/share/locale/"
-#define MODULE_PATH "/usr/lib/storiqone/1.4/lib"
+#define MODULE_PATH LIB_PATH "/storiqone/1.4/lib"
 #define SCRIPT_PATH "/usr/lib/storiqone/1.4/scripts"
 #define TMP_DIR "/tmp"
 
