@@ -1,13 +1,15 @@
-bin/										usr
-include/									usr
-lib/libstoriqone*.so*						usr													xxx
-lib/libchecksum-*.so						usr
-lib/libdatabase-*.so						usr
-lib/liblog-*.so								usr
-locale/*/*/*.mo								usr/share
-script/logrotate.d/							etc
-script/pre-post-run/						usr/lib/storiqone/1.4/scripts
-script/sql/psql/create_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
-script/sql/psql/delete_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
-script/sql/psql/insert_initial_data.sql		usr/share/storiqone-plugin-db-postgresql/scripts
-storiqone.conf								etc/storiq
+bin|*										usr/sbin
+bin/daemon|*								usr/lib												storiqone/1.4/bin
+bin|job/*									usr/lib												storiqone/1.4
+|include/									usr
+lib|libstoriqone*.so*						usr/lib
+|lib/libchecksum-*.so						usr/lib												storiqone/1.4
+|lib/libdatabase-*.so						usr/lib												storiqone/1.4
+|lib/liblog-*.so							usr/lib												storiqone/1.4
+|locale/*/*/*.mo							usr/share/locale
+script|logrotate.d							etc
+script/pre-post-run|*						usr/lib/storiqone/1.4/scripts
+script/sql/psql|create_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql|delete_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
+script/sql/psql|insert_initial_data.sql		usr/share/storiqone-plugin-db-postgresql/scripts
+|storiqone.conf								etc/storiq

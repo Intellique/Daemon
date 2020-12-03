@@ -1,6 +1,6 @@
 STORIQONE_JOB_SYNCHRONIZEARCHIVE_SRC_DIR		:= src/job/synchronize-archive
 
-STORIQONE_JOB_SYNCHRONIZEARCHIVE_BIN			:= bin/job_synchronize-archive
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_BIN			:= bin/job/job_synchronize-archive
 STORIQONE_JOB_SYNCHRONIZEARCHIVE_CFLAG			 = -pthread ${LIB_UUID_CFLAGS}
 STORIQONE_JOB_SYNCHRONIZEARCHIVE_LD				 = -pthread -lstoriqone -lstoriqone-job -Llib ${LIB_UUID_LD}
 

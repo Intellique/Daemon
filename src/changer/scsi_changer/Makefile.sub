@@ -1,6 +1,6 @@
 STORIQONE_CHANGER_SCSICHANGER_SRC_DIR		:= src/changer/scsi_changer
 
-STORIQONE_CHANGER_SCSICHANGER_BIN			:= bin/scsi_changer
+STORIQONE_CHANGER_SCSICHANGER_BIN			:= bin/daemon/scsi_changer
 STORIQONE_CHANGER_SCSICHANGER_CFLAG			:= -pthread
 STORIQONE_CHANGER_SCSICHANGER_LD			:= -pthread -lstoriqone -lstoriqone-changer -Llib
 

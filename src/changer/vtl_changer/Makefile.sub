@@ -1,6 +1,6 @@
 STORIQONE_CHANGER_VTLCHANGER_SRC_DIR		:= src/changer/vtl_changer
 
-STORIQONE_CHANGER_VTLCHANGER_BIN			:= bin/vtl_changer
+STORIQONE_CHANGER_VTLCHANGER_BIN			:= bin/daemon/vtl_changer
 STORIQONE_CHANGER_VTLCHANGER_CFLAG			:= -pthread
 STORIQONE_CHANGER_VTLCHANGER_LD				:= -pthread -luuid -lstoriqone -lstoriqone-changer -Llib
 

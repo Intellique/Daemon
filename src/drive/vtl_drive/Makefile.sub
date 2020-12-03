@@ -1,6 +1,6 @@
 STORIQONE_DRIVE_VTLDRIVE_SRC_DIR		:= src/drive/vtl_drive
 
-STORIQONE_DRIVE_VTLDRIVE_BIN			:= bin/vtl_drive
+STORIQONE_DRIVE_VTLDRIVE_BIN			:= bin/daemon/vtl_drive
 STORIQONE_DRIVE_VTLDRIVE_CFLAG			:= -pthread
 STORIQONE_DRIVE_VTLDRIVE_LD				:= -pthread -lstoriqone -lstoriqone-drive -Llib
 

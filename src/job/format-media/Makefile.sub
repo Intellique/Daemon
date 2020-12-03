@@ -1,6 +1,6 @@
 STORIQONE_JOB_FORMATMEDIA_SRC_DIR		:= src/job/format-media
 
-STORIQONE_JOB_FORMATMEDIA_BIN			:= bin/job_format-media
+STORIQONE_JOB_FORMATMEDIA_BIN			:= bin/job/job_format-media
 STORIQONE_JOB_FORMATMEDIA_CFLAG			 = -pthread ${LIB_UUID_CFLAGS}
 STORIQONE_JOB_FORMATMEDIA_LD			 = -pthread -lstoriqone -lstoriqone-job -Llib ${LIB_UUID_LD}
 

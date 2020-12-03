@@ -1,6 +1,6 @@
 LOGGER_SRC_DIR		:= src/logger
 
-LOGGER_BIN			:= bin/logger
+LOGGER_BIN			:= bin/daemon/logger
 LOGGER_CFLAG		:= -fPIC -pthread
 LOGGER_LD			:= -pthread -rdynamic -lstoriqone -ldl -Llib
 
