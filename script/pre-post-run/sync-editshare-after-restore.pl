@@ -25,8 +25,8 @@ my $restored_path = $data->{'restore path'};
 my $schema     = 'https';
 my $hostname   = '192.168.0.154:8006';
 my $path       = 'api/v2/scan/asset';
-my $login      = 'emmanuel';
-my $password   = 'emmanuel';
+my $login      = 'storiqone';
+my $password   = 'storiqone';
 my $mediaspace = 'StoriqOne';
 
 # debug stuff
@@ -47,20 +47,30 @@ if ( defined($restored_path) ) {
             next unless defined $file->{file}{'restored to'};
 			next if $file->{file}{type} eq 'directory';
 			
-            my $parent = dirname( $file->{file}{'restored to'} );
-            $restpaths->{$parent}++;
+            # my $parent = dirname( $file->{file}{'restored to'} );
+            # $restpaths->{$parent}++;
+            my $filename = basename( $file->{file}{'restored to'} );
+            $restpaths->{$filename}++;
         }
 
-        foreach my $path ( keys %$restpaths ) {
-			my $parent = dirname $path ;
-            delete $restpaths->{$path}
-              if ( exists $restpaths->{$parent} );
-        }
+#        foreach my $path ( keys %$restpaths ) {
+#			my $parent = dirname $path ;
+#            delete $restpaths->{$path}
+#              if ( exists $restpaths->{$parent} );
+#        }
     }
 
 } else {
     $message = "Restore path NOT FOUND $restored_path\n";
 }
+
+# Mediaspace = last folder minus _1 if restore to flow
+if ($restored_path =~ m#/mnt/flow/# ) {
+	my @pathelems = split ('/', $restored_path);
+	$mediaspace = pop @pathelems;
+	$mediaspace =~ s/_1$//;
+}
+
 
 my $content_request = encode_json(
     {   'createproxy' => JSON::PP::true,
@@ -71,9 +81,7 @@ my $content_request = encode_json(
         'update_pmr'  => JSON::PP::false
     }
 );
-
-print Dumper $content_request;
-
+ 
 my $user_agent = LWP::UserAgent->new;
 $user_agent->ssl_opts( verify_hostname => 0 );
 $user_agent->ssl_opts( SSL_verify_mode => 0 );
