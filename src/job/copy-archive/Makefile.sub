@@ -1,6 +1,6 @@
 STORIQONE_JOB_COPYARCHIVE_SRC_DIR		:= src/job/copy-archive
 
-STORIQONE_JOB_COPYARCHIVE_BIN			:= bin/job_copy-archive
+STORIQONE_JOB_COPYARCHIVE_BIN			:= bin/job/job_copy-archive
 STORIQONE_JOB_COPYARCHIVE_CFLAG			 = -pthread ${LIB_UUID_CFLAGS}
 STORIQONE_JOB_COPYARCHIVE_LD			 = -pthread -lstoriqone -lstoriqone-job -Llib ${LIB_UUID_LD}
 

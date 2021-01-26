@@ -1,6 +1,6 @@
 STORIQONE_JOB_CHECKBACKUPDB_SRC_DIR			:= src/job/check-backup-db
 
-STORIQONE_JOB_CHECKBACKUPDB_BIN				:= bin/job_check-backup-db
+STORIQONE_JOB_CHECKBACKUPDB_BIN				:= bin/job/job_check-backup-db
 STORIQONE_JOB_CHECKBACKUPDB_CFLAG			:= -pthread
 STORIQONE_JOB_CHECKBACKUPDB_LD				:= -pthread -lstoriqone -lstoriqone-job -Llib
 

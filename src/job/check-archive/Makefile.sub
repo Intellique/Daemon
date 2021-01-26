@@ -1,6 +1,6 @@
 STORIQONE_JOB_CHECK_ARCHIVE_SRC_DIR			:= src/job/check-archive
 
-STORIQONE_JOB_CHECK_ARCHIVE_BIN				:= bin/job_check-archive
+STORIQONE_JOB_CHECK_ARCHIVE_BIN				:= bin/job/job_check-archive
 STORIQONE_JOB_CHECK_ARCHIVE_CFLAG			:= -pthread
 STORIQONE_JOB_CHECK_ARCHIVE_LD				:= -pthread -lstoriqone -lstoriqone-job -Llib
 

@@ -1,6 +1,6 @@
 STORIQONED_SRC_DIR		:= src/storiqoned
 
-STORIQONED_BIN			:= bin/storiqoned
+STORIQONED_BIN			:= bin/daemon/storiqoned
 STORIQONED_CFLAG		:= -fPIC -pthread
 STORIQONED_LD			:= -pthread -lstoriqone -Llib
 

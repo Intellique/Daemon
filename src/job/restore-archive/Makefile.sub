@@ -1,6 +1,6 @@
 STORIQONE_JOB_RESTOREARCHIVE_SRC_DIR		:= src/job/restore-archive
 
-STORIQONE_JOB_RESTOREARCHIVE_BIN			:= bin/job_restore-archive
+STORIQONE_JOB_RESTOREARCHIVE_BIN			:= bin/job/job_restore-archive
 STORIQONE_JOB_RESTOREARCHIVE_CFLAG			:= -pthread
 STORIQONE_JOB_RESTOREARCHIVE_LD				:= -pthread -lstoriqone -lstoriqone-job -Llib
 
