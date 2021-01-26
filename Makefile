@@ -197,7 +197,7 @@ BIN_DIRS	:= $(sort $(dir ${BINS}))
 
 
 .DEFAULT_GOAL	:= all
-.PHONY: all check clean cscope ctags debug distclean doc manpages realclean stat stat-extra TAGS tar test
+.PHONY: all check clean cscope ctags debug distclean doc manpages package realclean src-package stat stat-extra TAGS tar test
 
 all: cscope tags ${VERSION_FILE} ${BINS} locales manpages
 
@@ -241,15 +241,17 @@ man/%.1: man/%.en.pod
 	@echo " POD2MAN $(basename $(notdir $@))"
 	@pod2man -u -s 1 -r ${VERSION} -n $(basename $(notdir $@)) -c STORIQONE $< > $@
 
-package:
+package: src-package
 	@echo ' CLEAN'
 	@dh_clean
-	@echo ' UPDATE      src'
-	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} ${VERSION}
 	@echo ' BUILD       package'
 	@dpkg-buildpackage -us -uc -rfakeroot
 
 rebuild: clean all
+
+src-package:
+	@echo ' UPDATE      src'
+	@${GIT} archive --format=tar.gz -o ../${GIT_ARCHIVE} ${VERSION}
 
 stat:
 	@wc $(sort ${SRC_FILES} ${HEAD_FILES})
