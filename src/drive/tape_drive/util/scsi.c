@@ -1457,8 +1457,10 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 		}
 	}
 
-	media->free_block = free_block / media->block_size;
-	media->total_block = total_block / media->block_size;
+	if (free_block <= total_block) {
+		media->free_block = free_block / media->block_size;
+		media->total_block = total_block / media->block_size;
+	}
 
 	return 0;
 }
