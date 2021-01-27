@@ -6,7 +6,7 @@ lib|libstoriqone*.so*						usr/lib
 |lib/libchecksum-*.so						usr/lib												storiqone/1.4
 |lib/libdatabase-*.so						usr/lib												storiqone/1.4
 |lib/liblog-*.so							usr/lib												storiqone/1.4
-|locale/*/*/*.mo							usr/share/locale
+|locale/*/*/*.mo							usr/share
 script|logrotate.d							etc
 script/pre-post-run|*						usr/lib/storiqone/1.4/scripts
 script/sql/psql|create_database.sql			usr/share/storiqone-plugin-db-postgresql/scripts
