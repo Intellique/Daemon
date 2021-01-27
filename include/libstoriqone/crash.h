@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2021, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_CRASH_H__
