@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2021, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // open, size_t
@@ -1457,8 +1457,10 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 		}
 	}
 
-	media->free_block = free_block / media->block_size;
-	media->total_block = total_block / media->block_size;
+	if (free_block <= total_block) {
+		media->free_block = free_block / media->block_size;
+		media->total_block = total_block / media->block_size;
+	}
 
 	return 0;
 }

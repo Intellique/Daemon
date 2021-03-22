@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013-2019, Guillaume Clercin <gclercin@intellique.com>      *
+*  Copyright (C) 2013-2021, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 // errno
@@ -385,6 +385,47 @@ int sodr_tape_drive_st_set_position(struct so_drive * drive, int fd, unsigned in
 					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning from #%u to position #%d completed with status = OK"),
 					drive->vendor, drive->model, drive->index, status.mt_fileno, file_number);
 		}
+	} else if (status.mt_fileno == file_number && status.mt_blkno > 0) {
+		if (media != NULL)
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' at beginning of current file #%u from block number #%d"),
+				drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, status.mt_blkno);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning at beginning of current file #%u from block number #%d"),
+				drive->vendor, drive->model, drive->index, status.mt_fileno, status.mt_blkno);
+
+		drive->status = so_drive_status_positioning;
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
+
+		struct mtop bwb = { MTBSR, status.mt_blkno };
+		sodr_time_start();
+		failed = ioctl(fd, MTIOCTOP, &bwb);
+		const int last_errno = errno;
+		sodr_time_stop(drive);
+
+		drive->status = failed ? so_drive_status_error : so_drive_status_loaded_idle;
+		if (db != NULL)
+			db->ops->sync_drive(db, drive, true, so_database_sync_default);
+
+		if (failed != 0) {
+			if (media != NULL)
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' at beginning of current file #%u from block number #%d encountered an error '%s'"),
+					drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, status.mt_blkno, strerror(last_errno));
+			else
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning at beginning of current file #%u from block number #%d encountered an error '%s'"),
+					drive->vendor, drive->model, drive->index, status.mt_fileno, status.mt_blkno, strerror(last_errno));
+		} else if (media != NULL)
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' at beginning of current file #%u from block number #%d completed with status = OK"),
+				drive->vendor, drive->model, drive->index, drive->slot->media->name, status.mt_fileno, status.mt_blkno);
+		else
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning at beginning of current file #%u from block number #%d completed with status = OK"),
+				drive->vendor, drive->model, drive->index, status.mt_fileno, status.mt_blkno);
 	}
 
 	return failed;
