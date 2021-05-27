@@ -807,7 +807,7 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 		.service_action = scsi_read_attribute_service_action_attributes_values,
 		.volume_number = 0,
 		.partition_number = 0,
-		.first_attribute_id = 0,
+		.first_attribute_id = htobe16(sodr_tape_drive_scsi_mam_medium_serial_number),
 		.allocation_length = htobe16(1024),
 		.control = 0,
 	};
@@ -835,9 +835,11 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 		return status;
 
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
-	unsigned char * ptr = buffer + 4;
+	if (data_available > 1024)
+		data_available = 1024;
 
-	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+	bool found = false;
+	for (unsigned char * ptr = buffer + 4; !found && ptr < buffer + data_available;) {
 		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
 		attr->identifier = be16toh(attr->identifier);
 		attr->length = be16toh(attr->length);
@@ -850,7 +852,16 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 		char * space;
 		switch (attr->identifier) {
 			case sodr_tape_drive_scsi_mam_medium_serial_number:
-				strncpy(medium_serial_number, attr->value.text, length);
+				found = true;
+
+				if (length - 1 > attr->length) {
+					strncpy(medium_serial_number, attr->value.text, attr->length);
+					medium_serial_number[attr->length] = '\0';
+				} else {
+					strncpy(medium_serial_number, attr->value.text, length - 1);
+					medium_serial_number[length - 1] = '\0';
+				}
+
 				space = strchr(medium_serial_number, ' ');
 				if (space)
 					*space = '\0';
