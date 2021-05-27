@@ -13,6 +13,8 @@ if ( -f $directory ) {
 		(undef, $directory) = split ' ';
 	}
 	close $fd_git;
+} else {
+	exit;
 }
 
 open my $fd, '<', "$directory/HEAD";

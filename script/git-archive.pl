@@ -5,13 +5,28 @@ use warnings;
 
 my ($dir) = @ARGV;
 
-my ($version) = qx/git describe/;
-chomp $version;
+my $version;
+if ( -f 'debian/changelog' ) {
+	open my $fd, '<', 'debian/changelog';
+	my $line = <$fd>;
+	close $fd;
 
-my ($ver) = $version =~ /^v([^-]+)-/;
+	if ( $line =~ /\((.*)\)/ ) {
+		$version = $1;
+		($version) = $version =~ /^([^-]+)-/;
+	} else {
+		print $dir;
+		exit;
+	}
+} else {
+	($version) = qx/git describe/;
+	chomp $version;
 
-if (defined $ver) {
-	print "${dir}_$ver";
+	($version) = $version =~ /^v([^-]+)-/;
+}
+
+if (defined $version) {
+	print "${dir}_$version";
 } else {
 	print $dir;
 }

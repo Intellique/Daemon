@@ -5,11 +5,13 @@ use warnings;
 
 my ( $symbol, $filename ) = @ARGV;
 
+my $git_commit;
 my $version;
 if ( open my $dcl, '<', 'debian/changelog' ) {
     $version = <$dcl>;
     chomp $version;
     $version =~ s/^.+\((.+)\).+$/$1/;
+    $git_commit = "v$version";
 
     close($dcl);
 }
@@ -18,12 +20,10 @@ else {
     chomp $version;
 }
 
-my ($branch) = grep { s/^\*\s+(.*)$/$1/ } qx/git branch/;
-chomp $branch;
-$version .= '~' . $branch if $branch ne 'master';
-
-my ($git_commit) = qx/git log -1 --format=%H/;
-chomp $git_commit;
+if ( -e '.git' ) {
+    ($git_commit) = qx/git log -1 --format=%H/;
+    chomp $git_commit;
+}
 
 open my $fd, '>', $filename;
 print $fd "#define ${symbol}_VERSION \"$version\"\n";
