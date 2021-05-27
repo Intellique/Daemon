@@ -520,9 +520,10 @@ bool sodr_tape_drive_scsi_has_attribute(int fd, enum sodr_tape_drive_scsi_mam_at
 
 	bool found = false;
 	unsigned short data_available = be16toh(*(unsigned short *) buffer);
-	unsigned char * ptr;
+	if (data_available > 1024)
+		data_available = 1024;
 
-	for (ptr = buffer + 2; !found && ptr < buffer + data_available; ptr += 2) {
+	for (unsigned char * ptr = buffer + 2; !found && ptr < buffer + data_available; ptr += 2) {
 		unsigned short attr = be16toh(*(unsigned short *) ptr);
 		found = attr == attribute;
 	}
@@ -932,9 +933,10 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	const unsigned long hash = so_string_compute_hash2(media->name);
 
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
-	unsigned char * ptr = buffer + 4;
+	if (data_available > 1024)
+		data_available = 1024;
 
-	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+	for (unsigned char * ptr = buffer + 4; ptr < buffer + data_available;) {
 		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
 		attr->identifier = be16toh(attr->identifier);
 		attr->length = be16toh(attr->length);
@@ -1070,9 +1072,11 @@ int sodr_tape_drive_scsi_read_volume_change_reference(int fd, unsigned int * vol
 		return status;
 
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
-	unsigned char * ptr = buffer + 4;
+	if (data_available > 1024)
+		data_available = 1024;
 
-	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+	bool found = false;
+	for (unsigned char * ptr = buffer + 4; !found && ptr < buffer + data_available;) {
 		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
 		attr->identifier = be16toh(attr->identifier);
 		attr->length = be16toh(attr->length);
@@ -1084,6 +1088,8 @@ int sodr_tape_drive_scsi_read_volume_change_reference(int fd, unsigned int * vol
 
 		switch (attr->identifier) {
 			case sodr_tape_drive_scsi_mam_volume_change_reference:
+				found = true;
+
 				*volume_change_reference = be32toh(attr->value.be32);
 				break;
 
@@ -1149,9 +1155,11 @@ int sodr_tape_drive_scsi_read_volume_coherency(int fd, struct sodr_tape_drive_lt
 		return status;
 
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
-	unsigned char * ptr = buffer + 4;
+	if (data_available > 1024)
+		data_available = 1024;
 
-	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+	bool found = false;
+	for (unsigned char * ptr = buffer + 4; !found && ptr < buffer + data_available;) {
 		struct sodr_tape_drive_scsi_mam_attribute * attr = (struct sodr_tape_drive_scsi_mam_attribute *) ptr;
 		attr->identifier = be16toh(attr->identifier);
 		attr->length = be16toh(attr->length);
@@ -1163,21 +1171,23 @@ int sodr_tape_drive_scsi_read_volume_coherency(int fd, struct sodr_tape_drive_lt
 
 		switch (attr->identifier) {
 			case sodr_tape_drive_scsi_mam_volume_coherency_infomation: {
-					struct sodr_tape_drive_scsi_volume_coherency_information * vci = (struct sodr_tape_drive_scsi_volume_coherency_information *) &attr->value.text;
-					if (vci->volume_change_reference_value_length != 8)
-						return 1;
+				found = true;
 
-					vci->volume_change_reference_value = be64toh(vci->volume_change_reference_value);
-					vci->volume_coherency_count = be64toh(vci->volume_coherency_count);
-					vci->volume_coherency_set_identifier = be64toh(vci->volume_coherency_set_identifier);
-					vci->application_client_specific_information_length = be16toh(vci->application_client_specific_information_length);
+				struct sodr_tape_drive_scsi_volume_coherency_information * vci = (struct sodr_tape_drive_scsi_volume_coherency_information *) &attr->value.text;
+				if (vci->volume_change_reference_value_length != 8)
+					return 1;
 
-					volume_coherency->volume_change_reference = vci->volume_change_reference_value;
-					volume_coherency->generation_number = vci->volume_coherency_count;
-					volume_coherency->block_position_of_last_index = vci->volume_coherency_set_identifier;
+				vci->volume_change_reference_value = be64toh(vci->volume_change_reference_value);
+				vci->volume_coherency_count = be64toh(vci->volume_coherency_count);
+				vci->volume_coherency_set_identifier = be64toh(vci->volume_coherency_set_identifier);
+				vci->application_client_specific_information_length = be16toh(vci->application_client_specific_information_length);
 
-					break;
-				}
+				volume_coherency->volume_change_reference = vci->volume_change_reference_value;
+				volume_coherency->generation_number = vci->volume_coherency_count;
+				volume_coherency->block_position_of_last_index = vci->volume_coherency_set_identifier;
+
+				break;
+			}
 
 			default:
 				break;
