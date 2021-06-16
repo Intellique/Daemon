@@ -167,6 +167,29 @@ my %libs = (
             'lib'     => undef,
         },
     },
+    'libxxhash' => {
+        'name' => 'xxhash',
+
+        'symbol' => 'LIB_XXHASH_',
+
+        'auto configure' => {
+            'include dir' => [ 'pkg-config', '--variable=includedir', 'libxxhash' ],
+            'lib'         => [ 'pkg-config', '--libs', 'libxxhash' ],
+        },
+
+        'dummy file' => 'script/dummy/xxhash.c',
+
+        'manual configure' => {
+            'cflags'       => undef,
+            'include dirs' => undef,
+            'lib'          => ['xxhash'],
+        },
+
+        'result' => {
+            'include' => undef,
+            'lib'     => undef,
+        },
+    },
     'libz' => {
         'name' => 'zlib',
 

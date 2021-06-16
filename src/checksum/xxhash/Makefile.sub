@@ -1,8 +1,8 @@
 STORIQONE_CHECKSUM_XXHASH_SRC_DIR		:= src/checksum/xxhash
 
 STORIQONE_CHECKSUM_XXHASH_BIN			:= lib/libchecksum-xxhash.so
-STORIQONE_CHECKSUM_XXHASH_CFLAG			 = -pthread -fPIC -fvisibility=hidden
-STORIQONE_CHECKSUM_XXHASH_LD			 = -pthread -shared -Llib
+STORIQONE_CHECKSUM_XXHASH_CFLAG			 = -pthread -fPIC -fvisibility=hidden ${LIB_XXHASH_CFLAGS}
+STORIQONE_CHECKSUM_XXHASH_LD			 = -pthread -shared -Llib ${LIB_XXHASH_LD}
 
 STORIQONE_CHECKSUM_XXHASH_DEPEND_LIB	:=
 
