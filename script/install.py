@@ -41,12 +41,12 @@ for line in fd:
                 dir_to_add = dirname(src_file)
 
             if sub_dest is None:
-                if t is not None and dest.endswith('/lib'):
+                if triplet is not None and dest.endswith('/lib'):
                     dest_dir = join(sys.argv[1], dest, triplet, dir_to_add)
                 else:
                     dest_dir = join(sys.argv[1], dest, dir_to_add)
             else:
-                if t is not None and dest.endswith('/lib'):
+                if triplet is not None and dest.endswith('/lib'):
                     dest_dir = join(sys.argv[1], dest, triplet, sub_dest, dir_to_add)
                 else:
                     dest_dir = join(sys.argv[1], dest, sub_dest, dir_to_add)
